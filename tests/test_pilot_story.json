@@ -1,0 +1,949 @@
+{
+  "schema_version": "1.0",
+  "project": {
+    "title": "Sau Cánh Cửa",
+    "episode_title": "Tập 01 - Lá thư giấu kín",
+    "language": "vi-VN",
+    "tts_engine": "VieNeu-TTS-v3-Turbo",
+    "sample_rate": 48000,
+    "default_gap_seconds": 0.3,
+    "target_master_lufs": -14,
+    "true_peak_db": -1
+  },
+  "characters": {
+    "MINH": {
+      "display_name": "Minh",
+      "role": "MC / narrator",
+      "voice": "Binh",
+      "default_speed": 0.97
+    },
+    "LAN": {
+      "display_name": "Lan",
+      "role": "Người gửi thư",
+      "voice": "Ly",
+      "default_speed": 0.94
+    }
+  },
+  "segments": [
+    {
+      "id": "001",
+      "speaker": "LAN",
+      "text": "[thở dài] Nếu chồng tôi nghe được lá thư này...",
+      "pause_before": 0.4,
+      "pause_after": 1.5,
+      "delivery": "quiet_confession",
+      "speed": 0.94,
+      "multi_take": 3
+    },
+    {
+      "id": "002",
+      "speaker": "MINH",
+      "text": "Chào mừng quý thính giả đang đến với chương trình Sau Cánh Cửa đêm nay. Đoạn số 002 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "003",
+      "speaker": "MINH",
+      "text": "Mỗi câu chuyện được gửi về là một mảnh ghép của những góc khuất chưa từng được hé lộ. Đoạn số 003 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "narrative",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "004",
+      "speaker": "LAN",
+      "text": "Tôi đã giấu kín bí mật này trong suốt mười năm qua. Đoạn số 004 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "emotional",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "005",
+      "speaker": "LAN",
+      "text": "Những ngày tháng sống trong căn nhà ấy, với tôi không khác gì một cơn ác mộng kéo dài. Đoạn số 005 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "restrained",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "006",
+      "speaker": "MINH",
+      "text": "Những lá thư gửi về chương trình luôn mang theo những nỗi niềm chất chứa. Đoạn số 006 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "007",
+      "speaker": "LAN",
+      "text": "Tôi từng nghĩ chỉ cần mình nhẫn nhịn thì mọi sóng gió rồi cũng sẽ qua. Đoạn số 007 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "quiet_confession",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "008",
+      "speaker": "LAN",
+      "text": "[cười] Nhưng tôi đã lầm, sự cam chịu chỉ khiến người ta lấn tới. Đoạn số 008 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "ironic",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "009",
+      "speaker": "MINH",
+      "text": "Đôi khi sự im lặng không phải là vàng, mà là liều thuốc độc gặm nhấm tâm hồn. Đoạn số 009 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "commentary",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "010",
+      "speaker": "MINH",
+      "text": "Chào mừng quý thính giả đang đến với chương trình Sau Cánh Cửa đêm nay. Đoạn số 010 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "011",
+      "speaker": "MINH",
+      "text": "Mỗi câu chuyện được gửi về là một mảnh ghép của những góc khuất chưa từng được hé lộ. Đoạn số 011 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "narrative",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "012",
+      "speaker": "LAN",
+      "text": "Tôi đã giấu kín bí mật này trong suốt mười năm qua. Đoạn số 012 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "emotional",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "013",
+      "speaker": "LAN",
+      "text": "Những ngày tháng sống trong căn nhà ấy, với tôi không khác gì một cơn ác mộng kéo dài. Đoạn số 013 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "restrained",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "014",
+      "speaker": "MINH",
+      "text": "Những lá thư gửi về chương trình luôn mang theo những nỗi niềm chất chứa. Đoạn số 014 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "015",
+      "speaker": "LAN",
+      "text": "Tôi từng nghĩ chỉ cần mình nhẫn nhịn thì mọi sóng gió rồi cũng sẽ qua. Đoạn số 015 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "quiet_confession",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "016",
+      "speaker": "LAN",
+      "text": "[cười] Nhưng tôi đã lầm, sự cam chịu chỉ khiến người ta lấn tới. Đoạn số 016 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "ironic",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "017",
+      "speaker": "MINH",
+      "text": "Đôi khi sự im lặng không phải là vàng, mà là liều thuốc độc gặm nhấm tâm hồn. Đoạn số 017 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "commentary",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "018",
+      "speaker": "MINH",
+      "text": "Chào mừng quý thính giả đang đến với chương trình Sau Cánh Cửa đêm nay. Đoạn số 018 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "019",
+      "speaker": "MINH",
+      "text": "Mỗi câu chuyện được gửi về là một mảnh ghép của những góc khuất chưa từng được hé lộ. Đoạn số 019 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "narrative",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "020",
+      "speaker": "LAN",
+      "text": "Tôi đã giấu kín bí mật này trong suốt mười năm qua. Đoạn số 020 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "emotional",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "021",
+      "speaker": "LAN",
+      "text": "Những ngày tháng sống trong căn nhà ấy, với tôi không khác gì một cơn ác mộng kéo dài. Đoạn số 021 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "restrained",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "022",
+      "speaker": "MINH",
+      "text": "Những lá thư gửi về chương trình luôn mang theo những nỗi niềm chất chứa. Đoạn số 022 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "023",
+      "speaker": "LAN",
+      "text": "Tôi từng nghĩ chỉ cần mình nhẫn nhịn thì mọi sóng gió rồi cũng sẽ qua. Đoạn số 023 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "quiet_confession",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "024",
+      "speaker": "LAN",
+      "text": "[cười] Nhưng tôi đã lầm, sự cam chịu chỉ khiến người ta lấn tới. Đoạn số 024 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "ironic",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "025",
+      "speaker": "MINH",
+      "text": "Đôi khi sự im lặng không phải là vàng, mà là liều thuốc độc gặm nhấm tâm hồn. Đoạn số 025 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "commentary",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "026",
+      "speaker": "MINH",
+      "text": "Chào mừng quý thính giả đang đến với chương trình Sau Cánh Cửa đêm nay. Đoạn số 026 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "027",
+      "speaker": "MINH",
+      "text": "Mỗi câu chuyện được gửi về là một mảnh ghép của những góc khuất chưa từng được hé lộ. Đoạn số 027 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "narrative",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "028",
+      "speaker": "LAN",
+      "text": "Tôi đã giấu kín bí mật này trong suốt mười năm qua. Đoạn số 028 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "emotional",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "029",
+      "speaker": "LAN",
+      "text": "Những ngày tháng sống trong căn nhà ấy, với tôi không khác gì một cơn ác mộng kéo dài. Đoạn số 029 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "restrained",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "030",
+      "speaker": "MINH",
+      "text": "Những lá thư gửi về chương trình luôn mang theo những nỗi niềm chất chứa. Đoạn số 030 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "031",
+      "speaker": "LAN",
+      "text": "Tôi từng nghĩ chỉ cần mình nhẫn nhịn thì mọi sóng gió rồi cũng sẽ qua. Đoạn số 031 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "quiet_confession",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "032",
+      "speaker": "LAN",
+      "text": "[cười] Nhưng tôi đã lầm, sự cam chịu chỉ khiến người ta lấn tới. Đoạn số 032 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "ironic",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "033",
+      "speaker": "MINH",
+      "text": "Đôi khi sự im lặng không phải là vàng, mà là liều thuốc độc gặm nhấm tâm hồn. Đoạn số 033 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "commentary",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "034",
+      "speaker": "MINH",
+      "text": "Chào mừng quý thính giả đang đến với chương trình Sau Cánh Cửa đêm nay. Đoạn số 034 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "035",
+      "speaker": "MINH",
+      "text": "Mỗi câu chuyện được gửi về là một mảnh ghép của những góc khuất chưa từng được hé lộ. Đoạn số 035 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "narrative",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "036",
+      "speaker": "LAN",
+      "text": "Tôi đã giấu kín bí mật này trong suốt mười năm qua. Đoạn số 036 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "emotional",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "037",
+      "speaker": "LAN",
+      "text": "Những ngày tháng sống trong căn nhà ấy, với tôi không khác gì một cơn ác mộng kéo dài. Đoạn số 037 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "restrained",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "038",
+      "speaker": "MINH",
+      "text": "Những lá thư gửi về chương trình luôn mang theo những nỗi niềm chất chứa. Đoạn số 038 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "039",
+      "speaker": "LAN",
+      "text": "Tôi từng nghĩ chỉ cần mình nhẫn nhịn thì mọi sóng gió rồi cũng sẽ qua. Đoạn số 039 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "quiet_confession",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "040",
+      "speaker": "LAN",
+      "text": "[cười] Nhưng tôi đã lầm, sự cam chịu chỉ khiến người ta lấn tới. Đoạn số 040 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "ironic",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "041",
+      "speaker": "MINH",
+      "text": "Đôi khi sự im lặng không phải là vàng, mà là liều thuốc độc gặm nhấm tâm hồn. Đoạn số 041 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "commentary",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "042",
+      "speaker": "MINH",
+      "text": "Chào mừng quý thính giả đang đến với chương trình Sau Cánh Cửa đêm nay. Đoạn số 042 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "043",
+      "speaker": "MINH",
+      "text": "Mỗi câu chuyện được gửi về là một mảnh ghép của những góc khuất chưa từng được hé lộ. Đoạn số 043 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "narrative",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "044",
+      "speaker": "LAN",
+      "text": "Tôi đã giấu kín bí mật này trong suốt mười năm qua. Đoạn số 044 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "emotional",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "045",
+      "speaker": "LAN",
+      "text": "Những ngày tháng sống trong căn nhà ấy, với tôi không khác gì một cơn ác mộng kéo dài. Đoạn số 045 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "restrained",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "046",
+      "speaker": "MINH",
+      "text": "Những lá thư gửi về chương trình luôn mang theo những nỗi niềm chất chứa. Đoạn số 046 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "047",
+      "speaker": "LAN",
+      "text": "Tôi từng nghĩ chỉ cần mình nhẫn nhịn thì mọi sóng gió rồi cũng sẽ qua. Đoạn số 047 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "quiet_confession",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "048",
+      "speaker": "LAN",
+      "text": "[cười] Nhưng tôi đã lầm, sự cam chịu chỉ khiến người ta lấn tới. Đoạn số 048 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "ironic",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "049",
+      "speaker": "MINH",
+      "text": "Đôi khi sự im lặng không phải là vàng, mà là liều thuốc độc gặm nhấm tâm hồn. Đoạn số 049 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "commentary",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "050",
+      "speaker": "MINH",
+      "text": "Chào mừng quý thính giả đang đến với chương trình Sau Cánh Cửa đêm nay. Đoạn số 050 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "051",
+      "speaker": "MINH",
+      "text": "Mỗi câu chuyện được gửi về là một mảnh ghép của những góc khuất chưa từng được hé lộ. Đoạn số 051 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "narrative",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "052",
+      "speaker": "LAN",
+      "text": "Tôi đã giấu kín bí mật này trong suốt mười năm qua. Đoạn số 052 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "emotional",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "053",
+      "speaker": "LAN",
+      "text": "Những ngày tháng sống trong căn nhà ấy, với tôi không khác gì một cơn ác mộng kéo dài. Đoạn số 053 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "restrained",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "054",
+      "speaker": "MINH",
+      "text": "Những lá thư gửi về chương trình luôn mang theo những nỗi niềm chất chứa. Đoạn số 054 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "055",
+      "speaker": "LAN",
+      "text": "Tôi từng nghĩ chỉ cần mình nhẫn nhịn thì mọi sóng gió rồi cũng sẽ qua. Đoạn số 055 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "quiet_confession",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "056",
+      "speaker": "LAN",
+      "text": "[cười] Nhưng tôi đã lầm, sự cam chịu chỉ khiến người ta lấn tới. Đoạn số 056 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "ironic",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "057",
+      "speaker": "MINH",
+      "text": "Đôi khi sự im lặng không phải là vàng, mà là liều thuốc độc gặm nhấm tâm hồn. Đoạn số 057 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "commentary",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "058",
+      "speaker": "MINH",
+      "text": "Chào mừng quý thính giả đang đến với chương trình Sau Cánh Cửa đêm nay. Đoạn số 058 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "059",
+      "speaker": "MINH",
+      "text": "Mỗi câu chuyện được gửi về là một mảnh ghép của những góc khuất chưa từng được hé lộ. Đoạn số 059 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "narrative",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "060",
+      "speaker": "LAN",
+      "text": "Tôi đã giấu kín bí mật này trong suốt mười năm qua. Đoạn số 060 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "emotional",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "061",
+      "speaker": "LAN",
+      "text": "Những ngày tháng sống trong căn nhà ấy, với tôi không khác gì một cơn ác mộng kéo dài. Đoạn số 061 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "restrained",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "062",
+      "speaker": "MINH",
+      "text": "Những lá thư gửi về chương trình luôn mang theo những nỗi niềm chất chứa. Đoạn số 062 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "063",
+      "speaker": "LAN",
+      "text": "Tôi từng nghĩ chỉ cần mình nhẫn nhịn thì mọi sóng gió rồi cũng sẽ qua. Đoạn số 063 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "quiet_confession",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "064",
+      "speaker": "LAN",
+      "text": "[cười] Nhưng tôi đã lầm, sự cam chịu chỉ khiến người ta lấn tới. Đoạn số 064 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "ironic",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "065",
+      "speaker": "MINH",
+      "text": "Đôi khi sự im lặng không phải là vàng, mà là liều thuốc độc gặm nhấm tâm hồn. Đoạn số 065 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "commentary",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "066",
+      "speaker": "MINH",
+      "text": "Chào mừng quý thính giả đang đến với chương trình Sau Cánh Cửa đêm nay. Đoạn số 066 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "067",
+      "speaker": "MINH",
+      "text": "Mỗi câu chuyện được gửi về là một mảnh ghép của những góc khuất chưa từng được hé lộ. Đoạn số 067 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "narrative",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "068",
+      "speaker": "LAN",
+      "text": "Tôi đã giấu kín bí mật này trong suốt mười năm qua. Đoạn số 068 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "emotional",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "069",
+      "speaker": "LAN",
+      "text": "Những ngày tháng sống trong căn nhà ấy, với tôi không khác gì một cơn ác mộng kéo dài. Đoạn số 069 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "restrained",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "070",
+      "speaker": "MINH",
+      "text": "Những lá thư gửi về chương trình luôn mang theo những nỗi niềm chất chứa. Đoạn số 070 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "071",
+      "speaker": "LAN",
+      "text": "Tôi từng nghĩ chỉ cần mình nhẫn nhịn thì mọi sóng gió rồi cũng sẽ qua. Đoạn số 071 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "quiet_confession",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "072",
+      "speaker": "LAN",
+      "text": "[cười] Nhưng tôi đã lầm, sự cam chịu chỉ khiến người ta lấn tới. Đoạn số 072 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "ironic",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "073",
+      "speaker": "MINH",
+      "text": "Đôi khi sự im lặng không phải là vàng, mà là liều thuốc độc gặm nhấm tâm hồn. Đoạn số 073 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "commentary",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "074",
+      "speaker": "MINH",
+      "text": "Chào mừng quý thính giả đang đến với chương trình Sau Cánh Cửa đêm nay. Đoạn số 074 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "075",
+      "speaker": "MINH",
+      "text": "Mỗi câu chuyện được gửi về là một mảnh ghép của những góc khuất chưa từng được hé lộ. Đoạn số 075 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "narrative",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "076",
+      "speaker": "LAN",
+      "text": "Tôi đã giấu kín bí mật này trong suốt mười năm qua. Đoạn số 076 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "emotional",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "077",
+      "speaker": "LAN",
+      "text": "Những ngày tháng sống trong căn nhà ấy, với tôi không khác gì một cơn ác mộng kéo dài. Đoạn số 077 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "restrained",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "078",
+      "speaker": "MINH",
+      "text": "Những lá thư gửi về chương trình luôn mang theo những nỗi niềm chất chứa. Đoạn số 078 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "079",
+      "speaker": "LAN",
+      "text": "Tôi từng nghĩ chỉ cần mình nhẫn nhịn thì mọi sóng gió rồi cũng sẽ qua. Đoạn số 079 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "quiet_confession",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "080",
+      "speaker": "LAN",
+      "text": "[cười] Nhưng tôi đã lầm, sự cam chịu chỉ khiến người ta lấn tới. Đoạn số 080 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "ironic",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "081",
+      "speaker": "MINH",
+      "text": "Đôi khi sự im lặng không phải là vàng, mà là liều thuốc độc gặm nhấm tâm hồn. Đoạn số 081 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "commentary",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "082",
+      "speaker": "MINH",
+      "text": "Chào mừng quý thính giả đang đến với chương trình Sau Cánh Cửa đêm nay. Đoạn số 082 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "083",
+      "speaker": "MINH",
+      "text": "Mỗi câu chuyện được gửi về là một mảnh ghép của những góc khuất chưa từng được hé lộ. Đoạn số 083 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "narrative",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "084",
+      "speaker": "LAN",
+      "text": "Tôi đã giấu kín bí mật này trong suốt mười năm qua. Đoạn số 084 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "emotional",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "085",
+      "speaker": "LAN",
+      "text": "Những ngày tháng sống trong căn nhà ấy, với tôi không khác gì một cơn ác mộng kéo dài. Đoạn số 085 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "restrained",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "086",
+      "speaker": "MINH",
+      "text": "Những lá thư gửi về chương trình luôn mang theo những nỗi niềm chất chứa. Đoạn số 086 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "087",
+      "speaker": "LAN",
+      "text": "Tôi từng nghĩ chỉ cần mình nhẫn nhịn thì mọi sóng gió rồi cũng sẽ qua. Đoạn số 087 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.5,
+      "delivery": "quiet_confession",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "088",
+      "speaker": "LAN",
+      "text": "[cười] Nhưng tôi đã lầm, sự cam chịu chỉ khiến người ta lấn tới. Đoạn số 088 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "ironic",
+      "speed": 0.94,
+      "multi_take": 1
+    },
+    {
+      "id": "089",
+      "speaker": "MINH",
+      "text": "Đôi khi sự im lặng không phải là vàng, mà là liều thuốc độc gặm nhấm tâm hồn. Đoạn số 089 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "commentary",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "090",
+      "speaker": "MINH",
+      "text": "Chào mừng quý thính giả đang đến với chương trình Sau Cánh Cửa đêm nay. Đoạn số 090 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.5,
+      "delivery": "neutral",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "091",
+      "speaker": "MINH",
+      "text": "Mỗi câu chuyện được gửi về là một mảnh ghép của những góc khuất chưa từng được hé lộ. Đoạn số 091 của câu chuyện.",
+      "pause_before": 0.0,
+      "pause_after": 0.3,
+      "delivery": "narrative",
+      "speed": 0.97,
+      "multi_take": 1
+    },
+    {
+      "id": "092",
+      "speaker": "LAN",
+      "text": "Tôi đã giấu kín bí mật này trong suốt mười năm qua. Đoạn số 092 của câu chuyện.",
+      "pause_before": 0.2,
+      "pause_after": 0.3,
+      "delivery": "emotional",
+      "speed": 0.94,
+      "multi_take": 1
+    }
+  ]
+}

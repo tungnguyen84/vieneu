@@ -35,6 +35,7 @@ except ImportError:
     fitz = None
 
 from apps.srt_speech import srt_to_speech
+from apps.ui_production_story import render_production_story_ui, bind_production_story_events
 from apps.user_voices import (
     load_user_voices, save_user_voice, delete_user_voice, list_user_voices, supports_saving,
 )
@@ -2002,70 +2003,75 @@ with gr.Blocks(theme=theme, css=css, title="VieNeu-TTS", head=head_html) as demo
                         )
                         btn_generate = gr.Button("🎵 Bắt đầu", variant="primary", scale=2, interactive=False)
 
-                    # --- TAB 2: MULTI-SPEAKER CONVERSATION ---
+                    # --- TAB 2: MULTI-SPEAKER CONVERSATION & PRODUCTION STORYTELLING ---
                     with gr.Tab("🎭 Hội thoại", id="conv_tab", visible=False) as conv_tab:
-                        conv_script_input = gr.Textbox(
-                            label="Kịch bản hội thoại",
-                            placeholder="Phương: Chào mọi người, mình là Phương...",
-                            lines=10,
-                            elem_classes="script-box",
-                        )
-                        
-                        with gr.Row():
-                            btn_detect_speakers = gr.Button("🔍 Quét nhân vật", size="sm", variant="secondary")
-                            silence_slider = gr.Slider(minimum=0, maximum=3, value=0.3, step=0.1, label="⏱️ Khoảng lặng (giây)")
-
-                        gr.Markdown("### 🎭 Cấu hình giọng đọc")
-                        gr.Markdown("*Nhấn **Quét nhân vật** để tự động phát hiện và ánh xạ giọng đọc. Tải model trước để có danh sách giọng.*")
-
-                        # Pre-build MAX_SPEAKERS speaker slot rows
-                        speaker_name_boxes = []
-                        speaker_voice_dds  = []
-                        speaker_slot_rows  = []
-
-                        for _i in range(MAX_SPEAKERS):
-                            # Mặc định cho 3 nhân vật đầu tiên theo yêu cầu
-                            _default_name = ""
-                            _default_voice = None
-                            _row_visible = False
-                            
-                            if _i == 0:
-                                _default_name = "Phương"
-                                _default_voice = "Ly"
-                                _row_visible = True
-                            elif _i == 1:
-                                _default_name = "Dũng"
-                                _default_voice = "Binh"
-                                _row_visible = True
-                            elif _i == 2:
-                                _default_name = "Hùng"
-                                _default_voice = "Sơn"
-                                _row_visible = True
-                            elif _i < 2:
-                                _default_name = f"Nhân vật {_i+1}"
-                                _row_visible = True
-
-                            with gr.Row(visible=_row_visible) as _row:
-                                _name = gr.Textbox(
-                                    value=_default_name,
-                                    label="👤 Nhân vật",
-                                    interactive=False,
-                                    scale=1,
-                                    min_width=120
+                        with gr.Tabs() as conv_sub_tabs:
+                            with gr.Tab("💬 Hội thoại cơ bản", id="conv_basic_subtab"):
+                                conv_script_input = gr.Textbox(
+                                    label="Kịch bản hội thoại",
+                                    placeholder="Phương: Chào mọi người, mình là Phương...",
+                                    lines=10,
+                                    elem_classes="script-box",
                                 )
-                                _dd = gr.Dropdown(
-                                    choices=PRESET_VOICES_CACHE,
-                                    value=_default_voice,
-                                    label="🎤 Giọng đọc",
-                                    interactive=True,
-                                    scale=3,
-                                    allow_custom_value=True
-                                )
-                            speaker_slot_rows.append(_row)
-                            speaker_name_boxes.append(_name)
-                            speaker_voice_dds.append(_dd)
-                        
-                        btn_generate_conv = gr.Button("🎭 Bắt đầu hội thoại", variant="primary", interactive=False)
+                                
+                                with gr.Row():
+                                    btn_detect_speakers = gr.Button("🔍 Quét nhân vật", size="sm", variant="secondary")
+                                    silence_slider = gr.Slider(minimum=0, maximum=3, value=0.3, step=0.1, label="⏱️ Khoảng lặng (giây)")
+
+                                gr.Markdown("### 🎭 Cấu hình giọng đọc")
+                                gr.Markdown("*Nhấn **Quét nhân vật** để tự động phát hiện và ánh xạ giọng đọc. Tải model trước để có danh sách giọng.*")
+
+                                # Pre-build MAX_SPEAKERS speaker slot rows
+                                speaker_name_boxes = []
+                                speaker_voice_dds  = []
+                                speaker_slot_rows  = []
+
+                                for _i in range(MAX_SPEAKERS):
+                                    # Mặc định cho 3 nhân vật đầu tiên theo yêu cầu
+                                    _default_name = ""
+                                    _default_voice = None
+                                    _row_visible = False
+                                    
+                                    if _i == 0:
+                                        _default_name = "Phương"
+                                        _default_voice = "Ly"
+                                        _row_visible = True
+                                    elif _i == 1:
+                                        _default_name = "Dũng"
+                                        _default_voice = "Binh"
+                                        _row_visible = True
+                                    elif _i == 2:
+                                        _default_name = "Hùng"
+                                        _default_voice = "Sơn"
+                                        _row_visible = True
+                                    elif _i < 2:
+                                        _default_name = f"Nhân vật {_i+1}"
+                                        _row_visible = True
+
+                                    with gr.Row(visible=_row_visible) as _row:
+                                        _name = gr.Textbox(
+                                            value=_default_name,
+                                            label="👤 Nhân vật",
+                                            interactive=False,
+                                            scale=1,
+                                            min_width=120
+                                        )
+                                        _dd = gr.Dropdown(
+                                            choices=PRESET_VOICES_CACHE,
+                                            value=_default_voice,
+                                            label="🎤 Giọng đọc",
+                                            interactive=True,
+                                            scale=3,
+                                            allow_custom_value=True
+                                        )
+                                    speaker_slot_rows.append(_row)
+                                    speaker_name_boxes.append(_name)
+                                    speaker_voice_dds.append(_dd)
+                                
+                                btn_generate_conv = gr.Button("🎭 Bắt đầu hội thoại", variant="primary", interactive=False)
+
+                            with gr.Tab("🎬 Kịch bản JSON (Production Storytelling)", id="conv_story_subtab"):
+                                story_components = render_production_story_ui(lambda: PRESET_VOICES_CACHE)
 
                     # --- TAB 3: SRT → SPEECH (Vietnamese subtitles in, one audio out) ---
                     with gr.Tab("📝 SRT", id="srt_tab") as srt_tab:
@@ -2425,6 +2431,14 @@ with gr.Blocks(theme=theme, css=css, title="VieNeu-TTS", head=head_html) as demo
         btn_generate_conv.click(lambda: gr.update(visible=False), outputs=[download_btn])
         btn_generate_conv.click(lambda: gr.update(interactive=True), outputs=btn_stop)
         conv_gen_event.then(lambda: gr.update(interactive=False), outputs=btn_stop)
+
+        # --- Production Storytelling JSON Event Handlers ---
+        bind_production_story_events(
+            story_components,
+            get_tts_engine_fn=lambda: tts,
+            get_available_voices_fn=lambda: PRESET_VOICES_CACHE,
+            stop_event=_STOP_EVENT
+        )
 
         # --- Auto-adjust Temperature on Tab Switch ---
         conv_tab.select(
