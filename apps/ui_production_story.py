@@ -305,7 +305,7 @@ def handle_import_json_data(json_content_or_file, available_voices: list):
             existing_ids = {v[1] if isinstance(v, (tuple, list)) else v for v in all_voices}
             for item in available_voices:
                 vid = item[1] if isinstance(item, (tuple, list)) else item
-                if vid not in all_ids:
+                if vid not in existing_ids:
                     all_voices.append(item)
                     existing_ids.add(vid)
 
@@ -789,8 +789,17 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         log_lines.append(summary_msg)
         yield ("\n".join(log_lines[-10:]), summary_msg, rows, runtime_state)
 
+    def _on_generate_selected(df, s, c_m, p_d, r_s):
+        yield from _run_generation(df, s, c_m, p_d, r_s, mode="selected")
+
+    def _on_generate_changed(df, s, c_m, p_d, r_s):
+        yield from _run_generation(df, s, c_m, p_d, r_s, mode="changed")
+
+    def _on_retry_failed(df, s, c_m, p_d, r_s):
+        yield from _run_generation(df, s, c_m, p_d, r_s, mode="failed")
+
     c["btn_generate_story"].click(
-        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, mode="selected"),
+        fn=_on_generate_selected,
         inputs=[
             c["story_segments_df"],
             c["story_segments_state"],
@@ -807,7 +816,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     )
 
     c["btn_generate_changed"].click(
-        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, mode="changed"),
+        fn=_on_generate_changed,
         inputs=[
             c["story_segments_df"],
             c["story_segments_state"],
@@ -824,7 +833,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     )
 
     c["btn_retry_failed"].click(
-        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, mode="failed"),
+        fn=_on_retry_failed,
         inputs=[
             c["story_segments_df"],
             c["story_segments_state"],
