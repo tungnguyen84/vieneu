@@ -24,7 +24,10 @@ from apps.production_story import (
     select_take_for_segment,
     get_take_audio_paths,
     compute_segment_hash,
-    sanitize_slug
+    sanitize_slug,
+    get_all_available_voices,
+    generate_character_preview_voice,
+    invalidate_cache_for_speakers
 )
 
 MAX_STORY_CHARACTERS = 8
@@ -36,9 +39,9 @@ def render_production_story_ui(preset_voices_cache_getter):
     """
     gr.Markdown(
         "## 🎬 Production Storytelling Script (JSON Engine)\n"
-        "Nhập kịch bản JSON cấu trúc cao cho video dài tập: Quản lý nhân vật, sinh độc lập từng segment, "
-        "hỗ trợ multi-take, post-process tốc độ (FFmpeg), chèn khoảng lặng chuẩn xác chống double pause, "
-        "và xuất Master Audio chuẩn broadcast (-14 LUFS, -1 dBTP)."
+        "Quy trình sản xuất âm thanh chuyên nghiệp cho video dài tập: Quản lý giọng nhân vật trực quan, "
+        "nghe thử từng giọng, sinh độc lập từng segment, hỗ trợ multi-take, post-process tốc độ (FFmpeg), "
+        "chèn khoảng lặng chuẩn xác chống double pause, và xuất Master Audio chuẩn broadcast (-14 LUFS, -1 dBTP)."
     )
 
     # 1. Action Row
@@ -52,41 +55,66 @@ def render_production_story_ui(preset_voices_cache_getter):
     story_project_info_md = gr.Markdown("*(Chưa tải kịch bản JSON. Vui lòng nhấn Import hoặc Nạp kịch bản mẫu.)*")
     story_warnings_md = gr.Markdown(visible=False)
 
-    # 3. Characters Mapping Accordion
-    with gr.Accordion("👥 1. Quản lý Nhân vật & Ánh xạ Giọng đọc (Character Mapping)", open=True) as acc_chars:
-        gr.Markdown("*Tự động phát hiện từ trường `characters` trong JSON. Nếu giọng không tồn tại, vui lòng chọn giọng thay thế bên dưới.*")
-        char_rows = []
+    # Lấy toàn bộ 25 preset voices hiện có
+    initial_available_voices = get_all_available_voices()
+
+    # 3. Characters Mapping Section (Mở mặc định, giao diện Card trực quan)
+    with gr.Accordion("🎭 1. Giọng nhân vật (Character Voice Mapping)", open=True) as acc_chars:
+        gr.Markdown(
+            "Tự động phát hiện danh sách nhân vật từ JSON kịch bản. Bạn có thể tự do thay đổi giọng đọc và tốc độ "
+            "cho bất kỳ nhân vật nào bằng dropdown bên dưới, sau đó bấm **'✓ Áp dụng giọng cho kịch bản'**."
+        )
+
+        char_groups = []
+        char_headers = []
         char_id_labels = []
         char_name_boxes = []
+        char_role_boxes = []
         char_voice_dds = []
         char_speed_sliders = []
         char_status_labels = []
+        char_preview_btns = []
+        char_preview_audios = []
 
         for idx in range(MAX_STORY_CHARACTERS):
-            with gr.Row(visible=False) as r:
-                c_id = gr.Textbox(label="Mã ID", interactive=False, scale=1, min_width=80)
-                c_name = gr.Textbox(label="Tên hiển thị / Vai trò", interactive=False, scale=2, min_width=130)
-                c_voice = gr.Dropdown(
-                    choices=preset_voices_cache_getter() or [],
-                    label="Giọng đọc VieNeu",
-                    interactive=True,
-                    scale=3,
-                    allow_custom_value=True
-                )
-                c_speed = gr.Slider(minimum=0.88, maximum=1.05, value=1.0, step=0.01, label="Tốc độ mặc định", scale=2)
-                c_status = gr.Textbox(label="Trạng thái", interactive=False, scale=2, min_width=120)
+            with gr.Group(visible=False) as grp:
+                header_md = gr.Markdown(f"### 👤 Nhân vật #{idx+1}")
+                with gr.Row():
+                    c_id = gr.Textbox(label="Mã ID", interactive=False, scale=1, min_width=80)
+                    c_name = gr.Textbox(label="Tên hiển thị", interactive=False, scale=2, min_width=120)
+                    c_role = gr.Textbox(label="Vai trò / Ghi chú", interactive=False, scale=2, min_width=140)
+                    c_status = gr.Textbox(label="Trạng thái nhận diện", interactive=False, scale=2, min_width=120)
 
-            char_rows.append(r)
+                with gr.Row():
+                    c_voice = gr.Dropdown(
+                        choices=initial_available_voices,
+                        label="Giọng đọc VieNeu (Chọn từ toàn bộ 25 giọng)",
+                        interactive=True,
+                        scale=3,
+                        allow_custom_value=False
+                    )
+                    c_speed = gr.Slider(minimum=0.88, maximum=1.05, value=1.0, step=0.01, label="Tốc độ mặc định", scale=2)
+
+                with gr.Row():
+                    c_prev_btn = gr.Button("▶ Nghe thử giọng", size="sm", variant="secondary", scale=1)
+                    c_prev_audio = gr.Audio(label="Bản nghe thử", interactive=False, scale=3)
+
+            char_groups.append(grp)
+            char_headers.append(header_md)
             char_id_labels.append(c_id)
             char_name_boxes.append(c_name)
+            char_role_boxes.append(c_role)
             char_voice_dds.append(c_voice)
             char_speed_sliders.append(c_speed)
             char_status_labels.append(c_status)
+            char_preview_btns.append(c_prev_btn)
+            char_preview_audios.append(c_prev_audio)
 
         with gr.Row():
-            btn_apply_char_mapping = gr.Button("✅ Áp dụng thay đổi giọng & tốc độ vào kịch bản", size="sm", variant="secondary")
+            btn_apply_char_mapping = gr.Button("✓ Áp dụng giọng cho kịch bản", size="lg", variant="primary")
+        apply_status_md = gr.Markdown("")
 
-    # 4. Segments Table Accordion
+    # 4. Segments Table Section
     with gr.Accordion("📜 2. Bảng Phân đoạn Kịch bản (Segment Editor & Table)", open=True):
         with gr.Row():
             btn_select_all = gr.Button("Chọn tất cả", size="sm")
@@ -95,28 +123,30 @@ def render_production_story_ui(preset_voices_cache_getter):
             btn_deselect_all = gr.Button("Bỏ chọn tất cả", size="sm")
 
         df_headers = [
-            "Chọn", "ID", "Nhân vật", "Lời thoại (Text)", "Giọng đọc",
+            "Chọn", "ID", "Nhân vật", "Lời thoại (Text)", "Giọng áp dụng", "Ghi đè giọng (Override Voice)",
             "Sắc thái", "Tốc độ", "Nghỉ trước (s)", "Nghỉ sau (s)", "Takes", "Trạng thái", "Take đã chọn"
         ]
         story_segments_df = gr.DataFrame(
             headers=df_headers,
-            datatype=["bool", "str", "str", "str", "str", "str", "number", "number", "number", "number", "str", "str"],
+            datatype=["bool", "str", "str", "str", "str", "str", "str", "number", "number", "number", "number", "str", "str"],
             row_count=(1, "dynamic"),
             interactive=True,
             wrap=True
         )
 
     # 5. Generation Controls & Progress
-    with gr.Row():
-        btn_generate_story = gr.Button("⚡ Sinh TTS các phân đoạn đã chọn", variant="primary", scale=3)
-        btn_retry_failed = gr.Button("🔄 Sinh lại phân đoạn lỗi", variant="secondary", scale=2)
-        btn_stop_story = gr.Button("⏹️ Dừng lại", variant="stop", scale=1)
+    with gr.Accordion("⚡ 3. Sinh âm thanh (TTS Generation)", open=True):
+        with gr.Row():
+            btn_generate_story = gr.Button("⚡ Sinh TTS các phân đoạn đã chọn", variant="primary", scale=3)
+            btn_generate_changed = gr.Button("⚡ Sinh các phân đoạn thiếu / thay đổi", variant="secondary", scale=2)
+            btn_retry_failed = gr.Button("🔄 Sinh lại phân đoạn lỗi", variant="secondary", scale=2)
+            btn_stop_story = gr.Button("⏹️ Dừng lại", variant="stop", scale=1)
 
-    story_progress_md = gr.Markdown("**Trạng thái:** Sẵn sàng.")
-    story_log_output = gr.Textbox(label="Nhật ký tiến trình (Realtime Log)", lines=5, interactive=False)
+        story_progress_md = gr.Markdown("**Trạng thái:** Sẵn sàng.")
+        story_log_output = gr.Textbox(label="Nhật ký tiến trình (Realtime Log)", lines=5, interactive=False)
 
     # 6. Audio Preview & Take Selection
-    with gr.Accordion("🎧 3. Nghe thử & Chọn Take (Take Preview & Selection)", open=True):
+    with gr.Accordion("🎧 4. Nghe thử & Chọn Take (Take Preview & Selection)", open=True):
         with gr.Row():
             preview_seg_dropdown = gr.Dropdown(label="Chọn phân đoạn để nghe các take", choices=[], interactive=True, scale=3)
             btn_refresh_preview = gr.Button("🔄 Tải lại danh sách", size="sm", scale=1)
@@ -138,7 +168,7 @@ def render_production_story_ui(preset_voices_cache_getter):
         take_select_status_md = gr.Markdown("")
 
     # 7. Master Audio Assembly
-    with gr.Accordion("🎛️ 4. Ghép & Xuất Master Audio (Timeline & Normalization)", open=True):
+    with gr.Accordion("🎛️ 5. Ghép & Xuất Master Audio (Timeline & Normalization)", open=True):
         with gr.Row():
             gap_rule_radio = gr.Radio(
                 choices=[("Khuyến nghị: max(pause_after, next_pause_before)", "max"), ("Cộng dồn: pause_after + next_pause_before", "sum")],
@@ -177,19 +207,25 @@ def render_production_story_ui(preset_voices_cache_getter):
         "file_export_download": file_export_download,
         "story_project_info_md": story_project_info_md,
         "story_warnings_md": story_warnings_md,
-        "char_rows": char_rows,
+        "char_groups": char_groups,
+        "char_headers": char_headers,
         "char_id_labels": char_id_labels,
         "char_name_boxes": char_name_boxes,
+        "char_role_boxes": char_role_boxes,
         "char_voice_dds": char_voice_dds,
         "char_speed_sliders": char_speed_sliders,
         "char_status_labels": char_status_labels,
+        "char_preview_btns": char_preview_btns,
+        "char_preview_audios": char_preview_audios,
         "btn_apply_char_mapping": btn_apply_char_mapping,
+        "apply_status_md": apply_status_md,
         "btn_select_all": btn_select_all,
         "btn_select_failed": btn_select_failed,
         "btn_select_multitake": btn_select_multitake,
         "btn_deselect_all": btn_deselect_all,
         "story_segments_df": story_segments_df,
         "btn_generate_story": btn_generate_story,
+        "btn_generate_changed": btn_generate_changed,
         "btn_retry_failed": btn_retry_failed,
         "btn_stop_story": btn_stop_story,
         "story_progress_md": story_progress_md,
@@ -226,15 +262,24 @@ def render_production_story_ui(preset_voices_cache_getter):
 
 def handle_import_json_data(json_content_or_file, available_voices: list):
     """Xử lý nạp dữ liệu JSON và cập nhật trạng thái UI."""
+    empty_returns = (
+        "⚠️ Vui lòng chọn file JSON kịch bản.",
+        gr.update(visible=False),
+        *[gr.update(visible=False)] * MAX_STORY_CHARACTERS, # char_groups
+        *[gr.update(value="")] * MAX_STORY_CHARACTERS,     # char_headers
+        *[gr.update(value="")] * MAX_STORY_CHARACTERS,     # char_id
+        *[gr.update(value="")] * MAX_STORY_CHARACTERS,     # char_name
+        *[gr.update(value="")] * MAX_STORY_CHARACTERS,     # char_role
+        *[gr.update(value=None)] * MAX_STORY_CHARACTERS,   # char_voice
+        *[gr.update(value=1.0)] * MAX_STORY_CHARACTERS,    # char_speed
+        *[gr.update(value="")] * MAX_STORY_CHARACTERS,     # char_status
+        [],
+        gr.update(choices=[]),
+        None, {}, {}, [], None, {}
+    )
+
     if not json_content_or_file:
-        return (
-            "⚠️ Vui lòng chọn file JSON kịch bản.",
-            gr.update(visible=False),
-            *[gr.update(visible=False)] * (MAX_STORY_CHARACTERS * 5),
-            [],
-            gr.update(choices=[]),
-            None, {}, {}, [], None, {}
-        )
+        return empty_returns
 
     try:
         if hasattr(json_content_or_file, "name"):
@@ -252,12 +297,24 @@ def handle_import_json_data(json_content_or_file, available_voices: list):
         else:
             raise ValueError("Định dạng dữ liệu không hỗ trợ.")
 
-        is_valid, err, proj_info, chars_map, warnings, stats = validate_story_json(data, available_voices)
+        # Lấy đầy đủ 25 voices
+        all_voices = get_all_available_voices()
+        if not all_voices:
+            all_voices = available_voices
+
+        is_valid, err, proj_info, chars_map, warnings, stats = validate_story_json(data, all_voices)
         if not is_valid:
             return (
                 f"❌ Lỗi cấu trúc JSON: {err}",
                 gr.update(visible=False),
-                *[gr.update(visible=False)] * (MAX_STORY_CHARACTERS * 5),
+                *[gr.update(visible=False)] * MAX_STORY_CHARACTERS,
+                *[gr.update(value="")] * MAX_STORY_CHARACTERS,
+                *[gr.update(value="")] * MAX_STORY_CHARACTERS,
+                *[gr.update(value="")] * MAX_STORY_CHARACTERS,
+                *[gr.update(value="")] * MAX_STORY_CHARACTERS,
+                *[gr.update(value=None)] * MAX_STORY_CHARACTERS,
+                *[gr.update(value=1.0)] * MAX_STORY_CHARACTERS,
+                *[gr.update(value="")] * MAX_STORY_CHARACTERS,
                 [],
                 gr.update(choices=[]),
                 None, {}, {}, [], None, {}
@@ -289,28 +346,40 @@ def handle_import_json_data(json_content_or_file, available_voices: list):
         warn_md_content = "\n\n".join(warnings) if warnings else ""
         warn_md_update = gr.update(value=warn_md_content, visible=bool(warn_md_content))
 
-        # Cập nhật danh sách nhân vật
+        # Cập nhật danh sách nhân vật vào các Cards
         char_list = list(chars_map.values())
-        char_ui_updates = []
+        group_updates = []
+        header_updates = []
+        id_updates = []
+        name_updates = []
+        role_updates = []
+        voice_updates = []
+        speed_updates = []
+        status_updates = []
+
         for i in range(MAX_STORY_CHARACTERS):
             if i < len(char_list):
                 c = char_list[i]
-                status_txt = "✅ Khớp" if c["match_status"] == "EXACT" else ("ℹ️ Ánh xạ" if "ALIASED" in c["match_status"] else "⚠️ Chưa khớp")
-                char_ui_updates.extend([
-                    gr.update(value=c["char_id"], visible=True),
-                    gr.update(value=f"{c['display_name']} ({c['role']})" if c['role'] else c['display_name'], visible=True),
-                    gr.update(value=c["voice"], visible=True),
-                    gr.update(value=c["default_speed"], visible=True),
-                    gr.update(value=status_txt, visible=True),
-                ])
+                status_txt = "✅ Tự động khớp" if c["match_status"] == "EXACT" else ("ℹ️ Ánh xạ alias" if "ALIASED" in c["match_status"] else "⚠️ Chưa khớp (Vui lòng chọn)")
+                hdr_txt = f"### 🎭 Nhân vật: **{c['char_id']}** — *{c['display_name']}* ({c['role'] or 'Nhân vật'})"
+                
+                group_updates.append(gr.update(visible=True))
+                header_updates.append(gr.update(value=hdr_txt))
+                id_updates.append(gr.update(value=c["char_id"]))
+                name_updates.append(gr.update(value=c["display_name"]))
+                role_updates.append(gr.update(value=c["role"] or "Không có ghi chú"))
+                voice_updates.append(gr.update(choices=all_voices, value=c["voice"] or None))
+                speed_updates.append(gr.update(value=c["default_speed"]))
+                status_updates.append(gr.update(value=status_txt))
             else:
-                char_ui_updates.extend([
-                    gr.update(value="", visible=False),
-                    gr.update(value="", visible=False),
-                    gr.update(value=None, visible=False),
-                    gr.update(value=1.0, visible=False),
-                    gr.update(value="", visible=False),
-                ])
+                group_updates.append(gr.update(visible=False))
+                header_updates.append(gr.update(value=""))
+                id_updates.append(gr.update(value=""))
+                name_updates.append(gr.update(value=""))
+                role_updates.append(gr.update(value=""))
+                voice_updates.append(gr.update(choices=all_voices, value=None))
+                speed_updates.append(gr.update(value=1.0))
+                status_updates.append(gr.update(value=""))
 
         # DataFrame segments
         segments = data.get("segments", [])
@@ -323,7 +392,14 @@ def handle_import_json_data(json_content_or_file, available_voices: list):
         return (
             info_md,
             warn_md_update,
-            *char_ui_updates,
+            *group_updates,
+            *header_updates,
+            *id_updates,
+            *name_updates,
+            *role_updates,
+            *voice_updates,
+            *speed_updates,
+            *status_updates,
             df_rows,
             preview_dd_update,
             data,
@@ -337,14 +413,7 @@ def handle_import_json_data(json_content_or_file, available_voices: list):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return (
-            f"❌ Đã xảy ra lỗi khi đọc file JSON: {str(e)}",
-            gr.update(visible=False),
-            *[gr.update(visible=False)] * (MAX_STORY_CHARACTERS * 5),
-            [],
-            gr.update(choices=[]),
-            None, {}, {}, [], None, {}
-        )
+        return empty_returns
 
 
 def bind_production_story_events(components: dict, get_tts_engine_fn, get_available_voices_fn, stop_event):
@@ -353,25 +422,18 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     """
     c = components
 
-    # 1. Import JSON
-    char_flat_outputs = []
-    for i in range(MAX_STORY_CHARACTERS):
-        char_flat_outputs.extend([
-            c["char_id_labels"][i],
-            c["char_name_boxes"][i],
-            c["char_voice_dds"][i],
-            c["char_speed_sliders"][i],
-            c["char_status_labels"][i]
-        ])
-
-    def _on_import(file):
-        voices = get_available_voices_fn()
-        return handle_import_json_data(file, voices)
-
+    # 1. Output components list for Import
     import_outputs = [
         c["story_project_info_md"],
         c["story_warnings_md"],
-        *char_flat_outputs,
+        *c["char_groups"],
+        *c["char_headers"],
+        *c["char_id_labels"],
+        *c["char_name_boxes"],
+        *c["char_role_boxes"],
+        *c["char_voice_dds"],
+        *c["char_speed_sliders"],
+        *c["char_status_labels"],
         c["story_segments_df"],
         c["preview_seg_dropdown"],
         c["story_raw_json_state"],
@@ -381,6 +443,10 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         c["story_project_dir_state"],
         c["story_runtime_state"]
     ]
+
+    def _on_import(file):
+        voices = get_available_voices_fn()
+        return handle_import_json_data(file, voices)
 
     c["btn_import_json"].upload(
         fn=_on_import,
@@ -392,14 +458,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     def _on_load_sample():
         sample_path = "tests/test_pilot_story.json"
         if not os.path.exists(sample_path):
-            return (
-                "❌ Không tìm thấy file tests/test_pilot_story.json",
-                gr.update(visible=False),
-                *[gr.update(visible=False)] * (MAX_STORY_CHARACTERS * 5),
-                [],
-                gr.update(choices=[]),
-                None, {}, {}, [], None, {}
-            )
+            sample_path = str(Path(__file__).parent.parent / "tests" / "test_pilot_story.json")
         voices = get_available_voices_fn()
         return handle_import_json_data(sample_path, voices)
 
@@ -409,40 +468,109 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         outputs=import_outputs
     )
 
-    # 3. Apply Character Mapping
-    def _on_apply_char_mapping(chars_map, segments, runtime_state, *char_inputs):
-        if not chars_map:
-            return gr.update(), chars_map
+    # 3. Preview Voice for each character card
+    for i in range(MAX_STORY_CHARACTERS):
+        def _make_preview_handler(slot_idx):
+            def _handler(project_dir_str, cid, cname, crole, cvoice, cspeed):
+                tts = get_tts_engine_fn()
+                if tts is None:
+                    return None
+                if not project_dir_str:
+                    project_dir_str = "projects/temp_preview"
+                project_dir = Path(project_dir_str)
+                ok, msg, path = generate_character_preview_voice(
+                    tts_engine=tts,
+                    project_dir=project_dir,
+                    char_id=cid or f"char_{slot_idx}",
+                    display_name=cname or cid,
+                    role=crole or "",
+                    voice=cvoice,
+                    speed=float(cspeed or 1.0)
+                )
+                return path if ok else None
+            return _handler
 
-        new_map = dict(chars_map)
+        c["char_preview_btns"][i].click(
+            fn=_make_preview_handler(i),
+            inputs=[
+                c["story_project_dir_state"],
+                c["char_id_labels"][i],
+                c["char_name_boxes"][i],
+                c["char_role_boxes"][i],
+                c["char_voice_dds"][i],
+                c["char_speed_sliders"][i]
+            ],
+            outputs=[c["char_preview_audios"][i]]
+        )
+
+    # 4. Apply Character Voice Mapping with SELECTIVE Cache Invalidation
+    apply_inputs = [
+        c["story_project_dir_state"],
+        c["story_characters_state"],
+        c["story_segments_state"],
+        c["story_runtime_state"],
+        *c["char_id_labels"],
+        *c["char_voice_dds"],
+        *c["char_speed_sliders"]
+    ]
+
+    def _on_apply_voice_changes(project_dir_str, old_chars_map, segments, runtime_state, *args):
+        if not old_chars_map or not project_dir_str:
+            return gr.update(), old_chars_map, runtime_state, "⚠️ Chưa có dữ liệu kịch bản."
+
+        project_dir = Path(project_dir_str)
+        new_map = dict(old_chars_map)
         char_keys = list(new_map.keys())
 
-        # char_inputs theo thứ tự id, name, voice, speed, status cho mỗi nhân vật
-        for i in range(min(len(char_keys), MAX_STORY_CHARACTERS)):
-            idx_base = i * 5
-            cid = char_inputs[idx_base]
-            voice = char_inputs[idx_base + 2]
-            speed = char_inputs[idx_base + 3]
+        # args: MAX_STORY_CHARACTERS ids, then voices, then speeds
+        n = MAX_STORY_CHARACTERS
+        ids = args[:n]
+        voices = args[n:2*n]
+        speeds = args[2*n:3*n]
+
+        changed_speakers = set()
+        change_logs = []
+
+        for j in range(min(len(char_keys), n)):
+            cid = ids[j]
+            v = voices[j]
+            s = speeds[j]
             if cid in new_map:
-                new_map[cid]["voice"] = voice
-                new_map[cid]["default_speed"] = speed
+                old_v = new_map[cid].get("voice", "")
+                old_s = new_map[cid].get("default_speed", 1.0)
+                if v and (v != old_v or abs(float(s or 1.0) - float(old_s or 1.0)) > 0.005):
+                    changed_speakers.add(cid)
+                    change_logs.append(f"**{cid}**: {old_v} → **{v}** (Speed: {s})")
+                new_map[cid]["voice"] = v
+                new_map[cid]["default_speed"] = float(s or 1.0)
+
+        # Invalidate cache CHỈ cho các segment thuộc changed_speakers
+        invalidated_count = 0
+        if changed_speakers:
+            invalidated_count = invalidate_cache_for_speakers(project_dir, runtime_state, changed_speakers)
 
         # Cập nhật lại DataFrame
         new_df = build_segments_dataframe(segments, new_map, runtime_state)
-        return new_df, new_map
+
+        if changed_speakers:
+            msg = (
+                f"✅ **Đã áp dụng thay đổi giọng!**\n"
+                f"- Các nhân vật thay đổi: {', '.join(change_logs)}\n"
+                f"- **{invalidated_count} phân đoạn** thuộc nhân vật thay đổi đã được đánh dấu cần sinh lại (`NEEDS_REGENERATE`).\n"
+                f"- Toàn bộ các phân đoạn của nhân vật khác được **GIỮ NGUYÊN HOÀN TOÀN** trong Cache."
+            )
+        else:
+            msg = "ℹ️ Không có thay đổi nào về giọng hoặc tốc độ so với cấu hình hiện tại."
+
+        return new_df, new_map, runtime_state, msg
 
     c["btn_apply_char_mapping"].click(
-        fn=_on_apply_char_mapping,
-        inputs=[
-            c["story_characters_state"],
-            c["story_segments_state"],
-            c["story_runtime_state"],
-            *char_flat_outputs
-        ],
-        outputs=[c["story_segments_df"], c["story_characters_state"]]
+        fn=_on_apply_voice_changes,
+        inputs=apply_inputs,
+        outputs=[c["story_segments_df"], c["story_characters_state"], c["story_runtime_state"], c["apply_status_md"]]
     )
 
-    # 4. Checkbox Selection Helpers
+    # 5. Checkbox Selection Helpers
     def _toggle_all(df_data, checked: bool):
         if df_data is None:
             return []
@@ -456,7 +584,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             return []
         rows = df_data.values.tolist() if hasattr(df_data, "values") else list(df_data)
         for r in rows:
-            r[0] = (r[10] == "FAILED")
+            r[0] = (r[11] in ("FAILED", "NEEDS_REGENERATE"))
         return rows
 
     def _select_multitake(df_data):
@@ -464,7 +592,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             return []
         rows = df_data.values.tolist() if hasattr(df_data, "values") else list(df_data)
         for r in rows:
-            r[0] = (int(r[9]) > 1)
+            r[0] = (int(r[10]) > 1)
         return rows
 
     c["btn_select_all"].click(lambda df: _toggle_all(df, True), inputs=[c["story_segments_df"]], outputs=[c["story_segments_df"]])
@@ -472,11 +600,17 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     c["btn_select_failed"].click(fn=_select_failed, inputs=[c["story_segments_df"]], outputs=[c["story_segments_df"]])
     c["btn_select_multitake"].click(fn=_select_multitake, inputs=[c["story_segments_df"]], outputs=[c["story_segments_df"]])
 
-    # 5. Stop Generation
+    # 6. Stop Generation
     c["btn_stop_story"].click(lambda: stop_event.set(), inputs=[], outputs=[])
 
-    # 6. Generator: TTS Generation (Sequential with Cache, Resume, & Multi-take)
-    def _run_generation(df_data, segments, chars_map, project_dir_str, runtime_state, is_retry_failed_only=False):
+    # 7. Generator: TTS Generation (Sequential with Cache, Resume, Multi-take & Override)
+    def _run_generation(df_data, segments, chars_map, project_dir_str, runtime_state, mode="selected"):
+        """
+        mode:
+        - 'selected': sinh các segment có checkbox = True
+        - 'changed': chỉ sinh các segment PENDING, NEEDS_REGENERATE hoặc FAILED
+        - 'failed': chỉ sinh các segment FAILED
+        """
         tts = get_tts_engine_fn()
         if tts is None:
             yield (
@@ -500,7 +634,6 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         stop_event.clear()
 
         rows = df_data.values.tolist() if hasattr(df_data, "values") else list(df_data)
-        # Tạo map id -> row index
         id_to_row_idx = {str(r[1]).zfill(3): idx for idx, r in enumerate(rows)}
 
         # Xác định danh sách cần sinh
@@ -511,26 +644,36 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             if row_idx is None:
                 continue
             is_selected = bool(rows[row_idx][0])
-            status = rows[row_idx][10]
+            status = rows[row_idx][11]
 
-            if is_retry_failed_only:
+            # Cập nhật override voice nếu user sửa trong dataframe
+            override_val = str(rows[row_idx][5] or "").strip()
+            if override_val and override_val not in ("Use Character Voice", "Kế thừa (Use Character Voice)", "None"):
+                seg["voice_override"] = override_val
+            else:
+                seg.pop("voice_override", None)
+
+            if mode == "changed":
+                if status in ("PENDING", "NEEDS_REGENERATE", "FAILED"):
+                    targets.append(seg)
+            elif mode == "failed":
                 if status == "FAILED":
                     targets.append(seg)
-            else:
+            else: # "selected"
                 if is_selected:
                     targets.append(seg)
 
         total_targets = len(targets)
         if total_targets == 0:
             yield (
-                "⚠️ Không có phân đoạn nào được chọn để sinh.",
+                "⚠️ Không có phân đoạn nào phù hợp với chế độ đã chọn.",
                 "Không có tác vụ.",
                 rows,
                 runtime_state
             )
             return
 
-        log_lines = [f"🚀 Bắt đầu sinh TTS cho {total_targets} phân đoạn..."]
+        log_lines = [f"🚀 Bắt đầu sinh TTS cho {total_targets} phân đoạn (Chế độ: {mode})..."]
         yield ("\n".join(log_lines), f"⏳ Chuẩn bị sinh {total_targets} phân đoạn...", rows, runtime_state)
 
         success_count = 0
@@ -546,8 +689,11 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             seg_id = str(seg.get("id", "")).zfill(3)
             speaker = seg.get("speaker", "UNKNOWN")
             char_cfg = chars_map.get(speaker, {})
-            voice = char_cfg.get("voice", "")
-            current_hash = compute_segment_hash(seg, voice, "v3turbo")
+            
+            # Tính toán voice sau override
+            voice_override = seg.get("voice_override", "")
+            effective_voice = voice_override if (voice_override and voice_override != "Kế thừa (Use Character Voice)") else char_cfg.get("voice", "")
+            current_hash = compute_segment_hash(seg, effective_voice, "v3turbo")
 
             row_idx = id_to_row_idx.get(seg_id)
 
@@ -555,7 +701,6 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             cached_seg = runtime_state.get("segments", {}).get(seg_id)
             is_cached = False
             if cached_seg and cached_seg.get("hash") == current_hash and cached_seg.get("status") == "COMPLETED":
-                # Kiểm tra file selected và file raw tồn tại
                 sel_p = project_dir / (cached_seg.get("selected_file") or f"selected/{seg_id}.wav")
                 if sel_p.exists():
                     is_cached = True
@@ -563,7 +708,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             if is_cached:
                 cached_count += 1
                 if row_idx is not None:
-                    rows[row_idx][10] = "CACHED"
+                    rows[row_idx][11] = "CACHED"
                 log_lines.append(f"⚡ [{idx+1}/{total_targets}] Phân đoạn {seg_id}_{speaker}: Đã có trong Cache (Bỏ qua).")
                 yield (
                     "\n".join(log_lines[-10:]),
@@ -579,8 +724,8 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             remaining_segs = total_targets - (idx + 1)
             eta_sec = int(avg_per_seg * remaining_segs)
 
-            progress_msg = f"⏳ Đang sinh {idx+1}/{total_targets} | Phân đoạn: **{seg_id}_{speaker}** | Đã chạy: {int(elapsed)}s | Còn lại: ~{eta_sec}s"
-            log_lines.append(f"🎙️ [{idx+1}/{total_targets}] Đang sinh {seg_id}_{speaker} (Takes: {seg.get('multi_take', 1)}, Speed: {seg.get('speed', 1.0)})...")
+            progress_msg = f"⏳ Đang sinh {idx+1}/{total_targets} | Phân đoạn: **{seg_id}_{speaker}** | Giọng: **{effective_voice}** | Đã chạy: {int(elapsed)}s | Còn lại: ~{eta_sec}s"
+            log_lines.append(f"🎙️ [{idx+1}/{total_targets}] Đang sinh {seg_id}_{speaker} (Giọng: {effective_voice}, Takes: {seg.get('multi_take', 1)}, Speed: {seg.get('speed', char_cfg.get('default_speed', 1.0))})...")
             yield ("\n".join(log_lines[-10:]), progress_msg, rows, runtime_state)
 
             success, msg, seg_result = generate_single_segment_takes(
@@ -597,8 +742,9 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
                 runtime_state.setdefault("segments", {})[seg_id] = seg_result
                 save_project_state(project_dir, runtime_state)
                 if row_idx is not None:
-                    rows[row_idx][10] = "COMPLETED"
-                    rows[row_idx][11] = f"Take {seg_result.get('selected_take', 1)}"
+                    rows[row_idx][4] = effective_voice
+                    rows[row_idx][11] = "COMPLETED"
+                    rows[row_idx][12] = f"Take {seg_result.get('selected_take', 1)}"
                 log_lines.append(f"  ✅ Phân đoạn {seg_id}: Hoàn tất ({len(seg_result.get('takes', {}))} takes).")
             else:
                 failed_count += 1
@@ -609,7 +755,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
                 }
                 save_project_state(project_dir, runtime_state)
                 if row_idx is not None:
-                    rows[row_idx][10] = "FAILED"
+                    rows[row_idx][11] = "FAILED"
                 log_lines.append(f"  ❌ Phân đoạn {seg_id} Lỗi: {msg}")
 
             yield ("\n".join(log_lines[-10:]), progress_msg, rows, runtime_state)
@@ -620,7 +766,24 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         yield ("\n".join(log_lines[-10:]), summary_msg, rows, runtime_state)
 
     c["btn_generate_story"].click(
-        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, is_retry_failed_only=False),
+        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, mode="selected"),
+        inputs=[
+            c["story_segments_df"],
+            c["story_segments_state"],
+            c["story_characters_state"],
+            c["story_project_dir_state"],
+            c["story_runtime_state"]
+        ],
+        outputs=[
+            c["story_log_output"],
+            c["story_progress_md"],
+            c["story_segments_df"],
+            c["story_runtime_state"]
+        ]
+    )
+
+    c["btn_generate_changed"].click(
+        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, mode="changed"),
         inputs=[
             c["story_segments_df"],
             c["story_segments_state"],
@@ -637,7 +800,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     )
 
     c["btn_retry_failed"].click(
-        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, is_retry_failed_only=True),
+        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, mode="failed"),
         inputs=[
             c["story_segments_df"],
             c["story_segments_state"],
@@ -653,7 +816,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         ]
     )
 
-    # 7. Take Preview & Selection
+    # 8. Take Preview & Selection
     def _on_preview_select(seg_label, project_dir_str, runtime_state):
         if not seg_label or not project_dir_str:
             return None, None, None, ""
@@ -681,7 +844,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         rows = df_data.values.tolist() if hasattr(df_data, "values") else list(df_data)
         for r in rows:
             if str(r[1]).zfill(3) == seg_id.zfill(3):
-                r[11] = f"Take {take_num}"
+                r[12] = f"Take {take_num}"
                 break
 
         status_text = f"✅ {msg}" if success else f"❌ {msg}"
@@ -703,7 +866,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]]
     )
 
-    # 8. Build Master Audio
+    # 9. Build Master Audio
     def _on_build_master(project_dir_str, segments, runtime_state, gap_rule, room_tone_file, room_tone_vol, target_lufs, true_peak):
         if not project_dir_str or not segments:
             return "⚠️ Chưa có dự án nào được mở.", None, None, gr.update(visible=False), gr.update(visible=False)
@@ -752,16 +915,31 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         ]
     )
 
-    # 9. Export Project JSON
-    def _on_export(project_dir_str, raw_json, runtime_state):
+    # 10. Export Project JSON with UPDATED character voices and overrides
+    def _on_export(project_dir_str, raw_json, chars_map, segments, runtime_state):
         if not project_dir_str or not raw_json:
             return gr.update(visible=False)
         project_dir = Path(project_dir_str)
-        export_p = export_project_json(project_dir, raw_json, runtime_state)
+
+        # Cập nhật các lựa chọn mới nhất của user vào JSON export
+        export_payload = json.loads(json.dumps(raw_json))
+        if "characters" in export_payload:
+            for cid, ccfg in export_payload["characters"].items():
+                if cid in chars_map:
+                    ccfg["voice"] = chars_map[cid].get("voice", ccfg.get("voice", ""))
+                    ccfg["default_speed"] = chars_map[cid].get("default_speed", ccfg.get("default_speed", 1.0))
+
+        export_p = export_project_json(project_dir, export_payload, runtime_state)
         return gr.update(value=export_p, visible=True)
 
     c["btn_export_json"].click(
         fn=_on_export,
-        inputs=[c["story_project_dir_state"], c["story_raw_json_state"], c["story_runtime_state"]],
+        inputs=[
+            c["story_project_dir_state"],
+            c["story_raw_json_state"],
+            c["story_characters_state"],
+            c["story_segments_state"],
+            c["story_runtime_state"]
+        ],
         outputs=[c["file_export_download"]]
     )

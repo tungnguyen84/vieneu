@@ -59,6 +59,49 @@ def clean_text_for_tts(text: str) -> str:
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
     return cleaned
 
+def get_all_available_voices(tts_engine: Any = None) -> List[Tuple[str, str]]:
+    """
+    Lấy danh sách [(display_label, voice_id), ...] của toàn bộ 25 preset voices VieNeu-TTS v3 Turbo.
+    Nếu engine đã load: gọi tts_engine.list_preset_voices().
+    Nếu chưa load: đọc trực tiếp file assets/voices_v3_turbo.json để luôn có sẵn 25 voices cho dropdown.
+    """
+    if tts_engine is not None and hasattr(tts_engine, "list_preset_voices"):
+        try:
+            voices = tts_engine.list_preset_voices()
+            if voices:
+                return voices
+        except Exception:
+            pass
+
+    # Fallback: đọc trực tiếp từ assets
+    for candidate_path in [
+        Path(__file__).parent.parent / "src" / "vieneu" / "assets" / "voices_v3_turbo.json",
+        Path("src/vieneu/assets/voices_v3_turbo.json")
+    ]:
+        if candidate_path.exists():
+            try:
+                with open(candidate_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                presets = data.get("presets", {})
+                sorted_items = sorted(
+                    presets.items(),
+                    key=lambda kv: (kv[1].get("featured") is None, kv[1].get("featured") or 0)
+                )
+                res = []
+                for name, v in sorted_items:
+                    desc = v.get("description", "")
+                    gender = v.get("gender", "")
+                    featured = v.get("featured")
+                    info_parts = [p for p in [desc, gender] if p]
+                    label = f"{name} ({', '.join(info_parts)})" if info_parts else name
+                    if featured is not None:
+                        label = f"⭐ {label}"
+                    res.append((label, name))
+                return res
+            except Exception:
+                pass
+    return []
+
 def compute_segment_hash(seg: dict, voice: str, model_version: str) -> str:
     """Tạo hash để cache và resume cho từng segment."""
     data = (
@@ -286,11 +329,31 @@ def generate_single_segment_takes(
     if not clean_text:
         return False, f"Segment {seg_id}: Nội dung văn bản rỗng sau khi lọc.", {}
 
-    voice = char_config.get("voice", "")
-    if not voice:
-        return False, f"Segment {seg_id}: Chưa chọn giọng đọc cho nhân vật '{speaker}'.", {}
+    # PRIORITY RULE CHO VOICE:
+    # 1. segment.voice_override (nếu có giá trị hợp lệ khác 'Use Character Voice')
+    # 2. char_config.voice
+    # 3. Báo lỗi nếu chưa có giọng
+    voice_override = str(segment.get("voice_override", "") or segment.get("override_voice", "")).strip()
+    if voice_override and voice_override not in ("Use Character Voice", "Kế thừa (Use Character Voice)", "None", ""):
+        voice = voice_override
+    else:
+        voice = char_config.get("voice", "")
 
-    speed = float(segment.get("speed", char_config.get("default_speed", 1.0)))
+    if not voice:
+        return False, f"Segment {seg_id}: Chưa chọn giọng đọc cho nhân vật '{speaker}'. Vui lòng chọn giọng cho nhân vật hoặc chọn ghi đè giọng.", {}
+
+    # PRIORITY RULE CHO SPEED:
+    # 1. segment.speed (nếu segment khai báo riêng)
+    # 2. char_config.default_speed
+    # 3. 1.0
+    if segment.get("speed") is not None and str(segment.get("speed")).strip() != "":
+        speed = float(segment.get("speed"))
+    elif char_config.get("default_speed") is not None:
+        speed = float(char_config.get("default_speed"))
+    else:
+        speed = 1.0
+    speed = max(0.88, min(1.05, speed))
+
     multi_take = max(1, int(segment.get("multi_take", 1)))
 
     raw_dir = project_dir / "raw"
@@ -608,20 +671,33 @@ def build_segments_dataframe(segments: List[dict], characters_map: dict, project
         seg_id = str(seg.get("id", "")).zfill(3)
         speaker = seg.get("speaker", "")
         char_cfg = characters_map.get(speaker, {})
-        voice = char_cfg.get("voice", "")
+        char_voice = char_cfg.get("voice", "")
+        voice_override = seg.get("voice_override", "") or "Kế thừa (Use Character Voice)"
         
+        # Priority rule cho speed
+        if seg.get("speed") is not None and str(seg.get("speed")).strip() != "":
+            spd = float(seg.get("speed"))
+        elif char_cfg.get("default_speed") is not None:
+            spd = float(char_cfg.get("default_speed"))
+        else:
+            spd = 1.0
+
         state_seg = segments_state.get(seg_id, {})
         status = state_seg.get("status", "PENDING")
         selected_take = state_seg.get("selected_take", 1)
         
+        # Xác định giọng thực tế được áp dụng
+        applied_voice = voice_override if (voice_override and voice_override != "Kế thừa (Use Character Voice)") else char_voice
+
         rows.append([
             True,  # Checkbox chọn
             seg_id,
             speaker,
             seg.get("text", ""),
-            voice,
+            applied_voice,
+            voice_override,
             seg.get("delivery", "neutral"),
-            float(seg.get("speed", char_cfg.get("default_speed", 1.0))),
+            spd,
             float(seg.get("pause_before", 0.0) or 0.0),
             float(seg.get("pause_after", 0.3) or 0.3),
             int(seg.get("multi_take", 1)),
@@ -629,6 +705,86 @@ def build_segments_dataframe(segments: List[dict], characters_map: dict, project
             f"Take {selected_take}"
         ])
     return rows
+
+
+def invalidate_cache_for_speakers(project_dir: Path, project_state: dict, changed_speakers: set) -> int:
+    """
+    Invalidate cache CHỈ cho các segment thuộc các nhân vật có giọng/tốc độ bị thay đổi.
+    Đánh dấu status = 'NEEDS_REGENERATE'. Các nhân vật khác giữ nguyên 100%!
+    Trả về số lượng segment bị invalidate.
+    """
+    if not changed_speakers:
+        return 0
+
+    count = 0
+    segments_state = project_state.get("segments", {})
+    for seg_id, seg_data in segments_state.items():
+        if seg_data.get("speaker") in changed_speakers:
+            seg_data["status"] = "NEEDS_REGENERATE"
+            # Xóa file selected cũ để tránh lấy nhầm audio cũ vào master
+            sel_file = project_dir / "selected" / f"{seg_id}.wav"
+            if sel_file.exists():
+                try:
+                    sel_file.unlink()
+                except Exception:
+                    pass
+            count += 1
+
+    save_project_state(project_dir, project_state)
+    return count
+
+
+def generate_character_preview_voice(
+    tts_engine: Any,
+    project_dir: Path,
+    char_id: str,
+    display_name: str,
+    role: str,
+    voice: str,
+    speed: float = 1.0
+) -> Tuple[bool, str, Optional[str]]:
+    """
+    Sinh câu preview ngắn cho nhân vật để nghe thử giọng trên Character Card.
+    Không lưu vào production segment cache.
+    """
+    if not voice:
+        return False, "Chưa chọn giọng đọc.", None
+
+    preview_dir = project_dir / "previews"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    out_wav = preview_dir / f"preview_{char_id}.wav"
+
+    # Câu thoại mẫu theo ngữ cảnh nhân vật
+    cid_upper = char_id.upper()
+    if "MINH" in cid_upper:
+        text = "Bạn đang nghe Sau Cánh Cửa. Có những chuyện, người ta chỉ dám kể khi không ai nhìn thấy mặt mình."
+    elif "LAN" in cid_upper:
+        text = "Tôi đã giữ bí mật này rất lâu. Và hôm nay, tôi nghĩ mình nên kể lại."
+    else:
+        role_txt = f" đảm nhận vai trò {role}" if role else ""
+        text = f"Xin chào, tôi là {display_name or char_id}{role_txt}. Đây là giọng đọc thử nghiệm trong kịch bản."
+
+    try:
+        sample_rate = getattr(tts_engine, "sample_rate", 48000)
+        wav_data = tts_engine.infer(
+            text=text,
+            voice=voice,
+            temperature=0.8,
+            max_chars=256
+        )
+        if wav_data is None or len(wav_data) == 0:
+            return False, "Engine trả về âm thanh rỗng.", None
+
+        temp_path = preview_dir / f"tmp_{char_id}.wav"
+        sf.write(str(temp_path), wav_data, sample_rate)
+        apply_audio_speed(temp_path, out_wav, speed=speed, sample_rate=sample_rate)
+        if temp_path.exists():
+            temp_path.unlink()
+
+        return True, "Thành công", str(out_wav)
+    except Exception as e:
+        logger.error(f"Lỗi sinh preview cho {char_id}: {e}")
+        return False, str(e), None
 
 
 def select_take_for_segment(project_dir: Path, project_state: dict, seg_id: str, take_num: int) -> Tuple[bool, str]:
