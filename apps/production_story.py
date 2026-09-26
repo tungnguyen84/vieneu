@@ -299,12 +299,21 @@ def validate_story_json(data: dict, available_voices: List[Tuple[str, str]]) -> 
     estimated_speech_seconds = total_words / 2.5
     estimated_total_seconds = estimated_speech_seconds + total_pause
 
+    # 4. Music Library (nếu có trong JSON V6)
+    music_library = data.get("music_library", {})
+    has_music = isinstance(music_library, dict) and len(music_library) > 0
+
     stats = {
         "segment_count": len(segments),
         "character_count": len(characters_map),
         "total_words": total_words,
-        "estimated_seconds": estimated_total_seconds
+        "estimated_seconds": estimated_total_seconds,
+        "has_music_library": has_music,
+        "music_cues_count": len(music_library) if has_music else 0
     }
+
+    if has_music:
+        project_info["music_library"] = music_library
 
     return True, "", project_info, characters_map, warnings, stats
 
@@ -465,188 +474,68 @@ def build_master_audio(
     segments: List[dict],
     project_state: dict,
     gap_rule: str = "max",
-    default_gap: float = 0.3,
+    default_gap: float = 0.18,
     room_tone_path: Optional[str] = None,
-    room_tone_volume_db: float = -40.0,
+    room_tone_volume_db: float = -41.0,
     target_lufs: float = -14.0,
     true_peak_db: float = -1.0,
-    sample_rate: int = 48000
+    sample_rate: int = 48000,
+    music_lib: Optional[Dict[str, dict]] = None,
+    enable_music: bool = True,
+    enable_room_tone: bool = True,
+    auto_silence_critical: bool = True,
+    global_music_gain_db: float = 0.0,
+    default_ducking_db: float = -8.0,
+    crossfade_sec: float = 1.2,
+    reveal_music_return_delay_sec: float = 0.8
 ) -> Tuple[bool, str, Optional[str], Optional[str]]:
     """
-    Ghép các segment theo đúng thứ tự ID:
-    - Chèn silence PCM thật vào timeline.
-    - Áp dụng rule tránh double pause:
-      khoảng cách giữa segment i và i+1 = max(seg[i].pause_after, seg[i+1].pause_before).
-    - Thêm pause_before cho câu đầu tiên và pause_after cho câu cuối cùng.
-    - Loop Room Tone & Ducking (nếu có).
-    - Áp dụng 2-pass FFmpeg Loudness Normalization.
-    - Xuất:
-      projects/<slug>/master/episode_master.wav (48kHz PCM)
-      projects/<slug>/master/episode_master.mp3 (320kbps MP3)
+    Tạo Master Audio hoàn chỉnh thông qua Audio Director Engine:
+    - Dialogue timeline (loại bỏ double pause)
+    - Continuous Room Tone timeline
+    - Music regions không ngắt giữa các câu cùng cue, crossfade khi đổi cue
+    - Tự động tắt nhạc trước Critical Reveal
+    - Ducking nhạc mượt mà khi có giọng nói
+    - 2-pass Loudness Normalization (-14 LUFS, -1 dBTP)
+    - Xuất đầy đủ Stems (dialogue, room_tone, music, master WAV/MP3, timeline JSON).
     """
-    master_dir = project_dir / "master"
-    master_dir.mkdir(parents=True, exist_ok=True)
+    from apps.audio_director import parse_music_library, build_audio_director_master
 
-    segments_state = project_state.get("segments", {})
-    audio_pieces = []
-
-    # 1. Timeline assembly
-    total_segs = len(segments)
-    if total_segs == 0:
-        return False, "Không có segment nào để ghép.", None, None
-
-    for i in range(total_segs):
-        seg = segments[i]
-        seg_id = str(seg.get("id", i + 1)).zfill(3)
-        seg_data = segments_state.get(seg_id, {})
-        
-        # Lấy file selected
-        selected_rel = seg_data.get("selected_file")
-        if not selected_rel:
-            selected_path = project_dir / "selected" / f"{seg_id}.wav"
+    if music_lib is None:
+        source_json_path = project_dir / "source.json"
+        if source_json_path.exists():
+            try:
+                with open(source_json_path, "r", encoding="utf-8") as f:
+                    source_data = json.load(f)
+                music_lib = parse_music_library(project_dir, source_data)
+            except Exception:
+                music_lib = {}
         else:
-            selected_path = project_dir / selected_rel
+            music_lib = {}
 
-        if not selected_path.exists():
-            return False, f"Thiếu file âm thanh cho segment {seg_id} ({selected_path.name}). Hãy hoàn tất sinh TTS trước.", None, None
+    ok, msg, outputs = build_audio_director_master(
+        project_dir=project_dir,
+        segments=segments,
+        project_state=project_state,
+        music_lib=music_lib,
+        enable_music=enable_music,
+        enable_room_tone=enable_room_tone,
+        auto_silence_critical=auto_silence_critical,
+        global_music_gain_db=global_music_gain_db,
+        room_tone_volume_db=room_tone_volume_db,
+        default_ducking_db=default_ducking_db,
+        crossfade_sec=crossfade_sec,
+        reveal_music_return_delay_sec=reveal_music_return_delay_sec,
+        target_lufs=target_lufs,
+        true_peak_db=true_peak_db,
+        gap_rule=gap_rule,
+        default_gap=default_gap,
+        sample_rate=sample_rate
+    )
 
-        data, sr = sf.read(str(selected_path), dtype="float32")
-        if sr != sample_rate:
-            # Resample nếu lệch
-            import librosa
-            data = librosa.resample(data, orig_sr=sr, target_sr=sample_rate)
-
-        # Chèn silence đầu cho câu thứ nhất
-        if i == 0:
-            pause_before = float(seg.get("pause_before", 0.0) or 0.0)
-            if pause_before > 0:
-                silence_samples = int(pause_before * sample_rate)
-                audio_pieces.append(np.zeros(silence_samples, dtype=np.float32))
-
-        # Thêm audio câu hiện tại
-        audio_pieces.append(data)
-
-        # Chèn khoảng nghỉ giữa các câu
-        if i < total_segs - 1:
-            next_seg = segments[i + 1]
-            p_after = float(seg.get("pause_after", default_gap) or default_gap)
-            next_p_before = float(next_seg.get("pause_before", 0.0) or 0.0)
-
-            if gap_rule == "max":
-                gap = max(p_after, next_p_before)
-            else: # "sum"
-                gap = p_after + next_p_before
-
-            if gap > 0:
-                silence_samples = int(gap * sample_rate)
-                audio_pieces.append(np.zeros(silence_samples, dtype=np.float32))
-        else:
-            # Câu cuối cùng: chèn pause_after
-            pause_after = float(seg.get("pause_after", 0.0) or 0.0)
-            if pause_after > 0:
-                silence_samples = int(pause_after * sample_rate)
-                audio_pieces.append(np.zeros(silence_samples, dtype=np.float32))
-
-    # Nối tất cả thành một timeline
-    full_timeline = np.concatenate(audio_pieces)
-    timeline_unnorm_path = master_dir / "master_unnorm.wav"
-    sf.write(str(timeline_unnorm_path), full_timeline, sample_rate)
-
-    # 2. Xử lý Room Tone (nếu user cung cấp)
-    mixed_path = timeline_unnorm_path
-    if room_tone_path and os.path.exists(room_tone_path):
-        try:
-            logger.info("Đang hòa trộn Room Tone...")
-            room_mixed_path = master_dir / "master_room_mixed.wav"
-            # Tính volume multiplier từ dB
-            vol_multiplier = 10.0 ** (room_tone_volume_db / 20.0)
-            
-            # Đọc room tone
-            rt_data, rt_sr = sf.read(room_tone_path, dtype="float32")
-            if rt_data.ndim > 1:
-                rt_data = rt_data.mean(axis=1)
-            if rt_sr != sample_rate:
-                import librosa
-                rt_data = librosa.resample(rt_data, orig_sr=rt_sr, target_sr=sample_rate)
-
-            # Loop room tone cho đủ timeline length
-            needed_len = len(full_timeline)
-            repeat_count = int(np.ceil(needed_len / len(rt_data)))
-            looped_rt = np.tile(rt_data, repeat_count)[:needed_len] * vol_multiplier
-
-            # Hòa trộn nhẹ vào timeline
-            mixed_timeline = full_timeline + looped_rt
-            sf.write(str(room_mixed_path), mixed_timeline, sample_rate)
-            mixed_path = room_mixed_path
-        except Exception as e:
-            logger.warning(f"Không thể hòa trộn Room tone: {e}. Tiến hành ghép không có room tone.")
-
-    # 3. 2-Pass FFmpeg Loudness Normalization
-    output_wav_master = master_dir / "episode_master.wav"
-    output_mp3_master = master_dir / "episode_master.mp3"
-
-    try:
-        # Pass 1: Đo lường loudness
-        cmd_pass1 = [
-            "ffmpeg", "-y", "-hide_banner",
-            "-i", str(mixed_path),
-            "-af", f"loudnorm=I={target_lufs}:TP={true_peak_db}:LRA=11:print_format=json",
-            "-f", "null", "-"
-        ]
-        res1 = subprocess.run(cmd_pass1, capture_output=True, text=True, check=True)
-        stderr_output = res1.stderr
-
-        # Trích xuất json từ stderr
-        json_match = re.search(r'\{[\s\S]*"input_i"[\s\S]*\}', stderr_output)
-        if json_match:
-            loudness_stats = json.loads(json_match.group(0))
-            input_i = loudness_stats.get("input_i", "-24")
-            input_tp = loudness_stats.get("input_tp", "-2")
-            input_lra = loudness_stats.get("input_lra", "7")
-            input_thresh = loudness_stats.get("input_thresh", "-34")
-            target_offset = loudness_stats.get("target_offset", "0")
-
-            # Pass 2: Apply chính xác
-            cmd_pass2 = [
-                "ffmpeg", "-y", "-hide_banner",
-                "-i", str(mixed_path),
-                "-af", (
-                    f"loudnorm=I={target_lufs}:TP={true_peak_db}:LRA=11:"
-                    f"measured_I={input_i}:measured_TP={input_tp}:measured_LRA={input_lra}:"
-                    f"measured_thresh={input_thresh}:offset={target_offset}:linear=true"
-                ),
-                "-ar", str(sample_rate),
-                str(output_wav_master)
-            ]
-            subprocess.run(cmd_pass2, capture_output=True, text=True, check=True)
-        else:
-            # Fallback 1-pass nếu không parse được json
-            cmd_fallback = [
-                "ffmpeg", "-y", "-hide_banner",
-                "-i", str(mixed_path),
-                "-af", f"loudnorm=I={target_lufs}:TP={true_peak_db}:LRA=11",
-                "-ar", str(sample_rate),
-                str(output_wav_master)
-            ]
-            subprocess.run(cmd_fallback, capture_output=True, text=True, check=True)
-
-        # Xuất MP3 320kbps
-        cmd_mp3 = [
-            "ffmpeg", "-y", "-hide_banner",
-            "-i", str(output_wav_master),
-            "-codec:a", "libmp3lame",
-            "-b:a", "320k",
-            str(output_mp3_master)
-        ]
-        subprocess.run(cmd_mp3, capture_output=True, text=True, check=True)
-
-        return True, "Master audio đã được tạo thành công!", str(output_wav_master), str(output_mp3_master)
-
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Lỗi khi normalize master audio qua FFmpeg: {e.stderr}")
-        # Fallback copy trực tiếp unnorm
-        shutil.copy2(mixed_path, output_wav_master)
-        return True, f"Tạo master hoàn tất (không thể normalize: {e.stderr[:100]})", str(output_wav_master), None
+    wav_out = outputs.get("episode_master_wav") if ok else None
+    mp3_out = outputs.get("episode_master_mp3") if ok else None
+    return ok, msg, wav_out, mp3_out
 
 
 def load_or_init_project_state(project_dir: Path, json_data: dict) -> dict:
@@ -727,6 +616,16 @@ def build_segments_dataframe(segments: List[dict], characters_map: dict, project
         # Xác định giọng thực tế được áp dụng
         applied_voice = voice_override if (voice_override and voice_override != "Kế thừa (Use Character Voice)") else char_voice
 
+        # Các trường Audio Director (V6)
+        m_cue = str(seg.get("music_cue", "none") or "none")
+        m_vol = seg.get("music_volume_db")
+        m_vol_num = float(m_vol) if m_vol is not None and str(m_vol).strip() != "" else -34.0
+        f_in = float(seg.get("music_fade_in_sec", 1.2) or 1.2)
+        f_out = float(seg.get("music_fade_out_sec", 1.0) or 1.0)
+        duck_val = float(seg.get("ducking_db", -8.0) if seg.get("ducking_db") is not None else -8.0)
+        rt_val = float(seg.get("room_tone_db", -41.0) if seg.get("room_tone_db") is not None else -41.0)
+        imp_val = str(seg.get("importance", "normal") or "normal")
+
         rows.append([
             True,  # Checkbox chọn
             seg_id,
@@ -738,6 +637,13 @@ def build_segments_dataframe(segments: List[dict], characters_map: dict, project
             spd,
             float(seg.get("pause_before", 0.0) or 0.0),
             float(seg.get("pause_after", 0.3) or 0.3),
+            m_cue,
+            m_vol_num,
+            f_in,
+            f_out,
+            duck_val,
+            rt_val,
+            imp_val,
             int(seg.get("multi_take", 1)),
             status,
             f"Take {selected_take}"
