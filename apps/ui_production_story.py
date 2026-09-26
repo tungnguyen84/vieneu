@@ -111,7 +111,8 @@ def render_production_story_ui(preset_voices_cache_getter):
             char_preview_audios.append(c_prev_audio)
 
         with gr.Row():
-            btn_apply_char_mapping = gr.Button("✓ Áp dụng giọng cho kịch bản", size="lg", variant="primary")
+            btn_apply_char_mapping = gr.Button("✓ Áp dụng giọng cho kịch bản", size="lg", variant="primary", scale=3)
+            btn_refresh_voices = gr.Button("🔄 Cập nhật giọng từ tab Clone", size="lg", variant="secondary", scale=2)
         apply_status_md = gr.Markdown("")
 
     # 4. Segments Table Section
@@ -218,6 +219,7 @@ def render_production_story_ui(preset_voices_cache_getter):
         "char_preview_btns": char_preview_btns,
         "char_preview_audios": char_preview_audios,
         "btn_apply_char_mapping": btn_apply_char_mapping,
+        "btn_refresh_voices": btn_refresh_voices,
         "apply_status_md": apply_status_md,
         "btn_select_all": btn_select_all,
         "btn_select_failed": btn_select_failed,
@@ -297,10 +299,15 @@ def handle_import_json_data(json_content_or_file, available_voices: list):
         else:
             raise ValueError("Định dạng dữ liệu không hỗ trợ.")
 
-        # Lấy đầy đủ 25 voices
+        # Lấy đầy đủ voices: toàn bộ built-in và user cloned voices
         all_voices = get_all_available_voices()
-        if not all_voices:
-            all_voices = available_voices
+        if available_voices:
+            existing_ids = {v[1] if isinstance(v, (tuple, list)) else v for v in all_voices}
+            for item in available_voices:
+                vid = item[1] if isinstance(item, (tuple, list)) else item
+                if vid not in all_ids:
+                    all_voices.append(item)
+                    existing_ids.add(vid)
 
         is_valid, err, proj_info, chars_map, warnings, stats = validate_story_json(data, all_voices)
         if not is_valid:
@@ -568,6 +575,23 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         fn=_on_apply_voice_changes,
         inputs=apply_inputs,
         outputs=[c["story_segments_df"], c["story_characters_state"], c["story_runtime_state"], c["apply_status_md"]]
+    )
+
+    # 4b. Refresh voices list on demand (Sync from Clone tab)
+    def _on_refresh_voices(*current_vals):
+        tts = get_tts_engine_fn()
+        voices = get_all_available_voices(tts)
+        updates = []
+        for i in range(MAX_STORY_CHARACTERS):
+            v_val = current_vals[i] if i < len(current_vals) else None
+            updates.append(gr.update(choices=voices, value=v_val))
+        msg = f"✅ **Đã cập nhật danh sách giọng!** Tổng cộng **{len(voices)} giọng** khả dụng (bao gồm toàn bộ giọng mẫu và giọng bạn đã lưu từ tab Clone)."
+        return [*updates, msg]
+
+    c["btn_refresh_voices"].click(
+        fn=_on_refresh_voices,
+        inputs=c["char_voice_dds"],
+        outputs=[*c["char_voice_dds"], c["apply_status_md"]]
     )
 
     # 5. Checkbox Selection Helpers

@@ -61,46 +61,76 @@ def clean_text_for_tts(text: str) -> str:
 
 def get_all_available_voices(tts_engine: Any = None) -> List[Tuple[str, str]]:
     """
-    Lấy danh sách [(display_label, voice_id), ...] của toàn bộ 25 preset voices VieNeu-TTS v3 Turbo.
+    Lấy danh sách [(display_label, voice_id), ...] của toàn bộ preset voices VieNeu-TTS v3 Turbo
+    BAO GỒM CẢ các giọng người dùng đã lưu từ tab Voice Cloning (~/.vieneu/user_voices_v3_turbo.json).
     Nếu engine đã load: gọi tts_engine.list_preset_voices().
-    Nếu chưa load: đọc trực tiếp file assets/voices_v3_turbo.json để luôn có sẵn 25 voices cho dropdown.
+    Nếu chưa load: đọc trực tiếp file assets/voices_v3_turbo.json kết hợp user_voices_v3_turbo.json.
     """
+    engine_voices = []
     if tts_engine is not None and hasattr(tts_engine, "list_preset_voices"):
         try:
-            voices = tts_engine.list_preset_voices()
-            if voices:
-                return voices
-        except Exception:
-            pass
-
-    # Fallback: đọc trực tiếp từ assets
-    for candidate_path in [
-        Path(__file__).parent.parent / "src" / "vieneu" / "assets" / "voices_v3_turbo.json",
-        Path("src/vieneu/assets/voices_v3_turbo.json")
-    ]:
-        if candidate_path.exists():
+            # Đảm bảo các giọng clone người dùng đã được load vào preset_voices của engine
             try:
-                with open(candidate_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                presets = data.get("presets", {})
-                sorted_items = sorted(
-                    presets.items(),
-                    key=lambda kv: (kv[1].get("featured") is None, kv[1].get("featured") or 0)
-                )
-                res = []
-                for name, v in sorted_items:
-                    desc = v.get("description", "")
-                    gender = v.get("gender", "")
-                    featured = v.get("featured")
-                    info_parts = [p for p in [desc, gender] if p]
-                    label = f"{name} ({', '.join(info_parts)})" if info_parts else name
-                    if featured is not None:
-                        label = f"⭐ {label}"
-                    res.append((label, name))
-                return res
+                from apps.user_voices import load_user_voices
+                load_user_voices(tts_engine)
             except Exception:
                 pass
-    return []
+            engine_voices = tts_engine.list_preset_voices() or []
+        except Exception:
+            engine_voices = []
+
+    # 1. Đọc built-in presets từ voices_v3_turbo.json nếu engine_voices rỗng
+    built_in_voices = []
+    if not engine_voices:
+        for candidate_path in [
+            Path(__file__).parent.parent / "src" / "vieneu" / "assets" / "voices_v3_turbo.json",
+            Path("src/vieneu/assets/voices_v3_turbo.json")
+        ]:
+            if candidate_path.exists():
+                try:
+                    with open(candidate_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    presets = data.get("presets", {})
+                    sorted_items = sorted(
+                        presets.items(),
+                        key=lambda kv: (kv[1].get("featured") is None, kv[1].get("featured") or 0)
+                    )
+                    for name, v in sorted_items:
+                        desc = v.get("description", "")
+                        gender = v.get("gender", "")
+                        featured = v.get("featured")
+                        info_parts = [p for p in [desc, gender] if p]
+                        label = f"{name} ({', '.join(info_parts)})" if info_parts else name
+                        if featured is not None:
+                            label = f"⭐ {label}"
+                        built_in_voices.append((label, name))
+                    break
+                except Exception:
+                    pass
+
+    base_list = list(engine_voices) if engine_voices else list(built_in_voices)
+    existing_ids = {v[1] if isinstance(v, (tuple, list)) else v for v in base_list}
+
+    # 2. Luôn đọc thêm từ user_voices_v3_turbo.json & user_voices_v3_nano.json
+    # để chắc chắn các giọng đã lưu từ tab Clone luôn xuất hiện ngay cả khi chưa load model
+    user_voices_list = []
+    home_dir = Path(os.environ.get("VIENEU_HOME") or (Path.home() / ".vieneu"))
+    for uv_filename in ["user_voices_v3_turbo.json", "user_voices_v3_nano.json"]:
+        uv_path = home_dir / uv_filename
+        if uv_path.is_file():
+            try:
+                with open(uv_path, "r", encoding="utf-8") as f:
+                    u_data = json.load(f)
+                for uname, uv in (u_data.get("presets") or {}).items():
+                    if uname not in existing_ids:
+                        u_desc = uv.get("description", "") or "Giọng đã lưu từ tab Clone"
+                        u_label = f"{uname} — {u_desc}"
+                        user_voices_list.append((u_label, uname))
+                        existing_ids.add(uname)
+            except Exception:
+                pass
+
+    return base_list + user_voices_list
 
 def compute_segment_hash(seg: dict, voice: str, model_version: str) -> str:
     """Tạo hash để cache và resume cho từng segment."""
@@ -372,6 +402,14 @@ def generate_single_segment_takes(
         take_temp = temperature if take_idx == 1 else min(1.0, temperature + (take_idx - 1) * 0.05)
 
         try:
+            # Đảm bảo voice (đặc biệt là giọng clone đã lưu) đã có trong preset của engine
+            if hasattr(tts_engine, "_preset_voices") and voice not in tts_engine._preset_voices:
+                try:
+                    from apps.user_voices import load_user_voices
+                    load_user_voices(tts_engine)
+                except Exception:
+                    pass
+
             # Gọi phương thức infer của VieNeu instance hiện tại
             wav_data = tts_engine.infer(
                 text=clean_text,
@@ -766,6 +804,14 @@ def generate_character_preview_voice(
 
     try:
         sample_rate = getattr(tts_engine, "sample_rate", 48000)
+        # Đảm bảo voice (đặc biệt là giọng clone đã lưu) đã có trong preset của engine
+        if hasattr(tts_engine, "_preset_voices") and voice not in tts_engine._preset_voices:
+            try:
+                from apps.user_voices import load_user_voices
+                load_user_voices(tts_engine)
+            except Exception:
+                pass
+
         wav_data = tts_engine.infer(
             text=text,
             voice=voice,

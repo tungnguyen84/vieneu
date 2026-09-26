@@ -2500,14 +2500,17 @@ with gr.Blocks(theme=theme, css=css, title="VieNeu-TTS", head=head_html) as demo
 
             CONV_VOICES_CACHE = [v for v in voices if _podcast(v[1] if isinstance(v, tuple) else v)]
 
+        story_char_dds = story_components.get("char_voice_dds", []) if isinstance(story_components, dict) else []
+
         def _voice_list_updates(select_voice=None):
             """Updates for every preset dropdown: story (optionally selecting the new
-            voice), SRT, and the conversation speaker slots (keep their values)."""
+            voice), SRT, the conversation speaker slots, and story script character slots."""
             story = gr.update(choices=PRESET_VOICES_CACHE, value=select_voice) if select_voice else gr.update(choices=PRESET_VOICES_CACHE)
-            return [story, gr.update(choices=PRESET_VOICES_CACHE), *([gr.update(choices=CONV_VOICES_CACHE)] * MAX_SPEAKERS)]
+            story_updates = [gr.update(choices=PRESET_VOICES_CACHE)] * len(story_char_dds)
+            return [story, gr.update(choices=PRESET_VOICES_CACHE), *([gr.update(choices=CONV_VOICES_CACHE)] * MAX_SPEAKERS), *story_updates]
 
         def _save_voice(audio_path, name, desc, denoise):
-            no_change = [gr.update()] * (2 + MAX_SPEAKERS)
+            no_change = [gr.update()] * (2 + MAX_SPEAKERS + len(story_char_dds))
             if not model_loaded or tts is None:
                 return [gr.update(value="⚠️ Vui lòng tải model trước!", visible=True), gr.update(), *no_change]
             if not supports_saving(tts):
@@ -2517,17 +2520,17 @@ with gr.Blocks(theme=theme, css=css, title="VieNeu-TTS", head=head_html) as demo
             except Exception as e:  # noqa: BLE001
                 return [gr.update(value=f"❌ {e}", visible=True), gr.update(), *no_change]
             _refresh_voice_caches()
-            msg = f"✅ Đã lưu giọng **{v_id}** — đã có trong danh sách giọng mẫu của Đọc truyện, Hội thoại và SRT."
+            msg = f"✅ Đã lưu giọng **{v_id}** — đã có trong danh sách giọng mẫu của Đọc truyện, Hội thoại, Kịch bản JSON và SRT."
             return [gr.update(value=msg, visible=True), _user_voice_choices(), *_voice_list_updates(select_voice=v_id)]
 
         btn_save_voice.click(
             fn=_save_voice,
             inputs=[custom_audio, clone_save_name, clone_save_desc, denoise_checkbox],
-            outputs=[clone_save_status, user_voice_dd, voice_select, srt_voice, *speaker_voice_dds],
+            outputs=[clone_save_status, user_voice_dd, voice_select, srt_voice, *speaker_voice_dds, *story_char_dds],
         )
 
         def _delete_voice(name):
-            no_change = [gr.update()] * (2 + MAX_SPEAKERS)
+            no_change = [gr.update()] * (2 + MAX_SPEAKERS + len(story_char_dds))
             if not name:
                 return [gr.update(value="⚠️ Chọn giọng cần xoá.", visible=True), gr.update(), *no_change]
             try:
@@ -2540,7 +2543,7 @@ with gr.Blocks(theme=theme, css=css, title="VieNeu-TTS", head=head_html) as demo
         btn_delete_voice.click(
             fn=_delete_voice,
             inputs=[user_voice_dd],
-            outputs=[clone_save_status, user_voice_dd, voice_select, srt_voice, *speaker_voice_dds],
+            outputs=[clone_save_status, user_voice_dd, voice_select, srt_voice, *speaker_voice_dds, *story_char_dds],
         )
 
         # --- Stop Button ---
