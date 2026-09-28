@@ -1,0 +1,17 @@
+{
+  "id": "sau_canh_cua",
+  "name": "Sau Cánh Cửa - Social Mystery Drama",
+  "aspect_ratio": "IMAGE_ASPECT_RATIO_LANDSCAPE",
+  "video_aspect_ratio": "VIDEO_ASPECT_RATIO_LANDSCAPE",
+  "wire_aspect_image": 3,
+  "wire_aspect_video": 2,
+  "target_scenes_min": 30,
+  "target_scenes_max": 55,
+  "target_veo_min": 15,
+  "target_veo_max": 30,
+  "style_prompt": "Vietnamese cinematic social mystery drama, realistic, natural Vietnamese faces, modern Vietnamese environment, subtle cinematic lighting, muted natural colors, 35mm cinematic photography, shallow depth of field when appropriate, realistic skin texture, restrained acting, serious emotional tone, no fantasy, no anime, no exaggerated expressions, no glamour fashion look",
+  "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle",
+  "video_rules": "focus on subtle subject motion, realistic facial expression, restrained camera motion, cinematic pacing, no exaggerated VFX",
+  "resolution": "1920x1080",
+  "fps": 30
+}

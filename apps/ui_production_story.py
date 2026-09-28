@@ -415,6 +415,57 @@ def render_production_story_ui(preset_voices_cache_getter):
                     gr.Markdown("#### 🅱️ Bản Hòa Âm Hoàn Chỉnh (Final Mix)")
                     ab_mix_audio = gr.Audio(label="B: Voice + Music Mix", interactive=False)
 
+    # 🎬 3. SẢN XUẤT HÌNH ẢNH & VIDEO (Google Flow + Nano Banana Pro + Veo 3)
+    with gr.Accordion("🎬 3. SẢN XUẤT HÌNH ẢNH & VIDEO (Visual Engine Pipeline)", open=True):
+        gr.Markdown(
+            "Tự động chuyển đổi timeline lời thoại và âm thanh sang **Chuỗi hình ảnh điện ảnh (Nano Banana Pro)** "
+            "và **Clip video chuyển động (Veo 3)**, sau đó ghép với `final_mix.wav` thành bản phim hoàn chỉnh 1080p."
+        )
+
+        with gr.Row():
+            with gr.Column(scale=1):
+                visual_flow_status_md = gr.Markdown(
+                    "### 🌐 Trạng thái Google Flow\n"
+                    "- **Kết nối:** ● Đang kết nối (`ws://127.0.0.1:9223`)\n"
+                    "- **Extension:** Đang tải...\n"
+                    "- **Flow Session:** Sẵn sàng"
+                )
+                btn_refresh_flow_conn = gr.Button("🔄 Kiểm tra kết nối Flow", size="sm")
+            with gr.Column(scale=1):
+                visual_progress_md = gr.Markdown(
+                    "### 📊 Tiến độ Visual Episode\n"
+                    "- **Số cảnh (Scenes):** 0\n"
+                    "- **Keyframe Banana Pro:** 0/0\n"
+                    "- **Clip Veo 3 Video:** 0/0\n"
+                    "- **Xuất bản Final MP4:** Chưa sẵn sàng"
+                )
+
+        with gr.Row():
+            btn_analyze_visual = gr.Button("🔍 1. Phân tích Visual & Lập Scene Plan", variant="primary", scale=2)
+            btn_gen_all_images = gr.Button("🎨 2. Tạo toàn bộ Keyframe (Banana Pro)", variant="primary", scale=2)
+            btn_gen_veo_videos = gr.Button("🎥 3. Tạo Video Chuyển động (Veo 3)", variant="secondary", scale=2)
+            btn_retry_failed_visual = gr.Button("🔄 Retry cảnh lỗi", variant="secondary", scale=1)
+            btn_render_final_video = gr.Button("🎬 4. Ghép Final Episode MP4", variant="stop", scale=2)
+
+        auto_production_chk = gr.Checkbox(
+            label="⚡ Auto Production (Tự động chạy toàn bộ chuỗi: Phân tích -> Keyframe -> Video -> Render MP4)",
+            value=False
+        )
+        visual_status_log_md = gr.Markdown("")
+
+        # Visual Scenes Table
+        with gr.Accordion("📋 Danh sách Visual Scenes (Scene Plan)", open=True):
+            visual_scenes_table = gr.Dataframe(
+                headers=["Scene ID", "Bắt đầu", "Kết thúc", "Thời lượng", "Loại Visual", "Nhân vật", "Bối cảnh", "Trạng thái", "Story Context"],
+                datatype=["str", "number", "number", "number", "str", "str", "str", "str", "str"],
+                interactive=False
+            )
+
+        # Video Player
+        with gr.Row():
+            final_episode_video = gr.Video(label="🎬 Bản Phim Hoàn Chỉnh (Final Episode MP4)", interactive=False)
+            final_episode_file_download = gr.File(label="Tải file final_episode.mp4", visible=False)
+
     # State stores
     story_raw_json_state = gr.State(None)
     story_project_info_state = gr.State({})
@@ -425,6 +476,8 @@ def render_production_story_ui(preset_voices_cache_getter):
     story_cue_sheet_state = gr.State([])
     story_timeline_events_state = gr.State([])
     story_voice_master_path_state = gr.State(None)
+    story_visual_scenes_state = gr.State([])
+    story_visual_queue_state = gr.State({})
 
     components = {
         "btn_import_pack_zip": btn_import_pack_zip,
@@ -531,6 +584,21 @@ def render_production_story_ui(preset_voices_cache_getter):
         "story_cue_sheet_state": story_cue_sheet_state,
         "story_timeline_events_state": story_timeline_events_state,
         "story_voice_master_path_state": story_voice_master_path_state,
+        "story_visual_scenes_state": story_visual_scenes_state,
+        "story_visual_queue_state": story_visual_queue_state,
+        "visual_flow_status_md": visual_flow_status_md,
+        "btn_refresh_flow_conn": btn_refresh_flow_conn,
+        "visual_progress_md": visual_progress_md,
+        "btn_analyze_visual": btn_analyze_visual,
+        "btn_gen_all_images": btn_gen_all_images,
+        "btn_gen_veo_videos": btn_gen_veo_videos,
+        "btn_retry_failed_visual": btn_retry_failed_visual,
+        "btn_render_final_video": btn_render_final_video,
+        "auto_production_chk": auto_production_chk,
+        "visual_status_log_md": visual_status_log_md,
+        "visual_scenes_table": visual_scenes_table,
+        "final_episode_video": final_episode_video,
+        "final_episode_file_download": final_episode_file_download,
     }
     return components
 
@@ -1579,3 +1647,254 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         inputs=[c["story_project_dir_state"], c["story_raw_json_state"], c["story_characters_state"], c["story_segments_state"], c["story_runtime_state"]],
         outputs=[c["file_export_download"]]
     )
+
+    # 14. VISUAL PIPELINE EVENT BINDINGS
+    from apps.visual_engine.flowkit_adapter import FlowKitAdapter
+    from apps.visual_engine.character_manager import load_character_library, load_location_library
+    from apps.visual_engine.visual_planner import VisualPlanner, VisualScene
+    from apps.visual_engine.asset_manager import VisualAssetManager
+    from apps.visual_engine.banana_client import BananaClient
+    from apps.visual_engine.veo_client import VeoClient
+    from apps.visual_engine.visual_qc import VisualQC
+    from apps.visual_engine.final_video_renderer import FinalVideoRenderer
+
+    flow_adapter = FlowKitAdapter("http://127.0.0.1:8100")
+
+    def _render_flow_status_md():
+        st = flow_adapter.get_connection_status()
+        conn_bullet = "● Đã kết nối" if st.is_connected else "○ Chưa kết nối"
+        conn_color = "#10b981" if st.is_connected else "#ef4444"
+        ext_text = f"Đã kết nối (v{st.extension_version})" if st.extension_connected else "Chưa kết nối"
+        tab_text = "Sẵn sàng (flow.google.com)" if st.flow_tab_ready else "Chưa mở tab Flow"
+        sess_text = f"Sẵn sàng ({st.flow_project_id[:12]}...)" if st.flow_project_id else ("Sẵn sàng" if st.account_session_ready else "Chưa khởi tạo")
+
+        return (
+            f"### 🌐 Trạng thái Google Flow\n"
+            f"- **Kết nối:** <span style='color: {conn_color}; font-weight: bold;'>{conn_bullet}</span> (`127.0.0.1:8100`)\n"
+            f"- **Chrome/Cốc Cốc Extension:** {ext_text}\n"
+            f"- **Flow Tab:** {tab_text}\n"
+            f"- **Session:** {sess_text}"
+        )
+
+    def _render_visual_progress_md(asset_mgr: VisualAssetManager):
+        prog = asset_mgr.get_progress()
+        render_text = "✅ Sẵn sàng render" if prog["ready_to_render"] else "⏳ Đang chuẩn bị assets"
+        return (
+            f"### 📊 Tiến độ Visual Episode\n"
+            f"- **Số cảnh (Scenes):** {prog['total_scenes']}\n"
+            f"- **Keyframe Banana Pro:** {prog['images_ready']}/{prog['total_scenes']}\n"
+            f"- **Clip Veo 3 Video:** {prog['videos_ready']}/{prog['veo_required']}\n"
+            f"- **Lỗi / Cần retry:** {prog['failed']}\n"
+            f"- **Xuất bản Final MP4:** **{render_text}**"
+        )
+
+    def _build_scenes_table_data(scenes: List[VisualScene], asset_mgr: VisualAssetManager):
+        queue = asset_mgr.load_queue()
+        rows = []
+        for s in scenes:
+            q_item = queue.get(s.scene_id)
+            img_st = q_item.image_status if q_item else "PLANNED"
+            vid_st = q_item.video_status if q_item else ("PLANNED" if s.visual_type == "VEO_I2V" else "-")
+            status_display = f"Img: {img_st} | Vid: {vid_st}"
+            chars_str = ", ".join(s.characters)
+            rows.append([
+                s.scene_id,
+                s.start_sec,
+                s.end_sec,
+                s.duration_sec,
+                s.visual_type,
+                chars_str,
+                s.location,
+                status_display,
+                s.story_context
+            ])
+        return rows
+
+    # Button refresh flow connection
+    c["btn_refresh_flow_conn"].click(
+        fn=_render_flow_status_md,
+        outputs=[c["visual_flow_status_md"]]
+    )
+
+    # 1. Analyze Visual & Plan Scenes
+    def _on_analyze_visual(project_dir_str, timeline_events):
+        if not project_dir_str:
+            return "⚠️ Chưa tải dự án.", gr.update(), gr.update(), "Vui lòng import kịch bản trước."
+        p_dir = Path(project_dir_str)
+        audio_master = p_dir / "master/final_mix.wav"
+        if not audio_master.exists():
+            audio_master = p_dir / "master/voice_master.wav"
+
+        total_audio_sec = 0.0
+        if audio_master.exists():
+            import soundfile as sf
+            total_audio_sec = sf.info(str(audio_master)).duration
+
+        if total_audio_sec == 0.0 and timeline_events:
+            total_audio_sec = timeline_events[-1].get("speech_end_sec", 0.0)
+
+        if total_audio_sec == 0.0:
+            return "⚠️ Chưa có Clean Voice Master / Final Mix. Vui lòng bấm Build Voice Master trước.", gr.update(), gr.update(), "Thiếu audio master."
+
+        planner = VisualPlanner(preset_name="sau_canh_cua")
+        scenes = planner.plan_episode_visuals(timeline_events, total_audio_sec)
+        planner.save_plan(scenes, p_dir)
+
+        asset_mgr = VisualAssetManager(p_dir)
+        asset_mgr.init_queue(scenes)
+
+        table_rows = _build_scenes_table_data(scenes, asset_mgr)
+        progress_md = _render_visual_progress_md(asset_mgr)
+        status_log = f"✅ Đã lập kế hoạch {len(scenes)} visual scenes (Banana: {sum(1 for s in scenes if s.visual_type == 'BANANA_IMAGE')}, Veo 3: {sum(1 for s in scenes if s.visual_type == 'VEO_I2V')})."
+
+        return status_log, progress_md, table_rows, scenes
+
+    c["btn_analyze_visual"].click(
+        fn=_on_analyze_visual,
+        inputs=[c["story_project_dir_state"], c["story_timeline_events_state"]],
+        outputs=[c["visual_status_log_md"], c["visual_progress_md"], c["visual_scenes_table"], c["story_visual_scenes_state"]]
+    )
+
+    # 2. Generate All Images (Banana Pro)
+    def _on_gen_all_images(project_dir_str, scenes_state):
+        if not project_dir_str:
+            return "⚠️ Chưa tải dự án.", gr.update(), gr.update()
+        p_dir = Path(project_dir_str)
+        plan_file = p_dir / "visual/visual_plan.json"
+        if not plan_file.exists():
+            return "⚠️ Chưa có kế hoạch visual. Hãy bấm 'Phân tích Visual' trước.", gr.update(), gr.update()
+
+        with open(plan_file, "r", encoding="utf-8") as f:
+            plan_data = json.load(f)
+        scenes = [VisualScene(**d) for d in plan_data["scenes"]]
+
+        char_lib = load_character_library()
+        asset_mgr = VisualAssetManager(p_dir)
+        banana_client = BananaClient(flow_adapter, asset_mgr, char_lib)
+
+        st = flow_adapter.get_connection_status()
+        res = banana_client.generate_all_keyframes(scenes, project_id=st.flow_project_id or "")
+
+        table_rows = _build_scenes_table_data(scenes, asset_mgr)
+        progress_md = _render_visual_progress_md(asset_mgr)
+        status_log = f"🎨 Đã xử lý {res['total_requested']} scenes: {res['success']} thành công, {res['failed']} lỗi."
+
+        return status_log, progress_md, table_rows
+
+    c["btn_gen_all_images"].click(
+        fn=_on_gen_all_images,
+        inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"]],
+        outputs=[c["visual_status_log_md"], c["visual_progress_md"], c["visual_scenes_table"]]
+    )
+
+    # 3. Generate Selected Videos (Veo 3)
+    def _on_gen_veo_videos(project_dir_str, scenes_state):
+        if not project_dir_str:
+            return "⚠️ Chưa tải dự án.", gr.update(), gr.update()
+        p_dir = Path(project_dir_str)
+        plan_file = p_dir / "visual/visual_plan.json"
+        if not plan_file.exists():
+            return "⚠️ Chưa có kế hoạch visual.", gr.update(), gr.update()
+
+        with open(plan_file, "r", encoding="utf-8") as f:
+            plan_data = json.load(f)
+        scenes = [VisualScene(**d) for d in plan_data["scenes"]]
+
+        asset_mgr = VisualAssetManager(p_dir)
+        veo_client = VeoClient(flow_adapter, asset_mgr)
+        st = flow_adapter.get_connection_status()
+
+        veo_scenes = [s for s in scenes if s.visual_type == "VEO_I2V"]
+        for sc in veo_scenes:
+            veo_client.generate_scene_video(sc, project_id=st.flow_project_id or "", allow_fallback=True)
+
+        table_rows = _build_scenes_table_data(scenes, asset_mgr)
+        progress_md = _render_visual_progress_md(asset_mgr)
+        status_log = f"🎥 Đã xử lý {len(veo_scenes)} cảnh Veo (Video hoặc Fallback Motion an toàn)."
+
+        return status_log, progress_md, table_rows
+
+    c["btn_gen_veo_videos"].click(
+        fn=_on_gen_veo_videos,
+        inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"]],
+        outputs=[c["visual_status_log_md"], c["visual_progress_md"], c["visual_scenes_table"]]
+    )
+
+    # 4. Retry Failed
+    def _on_retry_failed(project_dir_str, scenes_state):
+        if not project_dir_str:
+            return "⚠️ Chưa tải dự án.", gr.update(), gr.update()
+        p_dir = Path(project_dir_str)
+        plan_file = p_dir / "visual/visual_plan.json"
+        if not plan_file.exists(): return "⚠️ Chưa có kế hoạch visual.", gr.update(), gr.update()
+
+        with open(plan_file, "r", encoding="utf-8") as f:
+            plan_data = json.load(f)
+        scenes = [VisualScene(**d) for d in plan_data["scenes"]]
+
+        char_lib = load_character_library()
+        asset_mgr = VisualAssetManager(p_dir)
+        banana_client = BananaClient(flow_adapter, asset_mgr, char_lib)
+        veo_client = VeoClient(flow_adapter, asset_mgr)
+        st = flow_adapter.get_connection_status()
+
+        queue = asset_mgr.load_queue()
+        retried = 0
+        for sc in scenes:
+            q_item = queue.get(sc.scene_id)
+            if q_item and q_item.image_status == "FAILED":
+                banana_client.generate_scene_keyframe(sc, project_id=st.flow_project_id or "", force_regenerate=True)
+                retried += 1
+            if q_item and q_item.video_status == "FAILED":
+                veo_client.generate_scene_video(sc, project_id=st.flow_project_id or "", force_regenerate=True, allow_fallback=True)
+                retried += 1
+
+        table_rows = _build_scenes_table_data(scenes, asset_mgr)
+        progress_md = _render_visual_progress_md(asset_mgr)
+        status_log = f"🔄 Đã retry {retried} tác vụ bị lỗi."
+
+        return status_log, progress_md, table_rows
+
+    c["btn_retry_failed_visual"].click(
+        fn=_on_retry_failed,
+        inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"]],
+        outputs=[c["visual_status_log_md"], c["visual_progress_md"], c["visual_scenes_table"]]
+    )
+
+    # 5. Render Final Episode MP4
+    def _on_render_final_video(project_dir_str, scenes_state):
+        if not project_dir_str:
+            return "⚠️ Chưa tải dự án.", None, gr.update(visible=False)
+        p_dir = Path(project_dir_str)
+        plan_file = p_dir / "visual/visual_plan.json"
+        audio_master = p_dir / "master/final_mix.wav"
+        if not audio_master.exists():
+            audio_master = p_dir / "master/voice_master.wav"
+
+        if not plan_file.exists() or not audio_master.exists():
+            return "⚠️ Thiếu kế hoạch visual hoặc file audio master (final_mix.wav).", None, gr.update(visible=False)
+
+        with open(plan_file, "r", encoding="utf-8") as f:
+            plan_data = json.load(f)
+        scenes = [VisualScene(**d) for d in plan_data["scenes"]]
+
+        asset_mgr = VisualAssetManager(p_dir)
+        renderer = FinalVideoRenderer(asset_mgr)
+
+        out_mp4 = p_dir / "final/final_episode.mp4"
+        rendered_path = renderer.render_final_episode(
+            scenes=scenes,
+            audio_master_path=audio_master,
+            output_mp4_path=out_mp4
+        )
+
+        sz_mb = rendered_path.stat().st_size / (1024 * 1024)
+        status_log = f"🎉 Đã xuất bản thành công: {rendered_path.name} ({sz_mb:.1f} MB, 1080p 30fps)."
+        return status_log, str(rendered_path), gr.update(value=str(rendered_path), visible=True)
+
+    c["btn_render_final_video"].click(
+        fn=_on_render_final_video,
+        inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"]],
+        outputs=[c["visual_status_log_md"], c["final_episode_video"], c["final_episode_file_download"]]
+    )
+

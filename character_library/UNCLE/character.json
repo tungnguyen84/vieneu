@@ -1,0 +1,11 @@
+{
+  "id": "UNCLE",
+  "name": "Cậu",
+  "gender": "male",
+  "age_range": "55-65",
+  "appearance": "Elderly Vietnamese man, frail emaciated silhouette from chronic illness, kind melancholic wrinkles around eyes, pale sickly complexion",
+  "hair": "thinning greying hair",
+  "default_clothing": "faded light blue hospital gown or thin worn traditional cotton pajamas",
+  "visual_style": "melancholic nostalgic flashback tone, soft warm rim lighting with desaturated shadows",
+  "references": []
+}
