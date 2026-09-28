@@ -85,19 +85,33 @@ class FinalVideoRenderer:
 
         return output_clip_path
 
-    def fit_veo_clip(
+    def _get_video_duration(self, video_path: Path) -> float:
+        try:
+            cmd = [
+                self.ffprobe, "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                str(video_path)
+            ]
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            return float(res.stdout.strip())
+        except Exception:
+            return 4.0
+
+    def fit_video_clip(
         self,
         video_path: Path,
         target_duration_sec: float,
         output_clip_path: Optional[Path] = None,
         fps: int = 30
     ) -> Path:
-        """Fits an 8s Veo video clip into the target scene duration by holding last frame or looping."""
+        """Fits a video clip (Omni 1.1 Flash or Veo) into target scene duration by trimming or holding last frame."""
         if output_clip_path is None:
             output_clip_path = self.asset_mgr.processed_dir / f"{video_path.stem}.mp4"
 
-        # If target duration <= 8s, trim it
-        if target_duration_sec <= 8.0:
+        actual_dur = self._get_video_duration(video_path)
+
+        if target_duration_sec <= actual_dur:
             cmd = [
                 self.ffmpeg, "-y",
                 "-i", str(video_path),
@@ -110,8 +124,7 @@ class FinalVideoRenderer:
                 str(output_clip_path)
             ]
         else:
-            # Hold last frame
-            extra_hold = target_duration_sec - 8.0
+            extra_hold = target_duration_sec - actual_dur
             cmd = [
                 self.ffmpeg, "-y",
                 "-i", str(video_path),
@@ -129,6 +142,8 @@ class FinalVideoRenderer:
             raise RuntimeError(f"FFmpeg fit video clip failed: {proc.stderr[:300]}")
 
         return output_clip_path
+
+    fit_veo_clip = fit_video_clip
 
     def render_scene_clip(self, scene: VisualScene) -> Path:
         """Renders processed clip for a single scene (Banana motion or Veo video)."""

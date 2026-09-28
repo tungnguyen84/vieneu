@@ -203,17 +203,18 @@ class FlowKitAdapter:
         project_id: str = "",
         scene_id: str = "",
         aspect_ratio: str = "VIDEO_ASPECT_RATIO_LANDSCAPE",
-        duration_s: int = 8,
-        resolution: str = "720p"
+        duration_s: int = 4,
+        resolution: str = "720p",
+        model_family: str = "omni_flash"
     ) -> Dict[str, Any]:
-        """Submit frame-conditioned Veo 3 video generation."""
+        """Submit frame-conditioned video generation using Gemini Omni 1.1 Flash (or Veo)."""
         payload = {
             "start_image_media_id": start_image_media_id,
             "prompt": prompt,
             "project_id": project_id,
             "scene_id": scene_id,
             "aspect_ratio": aspect_ratio,
-            "model_family": "veo",
+            "model_family": model_family,
             "duration_s": duration_s,
             "resolution": resolution
         }

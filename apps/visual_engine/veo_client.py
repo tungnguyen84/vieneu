@@ -28,11 +28,15 @@ class VeoClient:
         self,
         adapter: FlowKitAdapter,
         asset_mgr: VisualAssetManager,
-        poll_interval_s: float = 10.0,
+        model_family: str = "omni_flash",
+        duration_s: int = 4,
+        poll_interval_s: float = 5.0,
         poll_timeout_s: float = 360.0
     ):
         self.adapter = adapter
         self.asset_mgr = asset_mgr
+        self.model_family = model_family
+        self.duration_s = duration_s
         self.poll_interval_s = poll_interval_s
         self.poll_timeout_s = poll_timeout_s
 
@@ -44,12 +48,12 @@ class VeoClient:
         allow_fallback: bool = True
     ) -> Optional[Path]:
         """
-        Generates and downloads an 8s Veo 3 video clip for a VEO_I2V scene.
+        Generates and downloads a video clip (Omni 1.1 Flash or Veo 3) for a scene.
         Returns local MP4 Path on success, None on failure.
         If generation fails and allow_fallback is True, marks status as FALLBACK_MOTION.
         """
-        if scene.visual_type != "VEO_I2V":
-            logger.info(f"[VeoClient] Scene {scene.scene_id} is {scene.visual_type}, not VEO_I2V. Skipping.")
+        if scene.visual_type not in ("VEO_I2V", "VIDEO_CLIP", "OMNI_FLASH_I2V"):
+            logger.info(f"[VideoClient] Scene {scene.scene_id} is {scene.visual_type}. Skipping.")
             return None
 
         out_video_path = self.asset_mgr.videos_dir / f"{scene.scene_id}.mp4"
@@ -59,23 +63,23 @@ class VeoClient:
         item = queue.get(scene.scene_id)
         if not force_regenerate and item:
             if item.video_status == "DONE" and out_video_path.exists() and out_video_path.stat().st_size > 0:
-                logger.info(f"[VeoClient] Scene {scene.scene_id} video already exists, skipping.")
+                logger.info(f"[VideoClient] Scene {scene.scene_id} video already exists, skipping.")
                 return out_video_path
             if item.video_status == "FALLBACK_MOTION":
-                logger.info(f"[VeoClient] Scene {scene.scene_id} marked as FALLBACK_MOTION, skipping.")
+                logger.info(f"[VideoClient] Scene {scene.scene_id} marked as FALLBACK_MOTION, skipping.")
                 return None
 
         # Prerequisite: Banana keyframe must exist
         keyframe_path = self.asset_mgr.images_dir / f"{scene.scene_id}.jpg"
         if not keyframe_path.exists() or not item or not item.image_media_id:
-            logger.error(f"[VeoClient] Keyframe for {scene.scene_id} missing. Cannot generate Veo video.")
+            logger.error(f"[VideoClient] Keyframe for {scene.scene_id} missing. Cannot generate video.")
             return None
 
         # Update queue status: GENERATING
         self.asset_mgr.update_item(scene.scene_id, video_status="GENERATING", last_error=None)
 
         try:
-            logger.info(f"[VeoClient] Submitting Veo I2V generation for {scene.scene_id}...")
+            logger.info(f"[VideoClient] Submitting {self.model_family} I2V generation for {scene.scene_id}...")
             video_prompt = scene.video_prompt or (
                 "Cinematic slow subject motion, subtle emotional breathing, realistic Vietnamese facial expressions, 24fps"
             )
@@ -86,8 +90,9 @@ class VeoClient:
                 project_id=project_id,
                 scene_id=scene.scene_id,
                 aspect_ratio="VIDEO_ASPECT_RATIO_LANDSCAPE",
-                duration_s=8,
-                resolution="720p"
+                duration_s=self.duration_s,
+                resolution="720p",
+                model_family=self.model_family
             )
 
             # Extract operation or media
@@ -96,10 +101,14 @@ class VeoClient:
             if isinstance(op_data, list) and op_data:
                 operation_id = op_data[0].get("operation", {}).get("name")
             elif isinstance(op_data, dict):
-                operation_id = op_data.get("operation_id") or op_data.get("name")
+                op_list = op_data.get("operations")
+                if isinstance(op_list, list) and op_list:
+                    operation_id = op_list[0].get("operation", {}).get("name")
+                else:
+                    operation_id = op_data.get("operation_id") or op_data.get("name")
 
             if not operation_id:
-                # Sometimes Flow returns media directly
+                # Flow may return media directly
                 media_list = res.get("media") or []
                 if media_list:
                     vid_url = media_list[0].get("video", {}).get("fifeUrl")
@@ -113,9 +122,9 @@ class VeoClient:
                         return out_video_path
 
             if not operation_id:
-                raise RuntimeError(f"Veo generate_video returned no operation_id: {res}")
+                raise RuntimeError(f"generate_video returned no operation_id: {res}")
 
-            logger.info(f"[VeoClient] Operation submitted: {operation_id}. Polling for completion...")
+            logger.info(f"[VideoClient] Operation submitted: {operation_id}. Polling for completion ({self.model_family})...")
             self.asset_mgr.update_item(scene.scene_id, video_operation_id=operation_id)
 
             # Polling loop
@@ -133,10 +142,14 @@ class VeoClient:
                 ops = poll_res.get("operations") or []
                 for op in ops:
                     status = op.get("status")
-                    m_id = op.get("mediaId")
-                    fife_url = op.get("fifeUrl")
+                    op_inner = op.get("operation", {}) if isinstance(op.get("operation"), dict) else {}
+                    op_meta = op_inner.get("metadata") or op.get("metadata") or {}
+                    vid_meta = op_meta.get("video", {}) if isinstance(op_meta, dict) else {}
 
-                    if status == "CAE" or fife_url:
+                    fife_url = op.get("fifeUrl") or op_inner.get("fifeUrl") or vid_meta.get("fifeUrl")
+                    m_id = op.get("mediaId") or op_inner.get("mediaId") or vid_meta.get("mediaId")
+
+                    if (status in ("CAE", "MEDIA_GENERATION_STATUS_SUCCESSFUL") and fife_url) or fife_url:
                         video_url = fife_url
                         video_media_id = m_id
                         break
@@ -145,10 +158,10 @@ class VeoClient:
                     break
 
             if not video_url:
-                raise TimeoutError(f"Veo generation timed out after {self.poll_timeout_s}s for operation {operation_id}")
+                raise TimeoutError(f"Video generation timed out after {self.poll_timeout_s}s for operation {operation_id}")
 
             # Download video MP4
-            logger.info(f"[VeoClient] Downloading Veo clip for {scene.scene_id} from {video_url[:60]}...")
+            logger.info(f"[VideoClient] Downloading clip for {scene.scene_id} from {video_url[:60]}...")
             self.adapter.download_asset(video_url, out_video_path)
 
             scene.video_media_id = video_media_id
@@ -161,7 +174,7 @@ class VeoClient:
                 video_media_id=video_media_id,
                 video_file=str(out_video_path.relative_to(self.asset_mgr.project_dir))
             )
-            logger.info(f"[VeoClient] Successfully generated & saved Veo video for {scene.scene_id} ({out_video_path.stat().st_size:,} bytes)")
+            logger.info(f"[VideoClient] Successfully generated & saved video ({self.model_family}) for {scene.scene_id} ({out_video_path.stat().st_size:,} bytes)")
             return out_video_path
 
         except Exception as e:
@@ -183,3 +196,8 @@ class VeoClient:
                     last_error=str(e)
                 )
             return None
+
+
+# Backwards compatibility and modern aliases
+VideoClient = VeoClient
+OmniFlashClient = VeoClient

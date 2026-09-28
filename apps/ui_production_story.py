@@ -443,7 +443,7 @@ def render_production_story_ui(preset_voices_cache_getter):
         with gr.Row():
             btn_analyze_visual = gr.Button("🔍 1. Phân tích Visual & Lập Scene Plan", variant="primary", scale=2)
             btn_gen_all_images = gr.Button("🎨 2. Tạo toàn bộ Keyframe (Banana Pro)", variant="primary", scale=2)
-            btn_gen_veo_videos = gr.Button("🎥 3. Tạo Video Chuyển động (Veo 3)", variant="secondary", scale=2)
+            btn_gen_veo_videos = gr.Button("🎥 3. Tạo Video Chuyển động (Omni 1.1 Flash)", variant="secondary", scale=2)
             btn_retry_failed_visual = gr.Button("🔄 Retry cảnh lỗi", variant="secondary", scale=1)
             btn_render_final_video = gr.Button("🎬 4. Ghép Final Episode MP4", variant="stop", scale=2)
 
@@ -1745,7 +1745,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
 
         table_rows = _build_scenes_table_data(scenes, asset_mgr)
         progress_md = _render_visual_progress_md(asset_mgr)
-        status_log = f"✅ Đã lập kế hoạch {len(scenes)} visual scenes (Banana: {sum(1 for s in scenes if s.visual_type == 'BANANA_IMAGE')}, Veo 3: {sum(1 for s in scenes if s.visual_type == 'VEO_I2V')})."
+        status_log = f"✅ Đã lập kế hoạch {len(scenes)} visual scenes (Banana: {sum(1 for s in scenes if s.visual_type == 'BANANA_IMAGE')}, Omni Flash Video: {sum(1 for s in scenes if s.visual_type == 'VEO_I2V')})."
 
         return status_log, progress_md, table_rows, scenes
 
@@ -1801,16 +1801,16 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         scenes = [VisualScene(**d) for d in plan_data["scenes"]]
 
         asset_mgr = VisualAssetManager(p_dir)
-        veo_client = VeoClient(flow_adapter, asset_mgr)
+        video_client = VeoClient(flow_adapter, asset_mgr, model_family="omni_flash", duration_s=4)
         st = flow_adapter.get_connection_status()
 
-        veo_scenes = [s for s in scenes if s.visual_type == "VEO_I2V"]
-        for sc in veo_scenes:
-            veo_client.generate_scene_video(sc, project_id=st.flow_project_id or "", allow_fallback=True)
+        video_scenes = [s for s in scenes if s.visual_type in ("VEO_I2V", "VIDEO_CLIP", "OMNI_FLASH_I2V")]
+        for sc in video_scenes:
+            video_client.generate_scene_video(sc, project_id=st.flow_project_id or "", allow_fallback=True)
 
         table_rows = _build_scenes_table_data(scenes, asset_mgr)
         progress_md = _render_visual_progress_md(asset_mgr)
-        status_log = f"🎥 Đã xử lý {len(veo_scenes)} cảnh Veo (Video hoặc Fallback Motion an toàn)."
+        status_log = f"🎥 Đã xử lý {len(video_scenes)} cảnh video bằng Gemini Omni 1.1 Flash (hoặc Fallback Motion an toàn)."
 
         return status_log, progress_md, table_rows
 
@@ -1835,7 +1835,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         char_lib = load_character_library()
         asset_mgr = VisualAssetManager(p_dir)
         banana_client = BananaClient(flow_adapter, asset_mgr, char_lib)
-        veo_client = VeoClient(flow_adapter, asset_mgr)
+        video_client = VeoClient(flow_adapter, asset_mgr, model_family="omni_flash", duration_s=4)
         st = flow_adapter.get_connection_status()
 
         queue = asset_mgr.load_queue()
@@ -1846,7 +1846,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
                 banana_client.generate_scene_keyframe(sc, project_id=st.flow_project_id or "", force_regenerate=True)
                 retried += 1
             if q_item and q_item.video_status == "FAILED":
-                veo_client.generate_scene_video(sc, project_id=st.flow_project_id or "", force_regenerate=True, allow_fallback=True)
+                video_client.generate_scene_video(sc, project_id=st.flow_project_id or "", force_regenerate=True, allow_fallback=True)
                 retried += 1
 
         table_rows = _build_scenes_table_data(scenes, asset_mgr)
