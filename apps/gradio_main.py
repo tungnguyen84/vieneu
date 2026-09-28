@@ -2619,10 +2619,16 @@ with gr.Blocks(theme=theme, css=css, title="VieNeu-TTS", head=head_html) as demo
         )
 
         # Persistence: Restore UI state on load
-        demo.load(
+        load_event = demo.load(
             fn=restore_ui_state,
             outputs=[model_status, btn_generate, btn_generate_conv, btn_stop]
         ).then(_after_model_load, outputs=[btn_generate_clone, user_voice_dd])
+
+        if story_components.get("refresh_music_fn") and story_components.get("slot_outputs_list"):
+            load_event.then(
+                story_components["refresh_music_fn"],
+                outputs=story_components["slot_outputs_list"]
+            )
 
 def main():
     # Cho phép override từ biến môi trường (hữu ích cho Docker)

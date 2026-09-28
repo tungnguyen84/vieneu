@@ -23,6 +23,7 @@ import logging
 import subprocess
 from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional, Union
+from datetime import datetime
 
 import numpy as np
 import soundfile as sf
@@ -47,8 +48,10 @@ if not logger.handlers:
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
 # Thư mục Music Library toàn cục
-GLOBAL_MUSIC_LIB_DIR = Path("music_library")
+GLOBAL_MUSIC_LIB_DIR = PROJECT_ROOT / "music_library"
 GLOBAL_ORIGINAL_DIR = GLOBAL_MUSIC_LIB_DIR / "original"
 GLOBAL_NORMALIZED_DIR = GLOBAL_MUSIC_LIB_DIR / "normalized"
 GLOBAL_LIB_JSON = GLOBAL_MUSIC_LIB_DIR / "library.json"
@@ -131,6 +134,8 @@ DEFAULT_SLOT_TRACKS = {
     "REFLECTION": "SCC_REFLECTION_01",
     "OUTRO": "SCC_OUTRO_01",
 }
+FIXED_SLOT_TRACKS = DEFAULT_SLOT_TRACKS
+
 
 
 # ==============================================================================
@@ -153,7 +158,7 @@ def probe_audio_file(file_path: Union[str, Path]) -> dict:
         "-print_format", "json",
         str(path)
     ]
-    res = subprocess.run(cmd, capture_output=True, text=True)
+    res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if res.returncode != 0:
         err_msg = res.stderr.strip() if res.stderr else "ffprobe failed"
         raise RuntimeError(f"FFmpeg decode failed: {err_msg}")
@@ -252,7 +257,7 @@ def analyze_audio_loudness(audio_path: Path) -> dict:
         "-f", "null", "-"
     ]
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True, encoding="utf-8", errors="replace")
         out = res.stderr
         st = out.rfind("{")
         en = out.rfind("}") + 1
@@ -307,7 +312,7 @@ def normalize_music_asset(
         "-c:a", "pcm_s24le",
         str(output_path)
     ]
-    res = subprocess.run(cmd, capture_output=True, text=True)
+    res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if res.returncode != 0:
         logger.warning(f"FFmpeg loudnorm thất bại cho {input_path}, thử fallback resample: {res.stderr}")
         cmd_fallback = [
@@ -317,7 +322,7 @@ def normalize_music_asset(
             "-c:a", "pcm_s24le",
             str(output_path)
         ]
-        res_fb = subprocess.run(cmd_fallback, capture_output=True, text=True)
+        res_fb = subprocess.run(cmd_fallback, capture_output=True, text=True, encoding="utf-8", errors="replace")
         if res_fb.returncode != 0:
             err_details = res_fb.stderr.strip() if res_fb.stderr else res.stderr.strip()
             raise RuntimeError(f"FFmpeg decode failed: {err_details}")
@@ -337,34 +342,37 @@ def normalize_music_asset(
 def init_global_music_library(lib_dir: Path = GLOBAL_MUSIC_LIB_DIR) -> dict:
     """
     Khởi tạo hoặc tải Music Library toàn cục lưu tại music_library/.
-    Nếu thư mục rỗng, tự động quét và nạp 6 bản nhạc mặc định từ assets sẵn có.
+    Nếu thư mục rỗng hoặc thiếu track, tự động quét và nạp 6 bản nhạc Suno mặc định.
     """
     lib_dir = Path(lib_dir)
     original_dir = lib_dir / "original"
     normalized_dir = lib_dir / "normalized"
+    backup_dir = lib_dir / "backups"
     lib_json_path = lib_dir / "library.json"
 
     original_dir.mkdir(parents=True, exist_ok=True)
     normalized_dir.mkdir(parents=True, exist_ok=True)
+    backup_dir.mkdir(parents=True, exist_ok=True)
 
     if lib_json_path.exists():
         try:
             with open(lib_json_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            # Kiểm tra xem các file normalized có còn đủ trên đĩa không
             tracks = data.get("tracks", {})
             valid = True
             for tid, tinfo in tracks.items():
                 p = Path(tinfo.get("normalized_file", ""))
+                if not p.is_absolute():
+                    p = PROJECT_ROOT / p
                 if not p.exists():
                     valid = False
                     break
             if valid and len(tracks) >= 6:
                 return data
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Lỗi đọc {lib_json_path}: {e}")
 
-    # Tự động tìm nguồn nhạc mặc định để nạp ban đầu
+    # Tự động tìm nguồn nhạc mặc định để nạp ban đầu (Ưu tiên các file Suno MP3 chất lượng cao)
     candidates = [
         Path(r"C:\Users\TPT\Documents\sau_canh_cua_ep01_v9_1_master_reference\01_audio\music"),
         Path(r"projects\test_v6_pack\music"),
@@ -372,12 +380,12 @@ def init_global_music_library(lib_dir: Path = GLOBAL_MUSIC_LIB_DIR) -> dict:
     ]
 
     seed_map = {
-        "SCC_INTRO_01": ("INTRO", ["01_signature_intro.wav"]),
-        "SCC_MYSTERY_01": ("MYSTERY", ["03_mystery_low.wav"]),
-        "SCC_TENSION_01": ("TENSION", ["05_tension_low.wav"]),
-        "SCC_EMOTIONAL_01": ("EMOTIONAL", ["06_emotional_low.wav"]),
-        "SCC_REFLECTION_01": ("REFLECTION", ["04_memory_soft.wav", "07_closing_soft.wav"]),
-        "SCC_OUTRO_01": ("OUTRO", ["02_signature_outro.wav"])
+        "SCC_INTRO_01": ("INTRO", ["01_signature_intro.mp3", "01_signature_intro.wav"]),
+        "SCC_MYSTERY_01": ("MYSTERY", ["03_mystery_low.mp3", "03_mystery_low.wav"]),
+        "SCC_TENSION_01": ("TENSION", ["05_tension_low.mp3", "05_tension_low.wav"]),
+        "SCC_EMOTIONAL_01": ("EMOTIONAL", ["06_emotional_low.mp3", "06_emotional_low.wav"]),
+        "SCC_REFLECTION_01": ("REFLECTION", ["04_reflection_low.mp3", "04_memory_soft.wav", "07_closing_soft.wav"]),
+        "SCC_OUTRO_01": ("OUTRO", ["02_signature_outro.mp3", "02_signature_outro.wav"])
     }
 
     library_data = {
@@ -387,6 +395,8 @@ def init_global_music_library(lib_dir: Path = GLOBAL_MUSIC_LIB_DIR) -> dict:
         "categories": DEFAULT_CATEGORY_CONFIG,
         "tracks": {}
     }
+
+    init_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     for track_id, (category, filenames) in seed_map.items():
         found_source = None
@@ -408,46 +418,56 @@ def init_global_music_library(lib_dir: Path = GLOBAL_MUSIC_LIB_DIR) -> dict:
             norm_dest = normalized_dir / f"{track_id}.wav"
             stats = normalize_music_asset(orig_dest, norm_dest, REFERENCE_MUSIC_LUFS, -1.0, REFERENCE_SAMPLE_RATE)
 
+            rel_orig = str(orig_dest.relative_to(PROJECT_ROOT)) if orig_dest.is_relative_to(PROJECT_ROOT) else str(orig_dest)
+            rel_norm = str(norm_dest.relative_to(PROJECT_ROOT)) if norm_dest.is_relative_to(PROJECT_ROOT) else str(norm_dest)
+
             library_data["tracks"][track_id] = {
                 "track_id": track_id,
                 "category": category,
                 "original_filename": found_source.name,
-                "original_file": str(orig_dest),
-                "normalized_file": str(norm_dest),
+                "original_file": rel_orig,
+                "normalized_file": rel_norm,
                 "duration_sec": stats["duration_sec"],
                 "integrated_lufs": stats["integrated_lufs"],
                 "true_peak_db": stats["true_peak_db"],
+                "updated_at": init_time_str,
                 "normalized_status": "READY"
             }
         else:
             # Tạo silent dummy track nếu chưa có file
             norm_dest = normalized_dir / f"{track_id}.wav"
             sf.write(str(norm_dest), np.zeros(int(REFERENCE_SAMPLE_RATE * 30), dtype=np.float32), REFERENCE_SAMPLE_RATE)
+            rel_norm = str(norm_dest.relative_to(PROJECT_ROOT)) if norm_dest.is_relative_to(PROJECT_ROOT) else str(norm_dest)
             library_data["tracks"][track_id] = {
                 "track_id": track_id,
                 "category": category,
                 "original_filename": f"{track_id}.wav",
-                "original_file": str(norm_dest),
-                "normalized_file": str(norm_dest),
+                "original_file": rel_norm,
+                "normalized_file": rel_norm,
                 "duration_sec": 30.0,
                 "integrated_lufs": -99.0,
                 "true_peak_db": -99.0,
+                "updated_at": init_time_str,
                 "normalized_status": "DUMMY"
             }
 
-    with open(lib_json_path, "w", encoding="utf-8") as f:
-        json.dump(library_data, f, ensure_ascii=False, indent=2)
-
+    save_global_music_library(library_data, lib_dir)
     logger.info(f"Khởi tạo Music Library thành công với {len(library_data['tracks'])} tracks tại {lib_dir}.")
     return library_data
 
 
 def save_global_music_library(library_data: dict, lib_dir: Path = GLOBAL_MUSIC_LIB_DIR) -> None:
-    """Lưu metadata Music Library vào library.json."""
+    """Lưu metadata Music Library vào library.json và flush/fsync trực tiếp xuống đĩa."""
     lib_dir = Path(lib_dir)
     lib_dir.mkdir(parents=True, exist_ok=True)
-    with open(lib_dir / "library.json", "w", encoding="utf-8") as f:
+    lib_file = lib_dir / "library.json"
+    with open(lib_file, "w", encoding="utf-8") as f:
         json.dump(library_data, f, ensure_ascii=False, indent=2)
+        f.flush()
+        try:
+            os.fsync(f.fileno())
+        except Exception:
+            pass
 
 
 def import_track_to_library(
@@ -458,14 +478,21 @@ def import_track_to_library(
     lib_dir: Path = GLOBAL_MUSIC_LIB_DIR
 ) -> Tuple[bool, str, dict]:
     """
-    Import một file nhạc mới (MP3/WAV/M4A/FLAC/OGG) vào category chỉ định.
-    Tự động phân tích bằng ffprobe, convert sang 48kHz WAV, normalize về -24 LUFS và lưu vào Library.
+    Thay thế và nạp file nhạc mới cho slot chỉ định (WAV/MP3/M4A/FLAC).
+    Quy trình chuẩn hóa persistent:
+    1. Decode và probe bằng FFmpeg.
+    2. Tự động backup track cũ vào music_library/backups/{TRACK_ID}_{YYYYMMDD_HHMMSS}.wav.
+    3. Normalize về -24.0 LUFS, True Peak <= -1.0 dBTP, 48kHz WAV stereo 24-bit.
+    4. Ghi đè vào persistent music_library/normalized/ với cùng Track ID (SCC_{SLOT}_01).
+    5. Cập nhật library.json với updated_at và flush/fsync xuống đĩa ngay lập tức.
     """
     lib_dir = Path(lib_dir)
     original_dir = lib_dir / "original"
     normalized_dir = lib_dir / "normalized"
+    backup_dir = lib_dir / "backups"
     original_dir.mkdir(parents=True, exist_ok=True)
     normalized_dir.mkdir(parents=True, exist_ok=True)
+    backup_dir.mkdir(parents=True, exist_ok=True)
 
     src_p = Path(file_source)
     if not src_p.exists():
@@ -475,13 +502,11 @@ def import_track_to_library(
     if category not in DEFAULT_CATEGORY_CONFIG:
         return False, f"Danh mục '{category}' không hợp lệ. Phải thuộc: {list(DEFAULT_CATEGORY_CONFIG.keys())}", {}
 
-    # Xác định track_id mặc định theo slot nếu không cung cấp
-    if not track_id or not str(track_id).strip():
-        track_id = DEFAULT_SLOT_TRACKS.get(category, f"SCC_{category}_01")
-    else:
-        track_id = str(track_id).strip()
+    # 6 slot cố định: KHÔNG tạo _02, luôn gán chặt với SCC_{category}_01
+    fixed_slot_id = FIXED_SLOT_TRACKS.get(category, f"SCC_{category}_01")
+    track_id = fixed_slot_id
 
-    # Nhận diện thông tin file qua ffprobe
+    # 1. Nhận diện thông tin file qua ffprobe
     try:
         probe = probe_audio_file(src_p)
     except Exception as e:
@@ -494,14 +519,26 @@ def import_track_to_library(
     orig_name_clean = orig_filename or src_p.name
     ext = detect_audio_extension(src_p, orig_name_clean)
 
-    # In log chi tiết theo yêu cầu
+    print(f"[MUSIC IMPORT] Thay thế slot: {category} -> Track ID: {track_id}", flush=True)
     print(f"[MUSIC IMPORT] original filename: {orig_name_clean}", flush=True)
     print(f"[MUSIC IMPORT] temp path: {src_p}", flush=True)
     print(f"[MUSIC IMPORT] extension: {ext}", flush=True)
     print(f"[MUSIC IMPORT] ffprobe codec: {codec_name}", flush=True)
     print(f"[MUSIC IMPORT] duration: {probe.get('duration_sec', 0.0):.2f}s", flush=True)
 
-    # Dọn dẹp file gốc cũ của track_id này nếu có đuôi khác
+    norm_dest = normalized_dir / f"{track_id}.wav"
+
+    # 2. Tự động backup track cũ vào music_library/backups/
+    if norm_dest.exists():
+        ts_backup = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_file = backup_dir / f"{track_id}_{ts_backup}.wav"
+        try:
+            shutil.copy2(norm_dest, backup_file)
+            print(f"[MUSIC BACKUP] Đã sao lưu track cũ vào: {backup_file.name}", flush=True)
+        except Exception as e:
+            logger.warning(f"Lỗi tạo backup: {e}")
+
+    # 3. Dọn dẹp file gốc cũ có đuôi khác của track_id này
     for old_f in original_dir.glob(f"{track_id}.*"):
         try:
             old_f.unlink()
@@ -511,30 +548,38 @@ def import_track_to_library(
     orig_dest = original_dir / f"{track_id}{ext}"
     shutil.copy2(src_p, orig_dest)
 
-    norm_dest = normalized_dir / f"{track_id}.wav"
+    # 4. Normalize qua FFmpeg
     try:
         norm_stats = normalize_music_asset(orig_dest, norm_dest, REFERENCE_MUSIC_LUFS, -1.0, REFERENCE_SAMPLE_RATE)
     except Exception as e:
-        return False, f"FFmpeg decode failed: {e}", {}
+        return False, f"FFmpeg decode/normalize failed: {e}", {}
 
+    # 5. Cập nhật library.json và flush xuống đĩa
     lib_data = init_global_music_library(lib_dir)
+    updated_at_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    rel_orig = str(orig_dest.relative_to(PROJECT_ROOT)) if orig_dest.is_relative_to(PROJECT_ROOT) else str(orig_dest)
+    rel_norm = str(norm_dest.relative_to(PROJECT_ROOT)) if norm_dest.is_relative_to(PROJECT_ROOT) else str(norm_dest)
+
     lib_data.setdefault("tracks", {})[track_id] = {
         "track_id": track_id,
         "category": category,
         "original_filename": orig_name_clean,
-        "original_file": str(orig_dest),
-        "normalized_file": str(norm_dest),
+        "original_file": rel_orig,
+        "normalized_file": rel_norm,
         "duration_sec": norm_stats["duration_sec"],
         "integrated_lufs": norm_stats["integrated_lufs"],
         "true_peak_db": norm_stats["true_peak_db"],
+        "updated_at": updated_at_str,
         "normalized_status": "READY"
     }
 
-    # Cập nhật default track của category nếu cần
     lib_data.setdefault("categories", DEFAULT_CATEGORY_CONFIG).setdefault(category, {})["default_track"] = track_id
     save_global_music_library(lib_data, lib_dir)
 
-    return True, f"Import & Chuẩn hóa thành công cho slot {category} (Track: {track_id}, {norm_stats['duration_sec']}s, {norm_stats['integrated_lufs']} LUFS)", lib_data["tracks"][track_id]
+    print(f"[MUSIC IMPORT] Đã lưu persistent thành công cho {track_id}: {norm_stats['duration_sec']}s, {norm_stats['integrated_lufs']} LUFS, Updated: {updated_at_str}", flush=True)
+
+    return True, f"Thay thế & Chuẩn hóa thành công cho slot {category} (Track: {track_id}, {norm_stats['duration_sec']}s, {norm_stats['integrated_lufs']} LUFS)", lib_data["tracks"][track_id]
 
 
 def get_slot_cards_data(lib_dir: Path = GLOBAL_MUSIC_LIB_DIR) -> dict:
@@ -546,11 +591,17 @@ def get_slot_cards_data(lib_dir: Path = GLOBAL_MUSIC_LIB_DIR) -> dict:
     slot_data = {}
     for slot in ["INTRO", "MYSTERY", "TENSION", "EMOTIONAL", "REFLECTION", "OUTRO"]:
         cat_cfg = categories.get(slot, {})
-        def_tid = cat_cfg.get("default_track", DEFAULT_SLOT_TRACKS.get(slot, f"SCC_{slot}_01"))
+        def_tid = cat_cfg.get("default_track", FIXED_SLOT_TRACKS.get(slot, f"SCC_{slot}_01"))
         tinfo = tracks.get(def_tid, {})
 
         norm_path = tinfo.get("normalized_file")
-        audio_preview = norm_path if (norm_path and Path(norm_path).exists()) else None
+        if norm_path:
+            p_norm = Path(norm_path)
+            if not p_norm.is_absolute():
+                p_norm = PROJECT_ROOT / p_norm
+            audio_preview = str(p_norm) if p_norm.exists() else None
+        else:
+            audio_preview = None
 
         slot_data[slot] = {
             "category": slot,
@@ -560,26 +611,29 @@ def get_slot_cards_data(lib_dir: Path = GLOBAL_MUSIC_LIB_DIR) -> dict:
             "duration_sec": tinfo.get("duration_sec", 0.0),
             "integrated_lufs": tinfo.get("integrated_lufs", -99.0),
             "true_peak_db": tinfo.get("true_peak_db", -99.0),
-            "audio_preview": str(audio_preview) if audio_preview else None,
+            "updated_at": tinfo.get("updated_at", "Mặc định hệ thống"),
+            "audio_preview": audio_preview,
             "status": tinfo.get("normalized_status", "MISSING")
         }
     return slot_data
 
 
 def format_slot_markdown(slot_info: dict) -> str:
-    """Format markdown hiển thị thông tin tóm tắt cho 1 slot nhạc."""
+    """Format markdown hiển thị thông tin tóm tắt cho 1 slot nhạc theo chuẩn Sau Cánh Cửa."""
     tid = slot_info.get("track_id", "—")
     fn = slot_info.get("original_filename", "—")
     dur = slot_info.get("duration_sec", 0.0)
     lufs = slot_info.get("integrated_lufs", -99.0)
     tp = slot_info.get("true_peak_db", -99.0)
+    updated_at = slot_info.get("updated_at", "Mặc định hệ thống")
     status = "✅ Sẵn sàng" if slot_info.get("status") == "READY" else "⚠️ Thiếu file"
 
     return (
-        f"**Track:** `{tid}`  \n"
         f"**File:** `{fn}`  \n"
-        f"**Thời lượng:** `{dur:.1f}s` | **LUFS:** `{lufs:.1f}` | **Peak:** `{tp:.1f} dBTP`  \n"
-        f"**Trạng thái:** {status}"
+        f"**Duration:** `{dur:.1f}s`  \n"
+        f"**LUFS:** `{lufs:.1f}` (Peak: `{tp:.1f} dBTP`)  \n"
+        f"**Updated At:** `{updated_at}`  \n"
+        f"**Trạng thái:** {status} (`{tid}`)"
     )
 
 
@@ -598,6 +652,7 @@ def get_music_library_table_data(lib_dir: Path = GLOBAL_MUSIC_LIB_DIR) -> List[L
         dur_txt = f"{tinfo.get('duration_sec', 0.0):.1f}s" if tinfo else "—"
         lufs_txt = f"{tinfo.get('integrated_lufs', -99.0):.1f} LUFS" if tinfo else "—"
         tp_txt = f"{tinfo.get('true_peak_db', -99.0):.1f} dBTP" if tinfo else "—"
+        upd_txt = tinfo.get("updated_at", "Mặc định") if tinfo else "—"
         status_txt = "✅ Sẵn sàng" if tinfo.get("normalized_status") == "READY" else "⚠️ Thiếu file"
 
         rows.append([
@@ -609,6 +664,7 @@ def get_music_library_table_data(lib_dir: Path = GLOBAL_MUSIC_LIB_DIR) -> List[L
             lufs_txt,
             tp_txt,
             f"{cat_cfg.get('default_level_db', -35.0):.1f} dB",
+            upd_txt,
             status_txt
         ])
     return rows
@@ -618,6 +674,7 @@ def resolve_track_file_for_cue(cue_name: str, project_overrides: dict = None, li
     """
     Tìm file normalized 48kHz WAV cho một cue hoặc category.
     Ưu tiên: project_overrides > library default track.
+    Đảm bảo luôn trả về đường dẫn tuyệt đối chính xác tới music_library/normalized/.
     """
     cue_upper = cue_name.upper().strip()
     if cue_upper == "DRY" or cue_upper == "NONE":
@@ -632,20 +689,26 @@ def resolve_track_file_for_cue(cue_name: str, project_overrides: dict = None, li
         target_track_id = project_overrides[cue_upper]
         if target_track_id in tracks:
             p = Path(tracks[target_track_id].get("normalized_file", ""))
+            if not p.is_absolute():
+                p = PROJECT_ROOT / p
             if p.exists():
                 return p
 
-    # 2. Khớp category chuẩn
+    # 2. Khớp category chuẩn (INTRO, MYSTERY, TENSION, EMOTIONAL, REFLECTION, OUTRO)
     if cue_upper in categories:
         def_tid = categories[cue_upper].get("default_track")
-        if def_tid in tracks:
+        if def_tid and def_tid in tracks:
             p = Path(tracks[def_tid].get("normalized_file", ""))
+            if not p.is_absolute():
+                p = PROJECT_ROOT / p
             if p.exists():
                 return p
 
-    # 3. Khớp track_id trực tiếp
+    # 3. Khớp track_id trực tiếp (ví dụ SCC_INTRO_01)
     if cue_upper in tracks:
         p = Path(tracks[cue_upper].get("normalized_file", ""))
+        if not p.is_absolute():
+            p = PROJECT_ROOT / p
         if p.exists():
             return p
 
@@ -662,12 +725,15 @@ def resolve_track_file_for_cue(cue_name: str, project_overrides: dict = None, li
     if cue_upper in alias_map:
         mapped_cat = alias_map[cue_upper]
         def_tid = categories.get(mapped_cat, {}).get("default_track")
-        if def_tid in tracks:
+        if def_tid and def_tid in tracks:
             p = Path(tracks[def_tid].get("normalized_file", ""))
+            if not p.is_absolute():
+                p = PROJECT_ROOT / p
             if p.exists():
                 return p
 
     return None
+
 
 
 # ==============================================================================

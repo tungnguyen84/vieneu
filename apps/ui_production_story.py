@@ -163,8 +163,11 @@ def render_production_story_ui(preset_voices_cache_getter):
         slot_keys = ["INTRO", "MYSTERY", "TENSION", "EMOTIONAL", "REFLECTION", "OUTRO"]
         slot_info_components = {}
         slot_audio_components = {}
+        slot_file_components = {}
+        slot_replace_btns = {}
+        slot_status_components = {}
 
-        # 6 Slot trực tiếp: 2 hàng x 3 cột
+        # 6 Slot trực tiếp: 2 hàng x 3 cột (Mỗi slot có [▶ Preview] và [🔄 Replace] riêng biệt)
         with gr.Row():
             for sk in slot_keys[:3]:
                 sdata = slot_cards[sk]
@@ -172,9 +175,16 @@ def render_production_story_ui(preset_voices_cache_getter):
                     with gr.Group():
                         gr.Markdown(f"### 🎵 {sk} — {sdata['display_name']}")
                         s_info = gr.Markdown(format_slot_markdown(sdata))
-                        s_audio = gr.Audio(value=sdata["audio_preview"], label=f"▶ Nghe thử {sk}", interactive=False)
+                        s_audio = gr.Audio(value=sdata["audio_preview"], label=f"▶ Preview {sk}", interactive=False)
+                        with gr.Row():
+                            s_file = gr.File(label=f"Nạp Suno mới ({sk})", scale=2)
+                            s_btn = gr.Button(f"🔄 Thay thế", variant="primary", scale=1)
+                        s_status = gr.Markdown("")
                         slot_info_components[sk] = s_info
                         slot_audio_components[sk] = s_audio
+                        slot_file_components[sk] = s_file
+                        slot_replace_btns[sk] = s_btn
+                        slot_status_components[sk] = s_status
 
         with gr.Row():
             for sk in slot_keys[3:]:
@@ -183,18 +193,25 @@ def render_production_story_ui(preset_voices_cache_getter):
                     with gr.Group():
                         gr.Markdown(f"### 🎵 {sk} — {sdata['display_name']}")
                         s_info = gr.Markdown(format_slot_markdown(sdata))
-                        s_audio = gr.Audio(value=sdata["audio_preview"], label=f"▶ Nghe thử {sk}", interactive=False)
+                        s_audio = gr.Audio(value=sdata["audio_preview"], label=f"▶ Preview {sk}", interactive=False)
+                        with gr.Row():
+                            s_file = gr.File(label=f"Nạp Suno mới ({sk})", scale=2)
+                            s_btn = gr.Button(f"🔄 Thay thế", variant="primary", scale=1)
+                        s_status = gr.Markdown("")
                         slot_info_components[sk] = s_info
                         slot_audio_components[sk] = s_audio
+                        slot_file_components[sk] = s_file
+                        slot_replace_btns[sk] = s_btn
+                        slot_status_components[sk] = s_status
 
         # Quick Replace Panel
         with gr.Group():
-            gr.Markdown("#### 🔄 Thay thế file nhạc cho Slot (Hỗ trợ M4A Suno, MP3, WAV, FLAC)")
+            gr.Markdown("#### ⚡ Hoặc chọn nhanh từ danh sách (Hỗ trợ M4A Suno, MP3, WAV, FLAC):")
             with gr.Row():
                 quick_slot_dd = gr.Dropdown(
                     label="1. Chọn Slot cần thay nhạc",
                     choices=slot_keys,
-                    value="MYSTERY",
+                    value="INTRO",
                     scale=2
                 )
                 quick_file_upload = gr.File(
@@ -434,6 +451,9 @@ def render_production_story_ui(preset_voices_cache_getter):
         "music_library_df": music_library_df,
         "slot_info_components": slot_info_components,
         "slot_audio_components": slot_audio_components,
+        "slot_file_components": slot_file_components,
+        "slot_replace_btns": slot_replace_btns,
+        "slot_status_components": slot_status_components,
         "quick_slot_dd": quick_slot_dd,
         "quick_file_upload": quick_file_upload,
         "btn_replace_slot_track": btn_replace_slot_track,
@@ -996,6 +1016,25 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         inputs=[c["quick_slot_dd"], c["quick_file_upload"]],
         outputs=[c["replace_slot_status_md"]] + slot_outputs + [c["music_library_df"]]
     )
+
+    # 6 Direct Slot Replace Buttons
+    for sk in slot_keys:
+        if sk in c.get("slot_replace_btns", {}) and sk in c.get("slot_file_components", {}):
+            s_btn = c["slot_replace_btns"][sk]
+            s_file = c["slot_file_components"][sk]
+            s_status = c["slot_status_components"][sk]
+
+            def _make_slot_replace_fn(slot_name):
+                return lambda f: _on_replace_slot_track(slot_name, f)
+
+            s_btn.click(
+                fn=_make_slot_replace_fn(sk),
+                inputs=[s_file],
+                outputs=[s_status] + slot_outputs + [c["music_library_df"]]
+            )
+
+    c["refresh_music_fn"] = lambda: _refresh_slot_ui_states() + [get_music_library_table_data()]
+    c["slot_outputs_list"] = slot_outputs + [c["music_library_df"]]
 
     def _on_adv_import_track(cat, track_id, file_obj):
         fp, orig_name = _extract_upload_file(file_obj)
