@@ -123,10 +123,100 @@ DEFAULT_CATEGORY_CONFIG = {
     }
 }
 
+DEFAULT_SLOT_TRACKS = {
+    "INTRO": "SCC_INTRO_01",
+    "MYSTERY": "SCC_MYSTERY_01",
+    "TENSION": "SCC_TENSION_01",
+    "EMOTIONAL": "SCC_EMOTIONAL_01",
+    "REFLECTION": "SCC_REFLECTION_01",
+    "OUTRO": "SCC_OUTRO_01",
+}
+
 
 # ==============================================================================
 # 1. LOUDNESS ANALYSIS & NORMALIZATION
 # ==============================================================================
+
+def probe_audio_file(file_path: Union[str, Path]) -> dict:
+    """
+    Sử dụng ffprobe để nhận diện container, codec, thời lượng, sample_rate, channels.
+    Hỗ trợ mọi định dạng: WAV, MP3, M4A (AAC), FLAC, OGG...
+    Không phụ thuộc vào đuôi file (kể cả temp file không có đuôi mở rộng).
+    """
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"File không tồn tại: {path}")
+
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=format_name,duration:stream=codec_name,sample_rate,channels,codec_type",
+        "-print_format", "json",
+        str(path)
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0:
+        err_msg = res.stderr.strip() if res.stderr else "ffprobe failed"
+        raise RuntimeError(f"FFmpeg decode failed: {err_msg}")
+
+    data = json.loads(res.stdout or "{}")
+    format_info = data.get("format", {})
+    streams = data.get("streams", [])
+
+    audio_stream = next((s for s in streams if s.get("codec_type") == "audio"), {})
+    codec_name = str(audio_stream.get("codec_name", "")).lower()
+    format_name = str(format_info.get("format_name", "")).lower()
+
+    dur_str = format_info.get("duration") or audio_stream.get("duration") or "0.0"
+    try:
+        duration_sec = float(dur_str)
+    except Exception:
+        duration_sec = 0.0
+
+    return {
+        "codec_name": codec_name,
+        "format_name": format_name,
+        "duration_sec": duration_sec,
+        "sample_rate": int(audio_stream.get("sample_rate", 48000) or 48000),
+        "channels": int(audio_stream.get("channels", 2) or 2)
+    }
+
+
+def detect_audio_extension(file_path: Union[str, Path], orig_filename: Optional[str] = None) -> str:
+    """
+    Xác định extension chuẩn (.wav, .mp3, .m4a, .flac, .ogg) từ file_path, orig_filename hoặc ffprobe.
+    """
+    if orig_filename:
+        suf = Path(orig_filename).suffix.lower()
+        if suf in [".wav", ".mp3", ".m4a", ".flac", ".ogg"]:
+            return suf
+        if suf == ".aac":
+            return ".m4a"
+
+    suf = Path(file_path).suffix.lower()
+    if suf in [".wav", ".mp3", ".m4a", ".flac", ".ogg"]:
+        return suf
+    if suf == ".aac":
+        return ".m4a"
+
+    try:
+        probe = probe_audio_file(file_path)
+        codec = probe.get("codec_name", "")
+        fmt = probe.get("format_name", "")
+        if "aac" in codec or "m4a" in fmt or "mov,mp4" in fmt:
+            return ".m4a"
+        elif "mp3" in codec or "mp3" in fmt:
+            return ".mp3"
+        elif "flac" in codec or "flac" in fmt:
+            return ".flac"
+        elif "ogg" in codec or "vorbis" in codec or "opus" in codec or "ogg" in fmt:
+            return ".ogg"
+        elif "pcm" in codec or "wav" in fmt:
+            return ".wav"
+    except Exception:
+        pass
+
+    return ".wav"
+
 
 def analyze_audio_loudness(audio_path: Path) -> dict:
     """
@@ -146,10 +236,14 @@ def analyze_audio_loudness(audio_path: Path) -> dict:
 
     duration = 0.0
     try:
-        info = sf.info(str(audio_path))
-        duration = float(info.duration)
+        probe = probe_audio_file(audio_path)
+        duration = float(probe.get("duration_sec", 0.0))
     except Exception:
-        pass
+        try:
+            info = sf.info(str(audio_path))
+            duration = float(info.duration)
+        except Exception:
+            pass
 
     cmd = [
         "ffmpeg", "-hide_banner",
@@ -195,6 +289,7 @@ def normalize_music_asset(
     """
     Chuẩn hóa track nhạc về reference loudness (-24.0 LUFS, 48kHz WAV).
     Không làm thay đổi file gốc. Lưu bản normalized vào output_path.
+    Nếu FFmpeg lỗi, ném RuntimeError chứa chi tiết stderr.
     """
     input_path = Path(input_path)
     output_path = Path(output_path)
@@ -203,7 +298,7 @@ def normalize_music_asset(
     # 1. Phân tích file đầu vào
     stats = analyze_audio_loudness(input_path)
 
-    # 2. Chạy FFmpeg loudnorm 2-pass hoặc linear normalization sang 48kHz WAV
+    # 2. Chạy FFmpeg loudnorm sang 48kHz WAV PCM 24-bit
     cmd = [
         "ffmpeg", "-y", "-hide_banner",
         "-i", str(input_path),
@@ -212,10 +307,9 @@ def normalize_music_asset(
         "-c:a", "pcm_s24le",
         str(output_path)
     ]
-    try:
-        subprocess.run(cmd, capture_output=True, check=True)
-    except Exception as e:
-        logger.warning(f"Lỗi khi chạy ffmpeg loudnorm cho {input_path}, thử resample thông thường: {e}")
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0:
+        logger.warning(f"FFmpeg loudnorm thất bại cho {input_path}, thử fallback resample: {res.stderr}")
         cmd_fallback = [
             "ffmpeg", "-y", "-hide_banner",
             "-i", str(input_path),
@@ -223,7 +317,10 @@ def normalize_music_asset(
             "-c:a", "pcm_s24le",
             str(output_path)
         ]
-        subprocess.run(cmd_fallback, capture_output=True, check=True)
+        res_fb = subprocess.run(cmd_fallback, capture_output=True, text=True)
+        if res_fb.returncode != 0:
+            err_details = res_fb.stderr.strip() if res_fb.stderr else res.stderr.strip()
+            raise RuntimeError(f"FFmpeg decode failed: {err_details}")
 
     # 3. Phân tích lại file normalized
     norm_stats = analyze_audio_loudness(output_path)
@@ -355,13 +452,14 @@ def save_global_music_library(library_data: dict, lib_dir: Path = GLOBAL_MUSIC_L
 
 def import_track_to_library(
     category: str,
-    track_id: str,
+    track_id: Optional[str],
     file_source: Union[str, Path],
+    orig_filename: Optional[str] = None,
     lib_dir: Path = GLOBAL_MUSIC_LIB_DIR
 ) -> Tuple[bool, str, dict]:
     """
-    Import một file nhạc mới (MP3/WAV/M4A) vào category chỉ định.
-    Tự động phân tích, convert sang 48kHz WAV, normalize về -24 LUFS và lưu vào Library.
+    Import một file nhạc mới (MP3/WAV/M4A/FLAC/OGG) vào category chỉ định.
+    Tự động phân tích bằng ffprobe, convert sang 48kHz WAV, normalize về -24 LUFS và lưu vào Library.
     """
     lib_dir = Path(lib_dir)
     original_dir = lib_dir / "original"
@@ -371,27 +469,59 @@ def import_track_to_library(
 
     src_p = Path(file_source)
     if not src_p.exists():
-        return False, f"File không tồn tại: {src_p}", {}
+        raise FileNotFoundError(f"File nguồn tải lên không tồn tại tại: {src_p}")
 
     category = category.upper().strip()
     if category not in DEFAULT_CATEGORY_CONFIG:
         return False, f"Danh mục '{category}' không hợp lệ. Phải thuộc: {list(DEFAULT_CATEGORY_CONFIG.keys())}", {}
 
-    ext = src_p.suffix.lower()
-    if ext not in [".wav", ".mp3", ".m4a", ".flac", ".ogg"]:
-        return False, f"Định dạng âm thanh '{ext}' không được hỗ trợ.", {}
+    # Xác định track_id mặc định theo slot nếu không cung cấp
+    if not track_id or not str(track_id).strip():
+        track_id = DEFAULT_SLOT_TRACKS.get(category, f"SCC_{category}_01")
+    else:
+        track_id = str(track_id).strip()
+
+    # Nhận diện thông tin file qua ffprobe
+    try:
+        probe = probe_audio_file(src_p)
+    except Exception as e:
+        return False, f"Định dạng âm thanh '{src_p.suffix}' không được hỗ trợ (FFmpeg decode failed: {e})", {}
+
+    codec_name = probe.get("codec_name", "")
+    if not codec_name:
+        return False, f"Định dạng file '{src_p.suffix}' không được hỗ trợ: Không tìm thấy audio stream hợp lệ trong file.", {}
+
+    orig_name_clean = orig_filename or src_p.name
+    ext = detect_audio_extension(src_p, orig_name_clean)
+
+    # In log chi tiết theo yêu cầu
+    print(f"[MUSIC IMPORT] original filename: {orig_name_clean}", flush=True)
+    print(f"[MUSIC IMPORT] temp path: {src_p}", flush=True)
+    print(f"[MUSIC IMPORT] extension: {ext}", flush=True)
+    print(f"[MUSIC IMPORT] ffprobe codec: {codec_name}", flush=True)
+    print(f"[MUSIC IMPORT] duration: {probe.get('duration_sec', 0.0):.2f}s", flush=True)
+
+    # Dọn dẹp file gốc cũ của track_id này nếu có đuôi khác
+    for old_f in original_dir.glob(f"{track_id}.*"):
+        try:
+            old_f.unlink()
+        except Exception:
+            pass
 
     orig_dest = original_dir / f"{track_id}{ext}"
     shutil.copy2(src_p, orig_dest)
 
     norm_dest = normalized_dir / f"{track_id}.wav"
-    norm_stats = normalize_music_asset(orig_dest, norm_dest, REFERENCE_MUSIC_LUFS, -1.0, REFERENCE_SAMPLE_RATE)
+    try:
+        norm_stats = normalize_music_asset(orig_dest, norm_dest, REFERENCE_MUSIC_LUFS, -1.0, REFERENCE_SAMPLE_RATE)
+    except Exception as e:
+        return False, f"FFmpeg decode failed: {e}", {}
 
     lib_data = init_global_music_library(lib_dir)
     lib_data.setdefault("tracks", {})[track_id] = {
         "track_id": track_id,
         "category": category,
-        "original_filename": src_p.name,
+        "original_filename": orig_name_clean,
         "original_file": str(orig_dest),
         "normalized_file": str(norm_dest),
         "duration_sec": norm_stats["duration_sec"],
@@ -404,7 +534,53 @@ def import_track_to_library(
     lib_data.setdefault("categories", DEFAULT_CATEGORY_CONFIG).setdefault(category, {})["default_track"] = track_id
     save_global_music_library(lib_data, lib_dir)
 
-    return True, f"Import & Normalize thành công: {track_id} ({norm_stats['duration_sec']}s, {norm_stats['integrated_lufs']} LUFS)", lib_data["tracks"][track_id]
+    return True, f"Import & Chuẩn hóa thành công cho slot {category} (Track: {track_id}, {norm_stats['duration_sec']}s, {norm_stats['integrated_lufs']} LUFS)", lib_data["tracks"][track_id]
+
+
+def get_slot_cards_data(lib_dir: Path = GLOBAL_MUSIC_LIB_DIR) -> dict:
+    """Lấy dữ liệu chi tiết cho 6 slot nhạc chính."""
+    lib_data = init_global_music_library(lib_dir)
+    tracks = lib_data.get("tracks", {})
+    categories = lib_data.get("categories", DEFAULT_CATEGORY_CONFIG)
+
+    slot_data = {}
+    for slot in ["INTRO", "MYSTERY", "TENSION", "EMOTIONAL", "REFLECTION", "OUTRO"]:
+        cat_cfg = categories.get(slot, {})
+        def_tid = cat_cfg.get("default_track", DEFAULT_SLOT_TRACKS.get(slot, f"SCC_{slot}_01"))
+        tinfo = tracks.get(def_tid, {})
+
+        norm_path = tinfo.get("normalized_file")
+        audio_preview = norm_path if (norm_path and Path(norm_path).exists()) else None
+
+        slot_data[slot] = {
+            "category": slot,
+            "display_name": cat_cfg.get("display_name", slot),
+            "track_id": def_tid,
+            "original_filename": tinfo.get("original_filename", "Chưa có file"),
+            "duration_sec": tinfo.get("duration_sec", 0.0),
+            "integrated_lufs": tinfo.get("integrated_lufs", -99.0),
+            "true_peak_db": tinfo.get("true_peak_db", -99.0),
+            "audio_preview": str(audio_preview) if audio_preview else None,
+            "status": tinfo.get("normalized_status", "MISSING")
+        }
+    return slot_data
+
+
+def format_slot_markdown(slot_info: dict) -> str:
+    """Format markdown hiển thị thông tin tóm tắt cho 1 slot nhạc."""
+    tid = slot_info.get("track_id", "—")
+    fn = slot_info.get("original_filename", "—")
+    dur = slot_info.get("duration_sec", 0.0)
+    lufs = slot_info.get("integrated_lufs", -99.0)
+    tp = slot_info.get("true_peak_db", -99.0)
+    status = "✅ Sẵn sàng" if slot_info.get("status") == "READY" else "⚠️ Thiếu file"
+
+    return (
+        f"**Track:** `{tid}`  \n"
+        f"**File:** `{fn}`  \n"
+        f"**Thời lượng:** `{dur:.1f}s` | **LUFS:** `{lufs:.1f}` | **Peak:** `{tp:.1f} dBTP`  \n"
+        f"**Trạng thái:** {status}"
+    )
 
 
 def get_music_library_table_data(lib_dir: Path = GLOBAL_MUSIC_LIB_DIR) -> List[List[Any]]:
@@ -894,13 +1070,15 @@ def generate_cue_sheet_from_segments(
 # 5. MUSIC COVERAGE METRIC & TIMELINE VISUALIZER
 # ==============================================================================
 
-def calculate_music_coverage(cue_sheet: List[dict], total_episode_sec: float) -> dict:
+def calculate_music_coverage(cue_sheet: List[dict], total_episode_sec: Union[float, List[dict]] = 0.0) -> dict:
     """
     Tính toán chỉ số Music Coverage:
     Total Episode duration, Music duration, Dry duration, Coverage percentage.
     Đưa ra khuyến nghị 25–40% và cảnh báo nếu >60%.
     """
-    if total_episode_sec <= 0:
+    if isinstance(total_episode_sec, list):
+        total_episode_sec = max([float(e.get("speech_end_sec", 0.0)) for e in total_episode_sec], default=0.0)
+    elif total_episode_sec <= 0:
         total_episode_sec = max([c["end_sec"] for c in cue_sheet], default=0.0)
 
     music_dur = 0.0
@@ -1206,7 +1384,8 @@ def build_final_mix(
     ducking_db: float = -2.5,
     target_lufs: float = -14.0,
     true_peak_db: float = -1.0,
-    sample_rate: int = REFERENCE_SAMPLE_RATE
+    sample_rate: int = REFERENCE_SAMPLE_RATE,
+    target_peak_db: Optional[float] = None
 ) -> Tuple[bool, str, dict]:
     """
     Quy trình hòa âm & Master hoàn thiện:
@@ -1219,6 +1398,8 @@ def build_final_mix(
     7. Xuất master/final_mix.wav và master/final_mix.mp3 (320kbps).
     8. Lưu mix/cue_sheet.json và mix/mix_report.json.
     """
+    if target_peak_db is not None:
+        true_peak_db = target_peak_db
     project_dir = Path(project_dir)
     master_dir = project_dir / "master"
     mix_dir = project_dir / "mix"
@@ -1318,6 +1499,13 @@ def build_final_mix(
             "final_mix_wav": str(final_wav_path),
             "final_mix_mp3": str(final_mp3_path),
             "cue_sheet_json": str(cue_sheet_path)
+        },
+        "final_master_wav": str(final_wav_path),
+        "final_master_mp3": str(final_mp3_path),
+        "music_stem": str(music_mix_path),
+        "master_stats": {
+            "integrated_lufs": final_stats["integrated_lufs"],
+            "true_peak_db": final_stats["true_peak_db"]
         }
     }
 

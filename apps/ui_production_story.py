@@ -40,7 +40,10 @@ from apps.music_engine import (
     generate_visual_timeline_html,
     build_final_mix,
     preview_region_mix,
-    DEFAULT_CATEGORY_CONFIG
+    DEFAULT_CATEGORY_CONFIG,
+    get_slot_cards_data,
+    format_slot_markdown,
+    DEFAULT_SLOT_TRACKS
 )
 
 MAX_STORY_CHARACTERS = 8
@@ -149,44 +152,79 @@ def render_production_story_ui(preset_voices_cache_getter):
         apply_status_md = gr.Markdown("")
 
     # 4. Music Library Section (Persistent & Normalized)
-    with gr.Accordion("🎵 2. Thư viện Nhạc (Persistent Music Library & Normalization)", open=False) as acc_music_lib:
+    with gr.Accordion("🎵 2. THƯ VIỆN NHẠC NỀN", open=True) as acc_music_lib:
         gr.Markdown(
-            "Thư viện 6 loại nhạc chuẩn cho series *Sau Cánh Cửa* (`INTRO`, `MYSTERY`, `TENSION`, `EMOTIONAL`, `REFLECTION`, `OUTRO`).\n"
-            "Tất cả track được **tự động phân tích và chuẩn hóa về reference loudness (-24.0 LUFS, 48kHz WAV)** "
-            "giúp mọi bài nhạc có mức âm lượng đồng nhất tuyệt đối khi chỉnh dB."
+            "Thư viện 6 loại nhạc nền chuẩn cho series *Sau Cánh Cửa* (`INTRO`, `MYSTERY`, `TENSION`, `EMOTIONAL`, `REFLECTION`, `OUTRO`).\n"
+            "Tất cả track được **tự động phân tích (FFprobe) và chuẩn hóa về reference loudness (-24.0 LUFS, 48kHz WAV)** "
+            "giúp âm lượng kịch bản luôn cân bằng và chuyên nghiệp."
         )
 
-        music_lib_headers = ["Danh mục", "Tên hiển thị", "Mã Track", "File âm thanh gốc", "Thời lượng", "Integrated LUFS", "True Peak", "Default Level", "Trạng thái"]
-        initial_lib_rows = get_music_library_table_data()
-        music_library_df = gr.DataFrame(
-            value=initial_lib_rows,
-            headers=music_lib_headers,
-            datatype=["str", "str", "str", "str", "str", "str", "str", "str", "str"],
-            row_count=(6, "dynamic"),
-            interactive=False
-        )
+        slot_cards = get_slot_cards_data()
+        slot_keys = ["INTRO", "MYSTERY", "TENSION", "EMOTIONAL", "REFLECTION", "OUTRO"]
+        slot_info_components = {}
+        slot_audio_components = {}
+
+        # 6 Slot trực tiếp: 2 hàng x 3 cột
+        with gr.Row():
+            for sk in slot_keys[:3]:
+                sdata = slot_cards[sk]
+                with gr.Column(scale=1):
+                    with gr.Group():
+                        gr.Markdown(f"### 🎵 {sk} — {sdata['display_name']}")
+                        s_info = gr.Markdown(format_slot_markdown(sdata))
+                        s_audio = gr.Audio(value=sdata["audio_preview"], label=f"▶ Nghe thử {sk}", interactive=False)
+                        slot_info_components[sk] = s_info
+                        slot_audio_components[sk] = s_audio
 
         with gr.Row():
-            preview_cat_dd = gr.Dropdown(
-                label="Chọn loại nhạc để nghe thử",
-                choices=["INTRO", "MYSTERY", "TENSION", "EMOTIONAL", "REFLECTION", "OUTRO"],
-                value="MYSTERY",
-                scale=2
-            )
-            btn_preview_lib_track = gr.Button("▶ Nghe thử track trong Thư viện", size="sm", variant="secondary", scale=1)
-            audio_lib_preview = gr.Audio(label="Bản nghe thử track nhạc (Normalized 48kHz)", interactive=False, scale=3)
+            for sk in slot_keys[3:]:
+                sdata = slot_cards[sk]
+                with gr.Column(scale=1):
+                    with gr.Group():
+                        gr.Markdown(f"### 🎵 {sk} — {sdata['display_name']}")
+                        s_info = gr.Markdown(format_slot_markdown(sdata))
+                        s_audio = gr.Audio(value=sdata["audio_preview"], label=f"▶ Nghe thử {sk}", interactive=False)
+                        slot_info_components[sk] = s_info
+                        slot_audio_components[sk] = s_audio
 
-        with gr.Accordion("📥 Thêm / Thay thế Track Nhạc vào Thư viện", open=False):
+        # Quick Replace Panel
+        with gr.Group():
+            gr.Markdown("#### 🔄 Thay thế file nhạc cho Slot (Hỗ trợ M4A Suno, MP3, WAV, FLAC)")
             with gr.Row():
-                upload_cat_dd = gr.Dropdown(
-                    label="Danh mục cần nạp",
-                    choices=["INTRO", "MYSTERY", "TENSION", "EMOTIONAL", "REFLECTION", "OUTRO"],
+                quick_slot_dd = gr.Dropdown(
+                    label="1. Chọn Slot cần thay nhạc",
+                    choices=slot_keys,
                     value="MYSTERY",
                     scale=2
                 )
-                upload_track_id_box = gr.Textbox(label="Mã Track ID mới (e.g. SCC_MYSTERY_02)", value="SCC_MYSTERY_02", scale=2)
-                upload_file_btn = gr.File(label="Upload file âm thanh (WAV, MP3, M4A)", scale=3)
-            btn_execute_import_track = gr.Button("📥 Nạp vào Thư viện & Tự động Chuẩn hóa (-24 LUFS)", variant="primary")
+                quick_file_upload = gr.File(
+                    label="2. Chọn / Kéo thả file âm thanh (M4A Suno, MP3, WAV, FLAC)",
+                    scale=4
+                )
+                btn_replace_slot_track = gr.Button("🔄 Cập nhật Slot & Chuẩn hóa (-24 LUFS)", variant="primary", scale=2)
+            replace_slot_status_md = gr.Markdown("")
+
+        # Advanced Settings Accordion
+        with gr.Accordion("⚙️ Cài đặt nâng cao (Chi tiết & Bảng mã Track)", open=False):
+            music_lib_headers = ["Danh mục", "Tên hiển thị", "Mã Track", "File âm thanh gốc", "Thời lượng", "Integrated LUFS", "True Peak", "Default Level", "Trạng thái"]
+            initial_lib_rows = get_music_library_table_data()
+            music_library_df = gr.DataFrame(
+                value=initial_lib_rows,
+                headers=music_lib_headers,
+                datatype=["str", "str", "str", "str", "str", "str", "str", "str", "str"],
+                row_count=(6, "dynamic"),
+                interactive=False
+            )
+            with gr.Row():
+                upload_cat_dd = gr.Dropdown(
+                    label="Danh mục",
+                    choices=slot_keys,
+                    value="MYSTERY",
+                    scale=2
+                )
+                upload_track_id_box = gr.Textbox(label="Mã Track ID tùy biến (Tùy chọn, vd: SCC_MYSTERY_02)", value="", scale=2)
+                upload_file_btn = gr.File(label="Upload file âm thanh tùy biến", scale=3)
+            btn_execute_import_track = gr.Button("📥 Nạp Track tùy biến vào Thư viện", variant="secondary")
             import_track_status_md = gr.Markdown("")
 
     # 5. Segments Table Section
@@ -394,9 +432,12 @@ def render_production_story_ui(preset_voices_cache_getter):
         "btn_refresh_voices": btn_refresh_voices,
         "apply_status_md": apply_status_md,
         "music_library_df": music_library_df,
-        "preview_cat_dd": preview_cat_dd,
-        "btn_preview_lib_track": btn_preview_lib_track,
-        "audio_lib_preview": audio_lib_preview,
+        "slot_info_components": slot_info_components,
+        "slot_audio_components": slot_audio_components,
+        "quick_slot_dd": quick_slot_dd,
+        "quick_file_upload": quick_file_upload,
+        "btn_replace_slot_track": btn_replace_slot_track,
+        "replace_slot_status_md": replace_slot_status_md,
         "upload_cat_dd": upload_cat_dd,
         "upload_track_id_box": upload_track_id_box,
         "upload_file_btn": upload_file_btn,
@@ -886,39 +927,105 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         outputs=[*c["char_voice_dds"], c["apply_status_md"]]
     )
 
-    # 5. Music Library Management (Preview & Upload)
-    def _on_preview_lib_track(category):
-        p = resolve_track_file_for_cue(category)
-        return str(p) if (p and p.exists()) else None
+    # 5. Music Library Management (Direct Slot Replacement & Advanced Upload)
+    slot_keys = ["INTRO", "MYSTERY", "TENSION", "EMOTIONAL", "REFLECTION", "OUTRO"]
+    slot_outputs = []
+    for sk in slot_keys:
+        slot_outputs.append(c["slot_info_components"][sk])
+        slot_outputs.append(c["slot_audio_components"][sk])
 
-    c["btn_preview_lib_track"].click(
-        fn=_on_preview_lib_track,
-        inputs=[c["preview_cat_dd"]],
-        outputs=[c["audio_lib_preview"]]
-    )
-
-    def _on_import_track(cat, track_id, file_obj):
-        if not file_obj or not track_id:
-            return "⚠️ Vui lòng cung cấp file và mã Track ID.", get_music_library_table_data()
+    def _extract_upload_file(file_obj):
+        if not file_obj:
+            return None, None
+        fp = None
+        orig_name = None
         if hasattr(file_obj, "path"):
             fp = file_obj.path
+            orig_name = getattr(file_obj, "orig_name", None)
         elif hasattr(file_obj, "name"):
             fp = file_obj.name
-        elif isinstance(file_obj, dict) and "path" in file_obj:
-            fp = file_obj["path"]
+            orig_name = getattr(file_obj, "name", None)
+        elif isinstance(file_obj, dict):
+            fp = file_obj.get("path") or file_obj.get("name")
+            orig_name = file_obj.get("orig_name")
         else:
             fp = str(file_obj)
-        ext = Path(fp).suffix.lower()
-        if ext not in [".wav", ".mp3", ".m4a", ".flac", ".ogg"]:
-            return f"❌ Định dạng file '{ext}' không được hỗ trợ. Vui lòng tải file âm thanh (.wav, .mp3, .m4a, .flac).", get_music_library_table_data()
-        ok, msg, _ = import_track_to_library(cat, track_id.strip(), fp)
+
+        if fp:
+            fp = str(fp)
+            if not orig_name:
+                orig_name = Path(fp).name
+        return fp, orig_name
+
+    def _refresh_slot_ui_states():
+        sdata = get_slot_cards_data()
+        returns = []
+        for sk in slot_keys:
+            info = sdata.get(sk, {})
+            returns.append(format_slot_markdown(info))
+            returns.append(info.get("audio_preview"))
+        return returns
+
+    def _on_replace_slot_track(slot, file_obj):
+        fp, orig_name = _extract_upload_file(file_obj)
+        if not fp:
+            msg = "⚠️ Vui lòng chọn hoặc kéo thả file âm thanh cần nạp."
+            return [f"**{msg}**"] + _refresh_slot_ui_states() + [get_music_library_table_data()]
+
+        src_p = Path(fp)
+        if not src_p.exists():
+            msg = f"❌ File tạm không tồn tại: {src_p}"
+            return [f"**{msg}**"] + _refresh_slot_ui_states() + [get_music_library_table_data()]
+
+        try:
+            ok, msg, _ = import_track_to_library(
+                category=slot,
+                track_id=None,
+                file_source=src_p,
+                orig_filename=orig_name
+            )
+            status_text = f"✅ {msg}" if ok else f"❌ {msg}"
+        except Exception as e:
+            status_text = f"❌ Lỗi: {e}"
+
         new_rows = get_music_library_table_data()
-        return (f"✅ {msg}" if ok else f"❌ {msg}"), new_rows
+        return [status_text] + _refresh_slot_ui_states() + [new_rows]
+
+    c["btn_replace_slot_track"].click(
+        fn=_on_replace_slot_track,
+        inputs=[c["quick_slot_dd"], c["quick_file_upload"]],
+        outputs=[c["replace_slot_status_md"]] + slot_outputs + [c["music_library_df"]]
+    )
+
+    def _on_adv_import_track(cat, track_id, file_obj):
+        fp, orig_name = _extract_upload_file(file_obj)
+        if not fp:
+            msg = "⚠️ Vui lòng cung cấp file âm thanh."
+            return [f"**{msg}**"] + _refresh_slot_ui_states() + [get_music_library_table_data()]
+
+        src_p = Path(fp)
+        if not src_p.exists():
+            msg = f"❌ File tạm không tồn tại: {src_p}"
+            return [f"**{msg}**"] + _refresh_slot_ui_states() + [get_music_library_table_data()]
+
+        try:
+            ok, msg, _ = import_track_to_library(
+                category=cat,
+                track_id=track_id.strip() if track_id else None,
+                file_source=src_p,
+                orig_filename=orig_name
+            )
+            status_text = f"✅ {msg}" if ok else f"❌ {msg}"
+        except Exception as e:
+            status_text = f"❌ Lỗi: {e}"
+
+        new_rows = get_music_library_table_data()
+        return [status_text] + _refresh_slot_ui_states() + [new_rows]
 
     c["btn_execute_import_track"].click(
-        fn=_on_import_track,
+        fn=_on_adv_import_track,
         inputs=[c["upload_cat_dd"], c["upload_track_id_box"], c["upload_file_btn"]],
-        outputs=[c["import_track_status_md"], c["music_library_df"]]
+        outputs=[c["import_track_status_md"]] + slot_outputs + [c["music_library_df"]]
     )
 
     # 6. Segments Table Quick Cue Editor
