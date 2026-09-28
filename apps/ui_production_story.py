@@ -431,6 +431,11 @@ def render_production_story_ui(preset_voices_cache_getter):
                     "- **Flow Session:** Sẵn sàng"
                 )
                 btn_refresh_flow_conn = gr.Button("🔄 Kiểm tra kết nối Flow", size="sm")
+                flow_project_id_txt = gr.Textbox(
+                    label="🎯 Flow Project ID",
+                    value="b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e",
+                    info="URL: https://flow.google.com/project/b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e"
+                )
             with gr.Column(scale=1):
                 visual_progress_md = gr.Markdown(
                     "### 📊 Tiến độ Visual Episode\n"
@@ -588,6 +593,7 @@ def render_production_story_ui(preset_voices_cache_getter):
         "story_visual_queue_state": story_visual_queue_state,
         "visual_flow_status_md": visual_flow_status_md,
         "btn_refresh_flow_conn": btn_refresh_flow_conn,
+        "flow_project_id_txt": flow_project_id_txt,
         "visual_progress_md": visual_progress_md,
         "btn_analyze_visual": btn_analyze_visual,
         "btn_gen_all_images": btn_gen_all_images,
@@ -1756,7 +1762,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     )
 
     # 2. Generate All Images (Banana Pro)
-    def _on_gen_all_images(project_dir_str, scenes_state):
+    def _on_gen_all_images(project_dir_str, scenes_state, custom_pid):
         if not project_dir_str:
             return "⚠️ Chưa tải dự án.", gr.update(), gr.update()
         p_dir = Path(project_dir_str)
@@ -1773,22 +1779,23 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         banana_client = BananaClient(flow_adapter, asset_mgr, char_lib)
 
         st = flow_adapter.get_connection_status()
-        res = banana_client.generate_all_keyframes(scenes, project_id=st.flow_project_id or "")
+        resolved_pid = str(custom_pid or "").strip() or st.flow_project_id or "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e"
+        res = banana_client.generate_all_keyframes(scenes, project_id=resolved_pid)
 
         table_rows = _build_scenes_table_data(scenes, asset_mgr)
         progress_md = _render_visual_progress_md(asset_mgr)
-        status_log = f"🎨 Đã xử lý {res['total_requested']} scenes: {res['success']} thành công, {res['failed']} lỗi."
+        status_log = f"🎨 Đã xử lý {res['total_requested']} scenes trên Flow project `{resolved_pid}`: {res['success']} thành công, {res['failed']} lỗi."
 
         return status_log, progress_md, table_rows
 
     c["btn_gen_all_images"].click(
         fn=_on_gen_all_images,
-        inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"]],
+        inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"], c["flow_project_id_txt"]],
         outputs=[c["visual_status_log_md"], c["visual_progress_md"], c["visual_scenes_table"]]
     )
 
-    # 3. Generate Selected Videos (Veo 3)
-    def _on_gen_veo_videos(project_dir_str, scenes_state):
+    # 3. Generate Selected Videos (Omni 1.1 Flash)
+    def _on_gen_veo_videos(project_dir_str, scenes_state, custom_pid):
         if not project_dir_str:
             return "⚠️ Chưa tải dự án.", gr.update(), gr.update()
         p_dir = Path(project_dir_str)
@@ -1803,25 +1810,26 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         asset_mgr = VisualAssetManager(p_dir)
         video_client = VeoClient(flow_adapter, asset_mgr, model_family="omni_flash", duration_s=4)
         st = flow_adapter.get_connection_status()
+        resolved_pid = str(custom_pid or "").strip() or st.flow_project_id or "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e"
 
         video_scenes = [s for s in scenes if s.visual_type in ("VEO_I2V", "VIDEO_CLIP", "OMNI_FLASH_I2V")]
         for sc in video_scenes:
-            video_client.generate_scene_video(sc, project_id=st.flow_project_id or "", allow_fallback=True)
+            video_client.generate_scene_video(sc, project_id=resolved_pid, allow_fallback=True)
 
         table_rows = _build_scenes_table_data(scenes, asset_mgr)
         progress_md = _render_visual_progress_md(asset_mgr)
-        status_log = f"🎥 Đã xử lý {len(video_scenes)} cảnh video bằng Gemini Omni 1.1 Flash (hoặc Fallback Motion an toàn)."
+        status_log = f"🎥 Đã xử lý {len(video_scenes)} cảnh video trên Flow project `{resolved_pid}` bằng Gemini Omni 1.1 Flash."
 
         return status_log, progress_md, table_rows
 
     c["btn_gen_veo_videos"].click(
         fn=_on_gen_veo_videos,
-        inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"]],
+        inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"], c["flow_project_id_txt"]],
         outputs=[c["visual_status_log_md"], c["visual_progress_md"], c["visual_scenes_table"]]
     )
 
     # 4. Retry Failed
-    def _on_retry_failed(project_dir_str, scenes_state):
+    def _on_retry_failed(project_dir_str, scenes_state, custom_pid):
         if not project_dir_str:
             return "⚠️ Chưa tải dự án.", gr.update(), gr.update()
         p_dir = Path(project_dir_str)
@@ -1837,27 +1845,28 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         banana_client = BananaClient(flow_adapter, asset_mgr, char_lib)
         video_client = VeoClient(flow_adapter, asset_mgr, model_family="omni_flash", duration_s=4)
         st = flow_adapter.get_connection_status()
+        resolved_pid = str(custom_pid or "").strip() or st.flow_project_id or "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e"
 
         queue = asset_mgr.load_queue()
         retried = 0
         for sc in scenes:
             q_item = queue.get(sc.scene_id)
             if q_item and q_item.image_status == "FAILED":
-                banana_client.generate_scene_keyframe(sc, project_id=st.flow_project_id or "", force_regenerate=True)
+                banana_client.generate_scene_keyframe(sc, project_id=resolved_pid, force_regenerate=True)
                 retried += 1
             if q_item and q_item.video_status == "FAILED":
-                video_client.generate_scene_video(sc, project_id=st.flow_project_id or "", force_regenerate=True, allow_fallback=True)
+                video_client.generate_scene_video(sc, project_id=resolved_pid, force_regenerate=True, allow_fallback=True)
                 retried += 1
 
         table_rows = _build_scenes_table_data(scenes, asset_mgr)
         progress_md = _render_visual_progress_md(asset_mgr)
-        status_log = f"🔄 Đã retry {retried} tác vụ bị lỗi."
+        status_log = f"🔄 Đã retry {retried} tác vụ bị lỗi trên Flow project `{resolved_pid}`."
 
         return status_log, progress_md, table_rows
 
     c["btn_retry_failed_visual"].click(
         fn=_on_retry_failed,
-        inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"]],
+        inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"], c["flow_project_id_txt"]],
         outputs=[c["visual_status_log_md"], c["visual_progress_md"], c["visual_scenes_table"]]
     )
 

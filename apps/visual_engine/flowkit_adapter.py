@@ -54,9 +54,15 @@ class GeneratedMediaAsset:
 class FlowKitAdapter:
     """Client adapter communicating with local FlowKit service (default http://127.0.0.1:8100)."""
 
-    def __init__(self, base_url: str = DEFAULT_FLOWKIT_API_URL, timeout_sec: float = 120.0):
+    def __init__(
+        self,
+        base_url: str = DEFAULT_FLOWKIT_API_URL,
+        timeout_sec: float = 120.0,
+        default_project_id: str = "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e"
+    ):
         self.base_url = base_url.rstrip("/")
         self.timeout_sec = timeout_sec
+        self.default_project_id = default_project_id
 
     def _http_request(
         self,
@@ -134,7 +140,7 @@ class FlowKitAdapter:
         payload = {
             "image_base64": b64_data,
             "mime_type": mime_type,
-            "project_id": project_id
+            "project_id": project_id or self.default_project_id
         }
         res = self._http_request("/api/flow/upload-image", method="POST", data=payload, timeout=60.0)
         media_id = res.get("mediaId") or res.get("media_id")
@@ -167,7 +173,7 @@ class FlowKitAdapter:
         """Generate 1-4 images via Nano Banana Pro on Google Flow."""
         payload = {
             "prompt": prompt,
-            "project_id": project_id,
+            "project_id": project_id or self.default_project_id,
             "aspect_ratio": aspect_ratio,
             "image_model": image_model,
             "count": count,
@@ -211,7 +217,7 @@ class FlowKitAdapter:
         payload = {
             "start_image_media_id": start_image_media_id,
             "prompt": prompt,
-            "project_id": project_id,
+            "project_id": project_id or self.default_project_id,
             "scene_id": scene_id,
             "aspect_ratio": aspect_ratio,
             "model_family": model_family,

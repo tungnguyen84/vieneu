@@ -13,5 +13,6 @@
   "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle",
   "video_rules": "focus on subtle subject motion, realistic facial expression, restrained camera motion, cinematic pacing, no exaggerated VFX",
   "resolution": "1920x1080",
-  "fps": 30
+  "fps": 30,
+  "flow_project_id": "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e"
 }
