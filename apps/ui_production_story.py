@@ -1334,7 +1334,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     )
 
     # 10. Music Cue Sheet Engine & Timeline
-    def _on_build_cues(events, pre_rev, post_rev, merge_gap, i_db, m_db, t_db, e_db, r_db, o_db):
+    def _on_build_cues(project_dir_str, events, pre_rev, post_rev, merge_gap, i_db, m_db, t_db, e_db, r_db, o_db):
         if not events:
             return "⚠️ Chưa có Voice Timeline. Hãy bấm **'Build Clean Voice Master'** trước.", "<div style='color: #ef4444;'>Chưa có dữ liệu.</div>", [], gr.update(choices=[]), []
 
@@ -1356,6 +1356,18 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             merge_gap_threshold=float(merge_gap),
             total_episode_sec=total_sec
         )
+
+        # Ghi đè ngay cue_sheet.json mới đã validate vào thư mục mix của dự án (Fix 6)
+        if project_dir_str:
+            try:
+                p_dir = Path(project_dir_str)
+                if p_dir.exists():
+                    mix_d = p_dir / "mix"
+                    mix_d.mkdir(parents=True, exist_ok=True)
+                    with open(mix_d / "cue_sheet.json", "w", encoding="utf-8") as f:
+                        json.dump(cue_sheet, f, ensure_ascii=False, indent=2)
+            except Exception as e:
+                print(f"[CUE SAVE WARNING] Lỗi lưu cue_sheet.json: {e}", flush=True)
 
         cov = calculate_music_coverage(cue_sheet, total_sec)
         warn_part = f"\n\n{cov['warning_message']}" if cov["warning_message"] else ""
@@ -1394,6 +1406,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     c["btn_build_cues"].click(
         fn=_on_build_cues,
         inputs=[
+            c["story_project_dir_state"],
             c["story_timeline_events_state"],
             c["pre_reveal_slider"],
             c["post_reveal_slider"],

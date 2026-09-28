@@ -1221,6 +1221,170 @@ def prune_regions_to_target_coverage(
     return current_regs, cov_pct
 
 
+def validate_and_sanitize_final_cue_sheet(
+    cue_sheet: List[dict],
+    total_episode_sec: float = 0.0
+) -> List[dict]:
+    """
+    Final validator và sanitizer chạy trên danh sách FINAL cue_sheet:
+    1. Lọc mọi Auto Region có duration < MIN_REGION_DURATION[cue] và chuyển thành DRY (Fix 1).
+    2. Gộp tất cả các block DRY đứng cạnh nhau thành 1 block liên tục duy nhất (Fix 2).
+    3. Final fade sanitizer: mọi music cue đều khống chế fade_in + fade_out <= duration * 0.35 + 0.02 (Fix 3).
+    4. Sắp xếp theo start_sec và tính toán lại duration_sec.
+    """
+    if not cue_sheet:
+        return []
+
+    # 1. Convert candidate Auto Region quá ngắn sang DRY
+    converted_cues = []
+    for c in cue_sheet:
+        item = dict(c)
+        cue_upper = str(item.get("cue", "DRY")).upper().strip()
+        source_str = str(item.get("source", ""))
+        st = float(item.get("start_sec", 0.0))
+        en = float(item.get("end_sec", 0.0))
+        dur = round(en - st, 2)
+        item["start_sec"] = st
+        item["end_sec"] = en
+        item["duration_sec"] = dur
+
+        min_req = MIN_REGION_DURATION.get(cue_upper, 8.0)
+        if cue_upper != "DRY" and source_str.startswith("Auto Region") and dur < min_req:
+            logger.info(
+                f"[FINAL SANITIZER] Chuyển đổi cue ngắn thành DRY: {cue_upper} {dur:.2f}s < {min_req:.1f}s "
+                f"({st:.2f}s -> {en:.2f}s)"
+            )
+            converted_cues.append({
+                "start_sec": st,
+                "end_sec": en,
+                "duration_sec": dur,
+                "cue": "DRY",
+                "track": "NO_MUSIC",
+                "level_db": -99.0,
+                "fade_in_sec": 0.0,
+                "fade_out_sec": 0.0,
+                "source_offset_sec": 0.0,
+                "source": "Voice Only / Minimum Cue Sanitizer"
+            })
+        else:
+            converted_cues.append(item)
+
+    # 2. Sắp xếp theo start_sec và gộp các block DRY liền kề nhau
+    converted_cues.sort(key=lambda x: x["start_sec"])
+    merged_cues: List[dict] = []
+
+    for c in converted_cues:
+        if not merged_cues:
+            merged_cues.append(c)
+            continue
+
+        prev = merged_cues[-1]
+        is_prev_dry = (prev.get("cue", "").upper() == "DRY")
+        is_curr_dry = (c.get("cue", "").upper() == "DRY")
+
+        # Nếu cả hai đều là DRY và liền kề nhau (gap <= 0.05s hoặc gối nhau)
+        if is_prev_dry and is_curr_dry and c["start_sec"] <= prev["end_sec"] + 0.05:
+            new_end = max(prev["end_sec"], c["end_sec"])
+            prev["end_sec"] = round(new_end, 2)
+            prev["duration_sec"] = round(prev["end_sec"] - prev["start_sec"], 2)
+            if "Minimum Cue Sanitizer" in c.get("source", "") or "Minimum Cue Sanitizer" in prev.get("source", ""):
+                prev["source"] = "Voice Only / Minimum Cue Sanitizer"
+        else:
+            merged_cues.append(c)
+
+    # 3. Final fade sanitizer với mọi music cue
+    for c in merged_cues:
+        dur = round(float(c["end_sec"]) - float(c["start_sec"]), 2)
+        c["duration_sec"] = dur
+        if c.get("cue", "").upper() != "DRY" and c.get("track", "") != "NO_MUSIC":
+            max_total_fade = dur * 0.35
+            f_in = float(c.get("fade_in_sec", 2.0))
+            f_out = float(c.get("fade_out_sec", 2.5))
+            total_fade = f_in + f_out
+
+            if total_fade > max_total_fade:
+                scale = max_total_fade / total_fade
+                f_in *= scale
+                f_out *= scale
+
+            f_in = round(f_in, 2)
+            f_out = round(f_out, 2)
+
+            # Ràng buộc cứng sau rounding
+            if (f_in + f_out) > (max_total_fade + 0.02):
+                excess = (f_in + f_out) - max_total_fade
+                f_out = max(0.1, round(f_out - excess, 2))
+
+            if (f_in + f_out) >= dur:
+                f_out = max(0.1, round(dur - f_in - 0.1, 2))
+
+            c["fade_in_sec"] = f_in
+            c["fade_out_sec"] = f_out
+
+    # 4. Trailing silence padding nếu cần
+    if total_episode_sec > 0 and merged_cues:
+        last_cue = merged_cues[-1]
+        if last_cue["end_sec"] < round(total_episode_sec - 0.1, 2):
+            gap_dur = round(total_episode_sec - last_cue["end_sec"], 2)
+            if last_cue.get("cue", "").upper() == "DRY":
+                last_cue["end_sec"] = round(total_episode_sec, 2)
+                last_cue["duration_sec"] = round(last_cue["end_sec"] - last_cue["start_sec"], 2)
+            else:
+                merged_cues.append({
+                    "start_sec": last_cue["end_sec"],
+                    "end_sec": round(total_episode_sec, 2),
+                    "duration_sec": gap_dur,
+                    "cue": "DRY",
+                    "track": "NO_MUSIC",
+                    "level_db": -99.0,
+                    "fade_in_sec": 0.0,
+                    "fade_out_sec": 0.0,
+                    "source_offset_sec": 0.0,
+                    "source": "Voice Only / Epilogue Silence"
+                })
+
+    return merged_cues
+
+
+def assert_final_music_cues_valid(cue_sheet: List[dict]) -> None:
+    """
+    Final Assertion Checker (Fix 5):
+    - Với mọi cue source.startswith("Auto Region") và cue != "DRY":
+      duration_sec >= MIN_REGION_DURATION[cue]
+    - Với mọi music cue (cue != "DRY"):
+      fade_in_sec + fade_out_sec <= duration_sec * 0.35 + 0.021
+    Nếu FAIL: RAISE AssertionError để hiển thị lỗi rõ ràng.
+    """
+    for idx, c in enumerate(cue_sheet):
+        cue = str(c.get("cue", "DRY")).upper().strip()
+        if cue == "DRY" or c.get("track") == "NO_MUSIC":
+            continue
+
+        dur = float(c.get("duration_sec", 0.0))
+        source = str(c.get("source", ""))
+        f_in = float(c.get("fade_in_sec", 0.0))
+        f_out = float(c.get("fade_out_sec", 0.0))
+
+        # 1. Assert minimum duration cho Auto Region
+        if source.startswith("Auto Region"):
+            min_req = MIN_REGION_DURATION.get(cue, 8.0)
+            if dur < min_req:
+                raise AssertionError(
+                    f"FINAL CUE SHEET VALIDATION FAILED tại index {idx}: "
+                    f"Cue '{cue}' có thời lượng {dur:.2f}s < minimum yêu cầu {min_req:.1f}s! "
+                    f"Phân đoạn: {c.get('start_sec')}s -> {c.get('end_sec')}s ({source})"
+                )
+
+        # 2. Assert fade ratio
+        max_allowed_fade = dur * 0.35 + 0.021
+        total_fade = f_in + f_out
+        if total_fade > max_allowed_fade:
+            raise AssertionError(
+                f"FINAL CUE SHEET FADE VALIDATION FAILED tại index {idx}: "
+                f"Cue '{cue}' ({dur:.2f}s) có tổng fade {total_fade:.2f}s > max allowed {max_allowed_fade:.2f}s!"
+            )
+
+
 def generate_cue_sheet_from_segments(
     timeline_events: List[dict],
     music_overrides: Optional[dict] = None,
@@ -1466,6 +1630,14 @@ def generate_cue_sheet_from_segments(
             "source_offset_sec": 0.0,
             "source": "Voice Only / Epilogue Silence"
         })
+
+    # FIX 4: Final validation & assertion trên object thực sự trả về
+    cue_sheet = validate_and_sanitize_final_cue_sheet(
+        cue_sheet,
+        total_episode_sec
+    )
+
+    assert_final_music_cues_valid(cue_sheet)
 
     return cue_sheet
 
@@ -1849,6 +2021,10 @@ def build_final_mix(
 
     total_samples = len(voice_wav)
     total_sec = total_samples / sample_rate
+
+    # FIX 6: Defense-in-depth: Validate & Sanitize final cue sheet trước khi render
+    cue_sheet = validate_and_sanitize_final_cue_sheet(cue_sheet, total_sec)
+    assert_final_music_cues_valid(cue_sheet)
 
     # 1. Render music bed
     music_bed = render_music_bed(
