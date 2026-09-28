@@ -56,6 +56,9 @@ class VeoClient:
         Returns local MP4 Path on success, None on failure.
         If generation fails and allow_fallback is True, marks status as FALLBACK_MOTION.
         """
+        if not scene.visual_type or scene.visual_type == "UNRESOLVED":
+            raise ValueError(f"Cannot generate video: Scene {scene.scene_id} has UNRESOLVED visual_type")
+
         if scene.visual_type not in ("VEO_I2V", "VIDEO_CLIP", "OMNI_FLASH_I2V"):
             logger.info(f"[VideoClient] Scene {scene.scene_id} is {scene.visual_type}. Skipping.")
             return None

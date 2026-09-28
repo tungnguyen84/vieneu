@@ -1,6 +1,9 @@
 {
   "id": "LAN_HOME",
-  "name": "Căn hộ của Lan và Hùng",
-  "description": "Modest modern Vietnamese apartment living room, warm wooden dining table, soft amber evening lamp, organized but feeling lonely, understated domestic ambiance",
-  "references": []
+  "name": "Nhà Lan & Hùng",
+  "description": "Modest modern Vietnamese family apartment living room, wooden dining table, warm domestic furniture, neat and lived-in",
+  "visual_style": "Vietnamese domestic realism, muted wood and neutral tones, 35mm shallow depth of field",
+  "lighting_default": "Soft warm indoor ceiling lamp, evening mood, gentle shadows",
+  "references": [],
+  "flow_media_ids": {}
 }

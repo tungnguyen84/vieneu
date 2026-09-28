@@ -3,7 +3,7 @@
 Manages:
 - Project visual storage layout: projects/<slug>/visual/
 - Persistent generation queue: visual_queue.json
-- Resume & retry logic (zero regeneration of completed assets)
+- Resume & retry logic (zero regeneration of completed assets, resume-safe re-plan)
 - Asset file storage and validation
 """
 from __future__ import annotations
@@ -16,17 +16,15 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from apps.visual_engine.visual_planner import VisualScene
-
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class QueueItem:
     scene_id: str
-    visual_type: str = "VEO_I2V"  # "BANANA_IMAGE" or "VEO_I2V"
-    image_status: str = "PLANNED"  # "PLANNED", "GENERATING", "DONE", "FAILED", "SKIPPED"
-    video_status: str = "PLANNED"  # "PLANNED", "GENERATING", "DONE", "FAILED", "SKIPPED"
+    visual_type: str = "UNRESOLVED"  # "BANANA_IMAGE", "OMNI_FLASH_I2V", or "VEO_I2V"
+    image_status: str = "PLANNED"    # "PLANNED", "GENERATING", "DONE", "FAILED", "SKIPPED"
+    video_status: str = "PLANNED"    # "PLANNED", "GENERATING", "DONE", "FAILED", "SKIPPED"
     image_media_id: Optional[str] = None
     image_file: Optional[str] = None
     video_media_id: Optional[str] = None
@@ -34,7 +32,12 @@ class QueueItem:
     video_operation_id: Optional[str] = None
     attempt_count: int = 0
     last_error: Optional[str] = None
+    is_stale: bool = False
     updated_at: float = field(default_factory=time.time)
+
+
+# Backward-compatible alias
+VisualQueueItem = QueueItem
 
 
 class VisualAssetManager:
@@ -54,8 +57,12 @@ class VisualAssetManager:
         for d in (self.images_dir, self.videos_dir, self.processed_dir, self.thumbnails_dir):
             d.mkdir(parents=True, exist_ok=True)
 
-    def init_queue(self, scenes: List[VisualScene], force_reset: bool = False) -> Dict[str, QueueItem]:
-        """Initializes or resumes visual_queue.json."""
+    def init_queue(self, scenes: List[Any], force_reset: bool = False) -> Dict[str, QueueItem]:
+        """Initializes or resumes visual_queue.json from a list of VisualScene objects."""
+        return self.sync_queue_with_plan(scenes, force_reset=force_reset)
+
+    def sync_queue_with_plan(self, scenes: List[Any], force_reset: bool = False) -> Dict[str, QueueItem]:
+        """Synchronizes queue with visual plan while preserving existing assets (resume-safe)."""
         queue: Dict[str, QueueItem] = {}
 
         if not force_reset and self.queue_file.exists():
@@ -68,15 +75,50 @@ class VisualAssetManager:
             except Exception as e:
                 logger.warning(f"Failed to load queue file, creating fresh: {e}")
 
-        # Merge in any new scenes
+        # Validate that every scene has a resolved visual_type
         for s in scenes:
-            if s.scene_id not in queue:
-                queue[s.scene_id] = QueueItem(
-                    scene_id=s.scene_id,
-                    visual_type=s.visual_type,
+            vtype = getattr(s, "visual_type", None) or (s.get("visual_type") if isinstance(s, dict) else None)
+            s_id = getattr(s, "scene_id", None) or (s.get("scene_id") if isinstance(s, dict) else None)
+            if not vtype or vtype == "UNRESOLVED":
+                raise ValueError(f"Scene {s_id} has UNRESOLVED visual_type. Cannot sync queue.")
+
+        seen_scene_ids = set()
+
+        for s in scenes:
+            s_id = getattr(s, "scene_id", None) or s.get("scene_id")
+            vtype = getattr(s, "visual_type", None) or s.get("visual_type")
+            seen_scene_ids.add(s_id)
+            is_video = vtype in ("OMNI_FLASH_I2V", "VEO_I2V")
+
+            if s_id not in queue:
+                queue[s_id] = QueueItem(
+                    scene_id=s_id,
+                    visual_type=vtype,
                     image_status="PLANNED",
-                    video_status="PLANNED" if s.visual_type == "VEO_I2V" else "SKIPPED"
+                    video_status="PLANNED" if is_video else "SKIPPED"
                 )
+            else:
+                item = queue[s_id]
+                old_type = item.visual_type
+                item.visual_type = vtype
+
+                # If changed to video from image
+                if is_video and old_type not in ("OMNI_FLASH_I2V", "VEO_I2V"):
+                    if item.video_status == "SKIPPED":
+                        item.video_status = "PLANNED"
+                # If changed to image from video
+                elif not is_video and old_type in ("OMNI_FLASH_I2V", "VEO_I2V"):
+                    # keep old video file on disk, but mark status SKIPPED
+                    item.video_status = "SKIPPED"
+
+                item.updated_at = time.time()
+
+        # Clean up obsolete scenes from active queue if removed from plan,
+        # but NEVER delete files from disk.
+        current_keys = list(queue.keys())
+        for k in current_keys:
+            if k not in seen_scene_ids:
+                del queue[k]
 
         self.save_queue(queue)
         return queue
@@ -102,7 +144,7 @@ class VisualAssetManager:
         queue = self.load_queue()
         item = queue.get(scene_id)
         if not item:
-            item = QueueItem(scene_id=scene_id)
+            item = QueueItem(scene_id=scene_id, visual_type=kwargs.get("visual_type", "UNRESOLVED"))
             queue[scene_id] = item
 
         for k, v in kwargs.items():
@@ -126,8 +168,8 @@ class VisualAssetManager:
             }
 
         images_ready = sum(1 for q in queue.values() if q.image_status == "DONE")
-        veo_required = sum(1 for q in queue.values() if q.visual_type == "VEO_I2V")
-        videos_ready = sum(1 for q in queue.values() if q.video_status == "DONE")
+        veo_required = sum(1 for q in queue.values() if q.visual_type in ("OMNI_FLASH_I2V", "VEO_I2V"))
+        videos_ready = sum(1 for q in queue.values() if q.video_status == "DONE" and q.visual_type in ("OMNI_FLASH_I2V", "VEO_I2V"))
         failed = sum(1 for q in queue.values() if q.image_status == "FAILED" or q.video_status == "FAILED")
 
         return {

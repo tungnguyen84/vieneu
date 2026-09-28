@@ -1,11 +1,16 @@
 {
   "id": "UNCLE",
   "name": "Cậu",
+  "role": "supporting",
   "gender": "male",
   "age_range": "55-65",
   "appearance": "Elderly Vietnamese man, frail emaciated silhouette from chronic illness, kind melancholic wrinkles around eyes, pale sickly complexion",
-  "hair": "thinning greying hair",
-  "default_clothing": "faded light blue hospital gown or thin worn traditional cotton pajamas",
-  "visual_style": "melancholic nostalgic flashback tone, soft warm rim lighting with desaturated shadows",
-  "references": []
+  "face": "Hollow cheeks, gentle weathered wrinkles, weary but deeply caring gaze",
+  "hair": "Thinning greying hair neatly parted",
+  "body": "Frail thin build, fragile posture",
+  "default_clothing": "Faded light blue hospital gown or thin worn traditional cotton pajamas",
+  "visual_notes": "Preserve frail sickly appearance and deep warmth toward Lan.",
+  "visual_style": "Melancholic nostalgic tone, soft warm rim lighting with desaturated shadows",
+  "references": [],
+  "flow_media_ids": {}
 }

@@ -1,11 +1,16 @@
 {
   "id": "HUNG",
   "name": "Hùng",
+  "role": "main",
   "gender": "male",
   "age_range": "32-37",
   "appearance": "Vietnamese man in his mid 30s, honest hardworking look, slightly weathered masculine face, earnest searching eyes, thoughtful but burdened with suspicion and inner shock",
-  "hair": "short practical black hair, neatly combed",
-  "default_clothing": "simple dark navy polo shirt or casual grey button-up shirt",
+  "face": "Masculine square jaw, weathered skin, searching earnest eyes showing mounting doubt and emotional strain",
+  "hair": "Short practical black hair, neatly combed",
+  "body": "Average hardworking build, slightly tense posture from emotional burden",
+  "default_clothing": "Simple dark navy polo shirt or casual grey button-up shirt",
+  "visual_notes": "Preserve strict identity continuity across scenes. Restrained emotional reaction.",
   "visual_style": "Vietnamese realism, authentic working professional look, subtle cinematic contrast",
-  "references": []
+  "references": [],
+  "flow_media_ids": {}
 }

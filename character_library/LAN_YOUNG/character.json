@@ -1,11 +1,16 @@
 {
   "id": "LAN_YOUNG",
-  "name": "Lan (Trẻ tuổi - Hồi tưởng)",
+  "name": "Lan (Trẻ - Hồi tưởng)",
+  "role": "flashback",
   "gender": "female",
   "age_range": "22-25",
   "appearance": "Young Vietnamese woman in her early 20s, youthful face, anxious and tearful eyes filled with worry and helplessness, slender frame",
-  "hair": "long black hair tied in a simple ponytail",
-  "default_clothing": "modest youthful student or young worker outfit, simple white t-shirt and thin jacket",
-  "visual_style": "vintage flashback tone, slightly softened contrast, warm film grain",
-  "references": []
+  "face": "Youthful unblemished skin, tear-stained cheeks, desperate pleading expression",
+  "hair": "Long black hair tied in a simple ponytail",
+  "body": "Slender youthful build",
+  "default_clothing": "Modest youthful student or young worker outfit, simple white t-shirt and thin jacket",
+  "visual_notes": "Represents Lan during past flashback 7 years ago. Soft vintage film feel.",
+  "visual_style": "Vintage flashback tone, slightly softened contrast, warm film grain",
+  "references": [],
+  "flow_media_ids": {}
 }

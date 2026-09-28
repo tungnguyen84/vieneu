@@ -481,13 +481,51 @@ def render_production_story_ui(preset_voices_cache_getter):
         )
         visual_status_log_md = gr.Markdown("")
 
+        # 👥 Thư viện Nhân vật & Bối cảnh (Character & Location Library)
+        with gr.Accordion("👥 Thư viện Nhân vật & Bối cảnh (Character & Location Library)", open=False):
+            with gr.Tabs():
+                with gr.Tab("🎭 Nhân vật (Characters)"):
+                    char_lib_table = gr.Dataframe(
+                        headers=["Char ID", "Tên", "Vai trò", "Khuôn mặt", "Tóc", "Thân hình", "Trang phục mặc định", "Flow Media IDs"],
+                        datatype=["str", "str", "str", "str", "str", "str", "str", "str"],
+                        interactive=False
+                    )
+                    btn_refresh_char_lib = gr.Button("🔄 Tải lại Thư viện Nhân vật", size="sm")
+                with gr.Tab("📍 Bối cảnh (Locations)"):
+                    loc_lib_table = gr.Dataframe(
+                        headers=["Location ID", "Tên bối cảnh", "Mô tả", "Visual Style", "Ánh sáng mặc định"],
+                        datatype=["str", "str", "str", "str", "str"],
+                        interactive=False
+                    )
+                    btn_refresh_loc_lib = gr.Button("🔄 Tải lại Thư viện Bối cảnh", size="sm")
+
         # Visual Scenes Table
         with gr.Accordion("📋 Danh sách Visual Scenes (Scene Plan)", open=True):
             visual_scenes_table = gr.Dataframe(
-                headers=["Scene ID", "Bắt đầu", "Kết thúc", "Thời lượng", "Loại Visual", "Nhân vật", "Bối cảnh", "Trạng thái", "Story Context"],
-                datatype=["str", "number", "number", "number", "str", "str", "str", "str", "str"],
+                headers=["Scene", "Timeline", "Story Beat", "Characters", "Location", "Type", "Motion", "Omni Duration", "Importance", "Status"],
+                datatype=["str", "str", "str", "str", "str", "str", "str", "str", "str", "str"],
                 interactive=False
             )
+
+        # 🔍 Chi tiết Scene & Chỉnh sửa Prompt
+        with gr.Accordion("🔍 Chi tiết Scene & Chỉnh sửa Prompt (Phase 2 Inspector)", open=False):
+            with gr.Row():
+                scene_select_dd = gr.Dropdown(label="Chọn Scene để xem / chỉnh sửa", choices=[], interactive=True, scale=3)
+                btn_refresh_scene_details = gr.Button("👁 Xem chi tiết", scale=1)
+            with gr.Row():
+                scene_edit_beat = gr.Textbox(label="Story Beat", interactive=True, scale=2)
+                scene_edit_importance = gr.Dropdown(label="Importance", choices=["LOW", "MEDIUM", "HIGH", "CRITICAL"], interactive=True, scale=1)
+                scene_edit_type = gr.Dropdown(label="Visual Type", choices=["BANANA_IMAGE", "OMNI_FLASH_I2V"], interactive=True, scale=1)
+                scene_edit_duration = gr.Dropdown(label="Omni Duration", choices=["-", "4s", "6s", "8s", "10s"], interactive=True, scale=1)
+            with gr.Row():
+                scene_edit_chars = gr.Textbox(label="Characters (cách nhau bởi dấu phẩy)", interactive=True, scale=2)
+                scene_edit_location = gr.Textbox(label="Location ID", interactive=True, scale=2)
+            with gr.Row():
+                scene_edit_image_prompt = gr.Textbox(label="🎨 Image Prompt (Banana Pro)", lines=4, interactive=True)
+            with gr.Row():
+                scene_edit_motion_prompt = gr.Textbox(label="🎥 Video Motion Prompt (Omni 1.1 Flash)", lines=3, interactive=True)
+            btn_save_scene_edit = gr.Button("💾 Lưu chỉnh sửa Scene này vào Plan", variant="primary")
+            scene_edit_status_md = gr.Markdown("")
 
         # Video Player
         with gr.Row():
@@ -629,6 +667,22 @@ def render_production_story_ui(preset_voices_cache_getter):
         "auto_production_chk": auto_production_chk,
         "visual_status_log_md": visual_status_log_md,
         "visual_scenes_table": visual_scenes_table,
+        "char_lib_table": char_lib_table,
+        "btn_refresh_char_lib": btn_refresh_char_lib,
+        "loc_lib_table": loc_lib_table,
+        "btn_refresh_loc_lib": btn_refresh_loc_lib,
+        "scene_select_dd": scene_select_dd,
+        "btn_refresh_scene_details": btn_refresh_scene_details,
+        "scene_edit_beat": scene_edit_beat,
+        "scene_edit_importance": scene_edit_importance,
+        "scene_edit_type": scene_edit_type,
+        "scene_edit_duration": scene_edit_duration,
+        "scene_edit_chars": scene_edit_chars,
+        "scene_edit_location": scene_edit_location,
+        "scene_edit_image_prompt": scene_edit_image_prompt,
+        "scene_edit_motion_prompt": scene_edit_motion_prompt,
+        "btn_save_scene_edit": btn_save_scene_edit,
+        "scene_edit_status_md": scene_edit_status_md,
         "final_episode_video": final_episode_video,
         "final_episode_file_download": final_episode_file_download,
     }
@@ -1714,14 +1768,58 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             f"- **Session:** {sess_text}"
         )
 
-    def _render_visual_progress_md(asset_mgr: VisualAssetManager):
+    def _build_char_lib_table():
+        chars = load_character_library()
+        rows = []
+        for cid, c in chars.items():
+            media_str = ", ".join(c.flow_media_ids) if c.flow_media_ids else "-"
+            rows.append([
+                c.char_id,
+                c.name,
+                c.role or "-",
+                c.face or "-",
+                c.hair or "-",
+                c.body or "-",
+                c.default_clothing or "-",
+                media_str
+            ])
+        return rows
+
+    def _build_loc_lib_table():
+        locs = load_location_library()
+        rows = []
+        for lid, l in locs.items():
+            rows.append([
+                l.location_id,
+                l.name,
+                l.description or "-",
+                l.visual_style or "-",
+                l.lighting_default or "-"
+            ])
+        return rows
+
+    c["btn_refresh_char_lib"].click(
+        fn=_build_char_lib_table,
+        outputs=[c["char_lib_table"]]
+    )
+    c["btn_refresh_loc_lib"].click(
+        fn=_build_loc_lib_table,
+        outputs=[c["loc_lib_table"]]
+    )
+
+    def _render_visual_progress_md(asset_mgr: VisualAssetManager, summary=None):
         prog = asset_mgr.get_progress()
         render_text = "✅ Sẵn sàng render" if prog["ready_to_render"] else "⏳ Đang chuẩn bị assets"
+        val_text = "✅ Hợp lệ (100% timeline, 0 gaps)" if (summary and summary.is_valid) else ("⚠️ Cần kiểm tra" if (summary and summary.validation_issues) else "Chưa phân tích")
+        dur_str = ""
+        if summary and summary.omni_duration_distribution:
+            dur_str = f" (4s: {summary.omni_duration_distribution.get('4s', 0)}, 6s: {summary.omni_duration_distribution.get('6s', 0)}, 8s: {summary.omni_duration_distribution.get('8s', 0)}, 10s: {summary.omni_duration_distribution.get('10s', 0)})"
+
         return (
             f"### 📊 Tiến độ Visual Episode\n"
-            f"- **Số cảnh (Scenes):** {prog['total_scenes']}\n"
+            f"- **Số cảnh (Scenes):** {prog['total_scenes']} | **Kiểm định:** {val_text}\n"
             f"- **Keyframe Banana Pro:** {prog['images_ready']}/{prog['total_scenes']}\n"
-            f"- **Clip Veo 3 Video:** {prog['videos_ready']}/{prog['veo_required']}\n"
+            f"- **Clip Omni Flash Video:** {prog['videos_ready']}/{prog['veo_required']}{dur_str}\n"
             f"- **Lỗi / Cần retry:** {prog['failed']}\n"
             f"- **Xuất bản Final MP4:** **{render_text}**"
         )
@@ -1732,19 +1830,22 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         for s in scenes:
             q_item = queue.get(s.scene_id)
             img_st = q_item.image_status if q_item else "PLANNED"
-            vid_st = q_item.video_status if q_item else ("PLANNED" if s.visual_type == "VEO_I2V" else "-")
+            vid_st = q_item.video_status if q_item else ("PLANNED" if s.visual_type in ("OMNI_FLASH_I2V", "VEO_I2V") else "-")
             status_display = f"Img: {img_st} | Vid: {vid_st}"
-            chars_str = ", ".join(s.characters)
+            chars_str = ", ".join(s.characters) if s.characters else "-"
+            timeline_str = f"{s.start_sec:.1f}s - {s.end_sec:.1f}s ({s.duration_sec:.1f}s)"
+            dur_str = f"{s.video_duration_sec}s" if s.video_duration_sec else "-"
             rows.append([
                 s.scene_id,
-                s.start_sec,
-                s.end_sec,
-                s.duration_sec,
-                s.visual_type,
+                timeline_str,
+                s.story_beat or s.story_context or "-",
                 chars_str,
-                s.location,
-                status_display,
-                s.story_context
+                s.location or "-",
+                s.visual_type,
+                s.motion or "-",
+                dur_str,
+                s.story_importance or "MEDIUM",
+                status_display
             ])
         return rows
 
@@ -1757,7 +1858,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     # 1. Analyze Visual & Plan Scenes
     def _on_analyze_visual(project_dir_str, timeline_events):
         if not project_dir_str:
-            return "⚠️ Chưa tải dự án.", gr.update(), gr.update(), "Vui lòng import kịch bản trước."
+            return "⚠️ Chưa tải dự án.", gr.update(), gr.update(), [], gr.update(choices=[], value=None)
         p_dir = Path(project_dir_str)
         audio_master = p_dir / "master/final_mix.wav"
         if not audio_master.exists():
@@ -1772,25 +1873,187 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             total_audio_sec = timeline_events[-1].get("speech_end_sec", 0.0)
 
         if total_audio_sec == 0.0:
-            return "⚠️ Chưa có Clean Voice Master / Final Mix. Vui lòng bấm Build Voice Master trước.", gr.update(), gr.update(), "Thiếu audio master."
+            return "⚠️ Chưa có Clean Voice Master / Final Mix. Vui lòng bấm Build Voice Master trước.", gr.update(), gr.update(), [], gr.update(choices=[], value=None)
 
         planner = VisualPlanner(preset_name="sau_canh_cua")
-        scenes = planner.plan_episode_visuals(timeline_events, total_audio_sec)
+        scenes = planner.plan_episode_visuals(
+            timeline_events=timeline_events,
+            total_audio_sec=total_audio_sec,
+            project_dir=p_dir
+        )
         planner.save_plan(scenes, p_dir)
 
         asset_mgr = VisualAssetManager(p_dir)
-        asset_mgr.init_queue(scenes)
+        asset_mgr.sync_queue_with_plan(scenes)
 
+        summary = planner.summarize_plan(scenes, total_audio_sec)
         table_rows = _build_scenes_table_data(scenes, asset_mgr)
-        progress_md = _render_visual_progress_md(asset_mgr)
-        status_log = f"✅ Đã lập kế hoạch {len(scenes)} visual scenes (Banana: {sum(1 for s in scenes if s.visual_type == 'BANANA_IMAGE')}, Omni Flash Video: {sum(1 for s in scenes if s.visual_type == 'VEO_I2V')})."
+        progress_md = _render_visual_progress_md(asset_mgr, summary)
 
-        return status_log, progress_md, table_rows, scenes
+        scene_choices = [f"{s.scene_id}: {s.story_beat[:35]} ({s.visual_type})" for s in scenes]
+        first_choice = scene_choices[0] if scene_choices else None
+        dropdown_update = gr.update(choices=scene_choices, value=first_choice)
+
+        status_log = (
+            f"✅ **Phân tích Visual Hoàn tất (Phase 2):** {len(scenes)} scenes | "
+            f"Banana Pro: {summary.banana_images_count} | Omni Flash: {summary.omni_videos_count} | "
+            f"Durations: {summary.omni_duration_distribution} | "
+            f"Coverage: {summary.timeline_coverage_pct}% ({summary.total_timeline_sec:.1f}s) | "
+            f"Validation: {'PASS (0 lỗi)' if summary.is_valid else f'WARN ({len(summary.validation_issues)} cảnh báo)'}"
+        )
+
+        return status_log, progress_md, table_rows, scenes, dropdown_update
 
     c["btn_analyze_visual"].click(
         fn=_on_analyze_visual,
         inputs=[c["story_project_dir_state"], c["story_timeline_events_state"]],
-        outputs=[c["visual_status_log_md"], c["visual_progress_md"], c["visual_scenes_table"], c["story_visual_scenes_state"]]
+        outputs=[
+            c["visual_status_log_md"],
+            c["visual_progress_md"],
+            c["visual_scenes_table"],
+            c["story_visual_scenes_state"],
+            c["scene_select_dd"]
+        ]
+    )
+
+    # Scene Inspector & Edit Handlers
+    def _on_select_scene_detail(scene_choice, scenes_state, project_dir_str):
+        if not scene_choice:
+            return "", "MEDIUM", "BANANA_IMAGE", "-", "", "", "", "", "Chưa chọn scene."
+        scene_id = scene_choice.split(":")[0].strip()
+
+        scenes = scenes_state
+        if not scenes and project_dir_str:
+            plan_file = Path(project_dir_str) / "visual/visual_plan.json"
+            if plan_file.exists():
+                with open(plan_file, "r", encoding="utf-8") as f:
+                    scenes = [VisualScene(**d) for d in json.load(f).get("scenes", [])]
+
+        selected = next((s for s in (scenes or []) if (s.scene_id if hasattr(s, "scene_id") else s.get("scene_id")) == scene_id), None)
+        if not selected:
+            return "", "MEDIUM", "BANANA_IMAGE", "-", "", "", "", "", f"Không tìm thấy scene {scene_id}."
+
+        if isinstance(selected, dict):
+            s = VisualScene(**selected)
+        else:
+            s = selected
+
+        dur_val = f"{s.video_duration_sec}s" if s.video_duration_sec else "-"
+        chars_val = ", ".join(s.characters) if s.characters else ""
+        status_md = f"ℹ️ Đang xem **{s.scene_id}** [{s.start_sec:.1f}s - {s.end_sec:.1f}s] ({s.duration_sec:.1f}s) — *{s.story_beat}*"
+
+        return (
+            s.story_beat,
+            s.story_importance,
+            s.visual_type,
+            dur_val,
+            chars_val,
+            s.location,
+            s.image_prompt,
+            s.video_prompt or "",
+            status_md
+        )
+
+    c["scene_select_dd"].change(
+        fn=_on_select_scene_detail,
+        inputs=[c["scene_select_dd"], c["story_visual_scenes_state"], c["story_project_dir_state"]],
+        outputs=[
+            c["scene_edit_beat"],
+            c["scene_edit_importance"],
+            c["scene_edit_type"],
+            c["scene_edit_duration"],
+            c["scene_edit_chars"],
+            c["scene_edit_location"],
+            c["scene_edit_image_prompt"],
+            c["scene_edit_motion_prompt"],
+            c["scene_edit_status_md"]
+        ]
+    )
+    c["btn_refresh_scene_details"].click(
+        fn=_on_select_scene_detail,
+        inputs=[c["scene_select_dd"], c["story_visual_scenes_state"], c["story_project_dir_state"]],
+        outputs=[
+            c["scene_edit_beat"],
+            c["scene_edit_importance"],
+            c["scene_edit_type"],
+            c["scene_edit_duration"],
+            c["scene_edit_chars"],
+            c["scene_edit_location"],
+            c["scene_edit_image_prompt"],
+            c["scene_edit_motion_prompt"],
+            c["scene_edit_status_md"]
+        ]
+    )
+
+    def _on_save_scene_edit(project_dir_str, scenes_state, scene_choice, edit_beat, edit_importance, edit_type, edit_duration, edit_chars, edit_location, edit_img_prompt, edit_vid_prompt):
+        if not scene_choice:
+            return "⚠️ Chưa chọn scene.", gr.update(), scenes_state
+        if not project_dir_str:
+            return "⚠️ Chưa tải dự án.", gr.update(), scenes_state
+
+        p_dir = Path(project_dir_str)
+        scene_id = scene_choice.split(":")[0].strip()
+
+        # Load current scenes
+        scenes = []
+        if scenes_state:
+            for item in scenes_state:
+                scenes.append(VisualScene(**item) if isinstance(item, dict) else item)
+        else:
+            plan_file = p_dir / "visual/visual_plan.json"
+            if plan_file.exists():
+                with open(plan_file, "r", encoding="utf-8") as f:
+                    scenes = [VisualScene(**d) for d in json.load(f).get("scenes", [])]
+
+        target = next((s for s in scenes if s.scene_id == scene_id), None)
+        if not target:
+            return f"⚠️ Không tìm thấy scene {scene_id} để lưu.", gr.update(), scenes
+
+        # Update target scene
+        target.story_beat = edit_beat
+        target.story_importance = edit_importance
+        target.visual_type = edit_type
+        if edit_duration and edit_duration != "-":
+            try:
+                target.video_duration_sec = int(edit_duration.replace("s", ""))
+            except ValueError:
+                target.video_duration_sec = None
+        else:
+            target.video_duration_sec = None
+
+        target.characters = [c.strip() for c in edit_chars.split(",") if c.strip()]
+        target.location = edit_location.strip()
+        target.image_prompt = edit_img_prompt
+        target.video_prompt = edit_vid_prompt.strip() if edit_vid_prompt and edit_vid_prompt.strip() else None
+
+        # Persist to disk
+        planner = VisualPlanner(preset_name="sau_canh_cua")
+        planner.save_plan(scenes, p_dir)
+
+        asset_mgr = VisualAssetManager(p_dir)
+        asset_mgr.sync_queue_with_plan(scenes)
+
+        table_rows = _build_scenes_table_data(scenes, asset_mgr)
+        status_md = f"✅ Đã lưu thành công chỉnh sửa cho **{scene_id}** và cập nhật `visual_plan.json`."
+
+        return status_md, table_rows, scenes
+
+    c["btn_save_scene_edit"].click(
+        fn=_on_save_scene_edit,
+        inputs=[
+            c["story_project_dir_state"],
+            c["story_visual_scenes_state"],
+            c["scene_select_dd"],
+            c["scene_edit_beat"],
+            c["scene_edit_importance"],
+            c["scene_edit_type"],
+            c["scene_edit_duration"],
+            c["scene_edit_chars"],
+            c["scene_edit_location"],
+            c["scene_edit_image_prompt"],
+            c["scene_edit_motion_prompt"]
+        ],
+        outputs=[c["scene_edit_status_md"], c["visual_scenes_table"], c["story_visual_scenes_state"]]
     )
 
     # 2. Generate All Images (Banana Pro)

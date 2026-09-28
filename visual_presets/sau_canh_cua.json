@@ -7,8 +7,8 @@
   "wire_aspect_video": 2,
   "target_scenes_min": 30,
   "target_scenes_max": 55,
-  "target_veo_min": 15,
-  "target_veo_max": 30,
+  "target_veo_min": 12,
+  "target_veo_max": 25,
   "style_prompt": "Vietnamese cinematic social mystery drama, realistic, natural Vietnamese faces, modern Vietnamese environment, subtle cinematic lighting, muted natural colors, 35mm cinematic photography, shallow depth of field when appropriate, realistic skin texture, restrained acting, serious emotional tone, no fantasy, no anime, no exaggerated expressions, no glamour fashion look",
   "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle",
   "video_rules": "focus on subtle subject motion, realistic facial expression, restrained camera motion, cinematic pacing, no exaggerated VFX",
@@ -23,5 +23,31 @@
     6,
     8,
     10
-  ]
+  ],
+  "series_visual_style": {
+    "genre": "Vietnamese cinematic social mystery drama",
+    "look": [
+      "photorealistic",
+      "natural Vietnamese faces",
+      "realistic skin texture",
+      "cinematic 35mm photography",
+      "restrained acting",
+      "natural modern Vietnamese environment",
+      "subtle dramatic lighting",
+      "muted natural colors"
+    ],
+    "avoid": [
+      "anime",
+      "fantasy",
+      "overacting",
+      "fashion editorial",
+      "beauty glamour",
+      "plastic skin",
+      "exaggerated facial expression",
+      "text",
+      "logo",
+      "watermark"
+    ],
+    "aspect_ratio": "16:9"
+  }
 }

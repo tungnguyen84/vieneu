@@ -1,11 +1,16 @@
 {
   "id": "LAN_ADULT",
-  "name": "Lan (Trưởng thành)",
+  "name": "Lan",
+  "role": "main",
   "gender": "female",
   "age_range": "30-35",
   "appearance": "Vietnamese woman in her early 30s, slender gentle build, natural dark eyes with subtle tired shadows holding a deep secret, gentle compassionate but troubled demeanor, realistic Vietnamese facial features",
-  "hair": "natural dark straight shoulder-length hair neatly tucked behind ears",
-  "default_clothing": "simple modest domestic clothing, muted beige linen blouse and neutral casual pants",
+  "face": "Oval face, gentle Vietnamese contours, natural dark eyes holding emotional weight and quiet pain, subtle fatigue lines, no makeup look",
+  "hair": "Natural dark straight shoulder-length hair neatly tucked behind ears",
+  "body": "Slender modest domestic build, gentle restrained posture",
+  "default_clothing": "Simple modest domestic clothing, muted beige linen blouse and neutral casual pants",
+  "visual_notes": "Preserve strict identity continuity across scenes. Restrained acting, serious domestic tone.",
   "visual_style": "Vietnamese realism, natural skin texture, 35mm cinematic lighting, muted tones",
-  "references": []
+  "references": [],
+  "flow_media_ids": {}
 }

@@ -91,6 +91,9 @@ class BananaClient:
         Generates and downloads a keyframe for a single scene.
         Returns local image Path on success, None on failure.
         """
+        if not scene.visual_type or scene.visual_type == "UNRESOLVED":
+            raise ValueError(f"Cannot generate keyframe: Scene {scene.scene_id} has UNRESOLVED visual_type")
+
         target_pid = resolve_flow_project_id(
             ui_project_id=project_id,
             visual_preset=self.preset,
