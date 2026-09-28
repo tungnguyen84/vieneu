@@ -519,12 +519,8 @@ def import_track_to_library(
     orig_name_clean = orig_filename or src_p.name
     ext = detect_audio_extension(src_p, orig_name_clean)
 
-    print(f"[MUSIC IMPORT] Thay thế slot: {category} -> Track ID: {track_id}", flush=True)
-    print(f"[MUSIC IMPORT] original filename: {orig_name_clean}", flush=True)
-    print(f"[MUSIC IMPORT] temp path: {src_p}", flush=True)
-    print(f"[MUSIC IMPORT] extension: {ext}", flush=True)
-    print(f"[MUSIC IMPORT] ffprobe codec: {codec_name}", flush=True)
-    print(f"[MUSIC IMPORT] duration: {probe.get('duration_sec', 0.0):.2f}s", flush=True)
+    logger.info(f"[MUSIC IMPORT] Slot: {category} -> Track ID: {track_id}")
+    logger.info(f"[MUSIC IMPORT] original filename: {orig_name_clean}, ext: {ext}, codec: {codec_name}, duration: {probe.get('duration_sec', 0.0):.2f}s")
 
     norm_dest = normalized_dir / f"{track_id}.wav"
 
@@ -534,7 +530,7 @@ def import_track_to_library(
         backup_file = backup_dir / f"{track_id}_{ts_backup}.wav"
         try:
             shutil.copy2(norm_dest, backup_file)
-            print(f"[MUSIC BACKUP] Đã sao lưu track cũ vào: {backup_file.name}", flush=True)
+            logger.info(f"[MUSIC BACKUP] Sao lưu track cũ vào: {backup_file.name}")
         except Exception as e:
             logger.warning(f"Lỗi tạo backup: {e}")
 
@@ -577,7 +573,7 @@ def import_track_to_library(
     lib_data.setdefault("categories", DEFAULT_CATEGORY_CONFIG).setdefault(category, {})["default_track"] = track_id
     save_global_music_library(lib_data, lib_dir)
 
-    print(f"[MUSIC IMPORT] Đã lưu persistent thành công cho {track_id}: {norm_stats['duration_sec']}s, {norm_stats['integrated_lufs']} LUFS, Updated: {updated_at_str}", flush=True)
+    logger.info(f"[MUSIC IMPORT] Saved persistent {track_id}: {norm_stats['duration_sec']}s, {norm_stats['integrated_lufs']} LUFS, Updated: {updated_at_str}")
 
     return True, f"Thay thế & Chuẩn hóa thành công cho slot {category} (Track: {track_id}, {norm_stats['duration_sec']}s, {norm_stats['integrated_lufs']} LUFS)", lib_data["tracks"][track_id]
 
@@ -981,6 +977,208 @@ def score_region_priority(reg: dict) -> int:
     return 100
 
 
+MIN_REGION_DURATION = {
+    "INTRO": 5.0,
+    "MYSTERY": 8.0,
+    "TENSION": 8.0,
+    "EMOTIONAL": 10.0,
+    "REFLECTION": 8.0,
+    "OUTRO": 5.0,
+    "DRY": 0.0
+}
+
+
+def can_merge_candidate_regions(
+    r1: dict,
+    r2: dict,
+    raw_cues: List[dict],
+    reveal_blocks: List[Tuple[float, float, str]],
+    max_region_dur: float = 26.0
+) -> bool:
+    """
+    Kiểm tra xem 2 candidate regions có thể gộp lại an toàn (Option A) không:
+    - Cùng loại cue.
+    - Khoảng cách gap <= 3.0s.
+    - Tổng độ dài sau gộp <= max_region_dur.
+    - Không vượt qua bất kỳ vùng Major Reveal nào (kể cả clearance).
+    - Không vượt qua segment COMMENT (phải giữ DRY) hoặc segment explicit DRY.
+    """
+    if r1.get("cue") != r2.get("cue"):
+        return False
+
+    gap = r2["start_sec"] - r1["end_sec"]
+    if gap < 0 or gap > 3.0:
+        return False
+
+    merged_dur = r2["end_sec"] - r1["start_sec"]
+    if merged_dur > max_region_dur:
+        return False
+
+    # 1. Kiểm tra an toàn tuyệt đối với Major Reveal blocks
+    for rb_st, rb_en, _ in reveal_blocks:
+        if not (r2["end_sec"] <= rb_st or r1["start_sec"] >= rb_en):
+            return False
+
+    # 2. Kiểm tra các segment nằm trong khoảng trống (gap)
+    for ev in raw_cues:
+        if ev["speech_start"] >= r1["end_sec"] and ev["speech_end"] <= r2["start_sec"]:
+            if ev.get("cue") == "DRY" or ev.get("is_reveal"):
+                return False
+
+    return True
+
+
+def enforce_minimum_music_region_durations(
+    regions: List[dict],
+    raw_cues: List[dict],
+    reveal_blocks: List[Tuple[float, float, str]],
+    max_region_dur: float = 26.0,
+    total_episode_sec: float = 0.0,
+    max_cov: float = 38.0
+) -> List[dict]:
+    """
+    Áp dụng quy tắc Minimum Music Region Duration:
+    - INTRO: min 5s
+    - MYSTERY: min 8s
+    - TENSION: min 8s
+    - EMOTIONAL: min 10s
+    - REFLECTION: min 8s
+    - OUTRO: min 5s
+
+    Nếu auto-generated candidate ngắn hơn minimum:
+    Option A (Ưu tiên): Merge với region bên cạnh nếu cùng cue, gap nhỏ, không qua REVEAL, không qua COMMENT dry.
+    Option B (Mặc định an toàn): Convert candidate đó thành DRY (loại bỏ khỏi regions).
+    """
+    current = [dict(r) for r in regions]
+    changed = True
+    iteration = 0
+
+    while changed and iteration < 50:
+        changed = False
+        iteration += 1
+        i = 0
+        while i < len(current):
+            reg = current[i]
+            dur = reg["end_sec"] - reg["start_sec"]
+            cue = reg.get("cue", "").upper()
+            min_req = MIN_REGION_DURATION.get(cue, 8.0)
+
+            if dur < min_req:
+                merged = False
+                # Option A: Thử merge với region trước
+                if i > 0 and can_merge_candidate_regions(current[i - 1], reg, raw_cues, reveal_blocks, max_region_dur):
+                    tentative_music_dur = sum(r["end_sec"] - r["start_sec"] for r in current) + (reg["start_sec"] - current[i - 1]["end_sec"])
+                    tentative_cov = (tentative_music_dur / total_episode_sec * 100.0) if total_episode_sec > 0 else 0.0
+                    if tentative_cov <= max_cov:
+                        current[i - 1]["end_sec"] = reg["end_sec"]
+                        current[i - 1]["segments"].extend(reg.get("segments", []))
+                        current.pop(i)
+                        changed = True
+                        merged = True
+                        break
+
+                # Option A: Thử merge với region sau
+                if not merged and i < len(current) - 1 and can_merge_candidate_regions(reg, current[i + 1], raw_cues, reveal_blocks, max_region_dur):
+                    tentative_music_dur = sum(r["end_sec"] - r["start_sec"] for r in current) + (current[i + 1]["start_sec"] - reg["end_sec"])
+                    tentative_cov = (tentative_music_dur / total_episode_sec * 100.0) if total_episode_sec > 0 else 0.0
+                    if tentative_cov <= max_cov:
+                        current[i + 1]["start_sec"] = reg["start_sec"]
+                        current[i + 1]["segments"] = reg.get("segments", []) + current[i + 1]["segments"]
+                        current.pop(i)
+                        changed = True
+                        merged = True
+                        break
+
+                # Option B: Convert candidate thành DRY (loại bỏ khỏi music regions)
+                if not merged:
+                    logger.info(
+                        f"[MIN_DUR ENFORCE] Chuyển đổi candidate quá ngắn thành DRY: "
+                        f"{cue} {dur:.2f}s < {min_req:.1f}s ({reg['start_sec']:.2f}s -> {reg['end_sec']:.2f}s)"
+                    )
+                    current.pop(i)
+                    changed = True
+                    break
+
+            i += 1
+
+    return current
+
+
+def adapt_fade_durations(
+    duration_sec: float,
+    fade_in_sec: float,
+    fade_out_sec: float,
+    max_total_fade_ratio: float = 0.35
+) -> Tuple[float, float]:
+    """
+    Quy tắc an toàn Fade Duration:
+    - Không để: fade_in + fade_out >= duration_sec.
+    - Với region ngắn (< 15s): tổng fade không chiếm quá max_total_fade_ratio (35%) duration của region.
+    - Với region bình thường (>= 15s): giữ nguyên preset fade nếu phù hợp.
+    """
+    if duration_sec <= 0:
+        return 0.0, 0.0
+
+    total_fade = fade_in_sec + fade_out_sec
+    if total_fade <= 0:
+        return 0.0, 0.0
+
+    if duration_sec >= 15.0:
+        if total_fade >= duration_sec:
+            scale = (duration_sec * 0.5) / total_fade
+            return round(max(0.2, fade_in_sec * scale), 2), round(max(0.2, fade_out_sec * scale), 2)
+        return round(fade_in_sec, 2), round(fade_out_sec, 2)
+
+    # Region < 15s: khống chế tổng fade <= duration_sec * max_total_fade_ratio (35%)
+    max_fade_allowed = duration_sec * max_total_fade_ratio
+    if total_fade > max_fade_allowed:
+        scale = max_fade_allowed / total_fade
+        f_in = max(0.2, fade_in_sec * scale)
+        f_out = max(0.2, fade_out_sec * scale)
+        if f_in + f_out > max_fade_allowed:
+            adj = (f_in + f_out) - max_fade_allowed
+            f_out = max(0.2, f_out - adj)
+        return round(f_in, 2), round(f_out, 2)
+
+    return round(fade_in_sec, 2), round(fade_out_sec, 2)
+
+
+def compute_smart_source_offset(
+    cue_category: str,
+    occurrence_index: int,
+    track_duration_sec: float
+) -> float:
+    """
+    Smart Source Offset (Deterministic):
+    - Tránh lặp lại phần đầu source track khi cùng 1 track được dùng nhiều lần trong 1 Episode.
+    - Deterministic theo: cue_category + occurrence_index.
+    - INTRO / OUTRO: giữ offset = 0.0s (giữ hook / closing hit gốc).
+    - MYSTERY, TENSION, EMOTIONAL, REFLECTION:
+      Cue #1 (idx 0): source 00:10 (10.0s)
+      Cue #2 (idx 1): source 00:42 (42.0s)
+      Cue #3 (idx 2): source 01:14 (~01:15, 74.0s)
+      Cue #4 (idx 3): source 01:46 (106.0s)
+      ...
+      Bước tiến: 32.0s mỗi lần xuất hiện.
+      Nếu vượt quá độ dài khả dụng của bài (track_duration - 15s), tự động modulo quay vòng.
+    """
+    cat = cue_category.upper().strip()
+    if cat in ["INTRO", "OUTRO", "DRY"]:
+        return 0.0
+
+    if track_duration_sec <= 20.0:
+        return 0.0
+
+    initial_offset = 10.0
+    step_sec = 32.0
+
+    raw_offset = initial_offset + occurrence_index * step_sec
+    usable_dur = max(10.0, track_duration_sec - 15.0)
+
+    offset = raw_offset % usable_dur
+    return round(offset, 2)
+
+
 def prune_regions_to_target_coverage(
     regions: List[dict],
     total_sec: float,
@@ -989,7 +1187,7 @@ def prune_regions_to_target_coverage(
 ) -> Tuple[List[dict], float]:
     """
     Tự động prune các region có priority thấp nhất cho đến khi coverage <= max_cov (38%).
-    Đảm bảo coverage không tụt sâu dưới min_cov (30%).
+    Đảm bảo coverage không tụt sâu dưới min_cov (30%) và không tỉa region dưới minimum duration.
     """
     if total_sec <= 0:
         return regions, 0.0
@@ -1006,10 +1204,12 @@ def prune_regions_to_target_coverage(
 
         lowest_score, lowest_idx, lowest_reg = scored[0]
         dur = lowest_reg["end_sec"] - lowest_reg["start_sec"]
+        min_dur = MIN_REGION_DURATION.get(lowest_reg["cue"], 8.0)
 
-        # Nếu region dài (> 18s) và priority > 100, tỉa bớt đuôi trước
-        if dur > 18.0 and lowest_score > 100:
-            trim_sec = min(8.0, dur - 14.0)
+        # Nếu region dài và sau khi tỉa vẫn đảm bảo >= min_dur + 2.0s
+        max_trim = max(0.0, dur - (min_dur + 2.0))
+        if max_trim >= 4.0 and lowest_score > 100:
+            trim_sec = min(8.0, max_trim)
             lowest_reg["end_sec"] -= trim_sec
         else:
             # Drop hẳn region priority thấp nhất
@@ -1171,7 +1371,17 @@ def generate_cue_sheet_from_segments(
         if reg["cue"] == "INTRO" and (reg["end_sec"] - reg["start_sec"]) > hook_cap_sec:
             reg["end_sec"] = reg["start_sec"] + hook_cap_sec
 
-    # 5. Tự động Prune nếu coverage > target_max_coverage (38.0%)
+    # 5. Áp dụng quy tắc Minimum Music Region Duration (Option A merge / Option B drop thành DRY)
+    regions = enforce_minimum_music_region_durations(
+        regions=regions,
+        raw_cues=raw_cues,
+        reveal_blocks=reveal_blocks,
+        max_region_dur=max_region_dur,
+        total_episode_sec=total_episode_sec,
+        max_cov=target_max_coverage
+    )
+
+    # 6. Tự động Prune nếu coverage > target_max_coverage (38.0%)
     regions, final_cov = prune_regions_to_target_coverage(
         regions=regions,
         total_sec=total_episode_sec,
@@ -1179,12 +1389,24 @@ def generate_cue_sheet_from_segments(
         min_cov=target_min_coverage
     )
 
-    # 6. Chuyển đổi thành danh sách Cue Sheet đầy đủ (bao gồm cả các vùng DRY)
+    # Đảm bảo sau khi prune vẫn tuân thủ tuyệt đối minimum region duration
+    regions = enforce_minimum_music_region_durations(
+        regions=regions,
+        raw_cues=raw_cues,
+        reveal_blocks=reveal_blocks,
+        max_region_dur=max_region_dur,
+        total_episode_sec=total_episode_sec,
+        max_cov=target_max_coverage
+    )
+
+    # 7. Chuyển đổi thành danh sách Cue Sheet đầy đủ (bao gồm Smart Source Offset, Adapted Fades, và DRY regions)
     cue_sheet: List[dict] = []
     last_pos = 0.0
 
     lib_data = init_global_music_library()
     categories = lib_data.get("categories", DEFAULT_CATEGORY_CONFIG)
+    tracks = lib_data.get("tracks", {})
+    track_usage_count = {}
 
     for reg in regions:
         if reg["start_sec"] > last_pos + 0.1:
@@ -1198,12 +1420,24 @@ def generate_cue_sheet_from_segments(
                 "level_db": -99.0,
                 "fade_in_sec": 0.0,
                 "fade_out_sec": 0.0,
+                "source_offset_sec": 0.0,
                 "source": "Voice Only / Breathing Rest"
             })
 
         dur = reg["end_sec"] - reg["start_sec"]
         cat_cfg = categories.get(reg["cue"], {})
         def_trk = cat_cfg.get("default_track", f"SCC_{reg['cue']}_01")
+
+        # Smart source offset (deterministic theo số lần xuất hiện của track)
+        trk_info = tracks.get(def_trk, {})
+        trk_dur = float(trk_info.get("duration_sec", 180.0))
+        usage_idx = track_usage_count.get(def_trk, 0)
+        track_usage_count[def_trk] = usage_idx + 1
+
+        source_offset = compute_smart_source_offset(reg["cue"], usage_idx, trk_dur)
+
+        # Adapt fade durations thích ứng với độ dài region
+        f_in, f_out = adapt_fade_durations(dur, reg["fade_in_sec"], reg["fade_out_sec"])
 
         cue_sheet.append({
             "start_sec": round(reg["start_sec"], 2),
@@ -1212,8 +1446,9 @@ def generate_cue_sheet_from_segments(
             "cue": reg["cue"],
             "track": def_trk,
             "level_db": round(reg["level_db"], 1),
-            "fade_in_sec": round(reg["fade_in_sec"], 2),
-            "fade_out_sec": round(reg["fade_out_sec"], 2),
+            "fade_in_sec": f_in,
+            "fade_out_sec": f_out,
+            "source_offset_sec": source_offset,
             "source": f"Auto Region ({', '.join(reg['segments'][:3])}{'...' if len(reg['segments'])>3 else ''})"
         })
         last_pos = reg["end_sec"]
@@ -1228,6 +1463,7 @@ def generate_cue_sheet_from_segments(
             "level_db": -99.0,
             "fade_in_sec": 0.0,
             "fade_out_sec": 0.0,
+            "source_offset_sec": 0.0,
             "source": "Voice Only / Epilogue Silence"
         })
 
@@ -1258,10 +1494,18 @@ def calculate_music_coverage(cue_sheet: List[dict], total_episode_sec: Union[flo
     cov_pct = (music_dur / total_episode_sec * 100.0) if total_episode_sec > 0 else 0.0
 
     is_high = cov_pct > 40.0
-    warn_msg = (
-        f"⚠️ **Cảnh báo:** Music coverage đang cao ({cov_pct:.1f}% > 40%). "
-        "Định dạng storytelling yêu cầu 30–38% để tai khán giả có khoảng nghỉ (DRY)."
-    ) if is_high else ""
+    if is_high:
+        warn_msg = (
+            f"⚠️ **Cảnh báo:** Music coverage đang cao ({cov_pct:.1f}% > 40%). "
+            "Định dạng storytelling yêu cầu 30–38% để tai khán giả có khoảng nghỉ (DRY)."
+        )
+    elif cov_pct > 38.0:
+        warn_msg = (
+            f"ℹ️ **Lưu ý:** Music coverage ({cov_pct:.1f}%) hơi cao hơn mức khuyến nghị (30–38%). "
+            "Vẫn chấp nhận được nhưng nên cân nhắc để khoảng nghỉ thoáng hơn."
+        )
+    else:
+        warn_msg = ""
 
     def fmt_time(sec: float) -> str:
         m = int(sec // 60)
@@ -1432,8 +1676,19 @@ def render_music_bed(
         if region_len <= 0:
             continue
 
-        # 1. Loop audio nếu region dài hơn track
-        raw_len = len(raw_wav)
+        # 1. Áp dụng Smart Source Offset
+        source_offset_sec = float(item.get("source_offset_sec", 0.0))
+        offset_samp = int(source_offset_sec * sample_rate)
+        if offset_samp >= len(raw_wav):
+            offset_samp = offset_samp % len(raw_wav)
+
+        if offset_samp > 0:
+            source_audio = np.concatenate([raw_wav[offset_samp:], raw_wav[:offset_samp]])
+        else:
+            source_audio = raw_wav
+
+        # 2. Loop audio nếu region dài hơn source
+        raw_len = len(source_audio)
         if region_len > raw_len:
             xfade_samp = min(int(loop_crossfade_sec * sample_rate), raw_len // 4)
             step = raw_len - xfade_samp
@@ -1442,22 +1697,26 @@ def render_music_bed(
             pos = 0
             for l_idx in range(num_loops):
                 if l_idx == 0:
-                    full_looped[:raw_len] += raw_wav
+                    full_looped[:raw_len] += source_audio
                     pos = step
                 else:
                     # Crossfade nối mép
                     fade_out = np.cos(0.5 * np.pi * np.linspace(0, 1, xfade_samp, endpoint=False)) ** 2
                     fade_in = np.sin(0.5 * np.pi * np.linspace(0, 1, xfade_samp, endpoint=False)) ** 2
-                    full_looped[pos:pos + xfade_samp] = (full_looped[pos:pos + xfade_samp] * fade_out) + (raw_wav[:xfade_samp] * fade_in)
-                    full_looped[pos + xfade_samp:pos + raw_len] += raw_wav[xfade_samp:]
+                    full_looped[pos:pos + xfade_samp] = (full_looped[pos:pos + xfade_samp] * fade_out) + (source_audio[:xfade_samp] * fade_in)
+                    full_looped[pos + xfade_samp:pos + raw_len] += source_audio[xfade_samp:]
                     pos += step
             chunk = full_looped[:region_len]
         else:
-            chunk = raw_wav[:region_len].copy()
+            chunk = source_audio[:region_len].copy()
 
-        # 2. Áp dụng Smooth Fade In & Fade Out
-        f_in_sec = float(item.get("fade_in_sec", 2.0))
-        f_out_sec = float(item.get("fade_out_sec", 2.5))
+        # 3. Áp dụng Smooth Fade In & Fade Out thích ứng với độ dài region
+        dur_sec = en_sec - st_sec
+        f_in_sec, f_out_sec = adapt_fade_durations(
+            duration_sec=dur_sec,
+            fade_in_sec=float(item.get("fade_in_sec", 2.0)),
+            fade_out_sec=float(item.get("fade_out_sec", 2.5))
+        )
         f_in_samp = min(int(f_in_sec * sample_rate), region_len // 2)
         f_out_samp = min(int(f_out_sec * sample_rate), region_len // 2)
 
