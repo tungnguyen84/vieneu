@@ -798,8 +798,13 @@ def build_clean_voice_master(
 
 def infer_music_cue_for_segment(seg_info: dict) -> Tuple[str, float, float, float]:
     """
-    Xác định Music Cue cho từng segment theo thứ tự ưu tiên:
-    explicit music object > music_cue > audio_region > delivery_profile > DRY.
+    Xác định Music Cue cho từng segment theo các quy tắc chuẩn Sau Cánh Cửa:
+    1. Explicit music object trong JSON được ưu tiên cao nhất.
+    2. NORMAL và COMMENT mặc định DRY (trừ khi là emotional payoff thực sự ở cao trào).
+    3. REVEAL luôn DRY tuyệt đối và giữ clearance an toàn.
+    4. HOOK -> INTRO.
+    5. ENDING -> REFLECTION / OUTRO.
+    6. MYSTERY / TENSION theo nhịp độ.
     Trả về: (cue_category, level_db, fade_in_sec, fade_out_sec)
     """
     # 1. Explicit music object trong JSON
@@ -811,48 +816,55 @@ def infer_music_cue_for_segment(seg_info: dict) -> Tuple[str, float, float, floa
         f_out = float(m_obj.get("fade_out_sec", 2.5))
         return cue, lvl, f_in, f_out
 
-    # 2. music_cue field
-    m_cue = str(seg_info.get("music_cue", "")).strip().upper()
-    if m_cue and m_cue not in ["NONE", "FADE_OUT", ""]:
-        alias = {
-            "SIGNATURE_INTRO": "INTRO",
-            "SIGNATURE_OUTRO": "OUTRO",
-            "MYSTERY_LOW": "MYSTERY",
-            "TENSION_LOW": "TENSION",
-            "EMOTIONAL_LOW": "EMOTIONAL",
-            "MEMORY_SOFT": "REFLECTION",
-            "CLOSING_SOFT": "REFLECTION"
-        }
-        mapped_cat = alias.get(m_cue, m_cue)
-        cfg = DEFAULT_CATEGORY_CONFIG.get(mapped_cat, DEFAULT_CATEGORY_CONFIG["MYSTERY"])
-        lvl = float(seg_info.get("music_volume_db") or cfg["default_level_db"])
-        return mapped_cat, lvl, cfg["fade_in_sec"], cfg["fade_out_sec"]
-
-    # 3. audio_region field
-    a_region = str(seg_info.get("audio_region", "")).strip().upper()
-    if a_region and a_region not in ["CLEAN", "DRY", "SILENCE_REVEAL", "NONE"]:
-        if a_region in DEFAULT_CATEGORY_CONFIG:
-            cfg = DEFAULT_CATEGORY_CONFIG[a_region]
-            lvl = float(seg_info.get("music_volume_db") or cfg["default_level_db"])
-            return a_region, lvl, cfg["fade_in_sec"], cfg["fade_out_sec"]
-
-    # 4. delivery_profile field (V9.1 default rules)
     d_prof = str(seg_info.get("delivery_profile", "")).strip().upper()
+    m_cue = str(seg_info.get("music_cue", "")).strip().lower()
+    importance = str(seg_info.get("importance", "")).strip().lower()
+    seg_id_str = str(seg_info.get("id", "0"))
+    try:
+        seg_id_num = int(seg_id_str)
+    except Exception:
+        seg_id_num = 0
+
+    # 2. NORMAL và COMMENT mặc định DRY
+    if d_prof in ["NORMAL", "COMMENT"]:
+        # Chỉ kích hoạt EMOTIONAL cho emotional payoff thực sự ở cao trào (đoạn kết/hé lộ sự thật)
+        if m_cue == "emotional_low" and (importance == "critical" or seg_id_num >= 80):
+            cfg = DEFAULT_CATEGORY_CONFIG["EMOTIONAL"]
+            return "EMOTIONAL", cfg["default_level_db"], cfg["fade_in_sec"], cfg["fade_out_sec"]
+        return "DRY", -99.0, 0.0, 0.0
+
+    # 3. REVEAL luôn DRY tuyệt đối
+    if d_prof == "REVEAL" or is_major_reveal_segment(seg_info):
+        return "DRY", -99.0, 0.0, 0.0
+
+    # 4. HOOK -> INTRO (Signature Hook)
     if d_prof == "HOOK":
         cfg = DEFAULT_CATEGORY_CONFIG["INTRO"]
         return "INTRO", cfg["default_level_db"], cfg["fade_in_sec"], cfg["fade_out_sec"]
-    elif d_prof == "MYSTERY":
-        cfg = DEFAULT_CATEGORY_CONFIG["MYSTERY"]
-        return "MYSTERY", cfg["default_level_db"], cfg["fade_in_sec"], cfg["fade_out_sec"]
-    elif d_prof == "TENSION":
-        cfg = DEFAULT_CATEGORY_CONFIG["TENSION"]
-        return "TENSION", cfg["default_level_db"], cfg["fade_in_sec"], cfg["fade_out_sec"]
-    elif d_prof == "ENDING":
-        # Mặc định kết thúc dùng REFLECTION trước, OUTRO ở câu chót
+
+    # 5. ENDING -> REFLECTION / OUTRO
+    if d_prof == "ENDING":
+        if seg_id_num >= 93 or m_cue == "signature_outro":
+            cfg = DEFAULT_CATEGORY_CONFIG["OUTRO"]
+            return "OUTRO", cfg["default_level_db"], cfg["fade_in_sec"], cfg["fade_out_sec"]
         cfg = DEFAULT_CATEGORY_CONFIG["REFLECTION"]
         return "REFLECTION", cfg["default_level_db"], cfg["fade_in_sec"], cfg["fade_out_sec"]
-    elif d_prof in ["REVEAL", "NORMAL", "COMMENT"]:
-        return "DRY", -99.0, 0.0, 0.0
+
+    # 6. MYSTERY & TENSION
+    if d_prof == "MYSTERY":
+        if m_cue == "tension_low":
+            cfg = DEFAULT_CATEGORY_CONFIG["TENSION"]
+            return "TENSION", cfg["default_level_db"], cfg["fade_in_sec"], cfg["fade_out_sec"]
+        cfg = DEFAULT_CATEGORY_CONFIG["MYSTERY"]
+        return "MYSTERY", cfg["default_level_db"], cfg["fade_in_sec"], cfg["fade_out_sec"]
+
+    if d_prof == "TENSION":
+        cfg = DEFAULT_CATEGORY_CONFIG["TENSION"]
+        return "TENSION", cfg["default_level_db"], cfg["fade_in_sec"], cfg["fade_out_sec"]
+
+    if d_prof == "EMOTIONAL":
+        cfg = DEFAULT_CATEGORY_CONFIG["EMOTIONAL"]
+        return "EMOTIONAL", cfg["default_level_db"], cfg["fade_in_sec"], cfg["fade_out_sec"]
 
     return "DRY", -99.0, 0.0, 0.0
 
@@ -878,31 +890,109 @@ def is_major_reveal_segment(seg_info: dict) -> bool:
     return False
 
 
+def score_region_priority(reg: dict) -> int:
+    """Đánh giá độ ưu tiên giữ lại của 1 music region khi prune."""
+    cue = reg.get("cue", "").upper()
+    dur = float(reg.get("end_sec", 0.0)) - float(reg.get("start_sec", 0.0))
+    segs = reg.get("segments", [])
+
+    if cue == "OUTRO":
+        return 1000
+    if cue == "INTRO":
+        return 900
+    if cue == "EMOTIONAL":
+        return 800
+    if cue == "REFLECTION":
+        return 700
+    if cue == "TENSION":
+        if any(s.isdigit() and int(s) >= 40 for s in segs):
+            return 500
+        return 400
+    if cue == "MYSTERY":
+        if dur < 8.0:
+            return 100
+        return 200
+    return 100
+
+
+def prune_regions_to_target_coverage(
+    regions: List[dict],
+    total_sec: float,
+    max_cov: float = 38.0,
+    min_cov: float = 30.0
+) -> Tuple[List[dict], float]:
+    """
+    Tự động prune các region có priority thấp nhất cho đến khi coverage <= max_cov (38%).
+    Đảm bảo coverage không tụt sâu dưới min_cov (30%).
+    """
+    if total_sec <= 0:
+        return regions, 0.0
+
+    current_regs = [dict(r) for r in regions]
+    music_dur = sum(r["end_sec"] - r["start_sec"] for r in current_regs)
+    cov_pct = (music_dur / total_sec * 100.0) if total_sec > 0 else 0.0
+
+    iteration = 0
+    while cov_pct > max_cov and len(current_regs) > 0 and iteration < 50:
+        iteration += 1
+        scored = [(score_region_priority(r), idx, r) for idx, r in enumerate(current_regs)]
+        scored.sort(key=lambda x: (x[0], -(x[2]["end_sec"] - x[2]["start_sec"])))
+
+        lowest_score, lowest_idx, lowest_reg = scored[0]
+        dur = lowest_reg["end_sec"] - lowest_reg["start_sec"]
+
+        # Nếu region dài (> 18s) và priority > 100, tỉa bớt đuôi trước
+        if dur > 18.0 and lowest_score > 100:
+            trim_sec = min(8.0, dur - 14.0)
+            lowest_reg["end_sec"] -= trim_sec
+        else:
+            # Drop hẳn region priority thấp nhất
+            current_regs.pop(lowest_idx)
+
+        music_dur = sum(r["end_sec"] - r["start_sec"] for r in current_regs)
+        cov_pct = (music_dur / total_sec * 100.0) if total_sec > 0 else 0.0
+
+    return current_regs, cov_pct
+
+
 def generate_cue_sheet_from_segments(
     timeline_events: List[dict],
     music_overrides: Optional[dict] = None,
     pre_reveal_clearance: float = 2.0,
     post_reveal_clearance: float = 2.5,
     merge_gap_threshold: float = 3.0,
-    hook_cap_sec: float = 30.0,
-    total_episode_sec: float = 0.0
+    hook_cap_sec: float = 25.0,
+    total_episode_sec: float = 0.0,
+    target_max_coverage: float = 38.0,
+    target_min_coverage: float = 30.0,
+    max_region_dur: float = 26.0,
+    min_dry_rest: float = 10.0
 ) -> List[dict]:
     """
     Tự động xây dựng Cue Sheet tối ưu từ chuỗi timeline events:
-    1. Xác định Cue và Level cho từng segment.
-    2. Áp dụng Major Reveal Safety Rule: Fade out trước reveal (pre_reveal_clearance), giữ DRY tuyệt đối, trễ post_reveal_clearance mới vào nhạc mới.
-    3. Gộp các segment liên tiếp có cùng cue thành 1 Region duy nhất (KHÔNG restart nhạc).
-    4. Giới hạn thời lượng INTRO nếu hook quá dài (mục tiêu 15-30s).
+    1. Xác định Cue và Level cho từng segment (NORMAL/COMMENT = DRY, REVEAL = DRY).
+    2. Áp dụng Major Reveal Safety Rule (pre_reveal_clearance & post_reveal_clearance).
+    3. Giới hạn độ dài music region 12–30s; chèn khoảng nghỉ DRY sau region dài.
+    4. Không nối MYSTERY/TENSION thành block 40-50s.
+    5. Nếu coverage > 40%, tự động prune các region priority thấp nhất cho đến khi coverage <= 38%.
+    6. Trả về danh sách Cue Sheet hoàn chỉnh với đầy đủ các khoảng DRY.
     """
     if not timeline_events:
         return []
 
+    if total_episode_sec <= 0:
+        total_episode_sec = max([float(ev.get("speech_end_sec", 0.0)) for ev in timeline_events], default=0.0)
+
     # 1. Gán cue dự kiến cho từng segment
     raw_cues = []
+    reveal_blocks = []
     for ev in timeline_events:
         is_reveal = is_major_reveal_segment(ev)
         if is_reveal:
             cue, lvl, f_in, f_out = "DRY", -99.0, 0.0, 0.0
+            b_start = max(0.0, ev["speech_start_sec"] - pre_reveal_clearance)
+            b_end = ev["speech_end_sec"] + post_reveal_clearance
+            reveal_blocks.append((b_start, b_end, ev["id"]))
         else:
             cue, lvl, f_in, f_out = infer_music_cue_for_segment(ev)
 
@@ -928,17 +1018,18 @@ def generate_cue_sheet_from_segments(
         })
 
     # 2. Xử lý Major Reveal Clearance
-    # Tìm tất cả các khoảng thời gian bị khóa bởi Reveal: [start - pre, end + post]
-    reveal_blocks = []
     for ev in raw_cues:
         if ev["is_reveal"]:
             b_start = max(0.0, ev["speech_start"] - pre_reveal_clearance)
             b_end = ev["speech_end"] + post_reveal_clearance
-            reveal_blocks.append((b_start, b_end, ev["id"]))
+            if not any(rb[0] == b_start for rb in reveal_blocks):
+                reveal_blocks.append((b_start, b_end, ev["id"]))
 
-    # 3. Gộp các segment có cùng cue thành Music Regions
+    # 3. Gộp các segment có cùng cue thành Music Regions với nhịp thở
     regions: List[dict] = []
     current_reg: Optional[dict] = None
+    last_music_end = -999.0
+    last_music_dur = 0.0
 
     for idx, item in enumerate(raw_cues):
         cue = item["cue"]
@@ -946,45 +1037,51 @@ def generate_cue_sheet_from_segments(
         en = item["speech_end"]
 
         # Nếu segment rơi vào vùng Reveal thì bắt buộc đóng region hiện tại
-        in_reveal_zone = False
-        for rb_st, rb_en, r_id in reveal_blocks:
-            if not (en <= rb_st or st >= rb_en):
-                in_reveal_zone = True
-                break
+        in_reveal_zone = any(not (en <= rb_st or st >= rb_en) for rb_st, rb_en, _ in reveal_blocks)
 
         if in_reveal_zone or cue == "DRY":
             if current_reg is not None:
-                # Cắt ngắn region hiện tại nếu lấn vào reveal
-                for rb_st, rb_en, r_id in reveal_blocks:
+                for rb_st, rb_en, _ in reveal_blocks:
                     if current_reg["end_sec"] > rb_st and current_reg["start_sec"] < rb_st:
                         current_reg["end_sec"] = rb_st
                         break
+                last_music_end = current_reg["end_sec"]
+                last_music_dur = current_reg["end_sec"] - current_reg["start_sec"]
                 regions.append(current_reg)
                 current_reg = None
             continue
 
+        # Nếu region trước đó dài (>= 20s), bắt buộc giữ khoảng DRY nghỉ tai
+        if current_reg is None and last_music_dur >= 20.0:
+            if st < last_music_end + min_dry_rest:
+                continue
+
         # Kiểm tra xem có thể gộp với region hiện tại không
         if current_reg is not None and current_reg["cue"] == cue:
-            gap = st - current_reg["end_sec"]
-            if gap <= merge_gap_threshold:
-                # Kéo dài region hiện tại
+            dur_if_merged = en - current_reg["start_sec"]
+            # Không nối thành block dài quá max_region_dur (26-28s)
+            if dur_if_merged <= max_region_dur:
                 current_reg["end_sec"] = en
                 current_reg["segments"].append(item["id"])
                 continue
             else:
-                # Khoảng cách quá lớn, chốt region cũ và tạo mới
+                # Đóng region hiện tại và để tai nghỉ
+                last_music_end = current_reg["end_sec"]
+                last_music_dur = current_reg["end_sec"] - current_reg["start_sec"]
                 regions.append(current_reg)
                 current_reg = None
+                continue
 
         # Nếu đang có region khác cue, chốt region cũ
         if current_reg is not None:
+            last_music_end = current_reg["end_sec"]
+            last_music_dur = current_reg["end_sec"] - current_reg["start_sec"]
             regions.append(current_reg)
             current_reg = None
 
         # Bắt đầu region mới
-        # Nếu ngay trước đó là reveal block, đảm bảo start_sec >= rb_en
         actual_start = st
-        for rb_st, rb_en, r_id in reveal_blocks:
+        for rb_st, rb_en, _ in reveal_blocks:
             if rb_st <= st < rb_en:
                 actual_start = rb_en
                 break
@@ -1003,21 +1100,27 @@ def generate_cue_sheet_from_segments(
     if current_reg is not None:
         regions.append(current_reg)
 
-    # 4. Áp dụng hook cap cho INTRO nếu quá dài (15-30s)
+    # 4. Áp dụng hook cap cho INTRO nếu quá dài
     for reg in regions:
         if reg["cue"] == "INTRO" and (reg["end_sec"] - reg["start_sec"]) > hook_cap_sec:
             reg["end_sec"] = reg["start_sec"] + hook_cap_sec
 
-    # 5. Chuyển đổi thành danh sách Cue Sheet đầy đủ (bao gồm cả các vùng DRY)
+    # 5. Tự động Prune nếu coverage > target_max_coverage (38.0%)
+    regions, final_cov = prune_regions_to_target_coverage(
+        regions=regions,
+        total_sec=total_episode_sec,
+        max_cov=target_max_coverage,
+        min_cov=target_min_coverage
+    )
+
+    # 6. Chuyển đổi thành danh sách Cue Sheet đầy đủ (bao gồm cả các vùng DRY)
     cue_sheet: List[dict] = []
     last_pos = 0.0
 
-    # Lấy thông tin track mặc định
     lib_data = init_global_music_library()
     categories = lib_data.get("categories", DEFAULT_CATEGORY_CONFIG)
 
     for reg in regions:
-        # Nếu có khoảng trống giữa các region, tạo mục DRY
         if reg["start_sec"] > last_pos + 0.1:
             dry_dur = reg["start_sec"] - last_pos
             cue_sheet.append({
@@ -1029,7 +1132,7 @@ def generate_cue_sheet_from_segments(
                 "level_db": -99.0,
                 "fade_in_sec": 0.0,
                 "fade_out_sec": 0.0,
-                "source": "Voice Only / Reveal Silence"
+                "source": "Voice Only / Breathing Rest"
             })
 
         dur = reg["end_sec"] - reg["start_sec"]
@@ -1049,7 +1152,6 @@ def generate_cue_sheet_from_segments(
         })
         last_pos = reg["end_sec"]
 
-    # Đóng đuôi DRY nếu còn thời gian đến hết tập
     if total_episode_sec > last_pos + 0.1:
         cue_sheet.append({
             "start_sec": round(last_pos, 2),
@@ -1060,7 +1162,7 @@ def generate_cue_sheet_from_segments(
             "level_db": -99.0,
             "fade_in_sec": 0.0,
             "fade_out_sec": 0.0,
-            "source": "End of Episode"
+            "source": "Voice Only / Epilogue Silence"
         })
 
     return cue_sheet
@@ -1074,7 +1176,7 @@ def calculate_music_coverage(cue_sheet: List[dict], total_episode_sec: Union[flo
     """
     Tính toán chỉ số Music Coverage:
     Total Episode duration, Music duration, Dry duration, Coverage percentage.
-    Đưa ra khuyến nghị 25–40% và cảnh báo nếu >60%.
+    Đưa ra khuyến nghị 30–38% và cảnh báo nếu >40%.
     """
     if isinstance(total_episode_sec, list):
         total_episode_sec = max([float(e.get("speech_end_sec", 0.0)) for e in total_episode_sec], default=0.0)
@@ -1089,8 +1191,11 @@ def calculate_music_coverage(cue_sheet: List[dict], total_episode_sec: Union[flo
     dry_dur = max(0.0, total_episode_sec - music_dur)
     cov_pct = (music_dur / total_episode_sec * 100.0) if total_episode_sec > 0 else 0.0
 
-    is_high = cov_pct > 60.0
-    warn_msg = "⚠️ **Cảnh báo:** Music coverage đang cao (> 60%). Định dạng storytelling nên có nhiều vùng voice sạch (DRY) để tạo sự chú ý và giữ trọng lượng cảm xúc." if is_high else ""
+    is_high = cov_pct > 40.0
+    warn_msg = (
+        f"⚠️ **Cảnh báo:** Music coverage đang cao ({cov_pct:.1f}% > 40%). "
+        "Định dạng storytelling yêu cầu 30–38% để tai khán giả có khoảng nghỉ (DRY)."
+    ) if is_high else ""
 
     def fmt_time(sec: float) -> str:
         m = int(sec // 60)
@@ -1105,7 +1210,7 @@ def calculate_music_coverage(cue_sheet: List[dict], total_episode_sec: Union[flo
         "dry_duration_sec": round(dry_dur, 1),
         "dry_duration_fmt": fmt_time(dry_dur),
         "coverage_percent": round(cov_pct, 1),
-        "target_recommendation": "25% – 40%",
+        "target_recommendation": "30% – 38%",
         "is_high_coverage": is_high,
         "warning_message": warn_msg
     }
