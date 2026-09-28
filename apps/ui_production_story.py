@@ -163,8 +163,7 @@ def render_production_story_ui(preset_voices_cache_getter):
             headers=music_lib_headers,
             datatype=["str", "str", "str", "str", "str", "str", "str", "str", "str"],
             row_count=(6, "dynamic"),
-            interactive=False,
-            wrap=True
+            interactive=False
         )
 
         with gr.Row():
@@ -186,7 +185,7 @@ def render_production_story_ui(preset_voices_cache_getter):
                     scale=2
                 )
                 upload_track_id_box = gr.Textbox(label="Mã Track ID mới (e.g. SCC_MYSTERY_02)", value="SCC_MYSTERY_02", scale=2)
-                upload_file_btn = gr.File(label="Upload file âm thanh (WAV, MP3, M4A)", file_types=[".wav", ".mp3", ".m4a", ".flac"], scale=3)
+                upload_file_btn = gr.File(label="Upload file âm thanh (WAV, MP3, M4A)", scale=3)
             btn_execute_import_track = gr.Button("📥 Nạp vào Thư viện & Tự động Chuẩn hóa (-24 LUFS)", variant="primary")
             import_track_status_md = gr.Markdown("")
 
@@ -223,8 +222,7 @@ def render_production_story_ui(preset_voices_cache_getter):
                 "number", "str", "str"
             ],
             row_count=(1, "dynamic"),
-            interactive=True,
-            wrap=True
+            interactive=True
         )
 
     # 6. Generation Controls & Progress
@@ -316,8 +314,7 @@ def render_production_story_ui(preset_voices_cache_getter):
             headers=cue_sheet_headers,
             datatype=["number", "number", "number", "str", "str", "number", "number", "number", "str"],
             row_count=(1, "dynamic"),
-            interactive=True,
-            wrap=True
+            interactive=True
         )
 
         # Region Preview Row
@@ -496,10 +493,15 @@ def _get_empty_import_returns(error_message: str):
     )
 
 
-def process_loaded_story_project(data: dict, project_dir: Path, available_voices: list):
+def process_loaded_story_project(data: dict, project_dir: Path, available_voices: list, t_start: float = 0.0):
     """
     Xử lý cấu trúc dữ liệu JSON kịch bản, ánh xạ nhân vật, khởi tạo project và cập nhật UI.
     """
+    if t_start == 0.0:
+        t_start = time.perf_counter()
+
+    # 1. Schema validation
+    t_val_start = time.perf_counter()
     all_voices = get_all_available_voices()
     if available_voices:
         existing_ids = {v[1] if isinstance(v, (tuple, list)) else v for v in all_voices}
@@ -510,19 +512,23 @@ def process_loaded_story_project(data: dict, project_dir: Path, available_voices
                 existing_ids.add(vid)
 
     is_valid, err, proj_info, chars_map, warnings, stats = validate_story_json(data, all_voices)
+    t_val_ms = (time.perf_counter() - t_val_start) * 1000.0
+    print(f"[IMPORT] Schema validation: {t_val_ms:.1f} ms", flush=True)
+
     if not is_valid:
         return _get_empty_import_returns(f"❌ Lỗi cấu trúc JSON: {err}")
 
+    # 2. Project state & save source.json
+    t_state_start = time.perf_counter()
     project_dir.mkdir(parents=True, exist_ok=True)
-
-    # Tải hoặc khởi tạo runtime state
     runtime_state = load_or_init_project_state(project_dir, data)
-
-    # Lưu source.json vào thư mục project
     with open(project_dir / "source.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    t_state_ms = (time.perf_counter() - t_state_start) * 1000.0
+    print(f"[IMPORT] Project state: {t_state_ms:.1f} ms", flush=True)
 
-    # Thông tin project
+    # 3. Character mapping
+    t_char_start = time.perf_counter()
     info_md = (
         f"### 📖 Dự án: **{proj_info['title']}** — *{proj_info['episode_title']}*\n"
         f"- **Số phân đoạn (Segments):** {stats['segment_count']} | **Nhân vật:** {stats['character_count']} | "
@@ -534,7 +540,6 @@ def process_loaded_story_project(data: dict, project_dir: Path, available_voices
     warn_md_content = "\n\n".join(warnings) if warnings else ""
     warn_md_update = gr.update(value=warn_md_content, visible=bool(warn_md_content))
 
-    # Cập nhật danh sách nhân vật
     char_list = list(chars_map.values())
     group_updates = []
     header_updates = []
@@ -568,14 +573,25 @@ def process_loaded_story_project(data: dict, project_dir: Path, available_voices
             voice_updates.append(gr.update(choices=all_voices, value=None))
             speed_updates.append(gr.update(value=1.0))
             status_updates.append(gr.update(value=""))
+    t_char_ms = (time.perf_counter() - t_char_start) * 1000.0
+    print(f"[IMPORT] Character mapping: {t_char_ms:.1f} ms", flush=True)
 
-    # DataFrame segments
+    # 4. Segment table
+    t_table_start = time.perf_counter()
     segments = data.get("segments", [])
     df_rows = build_segments_dataframe(segments, chars_map, runtime_state)
+    t_table_ms = (time.perf_counter() - t_table_start) * 1000.0
+    print(f"[IMPORT] Segment table: {t_table_ms:.1f} ms", flush=True)
 
-    # Dropdown options for preview take
+    # 5. UI render & package outputs
+    t_render_start = time.perf_counter()
     seg_choices = [f"[{s.get('id', idx+1):0>3}] {s.get('speaker', '')}: {s.get('text', '')[:40]}..." for idx, s in enumerate(segments)]
     preview_dd_update = gr.update(choices=seg_choices, value=seg_choices[0] if seg_choices else None)
+    t_render_ms = (time.perf_counter() - t_render_start) * 1000.0
+    print(f"[IMPORT] UI render: {t_render_ms:.1f} ms", flush=True)
+
+    t_total_ms = (time.perf_counter() - t_start) * 1000.0
+    print(f"[IMPORT] TOTAL: {t_total_ms:.1f} ms", flush=True)
 
     return (
         info_md,
@@ -607,30 +623,43 @@ def handle_import_json_data(json_content_or_file, available_voices: list):
     if not json_content_or_file:
         return _get_empty_import_returns("⚠️ Vui lòng chọn file JSON kịch bản.")
 
+    print("[IMPORT] Start", flush=True)
+    t_start = time.perf_counter()
+
     try:
-        if hasattr(json_content_or_file, "name"):
+        t_read_start = time.perf_counter()
+        filepath = None
+        if hasattr(json_content_or_file, "path") and json_content_or_file.path:
+            filepath = json_content_or_file.path
+        elif hasattr(json_content_or_file, "name") and json_content_or_file.name and os.path.exists(str(json_content_or_file.name)):
             filepath = json_content_or_file.name
+        elif isinstance(json_content_or_file, dict) and "path" in json_content_or_file:
+            filepath = json_content_or_file["path"]
+        elif isinstance(json_content_or_file, str) and os.path.exists(json_content_or_file):
+            filepath = json_content_or_file
+
+        if filepath:
             with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
         elif isinstance(json_content_or_file, str):
-            if os.path.exists(json_content_or_file):
-                with open(json_content_or_file, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            else:
-                data = json.loads(json_content_or_file)
+            data = json.loads(json_content_or_file)
         elif isinstance(json_content_or_file, dict):
             data = json_content_or_file
         else:
-            raise ValueError("Định dạng dữ liệu không hỗ trợ.")
+            raise ValueError(f"Định dạng dữ liệu không hỗ trợ: {type(json_content_or_file)}")
+
+        t_read_ms = (time.perf_counter() - t_read_start) * 1000.0
+        print(f"[IMPORT] JSON read: {t_read_ms:.1f} ms", flush=True)
 
         proj_slug = sanitize_slug(data.get("project", {}).get("title", "story_project"))
         project_dir = Path("projects") / proj_slug
 
-        return process_loaded_story_project(data, project_dir, available_voices)
+        return process_loaded_story_project(data, project_dir, available_voices, t_start=t_start)
 
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        import logging
+        logging.getLogger("VieNeu.ProductionStory").exception("Production JSON import failed")
+        print(f"❌ [IMPORT] Error: {e}", flush=True)
         return _get_empty_import_returns(f"❌ Lỗi xử lý JSON: {str(e)}")
 
 
@@ -709,14 +738,20 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     ]
 
     # 1. Imports
+    def _on_import_pack(f):
+        return handle_import_zip_pack(f, get_available_voices_fn())
+
     c["btn_import_pack_zip"].upload(
-        fn=lambda f: handle_import_zip_pack(f, get_available_voices_fn()),
+        fn=_on_import_pack,
         inputs=[c["btn_import_pack_zip"]],
         outputs=import_outputs
     )
 
+    def _on_import_json_file(f):
+        return handle_import_json_data(f, get_available_voices_fn())
+
     c["btn_import_json"].upload(
-        fn=lambda f: handle_import_json_data(f, get_available_voices_fn()),
+        fn=_on_import_json_file,
         inputs=[c["btn_import_json"]],
         outputs=import_outputs
     )
@@ -865,7 +900,17 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     def _on_import_track(cat, track_id, file_obj):
         if not file_obj or not track_id:
             return "⚠️ Vui lòng cung cấp file và mã Track ID.", get_music_library_table_data()
-        fp = file_obj.name if hasattr(file_obj, "name") else file_obj
+        if hasattr(file_obj, "path"):
+            fp = file_obj.path
+        elif hasattr(file_obj, "name"):
+            fp = file_obj.name
+        elif isinstance(file_obj, dict) and "path" in file_obj:
+            fp = file_obj["path"]
+        else:
+            fp = str(file_obj)
+        ext = Path(fp).suffix.lower()
+        if ext not in [".wav", ".mp3", ".m4a", ".flac", ".ogg"]:
+            return f"❌ Định dạng file '{ext}' không được hỗ trợ. Vui lòng tải file âm thanh (.wav, .mp3, .m4a, .flac).", get_music_library_table_data()
         ok, msg, _ = import_track_to_library(cat, track_id.strip(), fp)
         new_rows = get_music_library_table_data()
         return (f"✅ {msg}" if ok else f"❌ {msg}"), new_rows
@@ -1042,18 +1087,27 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         log_lines.append(summary_msg)
         yield "\n".join(log_lines[-10:]), summary_msg, rows, runtime_state
 
+    def _run_gen_selected(df, s, c_m, p_d, r_s):
+        yield from _run_generation(df, s, c_m, p_d, r_s, mode="selected")
+
+    def _run_gen_changed(df, s, c_m, p_d, r_s):
+        yield from _run_generation(df, s, c_m, p_d, r_s, mode="changed")
+
+    def _run_gen_failed(df, s, c_m, p_d, r_s):
+        yield from _run_generation(df, s, c_m, p_d, r_s, mode="failed")
+
     c["btn_generate_story"].click(
-        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, mode="selected"),
+        fn=_run_gen_selected,
         inputs=[c["story_segments_df"], c["story_segments_state"], c["story_characters_state"], c["story_project_dir_state"], c["story_runtime_state"]],
         outputs=[c["story_log_output"], c["story_progress_md"], c["story_segments_df"], c["story_runtime_state"]]
     )
     c["btn_generate_changed"].click(
-        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, mode="changed"),
+        fn=_run_gen_changed,
         inputs=[c["story_segments_df"], c["story_segments_state"], c["story_characters_state"], c["story_project_dir_state"], c["story_runtime_state"]],
         outputs=[c["story_log_output"], c["story_progress_md"], c["story_segments_df"], c["story_runtime_state"]]
     )
     c["btn_retry_failed"].click(
-        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, mode="failed"),
+        fn=_run_gen_failed,
         inputs=[c["story_segments_df"], c["story_segments_state"], c["story_characters_state"], c["story_project_dir_state"], c["story_runtime_state"]],
         outputs=[c["story_log_output"], c["story_progress_md"], c["story_segments_df"], c["story_runtime_state"]]
     )
@@ -1083,9 +1137,18 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
                 break
         return (f"✅ {msg}" if success else f"❌ {msg}"), runtime_state, rows
 
-    c["btn_use_take1"].click(lambda lbl, p, r, df: _choose_take(lbl, 1, p, r, df), inputs=[c["preview_seg_dropdown"], c["story_project_dir_state"], c["story_runtime_state"], c["story_segments_df"]], outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]])
-    c["btn_use_take2"].click(lambda lbl, p, r, df: _choose_take(lbl, 2, p, r, df), inputs=[c["preview_seg_dropdown"], c["story_project_dir_state"], c["story_runtime_state"], c["story_segments_df"]], outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]])
-    c["btn_use_take3"].click(lambda lbl, p, r, df: _choose_take(lbl, 3, p, r, df), inputs=[c["preview_seg_dropdown"], c["story_project_dir_state"], c["story_runtime_state"], c["story_segments_df"]], outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]])
+    def _use_take_1(lbl, p, r, df):
+        return _choose_take(lbl, 1, p, r, df)
+
+    def _use_take_2(lbl, p, r, df):
+        return _choose_take(lbl, 2, p, r, df)
+
+    def _use_take_3(lbl, p, r, df):
+        return _choose_take(lbl, 3, p, r, df)
+
+    c["btn_use_take1"].click(fn=_use_take_1, inputs=[c["preview_seg_dropdown"], c["story_project_dir_state"], c["story_runtime_state"], c["story_segments_df"]], outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]])
+    c["btn_use_take2"].click(fn=_use_take_2, inputs=[c["preview_seg_dropdown"], c["story_project_dir_state"], c["story_runtime_state"], c["story_segments_df"]], outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]])
+    c["btn_use_take3"].click(fn=_use_take_3, inputs=[c["preview_seg_dropdown"], c["story_project_dir_state"], c["story_runtime_state"], c["story_segments_df"]], outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]])
 
     # 9. Clean Voice Master Builder
     def _on_build_voice_master(project_dir_str, segments, runtime_state, gap_rule):

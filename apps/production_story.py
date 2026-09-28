@@ -625,6 +625,7 @@ def build_segments_dataframe(segments: List[dict], characters_map: dict, project
         duck_val = float(seg.get("ducking_db", -8.0) if seg.get("ducking_db") is not None else -8.0)
         rt_val = float(seg.get("room_tone_db", -41.0) if seg.get("room_tone_db") is not None else -41.0)
         imp_val = str(seg.get("importance", "normal") or "normal")
+        deliv_val = str(seg.get("delivery_profile") or seg.get("delivery", "neutral"))
 
         rows.append([
             True,  # Checkbox chọn
@@ -633,7 +634,7 @@ def build_segments_dataframe(segments: List[dict], characters_map: dict, project
             seg.get("text", ""),
             applied_voice,
             voice_override,
-            seg.get("delivery", "neutral"),
+            deliv_val,
             spd,
             float(seg.get("pause_before", 0.0) or 0.0),
             float(seg.get("pause_after", 0.3) or 0.3),
