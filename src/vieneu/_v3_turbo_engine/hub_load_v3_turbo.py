@@ -39,9 +39,15 @@ def load_v3_turbo_from_hub(repo_id: str, *, token: Optional[Union[str, bool]]=No
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if dtype is None:
         dtype = torch.bfloat16 if device.type == 'cuda' else torch.float32
-    cfg = VieNeuV3TurboConfig.from_pretrained(repo_id, token=token, subfolder=subfolder or "")
+    try:
+        cfg = VieNeuV3TurboConfig.from_pretrained(repo_id, token=token, subfolder=subfolder or "")
+    except Exception:
+        cfg = VieNeuV3TurboConfig.from_pretrained(repo_id, token=token, subfolder=subfolder or "", local_files_only=True)
     model = VieNeuV3TurboForTTS(cfg)
-    weights_path = hf_hub_download(repo_id, 'model.safetensors', token=token, subfolder=subfolder or None)
+    try:
+        weights_path = hf_hub_download(repo_id, 'model.safetensors', token=token, subfolder=subfolder or None)
+    except Exception:
+        weights_path = hf_hub_download(repo_id, 'model.safetensors', token=token, subfolder=subfolder or None, local_files_only=True)
     load_model(model, weights_path, strict=False, device=str(device))
     model.tie_weights()
     model = _apply_dtype(model, device, dtype)

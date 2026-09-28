@@ -385,12 +385,25 @@ def build_room_tone_track(
     - Loop mượt mà chống click.
     - Không ducking.
     """
-    rt_info = music_lib.get("room_tone")
-    if not rt_info or rt_info["status"] != "READY":
-        logger.warning("Room tone không khả dụng. Trả về track im lặng.")
+    rt_info = music_lib.get("room_tone") if music_lib else None
+    abs_path = None
+    if rt_info and rt_info.get("status") == "READY":
+        abs_path = rt_info.get("abs_path")
+    else:
+        for cand in [
+            project_dir / "music" / "08_room_tone.wav",
+            project_dir / "08_room_tone.wav",
+            Path("projects/sau_canh_cua_-_pilot_01_v6/music/08_room_tone.wav")
+        ]:
+            if cand.exists():
+                abs_path = cand
+                break
+
+    if not abs_path or not Path(abs_path).exists():
+        logger.info("Room tone không khả dụng. Trả về track im lặng.")
         return np.zeros(total_samples, dtype=np.float32)
 
-    rt_wav = load_audio_file(rt_info["abs_path"], target_sr=sample_rate)
+    rt_wav = load_audio_file(abs_path, target_sr=sample_rate)
     if rt_wav is None or len(rt_wav) == 0:
         return np.zeros(total_samples, dtype=np.float32)
 
@@ -850,6 +863,17 @@ def build_audio_director_master(
     # Lưu stem dialogue_only
     dialogue_wav_path = master_dir / "dialogue_only.wav"
     sf.write(str(dialogue_wav_path), dialogue_audio, sample_rate)
+
+    # Tự động nạp music_lib từ source.json nếu chưa có
+    if not music_lib:
+        source_p = project_dir / "source.json"
+        if source_p.exists():
+            try:
+                with open(source_p, "r", encoding="utf-8") as f:
+                    src_json = json.load(f)
+                music_lib = parse_music_library(project_dir, src_json)
+            except Exception:
+                music_lib = {}
 
     # 2. Room tone track
     if enable_room_tone:

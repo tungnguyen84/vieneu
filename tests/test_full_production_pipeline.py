@@ -21,9 +21,12 @@ Kiểm tra chi tiết 19 bước Acceptance Criteria theo yêu cầu:
 
 import sys
 import io
-if sys.platform == "win32":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+if sys.platform == "win32" and "pytest" not in sys.modules:
+    try:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+    except Exception:
+        pass
 
 import os
 import json

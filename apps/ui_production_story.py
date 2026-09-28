@@ -1,5 +1,5 @@
 """
-Giao diện và xử lý sự kiện cho tính năng Production Script Storytelling JSON & TTS Audio Director.
+Giao diện và xử lý sự kiện cho tính năng Production Script Storytelling JSON & Music Mixing Engine ("Sau Cánh Cửa").
 Tích hợp trực tiếp vào Tab Hội thoại của VieNeu-TTS.
 """
 
@@ -28,42 +28,64 @@ from apps.production_story import (
     generate_character_preview_voice,
     invalidate_cache_for_speakers
 )
-from apps.audio_director import (
-    safe_extract_zip,
-    parse_music_library,
-    build_music_library_table_data,
-    build_audio_director_master,
-    build_preview_mix_clip,
-    build_preview_reveal_clip
+from apps.audio_director import safe_extract_zip
+from apps.music_engine import (
+    init_global_music_library,
+    get_music_library_table_data,
+    import_track_to_library,
+    resolve_track_file_for_cue,
+    build_clean_voice_master,
+    generate_cue_sheet_from_segments,
+    calculate_music_coverage,
+    generate_visual_timeline_html,
+    build_final_mix,
+    preview_region_mix,
+    DEFAULT_CATEGORY_CONFIG
 )
 
 MAX_STORY_CHARACTERS = 8
 
 def render_production_story_ui(preset_voices_cache_getter):
     """
-    Dựng giao diện cho sub-tab Production Script JSON & TTS Audio Director.
+    Dựng giao diện cho sub-tab Production Script JSON & Music Mixing Engine.
     preset_voices_cache_getter: hàm trả về PRESET_VOICES_CACHE hiện tại.
     """
+    # Khởi tạo Music Library ngay khi dựng UI
+    init_global_music_library()
+
     gr.Markdown(
-        "## 🎬 TTS Audio Director — Production Storytelling Script (JSON V6)\n"
-        "Quy trình sản xuất audio chuyên nghiệp cho video storytelling dài tập:\n"
-        "- **Voice Director**: Quản lý giọng nhân vật trực quan, nghe thử từng giọng, multi-take, selective cache.\n"
-        "- **Music Director**: Continuous underscore regions, crossfade mượt mà, dialogue ducking analog-style (-8 dB), "
-        "im lặng tuyệt đối tại khoảnh khắc cao trào (Critical Reveal Silence Window).\n"
-        "- **Ambience Engine**: Continuous Room Tone liền mạch chống giật khựng.\n"
-        "- **Mastering Broadcast**: 2-pass Loudness Normalization (-14 LUFS, -1 dBTP), xuất WAV + MP3 và đầy đủ 4 Stem tracks."
+        "## 🎬 Audio Production Pipeline — Series “Sau Cánh Cửa”\n"
+        "Quy trình sản xuất audio hoàn chỉnh tách biệt 2 tầng độc lập: **TTS Voice Engine** và **Music Mixing Engine**.\n"
+        "Thay đổi nhạc nền, âm lượng (dB), fade hay cue sheet **TUYỆT ĐỐI KHÔNG làm mất hoặc sinh lại TTS**."
     )
+
+    # Workflow Navigator Banner
+    with gr.Row():
+        gr.Markdown(
+            """
+            <div style="background: linear-gradient(90deg, #1e293b, #0f172a); padding: 12px 16px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 8px;">
+              <span style="font-weight: 700; color: #38bdf8;">WORKFLOW CHUẨN:</span>&nbsp;&nbsp;
+              <span style="color: #cbd5e1;"><b>1. Tạo Voice (TTS)</b></span> <span style="color: #64748b;">➔</span>
+              <span style="color: #cbd5e1;"><b>2. Kiểm tra Clean Voice Master</b></span> <span style="color: #64748b;">➔</span>
+              <span style="color: #cbd5e1;"><b>3. Tạo Music Cue</b></span> <span style="color: #64748b;">➔</span>
+              <span style="color: #cbd5e1;"><b>4. Preview / Chỉnh Cue Sheet</b></span> <span style="color: #64748b;">➔</span>
+              <span style="color: #cbd5e1;"><b>5. Build Final Mix</b></span> <span style="color: #64748b;">➔</span>
+              <span style="color: #38bdf8; font-weight: 700;">6. Xuất Master Broadcast</span>
+            </div>
+            """
+        )
 
     # 1. Action Row
     with gr.Row():
         btn_import_pack_zip = gr.UploadButton("📦 Import Production Pack (.zip)", file_types=[".zip"], variant="primary")
         btn_import_json = gr.UploadButton("📂 Import Kịch bản JSON", file_types=[".json"], variant="secondary")
-        btn_sample_pilot = gr.Button("📋 Nạp Kịch bản Pilot Mẫu (92 segments)", size="sm", variant="secondary")
+        btn_preset_v9_1 = gr.Button("📋 Nạp Preset V9.1 Test (93 segments)", size="sm", variant="secondary")
+        btn_sample_pilot = gr.Button("📋 Nạp Pilot Mẫu (56 segments)", size="sm", variant="secondary")
         btn_export_json = gr.Button("💾 Xuất Project JSON", size="sm")
         file_export_download = gr.File(label="Tải file JSON đã xuất", visible=False)
 
     # 2. Project Info Banner
-    story_project_info_md = gr.Markdown("*(Chưa tải kịch bản. Vui lòng bấm 'Import Production Pack (.zip)' hoặc 'Import Kịch bản JSON'.)*")
+    story_project_info_md = gr.Markdown("*(Chưa tải kịch bản. Vui lòng bấm 'Import Production Pack (.zip)', 'Import JSON' hoặc Nạp Preset.)*")
     story_warnings_md = gr.Markdown(visible=False)
 
     # Lấy toàn bộ preset voices hiện có
@@ -72,8 +94,8 @@ def render_production_story_ui(preset_voices_cache_getter):
     # 3. Characters Mapping Section
     with gr.Accordion("🎭 1. Giọng nhân vật (Character Voice Mapping)", open=True) as acc_chars:
         gr.Markdown(
-            "Tự động phát hiện danh sách nhân vật từ JSON kịch bản. Bạn có thể tự do thay đổi giọng đọc và tốc độ "
-            "cho bất kỳ nhân vật nào bằng dropdown bên dưới, sau đó bấm **'✓ Áp dụng giọng cho kịch bản'**."
+            "Tự động phát hiện danh sách nhân vật từ JSON kịch bản. Đối với series *Sau Cánh Cửa*, mặc định Single MC là **MINH (Binh - Thanh Bình)**.\n"
+            "Bạn có thể thay đổi giọng đọc và tốc độ cho bất kỳ nhân vật nào, sau đó bấm **'✓ Áp dụng giọng cho kịch bản'**."
         )
 
         char_groups = []
@@ -126,26 +148,47 @@ def render_production_story_ui(preset_voices_cache_getter):
             btn_refresh_voices = gr.Button("🔄 Cập nhật giọng từ tab Clone", size="lg", variant="secondary", scale=2)
         apply_status_md = gr.Markdown("")
 
-    # 4. Music Library & Ambience Section (NEW: TTS Audio Director)
-    with gr.Accordion("🎵 2. Nhạc & Không gian (Music Library & Ambience)", open=True) as acc_music:
+    # 4. Music Library Section (Persistent & Normalized)
+    with gr.Accordion("🎵 2. Thư viện Nhạc (Persistent Music Library & Normalization)", open=False) as acc_music_lib:
         gr.Markdown(
-            "Thư viện nhạc nền và không gian phòng của tập phim (tự động nhận diện từ JSON / ZIP Pack). "
-            "Nhạc nền trải dài qua các phân đoạn có cùng cue (continuous regions), tự động crossfade khi chuyển cue "
-            "và ngắt âm im lặng hoàn toàn trước các phân đoạn then chốt (Critical Reveal)."
+            "Thư viện 6 loại nhạc chuẩn cho series *Sau Cánh Cửa* (`INTRO`, `MYSTERY`, `TENSION`, `EMOTIONAL`, `REFLECTION`, `OUTRO`).\n"
+            "Tất cả track được **tự động phân tích và chuẩn hóa về reference loudness (-24.0 LUFS, 48kHz WAV)** "
+            "giúp mọi bài nhạc có mức âm lượng đồng nhất tuyệt đối khi chỉnh dB."
         )
-        music_lib_headers = ["Mã Cue (ID)", "File âm thanh", "Target RMS (dB)", "Lặp (Loop)", "Thời lượng", "Trạng thái file"]
+
+        music_lib_headers = ["Danh mục", "Tên hiển thị", "Mã Track", "File âm thanh gốc", "Thời lượng", "Integrated LUFS", "True Peak", "Default Level", "Trạng thái"]
+        initial_lib_rows = get_music_library_table_data()
         music_library_df = gr.DataFrame(
+            value=initial_lib_rows,
             headers=music_lib_headers,
-            datatype=["str", "str", "str", "str", "str", "str"],
-            row_count=(1, "dynamic"),
+            datatype=["str", "str", "str", "str", "str", "str", "str", "str", "str"],
+            row_count=(6, "dynamic"),
             interactive=False,
             wrap=True
         )
 
         with gr.Row():
-            music_cue_dropdown = gr.Dropdown(label="Chọn bản nhạc trong thư viện để nghe thử", choices=[], interactive=True, scale=3)
-            btn_preview_music_cue = gr.Button("▶ Nghe thử track nhạc", size="sm", variant="secondary", scale=1)
-        audio_music_preview = gr.Audio(label="Audio Player Nhạc nền", interactive=False)
+            preview_cat_dd = gr.Dropdown(
+                label="Chọn loại nhạc để nghe thử",
+                choices=["INTRO", "MYSTERY", "TENSION", "EMOTIONAL", "REFLECTION", "OUTRO"],
+                value="MYSTERY",
+                scale=2
+            )
+            btn_preview_lib_track = gr.Button("▶ Nghe thử track trong Thư viện", size="sm", variant="secondary", scale=1)
+            audio_lib_preview = gr.Audio(label="Bản nghe thử track nhạc (Normalized 48kHz)", interactive=False, scale=3)
+
+        with gr.Accordion("📥 Thêm / Thay thế Track Nhạc vào Thư viện", open=False):
+            with gr.Row():
+                upload_cat_dd = gr.Dropdown(
+                    label="Danh mục cần nạp",
+                    choices=["INTRO", "MYSTERY", "TENSION", "EMOTIONAL", "REFLECTION", "OUTRO"],
+                    value="MYSTERY",
+                    scale=2
+                )
+                upload_track_id_box = gr.Textbox(label="Mã Track ID mới (e.g. SCC_MYSTERY_02)", value="SCC_MYSTERY_02", scale=2)
+                upload_file_btn = gr.File(label="Upload file âm thanh (WAV, MP3, M4A)", file_types=[".wav", ".mp3", ".m4a", ".flac"], scale=3)
+            btn_execute_import_track = gr.Button("📥 Nạp vào Thư viện & Tự động Chuẩn hóa (-24 LUFS)", variant="primary")
+            import_track_status_md = gr.Markdown("")
 
     # 5. Segments Table Section
     with gr.Accordion("📜 3. Bảng Phân đoạn Kịch bản (Segment Editor & Table)", open=True):
@@ -157,9 +200,9 @@ def render_production_story_ui(preset_voices_cache_getter):
 
         with gr.Row():
             quick_cue_dropdown = gr.Dropdown(
-                label="Gán nhanh Music Cue cho các phân đoạn đã tick chọn",
-                choices=["none", "signature_intro", "mystery_low", "memory_soft", "tension_low", "emotional_low", "closing_soft", "signature_outro"],
-                value="mystery_low",
+                label="Gán nhanh Music Cue cho các phân đoạn đã chọn",
+                choices=["DRY", "INTRO", "MYSTERY", "TENSION", "EMOTIONAL", "REFLECTION", "OUTRO"],
+                value="MYSTERY",
                 interactive=True,
                 scale=3
             )
@@ -217,70 +260,108 @@ def render_production_story_ui(preset_voices_cache_getter):
 
         take_select_status_md = gr.Markdown("")
 
-    # 8. Master Audio Assembly (TTS Audio Director)
-    with gr.Accordion("🎛️ 6. Ghép & Xuất Master Audio (TTS Audio Director Engine)", open=True):
+    # 8. Clean Voice Master Section
+    with gr.Accordion("🎙️ 6. Clean Voice Master (Lời thoại sạch)", open=True):
+        gr.Markdown(
+            "Bản master lời thoại sạch **bắt buộc được lưu giữ độc lập** (`voice_master.wav`).\n"
+            "Chỉ gồm: Giọng MC và khoảng lặng chuẩn xác theo JSON. **Tuyệt đối không có room tone, white noise hay nhạc nền**."
+        )
         with gr.Row():
             gap_rule_radio = gr.Radio(
                 choices=[("Khuyến nghị: max(pause_after, next_pause_before)", "max"), ("Cộng dồn: pause_after + next_pause_before", "sum")],
                 value="max",
-                label="Quy tắc khoảng nghỉ (Tránh Double Pause)"
+                label="Quy tắc khoảng nghỉ giữa các câu"
             )
+            btn_build_voice_master = gr.Button("🎙 Build Clean Voice Master", variant="primary", scale=2)
+
+        voice_master_status_md = gr.Markdown("")
+        with gr.Row():
+            voice_master_audio = gr.Audio(label="Clean Voice Master (48kHz 24-bit PCM)", interactive=False)
+            voice_master_download = gr.File(label="Tải file voice_master.wav", visible=False)
+
+    # 9. Music Cue Engine & Cue Sheet Editor
+    with gr.Accordion("🎼 7. Phân đoạn Nhạc & Cue Sheet (Music Cue Engine)", open=True):
+        gr.Markdown(
+            "Tự động gom các phân đoạn cùng cue thành **Continuous Music Regions** (không restart nhạc). "
+            "Áp dụng **Major Reveal Safety Rule** để fade out nhạc trước câu cao trào và giữ im lặng tuyệt đối."
+        )
+
+        with gr.Row():
+            pre_reveal_slider = gr.Slider(minimum=0.5, maximum=5.0, value=2.0, step=0.1, label="Pre-reveal Clearance (Fade out trước câu Reveal)", scale=1)
+            post_reveal_slider = gr.Slider(minimum=0.5, maximum=5.0, value=2.5, step=0.1, label="Post-reveal Clearance (Trễ hồi nhạc sau Reveal)", scale=1)
+            merge_gap_slider = gr.Slider(minimum=0.5, maximum=6.0, value=3.0, step=0.1, label="Gộp cue nếu khoảng cách giữa các câu < (giây)", scale=1)
+            chk_gentle_ducking = gr.Checkbox(label="Bật Gentle Ducking (-2.5 dB khi MC nói)", value=False, scale=1)
+
+        with gr.Row():
+            intro_db_slider = gr.Slider(minimum=-50.0, maximum=-20.0, value=-31.0, step=0.5, label="INTRO Level (dB)")
+            mystery_db_slider = gr.Slider(minimum=-50.0, maximum=-20.0, value=-35.0, step=0.5, label="MYSTERY Level (dB)")
+            tension_db_slider = gr.Slider(minimum=-50.0, maximum=-20.0, value=-36.0, step=0.5, label="TENSION Level (dB)")
+            emotional_db_slider = gr.Slider(minimum=-50.0, maximum=-20.0, value=-36.0, step=0.5, label="EMOTIONAL Level (dB)")
+            reflection_db_slider = gr.Slider(minimum=-50.0, maximum=-20.0, value=-35.0, step=0.5, label="REFLECTION Level (dB)")
+            outro_db_slider = gr.Slider(minimum=-50.0, maximum=-20.0, value=-30.0, step=0.5, label="OUTRO Level (dB)")
+
+        with gr.Row():
+            btn_build_cues = gr.Button("🎵 Analyze / Build Music Cues", variant="primary", scale=2)
+
+        # Coverage Banner
+        coverage_metrics_md = gr.Markdown("*(Chưa phân tích Cue Sheet. Vui lòng bấm 'Analyze / Build Music Cues'.)*")
+
+        # Visual Timeline Preview
+        visual_timeline_html = gr.HTML("<div style='color: #9ca3af;'>Timeline sẽ hiển thị tại đây sau khi tạo Cue Sheet.</div>")
+
+        # Cue Sheet Table
+        gr.Markdown("#### 📋 Bảng Cue Sheet (Có thể trực tiếp chỉnh sửa Start, End, Level, Fades bên dưới)")
+        cue_sheet_headers = ["Start (s)", "End (s)", "Thời lượng (s)", "Cue / Thể loại", "Mã Track", "Âm lượng (dB)", "Fade In (s)", "Fade Out (s)", "Ghi chú / Nguồn"]
+        cue_sheet_df = gr.DataFrame(
+            headers=cue_sheet_headers,
+            datatype=["number", "number", "number", "str", "str", "number", "number", "number", "str"],
+            row_count=(1, "dynamic"),
+            interactive=True,
+            wrap=True
+        )
+
+        # Region Preview Row
+        with gr.Row():
+            preview_region_dd = gr.Dropdown(label="Chọn phân đoạn nhạc để nghe thử", choices=[], interactive=True, scale=3)
+            btn_preview_region = gr.Button("▶ Nghe thử Phân đoạn Nhạc (10s trước + sau)", size="sm", variant="secondary", scale=2)
+            audio_region_preview = gr.Audio(label="Bản nghe thử phân đoạn nhạc + lời", interactive=False, scale=3)
+
+    # 10. Final Mix & Mastering Section
+    with gr.Accordion("🎛️ 8. Final Mix & Mastering (-14 LUFS, -1 dBTP)", open=True):
+        gr.Markdown(
+            "Hòa âm `voice_master.wav` với `music_mix.wav` và chuẩn hóa 2-pass sang chuẩn broadcast (-14 LUFS, -1 dBTP).\n"
+            "Bấm **'🔁 Rebuild Final Mix'** để cập nhật nhanh bất kỳ thay đổi nào về nhạc **mà không chạy lại TTS**."
+        )
+
+        with gr.Row():
             target_lufs_num = gr.Number(value=-14.0, label="Target Integrated LUFS (-14 LUFS)")
             true_peak_num = gr.Number(value=-1.0, label="True Peak (-1.0 dBTP)")
+            btn_build_final_mix = gr.Button("🎚 Build Final Mix", variant="primary", scale=2)
+            btn_rebuild_final_mix = gr.Button("🔁 Rebuild Final Mix (Cực nhanh)", variant="secondary", scale=2)
+
+        final_mix_status_md = gr.Markdown("")
 
         with gr.Row():
-            music_gain_slider = gr.Slider(minimum=-20.0, maximum=10.0, value=0.0, step=0.5, label="Âm lượng Nhạc nền Master Gain (dB)")
-            room_tone_vol_slider = gr.Slider(minimum=-60.0, maximum=-20.0, value=-41.0, step=1.0, label="Âm lượng Room Tone (dBFS RMS)")
-            ducking_db_slider = gr.Slider(minimum=-24.0, maximum=0.0, value=-8.0, step=0.5, label="Dialogue Ducking (dB)")
-            crossfade_sec_slider = gr.Slider(minimum=0.2, maximum=3.0, value=1.2, step=0.1, label="Music Crossfade (giây)")
-            reveal_delay_sec_slider = gr.Slider(minimum=0.2, maximum=3.0, value=0.8, step=0.1, label="Reveal Music Return Delay (giây)")
+            final_mix_wav_audio = gr.Audio(label="Final Mix WAV (48kHz 24-bit PCM)", interactive=False)
+            final_mix_mp3_audio = gr.Audio(label="Final Mix MP3 (320kbps)", interactive=False)
+            music_mix_audio = gr.Audio(label="Kênh Nhạc Nền Riêng (Music Mix)", interactive=False)
 
         with gr.Row():
-            chk_enable_music = gr.Checkbox(label="Bật Nhạc nền (Continuous Underscore)", value=True)
-            chk_enable_room_tone = gr.Checkbox(label="Bật Continuous Room Tone", value=True)
-            chk_silence_critical = gr.Checkbox(label="Tự động im lặng trước Critical Reveal", value=True)
+            final_wav_download = gr.File(label="Tải final_mix.wav", visible=False)
+            final_mp3_download = gr.File(label="Tải final_mix.mp3", visible=False)
+            music_mix_download = gr.File(label="Tải music_mix.wav", visible=False)
+            cue_sheet_download = gr.File(label="Tải cue_sheet.json", visible=False)
+            mix_report_download = gr.File(label="Tải mix_report.json", visible=False)
 
-        # Previews Section
-        gr.Markdown("### 🎧 Nghe thử Preview trước khi Ghép Toàn tập (Mix Previews)")
-        with gr.Row():
-            with gr.Column(scale=1):
-                btn_preview_mix_30s = gr.Button("🎧 Nghe thử Mix 30s Mở đầu", size="sm", variant="secondary")
-                preview_mix_30s_audio = gr.Audio(label="Preview Mix 30 giây", interactive=False)
-            with gr.Column(scale=1):
-                preview_reveal_seg_dd = gr.Dropdown(label="Chọn phân đoạn Critical Reveal", choices=[], interactive=True)
-                btn_preview_reveal = gr.Button("🎧 Nghe thử khoảnh khắc Critical Reveal", size="sm", variant="secondary")
-                preview_reveal_audio = gr.Audio(label="Preview Critical Reveal Window", interactive=False)
-
-        gr.Markdown("---")
-        btn_build_master = gr.Button("🎛️ Bắt đầu Ghép Master Audio (TTS Audio Director)", variant="primary", size="lg")
-        master_status_md = gr.Markdown("")
-
-        with gr.Row():
-            master_wav_audio = gr.Audio(label="Master Audio WAV (48kHz 24-bit PCM)", interactive=False)
-            master_mp3_audio = gr.Audio(label="Master Audio MP3 (320kbps)", interactive=False)
-
-        with gr.Row():
-            master_wav_download = gr.File(label="Tải file Master WAV", visible=False)
-            master_mp3_download = gr.File(label="Tải file Master MP3", visible=False)
-
-        # Stems Section
-        with gr.Accordion("🎚️ Stem Tracks & Music Timeline (Xuất rời các kênh âm thanh)", open=False):
-            gr.Markdown(
-                "Các kênh âm thanh rời (Stems) đồng bộ hoàn hảo về thời lượng, sẵn sàng nhập vào DAW chuyên nghiệp "
-                "(Pro Tools, Reaper, Premiere, DaVinci Resolve) nếu bạn muốn hậu kỳ nâng cao."
-            )
+        # A/B Music Comparison
+        with gr.Accordion("🎧 So sánh A/B (A: Voice Sạch ⟷ B: Bản Hòa Âm)", open=False):
             with gr.Row():
-                stem_dialogue_audio = gr.Audio(label="🗣️ Dialogue Only Stem (WAV)", interactive=False)
-                stem_room_tone_audio = gr.Audio(label="🍃 Room Tone Stem (WAV)", interactive=False)
-            with gr.Row():
-                stem_music_audio = gr.Audio(label="🎵 Music Underscore Stem (WAV)", interactive=False)
-                stem_pre_master_audio = gr.Audio(label="🎚️ Pre-master Mix Stem (WAV)", interactive=False)
-
-            with gr.Row():
-                stem_timeline_file = gr.File(label="Tải Music Timeline JSON", visible=False)
-                stem_dialogue_file = gr.File(label="Tải Dialogue WAV", visible=False)
-                stem_room_tone_file = gr.File(label="Tải Room Tone WAV", visible=False)
-                stem_music_file = gr.File(label="Tải Music WAV", visible=False)
+                with gr.Column(scale=1):
+                    gr.Markdown("#### 🅰️ Kênh Lời Thoại Sạch (Clean Voice Master)")
+                    ab_voice_audio = gr.Audio(label="A: Clean Voice Only", interactive=False)
+                with gr.Column(scale=1):
+                    gr.Markdown("#### 🅱️ Bản Hòa Âm Hoàn Chỉnh (Final Mix)")
+                    ab_mix_audio = gr.Audio(label="B: Voice + Music Mix", interactive=False)
 
     # State stores
     story_raw_json_state = gr.State(None)
@@ -289,11 +370,14 @@ def render_production_story_ui(preset_voices_cache_getter):
     story_segments_state = gr.State([])
     story_project_dir_state = gr.State(None)
     story_runtime_state = gr.State({})
-    story_music_lib_state = gr.State({})
+    story_cue_sheet_state = gr.State([])
+    story_timeline_events_state = gr.State([])
+    story_voice_master_path_state = gr.State(None)
 
     components = {
         "btn_import_pack_zip": btn_import_pack_zip,
         "btn_import_json": btn_import_json,
+        "btn_preset_v9_1": btn_preset_v9_1,
         "btn_sample_pilot": btn_sample_pilot,
         "btn_export_json": btn_export_json,
         "file_export_download": file_export_download,
@@ -313,9 +397,14 @@ def render_production_story_ui(preset_voices_cache_getter):
         "btn_refresh_voices": btn_refresh_voices,
         "apply_status_md": apply_status_md,
         "music_library_df": music_library_df,
-        "music_cue_dropdown": music_cue_dropdown,
-        "btn_preview_music_cue": btn_preview_music_cue,
-        "audio_music_preview": audio_music_preview,
+        "preview_cat_dd": preview_cat_dd,
+        "btn_preview_lib_track": btn_preview_lib_track,
+        "audio_lib_preview": audio_lib_preview,
+        "upload_cat_dd": upload_cat_dd,
+        "upload_track_id_box": upload_track_id_box,
+        "upload_file_btn": upload_file_btn,
+        "btn_execute_import_track": btn_execute_import_track,
+        "import_track_status_md": import_track_status_md,
         "quick_cue_dropdown": quick_cue_dropdown,
         "btn_apply_quick_cue": btn_apply_quick_cue,
         "btn_select_all": btn_select_all,
@@ -339,73 +428,78 @@ def render_production_story_ui(preset_voices_cache_getter):
         "btn_use_take3": btn_use_take3,
         "take_select_status_md": take_select_status_md,
         "gap_rule_radio": gap_rule_radio,
+        "btn_build_voice_master": btn_build_voice_master,
+        "voice_master_status_md": voice_master_status_md,
+        "voice_master_audio": voice_master_audio,
+        "voice_master_download": voice_master_download,
+        "pre_reveal_slider": pre_reveal_slider,
+        "post_reveal_slider": post_reveal_slider,
+        "merge_gap_slider": merge_gap_slider,
+        "chk_gentle_ducking": chk_gentle_ducking,
+        "intro_db_slider": intro_db_slider,
+        "mystery_db_slider": mystery_db_slider,
+        "tension_db_slider": tension_db_slider,
+        "emotional_db_slider": emotional_db_slider,
+        "reflection_db_slider": reflection_db_slider,
+        "outro_db_slider": outro_db_slider,
+        "btn_build_cues": btn_build_cues,
+        "coverage_metrics_md": coverage_metrics_md,
+        "visual_timeline_html": visual_timeline_html,
+        "cue_sheet_df": cue_sheet_df,
+        "preview_region_dd": preview_region_dd,
+        "btn_preview_region": btn_preview_region,
+        "audio_region_preview": audio_region_preview,
         "target_lufs_num": target_lufs_num,
         "true_peak_num": true_peak_num,
-        "music_gain_slider": music_gain_slider,
-        "room_tone_vol_slider": room_tone_vol_slider,
-        "ducking_db_slider": ducking_db_slider,
-        "crossfade_sec_slider": crossfade_sec_slider,
-        "reveal_delay_sec_slider": reveal_delay_sec_slider,
-        "chk_enable_music": chk_enable_music,
-        "chk_enable_room_tone": chk_enable_room_tone,
-        "chk_silence_critical": chk_silence_critical,
-        "btn_preview_mix_30s": btn_preview_mix_30s,
-        "preview_mix_30s_audio": preview_mix_30s_audio,
-        "preview_reveal_seg_dd": preview_reveal_seg_dd,
-        "btn_preview_reveal": btn_preview_reveal,
-        "preview_reveal_audio": preview_reveal_audio,
-        "btn_build_master": btn_build_master,
-        "master_status_md": master_status_md,
-        "master_wav_audio": master_wav_audio,
-        "master_mp3_audio": master_mp3_audio,
-        "master_wav_download": master_wav_download,
-        "master_mp3_download": master_mp3_download,
-        "stem_dialogue_audio": stem_dialogue_audio,
-        "stem_room_tone_audio": stem_room_tone_audio,
-        "stem_music_audio": stem_music_audio,
-        "stem_pre_master_audio": stem_pre_master_audio,
-        "stem_timeline_file": stem_timeline_file,
-        "stem_dialogue_file": stem_dialogue_file,
-        "stem_room_tone_file": stem_room_tone_file,
-        "stem_music_file": stem_music_file,
+        "btn_build_final_mix": btn_build_final_mix,
+        "btn_rebuild_final_mix": btn_rebuild_final_mix,
+        "final_mix_status_md": final_mix_status_md,
+        "final_mix_wav_audio": final_mix_wav_audio,
+        "final_mix_mp3_audio": final_mix_mp3_audio,
+        "music_mix_audio": music_mix_audio,
+        "final_wav_download": final_wav_download,
+        "final_mp3_download": final_mp3_download,
+        "music_mix_download": music_mix_download,
+        "cue_sheet_download": cue_sheet_download,
+        "mix_report_download": mix_report_download,
+        "ab_voice_audio": ab_voice_audio,
+        "ab_mix_audio": ab_mix_audio,
         "story_raw_json_state": story_raw_json_state,
         "story_project_info_state": story_project_info_state,
         "story_characters_state": story_characters_state,
         "story_segments_state": story_segments_state,
         "story_project_dir_state": story_project_dir_state,
         "story_runtime_state": story_runtime_state,
-        "story_music_lib_state": story_music_lib_state,
+        "story_cue_sheet_state": story_cue_sheet_state,
+        "story_timeline_events_state": story_timeline_events_state,
+        "story_voice_master_path_state": story_voice_master_path_state,
     }
     return components
 
 
 def _get_empty_import_returns(error_message: str):
-    """Trả về cấu trúc cập nhật rỗng khi có lỗi import."""
+    """Trả về cập nhật rỗng khi có lỗi import."""
     return (
         error_message,
         gr.update(visible=False),
-        *[gr.update(visible=False)] * MAX_STORY_CHARACTERS, # char_groups
-        *[gr.update(value="")] * MAX_STORY_CHARACTERS,     # char_headers
-        *[gr.update(value="")] * MAX_STORY_CHARACTERS,     # char_id
-        *[gr.update(value="")] * MAX_STORY_CHARACTERS,     # char_name
-        *[gr.update(value="")] * MAX_STORY_CHARACTERS,     # char_role
-        *[gr.update(value=None)] * MAX_STORY_CHARACTERS,   # char_voice
-        *[gr.update(value=1.0)] * MAX_STORY_CHARACTERS,    # char_speed
-        *[gr.update(value="")] * MAX_STORY_CHARACTERS,     # char_status
-        [],                                                # music_library_df
-        gr.update(choices=[], value=None),                 # music_cue_dropdown
-        gr.update(choices=[], value=None),                 # preview_reveal_seg_dd
-        [],                                                # story_segments_df
-        gr.update(choices=[], value=None),                 # preview_seg_dropdown
-        None, {}, {}, [], None, {}, {}                     # states
+        *[gr.update(visible=False)] * MAX_STORY_CHARACTERS,
+        *[gr.update(value="")] * MAX_STORY_CHARACTERS,
+        *[gr.update(value="")] * MAX_STORY_CHARACTERS,
+        *[gr.update(value="")] * MAX_STORY_CHARACTERS,
+        *[gr.update(value="")] * MAX_STORY_CHARACTERS,
+        *[gr.update(value=None)] * MAX_STORY_CHARACTERS,
+        *[gr.update(value=1.0)] * MAX_STORY_CHARACTERS,
+        *[gr.update(value="")] * MAX_STORY_CHARACTERS,
+        [],
+        gr.update(choices=[], value=None),
+        None, {}, {}, [], None, {}, [], [], None
     )
 
 
 def process_loaded_story_project(data: dict, project_dir: Path, available_voices: list):
     """
-    Xử lý cấu trúc dữ liệu JSON kịch bản, ánh xạ nhân vật, phân tích music library và cập nhật UI.
+    Xử lý cấu trúc dữ liệu JSON kịch bản, ánh xạ nhân vật, khởi tạo project và cập nhật UI.
     """
-    # Lấy đầy đủ voices: toàn bộ built-in và user cloned voices
     all_voices = get_all_available_voices()
     if available_voices:
         existing_ids = {v[1] if isinstance(v, (tuple, list)) else v for v in all_voices}
@@ -428,27 +522,19 @@ def process_loaded_story_project(data: dict, project_dir: Path, available_voices
     with open(project_dir / "source.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    # Đọc và xác thực Music Library
-    music_lib = parse_music_library(project_dir, data)
-    music_df_rows = build_music_library_table_data(music_lib)
-    music_cues_list = list(music_lib.keys())
-    music_dd_update = gr.update(choices=music_cues_list, value=music_cues_list[0] if music_cues_list else None)
-
     # Thông tin project
-    ready_cues = sum(1 for m in music_lib.values() if m.get("status") == "READY")
     info_md = (
         f"### 📖 Dự án: **{proj_info['title']}** — *{proj_info['episode_title']}*\n"
         f"- **Số phân đoạn (Segments):** {stats['segment_count']} | **Nhân vật:** {stats['character_count']} | "
         f"**Tổng số từ:** {stats['total_words']} từ\n"
         f"- **Thời lượng ước tính:** ~{stats['estimated_seconds']/60:.1f} phút ({int(stats['estimated_seconds'])} giây) | "
-        f"**Tần số lấy mẫu:** {proj_info['sample_rate']}Hz | **Thư mục:** `{project_dir}`\n"
-        f"- **Music Library:** {ready_cues}/{len(music_lib)} track nhạc sẵn sàng trong thư viện."
+        f"**Tần số lấy mẫu:** {proj_info['sample_rate']}Hz | **Thư mục:** `{project_dir}`"
     )
 
     warn_md_content = "\n\n".join(warnings) if warnings else ""
     warn_md_update = gr.update(value=warn_md_content, visible=bool(warn_md_content))
 
-    # Cập nhật danh sách nhân vật vào các Cards
+    # Cập nhật danh sách nhân vật
     char_list = list(chars_map.values())
     group_updates = []
     header_updates = []
@@ -491,23 +577,6 @@ def process_loaded_story_project(data: dict, project_dir: Path, available_voices
     seg_choices = [f"[{s.get('id', idx+1):0>3}] {s.get('speaker', '')}: {s.get('text', '')[:40]}..." for idx, s in enumerate(segments)]
     preview_dd_update = gr.update(choices=seg_choices, value=seg_choices[0] if seg_choices else None)
 
-    # Dropdown options for preview Critical Reveal
-    crit_choices = [
-        f"[{s.get('id', idx+1):0>3}] {s.get('speaker', '')}: {s.get('text', '')[:35]}..."
-        for idx, s in enumerate(segments)
-        if s.get("importance") == "critical" or s.get("is_critical")
-    ]
-    if not crit_choices:
-        crit_choices = seg_choices[:10]
-    default_reveal_val = None
-    for c in crit_choices:
-        if "037" in c:
-            default_reveal_val = c
-            break
-    if not default_reveal_val and crit_choices:
-        default_reveal_val = crit_choices[0]
-    preview_reveal_update = gr.update(choices=crit_choices, value=default_reveal_val)
-
     return (
         info_md,
         warn_md_update,
@@ -519,9 +588,6 @@ def process_loaded_story_project(data: dict, project_dir: Path, available_voices
         *voice_updates,
         *speed_updates,
         *status_updates,
-        music_df_rows,
-        music_dd_update,
-        preview_reveal_update,
         df_rows,
         preview_dd_update,
         data,
@@ -530,7 +596,9 @@ def process_loaded_story_project(data: dict, project_dir: Path, available_voices
         segments,
         str(project_dir),
         runtime_state,
-        music_lib
+        [], # cue_sheet_state
+        [], # timeline_events_state
+        None # voice_master_path_state
     )
 
 
@@ -568,8 +636,7 @@ def handle_import_json_data(json_content_or_file, available_voices: list):
 
 def handle_import_zip_pack(zip_file, available_voices: list):
     """
-    Xử lý nạp file ZIP Production Pack (gồm JSON kịch bản và thư mục music/).
-    Giải nén an toàn chống Zip Slip và tự động cấu hình thư viện nhạc.
+    Xử lý nạp file ZIP Production Pack (gồm JSON và thư mục music/).
     """
     if not zip_file:
         return _get_empty_import_returns("⚠️ Vui lòng chọn file ZIP Production Pack.")
@@ -594,7 +661,7 @@ def handle_import_zip_pack(zip_file, available_voices: list):
         # Copy JSON vào project dir
         shutil.copy2(found_json, final_project_dir / "source.json")
 
-        # Copy music/ vào project dir
+        # Copy music/ nếu có
         if found_music and found_music.exists():
             final_music_dir = final_project_dir / "music"
             final_music_dir.mkdir(parents=True, exist_ok=True)
@@ -602,9 +669,7 @@ def handle_import_zip_pack(zip_file, available_voices: list):
                 if item.is_file():
                     shutil.copy2(item, final_music_dir / item.name)
 
-        # Dọn dẹp temp
         shutil.rmtree(temp_extract_dir, ignore_errors=True)
-
         return process_loaded_story_project(data, final_project_dir, available_voices)
 
     except Exception as e:
@@ -615,11 +680,10 @@ def handle_import_zip_pack(zip_file, available_voices: list):
 
 def bind_production_story_events(components: dict, get_tts_engine_fn, get_available_voices_fn, stop_event):
     """
-    Gán các sự kiện tương tác cho module Production Storytelling & TTS Audio Director.
+    Gán các sự kiện tương tác cho module Production Storytelling & Music Mixing Engine.
     """
     c = components
 
-    # 1. Output components list for Import
     import_outputs = [
         c["story_project_info_md"],
         c["story_warnings_md"],
@@ -631,9 +695,6 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         *c["char_voice_dds"],
         *c["char_speed_sliders"],
         *c["char_status_labels"],
-        c["music_library_df"],
-        c["music_cue_dropdown"],
-        c["preview_reveal_seg_dd"],
         c["story_segments_df"],
         c["preview_seg_dropdown"],
         c["story_raw_json_state"],
@@ -642,46 +703,50 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         c["story_segments_state"],
         c["story_project_dir_state"],
         c["story_runtime_state"],
-        c["story_music_lib_state"]
+        c["story_cue_sheet_state"],
+        c["story_timeline_events_state"],
+        c["story_voice_master_path_state"]
     ]
 
-    # Import ZIP Pack
-    def _on_import_zip(file):
-        voices = get_available_voices_fn()
-        return handle_import_zip_pack(file, voices)
-
+    # 1. Imports
     c["btn_import_pack_zip"].upload(
-        fn=_on_import_zip,
+        fn=lambda f: handle_import_zip_pack(f, get_available_voices_fn()),
         inputs=[c["btn_import_pack_zip"]],
         outputs=import_outputs
     )
 
-    # Import JSON
-    def _on_import_json(file):
-        voices = get_available_voices_fn()
-        return handle_import_json_data(file, voices)
-
     c["btn_import_json"].upload(
-        fn=_on_import_json,
+        fn=lambda f: handle_import_json_data(f, get_available_voices_fn()),
         inputs=[c["btn_import_json"]],
         outputs=import_outputs
     )
 
-    # Sample Pilot Load
-    def _on_load_sample():
-        sample_path = "tests/test_pilot_story.json"
-        if not os.path.exists(sample_path):
-            sample_path = str(Path(__file__).parent.parent / "tests" / "test_pilot_story.json")
-        voices = get_available_voices_fn()
-        return handle_import_json_data(sample_path, voices)
+    # 2. Presets
+    def _on_load_v9_1():
+        p = Path("presets/episode01_v9_1_master_reference_vieneu.json")
+        if not p.exists():
+            p = Path("C:/Users/TPT/Documents/sau_canh_cua_ep01_v9_1_master_reference/01_audio/episode01_v9_1_master_reference_vieneu.json")
+        return handle_import_json_data(str(p), get_available_voices_fn())
 
-    c["btn_sample_pilot"].click(
-        fn=_on_load_sample,
+    c["btn_preset_v9_1"].click(
+        fn=_on_load_v9_1,
         inputs=[],
         outputs=import_outputs
     )
 
-    # 2. Preview Voice for each character card
+    def _on_load_pilot():
+        p = Path("projects/sau_canh_cua_-_pilot_01_v6/source.json")
+        if not p.exists():
+            p = Path("tests/test_pilot_story.json")
+        return handle_import_json_data(str(p), get_available_voices_fn())
+
+    c["btn_sample_pilot"].click(
+        fn=_on_load_pilot,
+        inputs=[],
+        outputs=import_outputs
+    )
+
+    # 3. Preview Voice Character Cards
     for i in range(MAX_STORY_CHARACTERS):
         def _make_preview_handler(slot_idx):
             def _handler(project_dir_str, cid, cname, crole, cvoice, cspeed):
@@ -716,7 +781,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             outputs=[c["char_preview_audios"][i]]
         )
 
-    # 3. Apply Character Voice Mapping with SELECTIVE Cache Invalidation
+    # 4. Apply Character Voice Mapping with SELECTIVE Cache Invalidation
     apply_inputs = [
         c["story_project_dir_state"],
         c["story_characters_state"],
@@ -756,12 +821,10 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
                 new_map[cid]["voice"] = v
                 new_map[cid]["default_speed"] = float(s or 1.0)
 
-        # Invalidate cache CHỈ cho các segment thuộc changed_speakers
         invalidated_count = 0
         if changed_speakers:
             invalidated_count = invalidate_cache_for_speakers(project_dir, runtime_state, changed_speakers)
 
-        # Cập nhật lại DataFrame
         new_df = build_segments_dataframe(segments, new_map, runtime_state)
 
         if changed_speakers:
@@ -782,39 +845,38 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         outputs=[c["story_segments_df"], c["story_characters_state"], c["story_runtime_state"], c["apply_status_md"]]
     )
 
-    # Refresh voices list
-    def _on_refresh_voices(*current_vals):
-        tts = get_tts_engine_fn()
-        voices = get_all_available_voices(tts)
-        updates = []
-        for i in range(MAX_STORY_CHARACTERS):
-            v_val = current_vals[i] if i < len(current_vals) else None
-            updates.append(gr.update(choices=voices, value=v_val))
-        msg = f"✅ **Đã cập nhật danh sách giọng!** Tổng cộng **{len(voices)} giọng** khả dụng (bao gồm toàn bộ giọng mẫu và giọng bạn đã lưu từ tab Clone)."
-        return [*updates, msg]
-
     c["btn_refresh_voices"].click(
-        fn=_on_refresh_voices,
+        fn=lambda *vals: [*[gr.update(choices=get_all_available_voices(get_tts_engine_fn()), value=vals[i] if i < len(vals) else None) for i in range(MAX_STORY_CHARACTERS)], f"✅ Đã cập nhật danh sách {len(get_all_available_voices())} giọng!"],
         inputs=c["char_voice_dds"],
         outputs=[*c["char_voice_dds"], c["apply_status_md"]]
     )
 
-    # 4. Music Cue Preview in Library
-    def _on_preview_music_cue(cue_name, music_lib):
-        if not music_lib or not cue_name:
-            return None
-        info = music_lib.get(cue_name)
-        if info and info.get("status") == "READY":
-            return str(info.get("abs_path"))
-        return None
+    # 5. Music Library Management (Preview & Upload)
+    def _on_preview_lib_track(category):
+        p = resolve_track_file_for_cue(category)
+        return str(p) if (p and p.exists()) else None
 
-    c["btn_preview_music_cue"].click(
-        fn=_on_preview_music_cue,
-        inputs=[c["music_cue_dropdown"], c["story_music_lib_state"]],
-        outputs=[c["audio_music_preview"]]
+    c["btn_preview_lib_track"].click(
+        fn=_on_preview_lib_track,
+        inputs=[c["preview_cat_dd"]],
+        outputs=[c["audio_lib_preview"]]
     )
 
-    # 5. Quick Cue Assignment on selected rows
+    def _on_import_track(cat, track_id, file_obj):
+        if not file_obj or not track_id:
+            return "⚠️ Vui lòng cung cấp file và mã Track ID.", get_music_library_table_data()
+        fp = file_obj.name if hasattr(file_obj, "name") else file_obj
+        ok, msg, _ = import_track_to_library(cat, track_id.strip(), fp)
+        new_rows = get_music_library_table_data()
+        return (f"✅ {msg}" if ok else f"❌ {msg}"), new_rows
+
+    c["btn_execute_import_track"].click(
+        fn=_on_import_track,
+        inputs=[c["upload_cat_dd"], c["upload_track_id_box"], c["upload_file_btn"]],
+        outputs=[c["import_track_status_md"], c["music_library_df"]]
+    )
+
+    # 6. Segments Table Quick Cue Editor
     def _on_apply_quick_cue(chosen_cue, df_data, segments):
         if not df_data or not chosen_cue or not segments:
             return df_data, segments, "⚠️ Chưa có dữ liệu hoặc chưa chọn Music Cue."
@@ -837,58 +899,39 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         outputs=[c["story_segments_df"], c["story_segments_state"], c["story_progress_md"]]
     )
 
-    # 6. Checkbox Selection Helpers
+    # Checkbox Selection Helpers
     def _toggle_all(df_data, checked: bool):
-        if df_data is None:
-            return []
+        if df_data is None: return []
         rows = df_data.values.tolist() if hasattr(df_data, "values") else list(df_data)
-        for r in rows:
-            r[0] = checked
+        for r in rows: r[0] = checked
         return rows
 
     def _select_failed(df_data):
-        if df_data is None:
-            return []
+        if df_data is None: return []
         rows = df_data.values.tolist() if hasattr(df_data, "values") else list(df_data)
-        for r in rows:
-            r[0] = (r[18] in ("FAILED", "NEEDS_REGENERATE"))
+        for r in rows: r[0] = (r[18] in ("FAILED", "NEEDS_REGENERATE"))
         return rows
 
     def _select_multitake(df_data):
-        if df_data is None:
-            return []
+        if df_data is None: return []
         rows = df_data.values.tolist() if hasattr(df_data, "values") else list(df_data)
-        for r in rows:
-            r[0] = (int(r[17]) > 1)
+        for r in rows: r[0] = (int(r[17]) > 1)
         return rows
 
     c["btn_select_all"].click(lambda df: _toggle_all(df, True), inputs=[c["story_segments_df"]], outputs=[c["story_segments_df"]])
     c["btn_deselect_all"].click(lambda df: _toggle_all(df, False), inputs=[c["story_segments_df"]], outputs=[c["story_segments_df"]])
     c["btn_select_failed"].click(fn=_select_failed, inputs=[c["story_segments_df"]], outputs=[c["story_segments_df"]])
     c["btn_select_multitake"].click(fn=_select_multitake, inputs=[c["story_segments_df"]], outputs=[c["story_segments_df"]])
-
-    # 7. Stop Generation
     c["btn_stop_story"].click(lambda: stop_event.set(), inputs=[], outputs=[])
 
-    # 8. TTS Generation (Sequential with Cache, Resume, Multi-take & Override)
+    # 7. TTS Generation (Sequential with Cache, Resume & Multi-take)
     def _run_generation(df_data, segments, chars_map, project_dir_str, runtime_state, mode="selected"):
         tts = get_tts_engine_fn()
         if tts is None:
-            yield (
-                "⚠️ **Chưa tải model!** Vui lòng bấm nút **'Tải Model'** ở thanh điều khiển bên trái trước.",
-                "⚠️ Model chưa sẵn sàng.",
-                df_data,
-                runtime_state
-            )
+            yield "⚠️ Chưa tải model! Vui lòng tải model trước.", "⚠️ Model chưa sẵn sàng.", df_data, runtime_state
             return
-
         if not project_dir_str or not segments:
-            yield (
-                "⚠️ Chưa có dữ liệu dự án kịch bản.",
-                "⚠️ Không có segment để xử lý.",
-                df_data,
-                runtime_state
-            )
+            yield "⚠️ Chưa có dữ liệu dự án kịch bản.", "⚠️ Không có segment để xử lý.", df_data, runtime_state
             return
 
         project_dir = Path(project_dir_str)
@@ -897,17 +940,14 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         rows = df_data.values.tolist() if hasattr(df_data, "values") else list(df_data)
         id_to_row_idx = {str(r[1]).zfill(3): idx for idx, r in enumerate(rows)}
 
-        # Xác định danh sách cần sinh
         targets = []
         for seg in segments:
             seg_id = str(seg.get("id", "")).zfill(3)
             row_idx = id_to_row_idx.get(seg_id)
-            if row_idx is None:
-                continue
+            if row_idx is None: continue
             is_selected = bool(rows[row_idx][0])
             status = rows[row_idx][18]
 
-            # Cập nhật override voice nếu user sửa trong dataframe
             override_val = str(rows[row_idx][5] or "").strip()
             if override_val and override_val not in ("Use Character Voice", "Kế thừa (Use Character Voice)", "None"):
                 seg["voice_override"] = override_val
@@ -915,27 +955,19 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
                 seg.pop("voice_override", None)
 
             if mode == "changed":
-                if status in ("PENDING", "NEEDS_REGENERATE", "FAILED"):
-                    targets.append(seg)
+                if status in ("PENDING", "NEEDS_REGENERATE", "FAILED"): targets.append(seg)
             elif mode == "failed":
-                if status == "FAILED":
-                    targets.append(seg)
-            else: # "selected"
-                if is_selected:
-                    targets.append(seg)
+                if status == "FAILED": targets.append(seg)
+            else:
+                if is_selected: targets.append(seg)
 
         total_targets = len(targets)
         if total_targets == 0:
-            yield (
-                "⚠️ Không có phân đoạn nào phù hợp với chế độ đã chọn.",
-                "Không có tác vụ.",
-                rows,
-                runtime_state
-            )
+            yield "⚠️ Không có phân đoạn nào phù hợp với chế độ đã chọn.", "Không có tác vụ.", rows, runtime_state
             return
 
         log_lines = [f"🚀 Bắt đầu sinh TTS cho {total_targets} phân đoạn (Chế độ: {mode})..."]
-        yield ("\n".join(log_lines), f"⏳ Chuẩn bị sinh {total_targets} phân đoạn...", rows, runtime_state)
+        yield "\n".join(log_lines), f"⏳ Chuẩn bị sinh {total_targets} phân đoạn...", rows, runtime_state
 
         success_count = 0
         failed_count = 0
@@ -950,44 +982,33 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             seg_id = str(seg.get("id", "")).zfill(3)
             speaker = seg.get("speaker", "UNKNOWN")
             char_cfg = chars_map.get(speaker, {})
-            
-            # Tính toán voice sau override
+
             voice_override = seg.get("voice_override", "")
             effective_voice = voice_override if (voice_override and voice_override != "Kế thừa (Use Character Voice)") else char_cfg.get("voice", "")
             current_hash = compute_segment_hash(seg, effective_voice, "v3turbo")
-
             row_idx = id_to_row_idx.get(seg_id)
 
-            # Kiểm tra Cache
             cached_seg = runtime_state.get("segments", {}).get(seg_id)
             is_cached = False
             if cached_seg and cached_seg.get("hash") == current_hash and cached_seg.get("status") == "COMPLETED":
                 sel_p = project_dir / (cached_seg.get("selected_file") or f"selected/{seg_id}.wav")
-                if sel_p.exists():
-                    is_cached = True
+                if sel_p.exists(): is_cached = True
 
             if is_cached:
                 cached_count += 1
-                if row_idx is not None:
-                    rows[row_idx][18] = "CACHED"
+                if row_idx is not None: rows[row_idx][18] = "CACHED"
                 log_lines.append(f"⚡ [{idx+1}/{total_targets}] Phân đoạn {seg_id}_{speaker}: Đã có trong Cache (Bỏ qua).")
-                yield (
-                    "\n".join(log_lines[-10:]),
-                    f"⚡ {idx+1}/{total_targets} | Phân đoạn {seg_id}_{speaker} (Cached)",
-                    rows,
-                    runtime_state
-                )
+                yield "\n".join(log_lines[-10:]), f"⚡ {idx+1}/{total_targets} | Phân đoạn {seg_id}_{speaker} (Cached)", rows, runtime_state
                 continue
 
-            # Tiến hành sinh mới
             elapsed = time.time() - start_time
             avg_per_seg = elapsed / max(1, (success_count + failed_count))
             remaining_segs = total_targets - (idx + 1)
             eta_sec = int(avg_per_seg * remaining_segs)
 
-            progress_msg = f"⏳ Đang sinh {idx+1}/{total_targets} | Phân đoạn: **{seg_id}_{speaker}** | Giọng: **{effective_voice}** | Đã chạy: {int(elapsed)}s | Còn lại: ~{eta_sec}s"
-            log_lines.append(f"🎙️ [{idx+1}/{total_targets}] Đang sinh {seg_id}_{speaker} (Giọng: {effective_voice}, Takes: {seg.get('multi_take', 1)}, Speed: {seg.get('speed', char_cfg.get('default_speed', 1.0))})...")
-            yield ("\n".join(log_lines[-10:]), progress_msg, rows, runtime_state)
+            progress_msg = f"⏳ Đang sinh {idx+1}/{total_targets} | Phân đoạn: **{seg_id}_{speaker}** | Giọng: **{effective_voice}** | Còn lại: ~{eta_sec}s"
+            log_lines.append(f"🎙️ [{idx+1}/{total_targets}] Đang sinh {seg_id}_{speaker} (Giọng: {effective_voice}, Takes: {seg.get('multi_take', 1)})...")
+            yield "\n".join(log_lines[-10:]), progress_msg, rows, runtime_state
 
             success, msg, seg_result = generate_single_segment_takes(
                 tts_engine=tts,
@@ -1009,93 +1030,41 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
                 log_lines.append(f"  ✅ Phân đoạn {seg_id}: Hoàn tất ({len(seg_result.get('takes', {}))} takes).")
             else:
                 failed_count += 1
-                runtime_state.setdefault("segments", {})[seg_id] = {
-                    "id": seg_id,
-                    "status": "FAILED",
-                    "error": msg
-                }
+                runtime_state.setdefault("segments", {})[seg_id] = {"id": seg_id, "status": "FAILED", "error": msg}
                 save_project_state(project_dir, runtime_state)
-                if row_idx is not None:
-                    rows[row_idx][18] = "FAILED"
+                if row_idx is not None: rows[row_idx][18] = "FAILED"
                 log_lines.append(f"  ❌ Phân đoạn {seg_id} Lỗi: {msg}")
 
-            yield ("\n".join(log_lines[-10:]), progress_msg, rows, runtime_state)
+            yield "\n".join(log_lines[-10:]), progress_msg, rows, runtime_state
 
         total_elapsed = time.time() - start_time
-        summary_msg = f"🎉 **Hoàn thành!** Thành công: {success_count} | Lỗi: {failed_count} | Cache: {cached_count} | Tổng thời gian: {total_elapsed:.1f}s"
+        summary_msg = f"🎉 **Hoàn thành sinh TTS!** Thành công: {success_count} | Lỗi: {failed_count} | Cache: {cached_count} | Thời gian: {total_elapsed:.1f}s"
         log_lines.append(summary_msg)
-        yield ("\n".join(log_lines[-10:]), summary_msg, rows, runtime_state)
-
-    def _on_generate_selected(df, s, c_m, p_d, r_s):
-        yield from _run_generation(df, s, c_m, p_d, r_s, mode="selected")
-
-    def _on_generate_changed(df, s, c_m, p_d, r_s):
-        yield from _run_generation(df, s, c_m, p_d, r_s, mode="changed")
-
-    def _on_retry_failed(df, s, c_m, p_d, r_s):
-        yield from _run_generation(df, s, c_m, p_d, r_s, mode="failed")
+        yield "\n".join(log_lines[-10:]), summary_msg, rows, runtime_state
 
     c["btn_generate_story"].click(
-        fn=_on_generate_selected,
-        inputs=[
-            c["story_segments_df"],
-            c["story_segments_state"],
-            c["story_characters_state"],
-            c["story_project_dir_state"],
-            c["story_runtime_state"]
-        ],
-        outputs=[
-            c["story_log_output"],
-            c["story_progress_md"],
-            c["story_segments_df"],
-            c["story_runtime_state"]
-        ]
+        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, mode="selected"),
+        inputs=[c["story_segments_df"], c["story_segments_state"], c["story_characters_state"], c["story_project_dir_state"], c["story_runtime_state"]],
+        outputs=[c["story_log_output"], c["story_progress_md"], c["story_segments_df"], c["story_runtime_state"]]
     )
-
     c["btn_generate_changed"].click(
-        fn=_on_generate_changed,
-        inputs=[
-            c["story_segments_df"],
-            c["story_segments_state"],
-            c["story_characters_state"],
-            c["story_project_dir_state"],
-            c["story_runtime_state"]
-        ],
-        outputs=[
-            c["story_log_output"],
-            c["story_progress_md"],
-            c["story_segments_df"],
-            c["story_runtime_state"]
-        ]
+        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, mode="changed"),
+        inputs=[c["story_segments_df"], c["story_segments_state"], c["story_characters_state"], c["story_project_dir_state"], c["story_runtime_state"]],
+        outputs=[c["story_log_output"], c["story_progress_md"], c["story_segments_df"], c["story_runtime_state"]]
     )
-
     c["btn_retry_failed"].click(
-        fn=_on_retry_failed,
-        inputs=[
-            c["story_segments_df"],
-            c["story_segments_state"],
-            c["story_characters_state"],
-            c["story_project_dir_state"],
-            c["story_runtime_state"]
-        ],
-        outputs=[
-            c["story_log_output"],
-            c["story_progress_md"],
-            c["story_segments_df"],
-            c["story_runtime_state"]
-        ]
+        fn=lambda df, s, c_m, p_d, r_s: _run_generation(df, s, c_m, p_d, r_s, mode="failed"),
+        inputs=[c["story_segments_df"], c["story_segments_state"], c["story_characters_state"], c["story_project_dir_state"], c["story_runtime_state"]],
+        outputs=[c["story_log_output"], c["story_progress_md"], c["story_segments_df"], c["story_runtime_state"]]
     )
 
-    # 9. Take Preview & Selection
+    # 8. Take Selection
     def _on_preview_select(seg_label, project_dir_str, runtime_state):
-        if not seg_label or not project_dir_str:
-            return None, None, None, ""
+        if not seg_label or not project_dir_str: return None, None, None, ""
         seg_id = seg_label.split("]")[0].replace("[", "").strip()
-        project_dir = Path(project_dir_str)
-        paths = get_take_audio_paths(project_dir, runtime_state, seg_id)
+        paths = get_take_audio_paths(Path(project_dir_str), runtime_state, seg_id)
         selected_take = runtime_state.get("segments", {}).get(seg_id, {}).get("selected_take", 1)
-        status = f"Phân đoạn **{seg_id}** đang sử dụng: **Take {selected_take}**"
-        return paths.get(1), paths.get(2), paths.get(3), status
+        return paths.get(1), paths.get(2), paths.get(3), f"Phân đoạn **{seg_id}** đang dùng: **Take {selected_take}**"
 
     c["preview_seg_dropdown"].change(
         fn=_on_preview_select,
@@ -1104,230 +1073,275 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     )
 
     def _choose_take(seg_label, take_num, project_dir_str, runtime_state, df_data):
-        if not seg_label or not project_dir_str:
-            return "Chưa chọn phân đoạn.", runtime_state, df_data
+        if not seg_label or not project_dir_str: return "Chưa chọn phân đoạn.", runtime_state, df_data
         seg_id = seg_label.split("]")[0].replace("[", "").strip()
-        project_dir = Path(project_dir_str)
-        success, msg = select_take_for_segment(project_dir, runtime_state, seg_id, take_num)
-
-        # Cập nhật DataFrame
+        success, msg = select_take_for_segment(Path(project_dir_str), runtime_state, seg_id, take_num)
         rows = df_data.values.tolist() if hasattr(df_data, "values") else list(df_data)
         for r in rows:
             if str(r[1]).zfill(3) == seg_id.zfill(3):
                 r[19] = f"Take {take_num}"
                 break
+        return (f"✅ {msg}" if success else f"❌ {msg}"), runtime_state, rows
 
-        status_text = f"✅ {msg}" if success else f"❌ {msg}"
-        return status_text, runtime_state, rows
+    c["btn_use_take1"].click(lambda lbl, p, r, df: _choose_take(lbl, 1, p, r, df), inputs=[c["preview_seg_dropdown"], c["story_project_dir_state"], c["story_runtime_state"], c["story_segments_df"]], outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]])
+    c["btn_use_take2"].click(lambda lbl, p, r, df: _choose_take(lbl, 2, p, r, df), inputs=[c["preview_seg_dropdown"], c["story_project_dir_state"], c["story_runtime_state"], c["story_segments_df"]], outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]])
+    c["btn_use_take3"].click(lambda lbl, p, r, df: _choose_take(lbl, 3, p, r, df), inputs=[c["preview_seg_dropdown"], c["story_project_dir_state"], c["story_runtime_state"], c["story_segments_df"]], outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]])
 
-    c["btn_use_take1"].click(
-        fn=lambda lbl, p, r, df: _choose_take(lbl, 1, p, r, df),
-        inputs=[c["preview_seg_dropdown"], c["story_project_dir_state"], c["story_runtime_state"], c["story_segments_df"]],
-        outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]]
-    )
-    c["btn_use_take2"].click(
-        fn=lambda lbl, p, r, df: _choose_take(lbl, 2, p, r, df),
-        inputs=[c["preview_seg_dropdown"], c["story_project_dir_state"], c["story_runtime_state"], c["story_segments_df"]],
-        outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]]
-    )
-    c["btn_use_take3"].click(
-        fn=lambda lbl, p, r, df: _choose_take(lbl, 3, p, r, df),
-        inputs=[c["preview_seg_dropdown"], c["story_project_dir_state"], c["story_runtime_state"], c["story_segments_df"]],
-        outputs=[c["take_select_status_md"], c["story_runtime_state"], c["story_segments_df"]]
-    )
-
-    # 10. Preview Mix 30s
-    def _on_preview_mix_30s(project_dir_str, segments, runtime_state, music_lib,
-                            enable_m, enable_rt, auto_sil_crit, m_gain, rt_vol, duck_db, xfade):
+    # 9. Clean Voice Master Builder
+    def _on_build_voice_master(project_dir_str, segments, runtime_state, gap_rule):
         if not project_dir_str or not segments:
-            return None, "⚠️ Chưa có dự án nào được mở."
-        project_dir = Path(project_dir_str)
-        ok, msg, clip_path = build_preview_mix_clip(
-            project_dir=project_dir,
+            return "⚠️ Chưa có dự án nào được mở.", None, gr.update(visible=False), None, [], None
+
+        ok, msg, v_path, events = build_clean_voice_master(
+            project_dir=Path(project_dir_str),
             segments=segments,
             project_state=runtime_state,
-            music_lib=music_lib or {},
-            start_seg_id="001",
-            duration_sec=30.0,
-            enable_music=bool(enable_m),
-            enable_room_tone=bool(enable_rt),
-            auto_silence_critical=bool(auto_sil_crit),
-            global_music_gain_db=float(m_gain),
-            room_tone_volume_db=float(rt_vol),
-            default_ducking_db=float(duck_db),
-            crossfade_sec=float(xfade)
+            gap_rule=gap_rule
         )
         if not ok:
-            return None, f"❌ {msg}"
-        return clip_path, f"✅ Đã tạo Preview Mix 30s: `{clip_path}`"
+            return f"❌ {msg}", None, gr.update(visible=False), None, [], None
 
-    c["btn_preview_mix_30s"].click(
-        fn=_on_preview_mix_30s,
-        inputs=[
-            c["story_project_dir_state"],
-            c["story_segments_state"],
-            c["story_runtime_state"],
-            c["story_music_lib_state"],
-            c["chk_enable_music"],
-            c["chk_enable_room_tone"],
-            c["chk_silence_critical"],
-            c["music_gain_slider"],
-            c["room_tone_vol_slider"],
-            c["ducking_db_slider"],
-            c["crossfade_sec_slider"]
-        ],
-        outputs=[c["preview_mix_30s_audio"], c["master_status_md"]]
-    )
-
-    # 11. Preview Critical Reveal
-    def _on_preview_reveal(project_dir_str, segments, runtime_state, music_lib,
-                           reveal_label, enable_m, enable_rt, auto_sil_crit, rt_vol, duck_db, ret_delay):
-        if not project_dir_str or not segments or not reveal_label:
-            return None, "⚠️ Vui lòng chọn phân đoạn Critical Reveal."
-        seg_id = reveal_label.split("]")[0].replace("[", "").strip()
-        project_dir = Path(project_dir_str)
-        ok, msg, clip_path = build_preview_reveal_clip(
-            project_dir=project_dir,
-            segments=segments,
-            project_state=runtime_state,
-            music_lib=music_lib or {},
-            reveal_seg_id=seg_id,
-            before_sec=8.0,
-            after_sec=8.0,
-            enable_music=bool(enable_m),
-            enable_room_tone=bool(enable_rt),
-            auto_silence_critical=bool(auto_sil_crit),
-            room_tone_volume_db=float(rt_vol),
-            default_ducking_db=float(duck_db),
-            reveal_music_return_delay_sec=float(ret_delay)
-        )
-        if not ok:
-            return None, f"❌ {msg}"
-        return clip_path, f"✅ Đã tạo Preview Critical Reveal (Phân đoạn {seg_id}): `{clip_path}`"
-
-    c["btn_preview_reveal"].click(
-        fn=_on_preview_reveal,
-        inputs=[
-            c["story_project_dir_state"],
-            c["story_segments_state"],
-            c["story_runtime_state"],
-            c["story_music_lib_state"],
-            c["preview_reveal_seg_dd"],
-            c["chk_enable_music"],
-            c["chk_enable_room_tone"],
-            c["chk_silence_critical"],
-            c["room_tone_vol_slider"],
-            c["ducking_db_slider"],
-            c["reveal_delay_sec_slider"]
-        ],
-        outputs=[c["preview_reveal_audio"], c["master_status_md"]]
-    )
-
-    # 12. Build Master Audio (Audio Director Engine)
-    def _on_build_master(project_dir_str, segments, runtime_state, music_lib,
-                         enable_m, enable_rt, auto_sil_crit, m_gain, rt_vol, duck_db,
-                         xfade, ret_delay, target_lufs, true_peak, gap_rule):
-        if not project_dir_str or not segments:
-            empty_stems = [None, None, None, None, gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)]
-            return "⚠️ Chưa có dự án nào được mở.", None, None, gr.update(visible=False), gr.update(visible=False), *empty_stems
-
-        project_dir = Path(project_dir_str)
-        ok, msg, outputs = build_audio_director_master(
-            project_dir=project_dir,
-            segments=segments,
-            project_state=runtime_state,
-            music_lib=music_lib or {},
-            enable_music=bool(enable_m),
-            enable_room_tone=bool(enable_rt),
-            auto_silence_critical=bool(auto_sil_crit),
-            global_music_gain_db=float(m_gain),
-            room_tone_volume_db=float(rt_vol),
-            default_ducking_db=float(duck_db),
-            crossfade_sec=float(xfade),
-            reveal_music_return_delay_sec=float(ret_delay),
-            target_lufs=float(target_lufs),
-            true_peak_db=float(true_peak),
-            gap_rule=gap_rule,
-            sample_rate=48000
-        )
-
-        if not ok:
-            empty_stems = [None, None, None, None, gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)]
-            return f"❌ {msg}", None, None, gr.update(visible=False), gr.update(visible=False), *empty_stems
-
-        wav_p = outputs.get("episode_master_wav")
-        mp3_p = outputs.get("episode_master_mp3")
-        dia_p = outputs.get("dialogue_only")
-        rt_p = outputs.get("room_tone")
-        mus_p = outputs.get("music_only")
-        pre_p = outputs.get("pre_master_mix")
-        time_p = outputs.get("music_timeline_json")
-
-        status_md = (
-            f"🎉 **{msg}**\n"
-            f"- **Master WAV (48kHz 24-bit PCM):** `{wav_p}`\n"
-            f"- **Master MP3 (320kbps):** `{mp3_p}`\n"
-            f"- **Stems:** Dialogue, Room Tone, Music, Pre-master Mix & Timeline JSON đã xuất trong thư mục `master/`."
-        )
-
+        status_txt = f"🎉 **{msg}**\n- File: `{v_path}`\n- Lời thoại sạch 100%, không chứa room tone, white noise hay nhạc."
         return (
-            status_md,
-            wav_p,
-            mp3_p,
-            gr.update(value=wav_p, visible=bool(wav_p)),
-            gr.update(value=mp3_p, visible=bool(mp3_p)),
-            dia_p,
-            rt_p,
-            mus_p,
-            pre_p,
-            gr.update(value=time_p, visible=bool(time_p)),
-            gr.update(value=dia_p, visible=bool(dia_p)),
-            gr.update(value=rt_p, visible=bool(rt_p)),
-            gr.update(value=mus_p, visible=bool(mus_p))
+            status_txt,
+            str(v_path),
+            gr.update(value=str(v_path), visible=True),
+            str(v_path), # story_voice_master_path_state
+            events,      # story_timeline_events_state
+            str(v_path)  # ab_voice_audio
         )
 
-    c["btn_build_master"].click(
-        fn=_on_build_master,
-        inputs=[
-            c["story_project_dir_state"],
-            c["story_segments_state"],
-            c["story_runtime_state"],
-            c["story_music_lib_state"],
-            c["chk_enable_music"],
-            c["chk_enable_room_tone"],
-            c["chk_silence_critical"],
-            c["music_gain_slider"],
-            c["room_tone_vol_slider"],
-            c["ducking_db_slider"],
-            c["crossfade_sec_slider"],
-            c["reveal_delay_sec_slider"],
-            c["target_lufs_num"],
-            c["true_peak_num"],
-            c["gap_rule_radio"]
-        ],
+    c["btn_build_voice_master"].click(
+        fn=_on_build_voice_master,
+        inputs=[c["story_project_dir_state"], c["story_segments_state"], c["story_runtime_state"], c["gap_rule_radio"]],
         outputs=[
-            c["master_status_md"],
-            c["master_wav_audio"],
-            c["master_mp3_audio"],
-            c["master_wav_download"],
-            c["master_mp3_download"],
-            c["stem_dialogue_audio"],
-            c["stem_room_tone_audio"],
-            c["stem_music_audio"],
-            c["stem_pre_master_audio"],
-            c["stem_timeline_file"],
-            c["stem_dialogue_file"],
-            c["stem_room_tone_file"],
-            c["stem_music_file"]
+            c["voice_master_status_md"],
+            c["voice_master_audio"],
+            c["voice_master_download"],
+            c["story_voice_master_path_state"],
+            c["story_timeline_events_state"],
+            c["ab_voice_audio"]
         ]
     )
 
-    # 13. Export Project JSON with UPDATED character voices and overrides
-    def _on_export(project_dir_str, raw_json, chars_map, segments, runtime_state):
-        if not project_dir_str or not raw_json:
-            return gr.update(visible=False)
-        project_dir = Path(project_dir_str)
+    # 10. Music Cue Sheet Engine & Timeline
+    def _on_build_cues(events, pre_rev, post_rev, merge_gap, i_db, m_db, t_db, e_db, r_db, o_db):
+        if not events:
+            return "⚠️ Chưa có Voice Timeline. Hãy bấm **'Build Clean Voice Master'** trước.", "<div style='color: #ef4444;'>Chưa có dữ liệu.</div>", [], gr.update(choices=[]), []
 
+        total_sec = events[-1]["speech_end_sec"]
+        overrides = {
+            "INTRO": {"level_db": float(i_db)},
+            "MYSTERY": {"level_db": float(m_db)},
+            "TENSION": {"level_db": float(t_db)},
+            "EMOTIONAL": {"level_db": float(e_db)},
+            "REFLECTION": {"level_db": float(r_db)},
+            "OUTRO": {"level_db": float(o_db)}
+        }
+
+        cue_sheet = generate_cue_sheet_from_segments(
+            timeline_events=events,
+            music_overrides=overrides,
+            pre_reveal_clearance=float(pre_rev),
+            post_reveal_clearance=float(post_rev),
+            merge_gap_threshold=float(merge_gap),
+            total_episode_sec=total_sec
+        )
+
+        cov = calculate_music_coverage(cue_sheet, total_sec)
+        warn_part = f"\n\n{cov['warning_message']}" if cov["warning_message"] else ""
+        cov_md = (
+            f"### 📊 Thống Kê Phủ Nhạc (Music Coverage):\n"
+            f"- **Tổng thời lượng tập:** `{cov['total_episode_fmt']}` ({cov['total_episode_sec']}s) | "
+            f"**Có nhạc:** `{cov['music_duration_fmt']}` ({cov['music_duration_sec']}s) | "
+            f"**Voice sạch (DRY):** `{cov['dry_duration_fmt']}` ({cov['dry_duration_sec']}s)\n"
+            f"- **Tỷ lệ phủ nhạc:** **{cov['coverage_percent']}%** *(Khuyến nghị chuẩn: {cov['target_recommendation']})*{warn_part}"
+        )
+
+        timeline_html = generate_visual_timeline_html(cue_sheet, events, total_sec)
+
+        # DataFrame rows
+        df_rows = []
+        region_choices = []
+        for idx, item in enumerate(cue_sheet):
+            df_rows.append([
+                item["start_sec"],
+                item["end_sec"],
+                item["duration_sec"],
+                item["cue"],
+                item["track"],
+                item["level_db"],
+                item["fade_in_sec"],
+                item["fade_out_sec"],
+                item["source"]
+            ])
+            if item["cue"] != "DRY":
+                region_choices.append(f"[{idx+1:02d}] {item['cue']} ({item['start_sec']}s → {item['end_sec']}s, {item['track']})")
+
+        choice_upd = gr.update(choices=region_choices, value=region_choices[0] if region_choices else None)
+
+        return cov_md, timeline_html, df_rows, choice_upd, cue_sheet
+
+    c["btn_build_cues"].click(
+        fn=_on_build_cues,
+        inputs=[
+            c["story_timeline_events_state"],
+            c["pre_reveal_slider"],
+            c["post_reveal_slider"],
+            c["merge_gap_slider"],
+            c["intro_db_slider"],
+            c["mystery_db_slider"],
+            c["tension_db_slider"],
+            c["emotional_db_slider"],
+            c["reflection_db_slider"],
+            c["outro_db_slider"]
+        ],
+        outputs=[
+            c["coverage_metrics_md"],
+            c["visual_timeline_html"],
+            c["cue_sheet_df"],
+            c["preview_region_dd"],
+            c["story_cue_sheet_state"]
+        ]
+    )
+
+    # 11. Region Preview
+    def _on_preview_region(project_dir_str, voice_master_path, reg_choice, cue_sheet):
+        if not project_dir_str or not voice_master_path or not reg_choice or not cue_sheet:
+            return None
+        idx = int(reg_choice.split("]")[0].replace("[", "").strip()) - 1
+        if 0 <= idx < len(cue_sheet):
+            target_item = cue_sheet[idx]
+            ok, msg, p = preview_region_mix(Path(project_dir_str), Path(voice_master_path), target_item)
+            return str(p) if ok else None
+        return None
+
+    c["btn_preview_region"].click(
+        fn=_on_preview_region,
+        inputs=[c["story_project_dir_state"], c["story_voice_master_path_state"], c["preview_region_dd"], c["story_cue_sheet_state"]],
+        outputs=[c["audio_region_preview"]]
+    )
+
+    # 12. Final Mix & Mastering (Build & Rebuild)
+    def _on_build_final_mix(project_dir_str, voice_master_path, cue_df_data, events, enable_duck, lufs, peak):
+        if not project_dir_str or not voice_master_path:
+            empty_stems = [None, None, None, None, None, gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)]
+            return "⚠️ Chưa có Clean Voice Master. Hãy tạo Voice Master trước.", *empty_stems
+
+        project_dir = Path(project_dir_str)
+        v_path = Path(voice_master_path)
+        if not v_path.exists():
+            empty_stems = [None, None, None, None, None, gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)]
+            return "⚠️ File voice_master.wav không tồn tại trên đĩa.", *empty_stems
+
+        # Đọc dữ liệu Cue Sheet từ DataFrame (để người dùng có thể chỉnh trực tiếp trên bảng)
+        rows = cue_df_data.values.tolist() if hasattr(cue_df_data, "values") else list(cue_df_data)
+        cue_sheet = []
+        for r in rows:
+            cue_sheet.append({
+                "start_sec": float(r[0]),
+                "end_sec": float(r[1]),
+                "duration_sec": float(r[2]),
+                "cue": str(r[3]),
+                "track": str(r[4]),
+                "level_db": float(r[5]),
+                "fade_in_sec": float(r[6]),
+                "fade_out_sec": float(r[7]),
+                "source": str(r[8])
+            })
+
+        if not cue_sheet:
+            empty_stems = [None, None, None, None, None, gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)]
+            return "⚠️ Cue sheet rỗng. Hãy bấm 'Analyze / Build Music Cues' trước.", *empty_stems
+
+        ok, msg, report = build_final_mix(
+            project_dir=project_dir,
+            voice_master_path=v_path,
+            cue_sheet=cue_sheet,
+            timeline_events=events,
+            enable_ducking=bool(enable_duck),
+            target_lufs=float(lufs),
+            true_peak_db=float(peak)
+        )
+
+        if not ok:
+            empty_stems = [None, None, None, None, None, gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)]
+            return f"❌ {msg}", *empty_stems
+
+        f_wav = report["outputs"]["final_mix_wav"]
+        f_mp3 = report["outputs"]["final_mix_mp3"]
+        m_mix = report["outputs"]["music_mix_wav"]
+        c_json = report["outputs"]["cue_sheet_json"]
+        m_rep = str(project_dir / "mix" / "mix_report.json")
+
+        status_txt = (
+            f"🎉 **{msg}**\n"
+            f"- **Final Master WAV (48kHz 24-bit PCM):** `{f_wav}`\n"
+            f"- **Final Master MP3 (320kbps):** `{f_mp3}`\n"
+            f"- **Integrated Loudness:** `{report['master_integrated_lufs']} LUFS` | **True Peak:** `{report['master_true_peak_db']} dBTP`\n"
+            f"- **Music Coverage:** `{report['music_duration_fmt']}` / `{report['total_episode_fmt']}` ({report['music_coverage_pct']}%)\n"
+            f"- *Đã tách biệt 100% với TTS: Thay đổi nhạc/volume không hề sinh lại giọng đọc.*"
+        )
+
+        return (
+            status_txt,
+            f_wav,
+            f_mp3,
+            m_mix,
+            str(v_path), # ab_voice_audio
+            f_wav,       # ab_mix_audio
+            gr.update(value=f_wav, visible=True),
+            gr.update(value=f_mp3, visible=True),
+            gr.update(value=m_mix, visible=True),
+            gr.update(value=c_json, visible=True),
+            gr.update(value=m_rep, visible=True)
+        )
+
+    final_mix_outputs = [
+        c["final_mix_status_md"],
+        c["final_mix_wav_audio"],
+        c["final_mix_mp3_audio"],
+        c["music_mix_audio"],
+        c["ab_voice_audio"],
+        c["ab_mix_audio"],
+        c["final_wav_download"],
+        c["final_mp3_download"],
+        c["music_mix_download"],
+        c["cue_sheet_download"],
+        c["mix_report_download"]
+    ]
+
+    c["btn_build_final_mix"].click(
+        fn=_on_build_final_mix,
+        inputs=[
+            c["story_project_dir_state"],
+            c["story_voice_master_path_state"],
+            c["cue_sheet_df"],
+            c["story_timeline_events_state"],
+            c["chk_gentle_ducking"],
+            c["target_lufs_num"],
+            c["true_peak_num"]
+        ],
+        outputs=final_mix_outputs
+    )
+
+    c["btn_rebuild_final_mix"].click(
+        fn=_on_build_final_mix,
+        inputs=[
+            c["story_project_dir_state"],
+            c["story_voice_master_path_state"],
+            c["cue_sheet_df"],
+            c["story_timeline_events_state"],
+            c["chk_gentle_ducking"],
+            c["target_lufs_num"],
+            c["true_peak_num"]
+        ],
+        outputs=final_mix_outputs
+    )
+
+    # 13. Export Project JSON
+    def _on_export(project_dir_str, raw_json, chars_map, segments, runtime_state):
+        if not project_dir_str or not raw_json: return gr.update(visible=False)
         export_payload = json.loads(json.dumps(raw_json))
         if "characters" in export_payload:
             for cid, ccfg in export_payload["characters"].items():
@@ -1335,17 +1349,11 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
                     ccfg["voice"] = chars_map[cid].get("voice", ccfg.get("voice", ""))
                     ccfg["default_speed"] = chars_map[cid].get("default_speed", ccfg.get("default_speed", 1.0))
 
-        export_p = export_project_json(project_dir, export_payload, runtime_state)
+        export_p = export_project_json(Path(project_dir_str), export_payload, runtime_state)
         return gr.update(value=export_p, visible=True)
 
     c["btn_export_json"].click(
         fn=_on_export,
-        inputs=[
-            c["story_project_dir_state"],
-            c["story_raw_json_state"],
-            c["story_characters_state"],
-            c["story_segments_state"],
-            c["story_runtime_state"]
-        ],
+        inputs=[c["story_project_dir_state"], c["story_raw_json_state"], c["story_characters_state"], c["story_segments_state"], c["story_runtime_state"]],
         outputs=[c["file_export_download"]]
     )

@@ -1,0 +1,138 @@
+{
+  "version": "1.0",
+  "reference_lufs": -24.0,
+  "sample_rate": 48000,
+  "categories": {
+    "INTRO": {
+      "display_name": "Nhạc mở đầu (Intro)",
+      "default_track": "SCC_INTRO_01",
+      "default_level_db": -31.0,
+      "fade_in_sec": 1.0,
+      "fade_out_sec": 2.0,
+      "max_duration_sec": 30.0,
+      "color": "#3b82f6"
+    },
+    "MYSTERY": {
+      "display_name": "Bí ẩn, tò mò (Mystery)",
+      "default_track": "SCC_MYSTERY_01",
+      "default_level_db": -35.0,
+      "fade_in_sec": 2.0,
+      "fade_out_sec": 2.5,
+      "max_duration_sec": null,
+      "color": "#8b5cf6"
+    },
+    "TENSION": {
+      "display_name": "Căng thẳng, hồi hộp (Tension)",
+      "default_track": "SCC_TENSION_01",
+      "default_level_db": -36.0,
+      "fade_in_sec": 2.0,
+      "fade_out_sec": 2.0,
+      "max_duration_sec": null,
+      "color": "#ef4444"
+    },
+    "EMOTIONAL": {
+      "display_name": "Cảm xúc, lắng đọng (Emotional)",
+      "default_track": "SCC_EMOTIONAL_01",
+      "default_level_db": -36.0,
+      "fade_in_sec": 2.0,
+      "fade_out_sec": 2.5,
+      "max_duration_sec": null,
+      "color": "#ec4899"
+    },
+    "REFLECTION": {
+      "display_name": "Chiêm nghiệm, nhìn lại (Reflection)",
+      "default_track": "SCC_REFLECTION_01",
+      "default_level_db": -35.0,
+      "fade_in_sec": 2.5,
+      "fade_out_sec": 3.0,
+      "max_duration_sec": null,
+      "color": "#06b6d4"
+    },
+    "OUTRO": {
+      "display_name": "Nhạc kết thúc (Outro)",
+      "default_track": "SCC_OUTRO_01",
+      "default_level_db": -30.0,
+      "fade_in_sec": 2.0,
+      "fade_out_sec": 4.0,
+      "max_duration_sec": 45.0,
+      "color": "#6366f1"
+    },
+    "DRY": {
+      "display_name": "Voice sạch, không nhạc (DRY)",
+      "default_track": "NO_MUSIC",
+      "default_level_db": -99.0,
+      "fade_in_sec": 0.0,
+      "fade_out_sec": 0.0,
+      "max_duration_sec": null,
+      "color": "#9ca3af"
+    }
+  },
+  "tracks": {
+    "SCC_INTRO_01": {
+      "track_id": "SCC_INTRO_01",
+      "category": "INTRO",
+      "original_filename": "01_signature_intro.wav",
+      "original_file": "music_library\\original\\SCC_INTRO_01.wav",
+      "normalized_file": "music_library\\normalized\\SCC_INTRO_01.wav",
+      "duration_sec": 7.0,
+      "integrated_lufs": -26.12,
+      "true_peak_db": -12.71,
+      "normalized_status": "READY"
+    },
+    "SCC_MYSTERY_01": {
+      "track_id": "SCC_MYSTERY_01",
+      "category": "MYSTERY",
+      "original_filename": "03_mystery_low.wav",
+      "original_file": "music_library\\original\\SCC_MYSTERY_01.wav",
+      "normalized_file": "music_library\\normalized\\SCC_MYSTERY_01.wav",
+      "duration_sec": 60.0,
+      "integrated_lufs": -24.19,
+      "true_peak_db": -12.22,
+      "normalized_status": "READY"
+    },
+    "SCC_TENSION_01": {
+      "track_id": "SCC_TENSION_01",
+      "category": "TENSION",
+      "original_filename": "05_tension_low.wav",
+      "original_file": "music_library\\original\\SCC_TENSION_01.wav",
+      "normalized_file": "music_library\\normalized\\SCC_TENSION_01.wav",
+      "duration_sec": 60.0,
+      "integrated_lufs": -23.96,
+      "true_peak_db": -11.27,
+      "normalized_status": "READY"
+    },
+    "SCC_EMOTIONAL_01": {
+      "track_id": "SCC_EMOTIONAL_01",
+      "category": "EMOTIONAL",
+      "original_filename": "06_emotional_low.wav",
+      "original_file": "music_library\\original\\SCC_EMOTIONAL_01.wav",
+      "normalized_file": "music_library\\normalized\\SCC_EMOTIONAL_01.wav",
+      "duration_sec": 60.0,
+      "integrated_lufs": -24.06,
+      "true_peak_db": -12.51,
+      "normalized_status": "READY"
+    },
+    "SCC_REFLECTION_01": {
+      "track_id": "SCC_REFLECTION_01",
+      "category": "REFLECTION",
+      "original_filename": "04_memory_soft.wav",
+      "original_file": "music_library\\original\\SCC_REFLECTION_01.wav",
+      "normalized_file": "music_library\\normalized\\SCC_REFLECTION_01.wav",
+      "duration_sec": 45.0,
+      "integrated_lufs": -24.25,
+      "true_peak_db": -11.56,
+      "normalized_status": "READY"
+    },
+    "SCC_OUTRO_01": {
+      "track_id": "SCC_OUTRO_01",
+      "category": "OUTRO",
+      "original_filename": "02_signature_outro.wav",
+      "original_file": "music_library\\original\\SCC_OUTRO_01.wav",
+      "normalized_file": "music_library\\normalized\\SCC_OUTRO_01.wav",
+      "duration_sec": 8.0,
+      "integrated_lufs": -26.58,
+      "true_peak_db": -12.79,
+      "normalized_status": "READY"
+    }
+  }
+}

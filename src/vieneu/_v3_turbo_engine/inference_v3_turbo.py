@@ -66,8 +66,16 @@ class VieNeuTTSv3Turbo:
         from transformers import AutoTokenizer, AutoModel
         tok_path = tokenizer_path or checkpoint_path
         tok_sub = None if tokenizer_path else (model_subfolder or None)
-        self.tokenizer = AutoTokenizer.from_pretrained(tok_path, subfolder=tok_sub or "", trust_remote_code=True)
-        self.config = VieNeuV3TurboConfig.from_pretrained(checkpoint_path, subfolder=model_subfolder or "")
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(tok_path, subfolder=tok_sub or "", trust_remote_code=True)
+        except Exception:
+            self.tokenizer = AutoTokenizer.from_pretrained(tok_path, subfolder=tok_sub or "", trust_remote_code=True, local_files_only=True)
+
+        try:
+            self.config = VieNeuV3TurboConfig.from_pretrained(checkpoint_path, subfolder=model_subfolder or "")
+        except Exception:
+            self.config = VieNeuV3TurboConfig.from_pretrained(checkpoint_path, subfolder=model_subfolder or "", local_files_only=True)
+
         # Weights live in a subfolder, so the Hub's download counter (which keys on the
         # root config.json) wouldn't register the load — touch the root file once so each
         # load counts like a normal download. Best-effort, never fatal.
@@ -78,7 +86,10 @@ class VieNeuTTSv3Turbo:
             except Exception:
                 pass
         self.model = load_v3_turbo_checkpoint(checkpoint_path, device=self.device, dtype=self.dtype, subfolder=model_subfolder).eval()
-        self.audio_tokenizer = AutoModel.from_pretrained(moss_tokenizer_path, trust_remote_code=True).to(self.device).eval()
+        try:
+            self.audio_tokenizer = AutoModel.from_pretrained(moss_tokenizer_path, trust_remote_code=True).to(self.device).eval()
+        except Exception:
+            self.audio_tokenizer = AutoModel.from_pretrained(moss_tokenizer_path, trust_remote_code=True, local_files_only=True).to(self.device).eval()
 
         self.default_style = "tu_nhien"
 
