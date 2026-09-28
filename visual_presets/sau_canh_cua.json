@@ -14,5 +14,14 @@
   "video_rules": "focus on subtle subject motion, realistic facial expression, restrained camera motion, cinematic pacing, no exaggerated VFX",
   "resolution": "1920x1080",
   "fps": 30,
-  "flow_project_id": "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e"
+  "flow_project_id": "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e",
+  "image_model": "NANO_BANANA_PRO",
+  "video_model": "omni_flash",
+  "video_duration_default": 8,
+  "video_duration_allowed": [
+    4,
+    6,
+    8,
+    10
+  ]
 }

@@ -29,11 +29,11 @@ logger = logging.getLogger(__name__)
 @dataclass
 class VisualScene:
     scene_id: str
-    scene_index: int
-    start_sec: float
-    end_sec: float
-    duration_sec: float
-    visual_type: str  # "BANANA_IMAGE" or "VEO_I2V"
+    scene_index: int = 0
+    start_sec: float = 0.0
+    end_sec: float = 0.0
+    duration_sec: float = 0.0
+    visual_type: str = "BANANA_IMAGE"  # "BANANA_IMAGE" or "VEO_I2V"
     characters: List[str] = field(default_factory=list)
     location: str = "LAN_HOME"
     story_context: str = ""
@@ -42,6 +42,7 @@ class VisualScene:
     motion: str = "slow_push_in"  # "slow_push_in", "slow_pull_out", "pan_left", "pan_right", "static"
     transition: str = "crossfade"  # "crossfade", "hard_cut"
     video_duration: int = 8
+    video_duration_sec: Optional[int] = None
     reference_required: bool = True
     status: str = "PLANNED"  # "PLANNED", "IMAGE_DONE", "VIDEO_DONE", "FAILED"
     segments_covered: List[str] = field(default_factory=list)

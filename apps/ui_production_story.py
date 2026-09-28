@@ -441,8 +441,31 @@ def render_production_story_ui(preset_voices_cache_getter):
                     "### 📊 Tiến độ Visual Episode\n"
                     "- **Số cảnh (Scenes):** 0\n"
                     "- **Keyframe Banana Pro:** 0/0\n"
-                    "- **Clip Veo 3 Video:** 0/0\n"
+                    "- **Clip Omni Flash Video:** 0/0\n"
                     "- **Xuất bản Final MP4:** Chưa sẵn sàng"
+                )
+
+        with gr.Row():
+            with gr.Column(scale=1):
+                image_model_txt = gr.Textbox(
+                    label="🎨 Image Model",
+                    value="Banana Pro",
+                    interactive=False
+                )
+            with gr.Column(scale=1):
+                video_model_dd = gr.Dropdown(
+                    label="🎥 Video Model",
+                    choices=["Omni 1.1 Flash", "Veo 3.1"],
+                    value="Omni 1.1 Flash",
+                    interactive=True
+                )
+            with gr.Column(scale=2):
+                video_duration_radio = gr.Radio(
+                    label="⏱ Video Duration (Omni 1.1 Flash)",
+                    choices=["4s", "6s", "8s", "10s"],
+                    value="8s",
+                    interactive=True,
+                    info="Mặc định: 8s. Hỗ trợ chuẩn: 4s, 6s, 8s, 10s"
                 )
 
         with gr.Row():
@@ -594,6 +617,9 @@ def render_production_story_ui(preset_voices_cache_getter):
         "visual_flow_status_md": visual_flow_status_md,
         "btn_refresh_flow_conn": btn_refresh_flow_conn,
         "flow_project_id_txt": flow_project_id_txt,
+        "image_model_txt": image_model_txt,
+        "video_model_dd": video_model_dd,
+        "video_duration_radio": video_duration_radio,
         "visual_progress_md": visual_progress_md,
         "btn_analyze_visual": btn_analyze_visual,
         "btn_gen_all_images": btn_gen_all_images,
@@ -1656,13 +1682,19 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
 
     # 14. VISUAL PIPELINE EVENT BINDINGS
     from apps.visual_engine.flowkit_adapter import FlowKitAdapter
-    from apps.visual_engine.character_manager import load_character_library, load_location_library
+    from apps.visual_engine.character_manager import load_character_library, load_location_library, load_visual_preset
     from apps.visual_engine.visual_planner import VisualPlanner, VisualScene
     from apps.visual_engine.asset_manager import VisualAssetManager
     from apps.visual_engine.banana_client import BananaClient
     from apps.visual_engine.veo_client import VeoClient
     from apps.visual_engine.visual_qc import VisualQC
     from apps.visual_engine.final_video_renderer import FinalVideoRenderer
+    from apps.visual_engine.resolvers import (
+        resolve_flow_project_id,
+        resolve_video_duration,
+        resolve_video_model,
+        DEFAULT_FLOW_PROJECT_ID,
+    )
 
     flow_adapter = FlowKitAdapter("http://127.0.0.1:8100")
 
@@ -1774,12 +1806,15 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             plan_data = json.load(f)
         scenes = [VisualScene(**d) for d in plan_data["scenes"]]
 
+        preset = load_visual_preset("sau_canh_cua")
         char_lib = load_character_library()
         asset_mgr = VisualAssetManager(p_dir)
-        banana_client = BananaClient(flow_adapter, asset_mgr, char_lib)
-
-        st = flow_adapter.get_connection_status()
-        resolved_pid = str(custom_pid or "").strip() or st.flow_project_id or "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e"
+        resolved_pid = resolve_flow_project_id(
+            ui_project_id=custom_pid,
+            visual_preset=preset,
+            adapter_default=flow_adapter.default_project_id
+        )
+        banana_client = BananaClient(flow_adapter, asset_mgr, char_lib, preset=preset)
         res = banana_client.generate_all_keyframes(scenes, project_id=resolved_pid)
 
         table_rows = _build_scenes_table_data(scenes, asset_mgr)
@@ -1795,7 +1830,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     )
 
     # 3. Generate Selected Videos (Omni 1.1 Flash)
-    def _on_gen_veo_videos(project_dir_str, scenes_state, custom_pid):
+    def _on_gen_veo_videos(project_dir_str, scenes_state, custom_pid, ui_duration, ui_model):
         if not project_dir_str:
             return "⚠️ Chưa tải dự án.", gr.update(), gr.update()
         p_dir = Path(project_dir_str)
@@ -1807,29 +1842,49 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             plan_data = json.load(f)
         scenes = [VisualScene(**d) for d in plan_data["scenes"]]
 
+        preset = load_visual_preset("sau_canh_cua")
+        resolved_pid = resolve_flow_project_id(
+            ui_project_id=custom_pid,
+            visual_preset=preset,
+            adapter_default=flow_adapter.default_project_id
+        )
+        resolved_model = resolve_video_model(ui_model=ui_model, preset=preset)
+        resolved_duration = resolve_video_duration(ui_duration=ui_duration, preset=preset)
+
         asset_mgr = VisualAssetManager(p_dir)
-        video_client = VeoClient(flow_adapter, asset_mgr, model_family="omni_flash", duration_s=4)
-        st = flow_adapter.get_connection_status()
-        resolved_pid = str(custom_pid or "").strip() or st.flow_project_id or "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e"
+        video_client = VeoClient(
+            flow_adapter, asset_mgr,
+            model_family=resolved_model,
+            duration_s=resolved_duration,
+            preset=preset
+        )
 
         video_scenes = [s for s in scenes if s.visual_type in ("VEO_I2V", "VIDEO_CLIP", "OMNI_FLASH_I2V")]
         for sc in video_scenes:
-            video_client.generate_scene_video(sc, project_id=resolved_pid, allow_fallback=True)
+            video_client.generate_scene_video(
+                sc, project_id=resolved_pid, duration_s=resolved_duration, allow_fallback=True
+            )
 
         table_rows = _build_scenes_table_data(scenes, asset_mgr)
         progress_md = _render_visual_progress_md(asset_mgr)
-        status_log = f"🎥 Đã xử lý {len(video_scenes)} cảnh video trên Flow project `{resolved_pid}` bằng Gemini Omni 1.1 Flash."
+        status_log = f"🎥 Đã xử lý {len(video_scenes)} cảnh video trên Flow project `{resolved_pid}` bằng {ui_model} ({resolved_duration}s)."
 
         return status_log, progress_md, table_rows
 
     c["btn_gen_veo_videos"].click(
         fn=_on_gen_veo_videos,
-        inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"], c["flow_project_id_txt"]],
+        inputs=[
+            c["story_project_dir_state"],
+            c["story_visual_scenes_state"],
+            c["flow_project_id_txt"],
+            c["video_duration_radio"],
+            c["video_model_dd"],
+        ],
         outputs=[c["visual_status_log_md"], c["visual_progress_md"], c["visual_scenes_table"]]
     )
 
     # 4. Retry Failed
-    def _on_retry_failed(project_dir_str, scenes_state, custom_pid):
+    def _on_retry_failed(project_dir_str, scenes_state, custom_pid, ui_duration, ui_model):
         if not project_dir_str:
             return "⚠️ Chưa tải dự án.", gr.update(), gr.update()
         p_dir = Path(project_dir_str)
@@ -1840,12 +1895,24 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             plan_data = json.load(f)
         scenes = [VisualScene(**d) for d in plan_data["scenes"]]
 
+        preset = load_visual_preset("sau_canh_cua")
+        resolved_pid = resolve_flow_project_id(
+            ui_project_id=custom_pid,
+            visual_preset=preset,
+            adapter_default=flow_adapter.default_project_id
+        )
+        resolved_model = resolve_video_model(ui_model=ui_model, preset=preset)
+        resolved_duration = resolve_video_duration(ui_duration=ui_duration, preset=preset)
+
         char_lib = load_character_library()
         asset_mgr = VisualAssetManager(p_dir)
-        banana_client = BananaClient(flow_adapter, asset_mgr, char_lib)
-        video_client = VeoClient(flow_adapter, asset_mgr, model_family="omni_flash", duration_s=4)
-        st = flow_adapter.get_connection_status()
-        resolved_pid = str(custom_pid or "").strip() or st.flow_project_id or "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e"
+        banana_client = BananaClient(flow_adapter, asset_mgr, char_lib, preset=preset)
+        video_client = VeoClient(
+            flow_adapter, asset_mgr,
+            model_family=resolved_model,
+            duration_s=resolved_duration,
+            preset=preset
+        )
 
         queue = asset_mgr.load_queue()
         retried = 0
@@ -1855,7 +1922,9 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
                 banana_client.generate_scene_keyframe(sc, project_id=resolved_pid, force_regenerate=True)
                 retried += 1
             if q_item and q_item.video_status == "FAILED":
-                video_client.generate_scene_video(sc, project_id=resolved_pid, force_regenerate=True, allow_fallback=True)
+                video_client.generate_scene_video(
+                    sc, project_id=resolved_pid, duration_s=resolved_duration, force_regenerate=True, allow_fallback=True
+                )
                 retried += 1
 
         table_rows = _build_scenes_table_data(scenes, asset_mgr)
@@ -1866,7 +1935,13 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
 
     c["btn_retry_failed_visual"].click(
         fn=_on_retry_failed,
-        inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"], c["flow_project_id_txt"]],
+        inputs=[
+            c["story_project_dir_state"],
+            c["story_visual_scenes_state"],
+            c["flow_project_id_txt"],
+            c["video_duration_radio"],
+            c["video_model_dd"],
+        ],
         outputs=[c["visual_status_log_md"], c["visual_progress_md"], c["visual_scenes_table"]]
     )
 

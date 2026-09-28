@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class QueueItem:
     scene_id: str
-    visual_type: str  # "BANANA_IMAGE" or "VEO_I2V"
+    visual_type: str = "VEO_I2V"  # "BANANA_IMAGE" or "VEO_I2V"
     image_status: str = "PLANNED"  # "PLANNED", "GENERATING", "DONE", "FAILED", "SKIPPED"
     video_status: str = "PLANNED"  # "PLANNED", "GENERATING", "DONE", "FAILED", "SKIPPED"
     image_media_id: Optional[str] = None
@@ -102,7 +102,8 @@ class VisualAssetManager:
         queue = self.load_queue()
         item = queue.get(scene_id)
         if not item:
-            return None
+            item = QueueItem(scene_id=scene_id)
+            queue[scene_id] = item
 
         for k, v in kwargs.items():
             if hasattr(item, k):

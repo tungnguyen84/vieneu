@@ -17,21 +17,23 @@ from typing import Any, Dict, List, Optional
 from apps.visual_engine.asset_manager import VisualAssetManager
 from apps.visual_engine.flowkit_adapter import FlowKitAdapter
 from apps.visual_engine.visual_planner import VisualScene
+from apps.visual_engine.resolvers import resolve_flow_project_id, resolve_video_duration
 
 logger = logging.getLogger(__name__)
 
 
 class VeoClient:
-    """Client for generating Veo 3 Image-to-Video clips."""
+    """Client for generating Veo 3 / Omni 1.1 Flash Image-to-Video clips."""
 
     def __init__(
         self,
         adapter: FlowKitAdapter,
         asset_mgr: VisualAssetManager,
         model_family: str = "omni_flash",
-        duration_s: int = 4,
+        duration_s: Optional[int] = None,
         poll_interval_s: float = 5.0,
-        poll_timeout_s: float = 360.0
+        poll_timeout_s: float = 360.0,
+        preset: Optional[Dict[str, Any]] = None
     ):
         self.adapter = adapter
         self.asset_mgr = asset_mgr
@@ -39,11 +41,13 @@ class VeoClient:
         self.duration_s = duration_s
         self.poll_interval_s = poll_interval_s
         self.poll_timeout_s = poll_timeout_s
+        self.preset = preset
 
     def generate_scene_video(
         self,
         scene: VisualScene,
         project_id: str = "",
+        duration_s: Optional[int] = None,
         force_regenerate: bool = False,
         allow_fallback: bool = True
     ) -> Optional[Path]:
@@ -55,6 +59,20 @@ class VeoClient:
         if scene.visual_type not in ("VEO_I2V", "VIDEO_CLIP", "OMNI_FLASH_I2V"):
             logger.info(f"[VideoClient] Scene {scene.scene_id} is {scene.visual_type}. Skipping.")
             return None
+
+        # Resolve project_id through single resolver
+        target_pid = resolve_flow_project_id(
+            ui_project_id=project_id,
+            visual_preset=self.preset,
+            adapter_default=self.adapter.default_project_id
+        )
+
+        # Resolve duration through single resolver
+        resolved_duration = resolve_video_duration(
+            scene=scene,
+            ui_duration=duration_s if duration_s is not None else self.duration_s,
+            preset=self.preset
+        )
 
         out_video_path = self.asset_mgr.videos_dir / f"{scene.scene_id}.mp4"
 
@@ -71,26 +89,27 @@ class VeoClient:
 
         # Prerequisite: Banana keyframe must exist
         keyframe_path = self.asset_mgr.images_dir / f"{scene.scene_id}.jpg"
-        if not keyframe_path.exists() or not item or not item.image_media_id:
+        media_id = (item.image_media_id if item else None) or scene.image_media_id
+        if not keyframe_path.exists() or not media_id:
             logger.error(f"[VideoClient] Keyframe for {scene.scene_id} missing. Cannot generate video.")
             return None
 
         # Update queue status: GENERATING
-        self.asset_mgr.update_item(scene.scene_id, video_status="GENERATING", last_error=None)
+        self.asset_mgr.update_item(scene.scene_id, video_status="GENERATING", image_media_id=media_id, last_error=None)
 
         try:
-            logger.info(f"[VideoClient] Submitting {self.model_family} I2V generation for {scene.scene_id}...")
+            logger.info(f"[VideoClient] Submitting {self.model_family} I2V generation for {scene.scene_id} (duration {resolved_duration}s, project {target_pid})...")
             video_prompt = scene.video_prompt or (
                 "Cinematic slow subject motion, subtle emotional breathing, realistic Vietnamese facial expressions, 24fps"
             )
 
             res = self.adapter.generate_video(
-                start_image_media_id=item.image_media_id,
+                start_image_media_id=media_id,
                 prompt=video_prompt,
-                project_id=project_id,
+                project_id=target_pid,
                 scene_id=scene.scene_id,
                 aspect_ratio="VIDEO_ASPECT_RATIO_LANDSCAPE",
-                duration_s=self.duration_s,
+                duration_s=resolved_duration,
                 resolution="720p",
                 model_family=self.model_family
             )

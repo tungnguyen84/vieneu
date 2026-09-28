@@ -9,6 +9,14 @@ from apps.visual_engine.visual_planner import VisualPlanner, VisualScene
 from apps.visual_engine.asset_manager import VisualAssetManager
 from apps.visual_engine.final_video_renderer import FinalVideoRenderer
 
+from apps.visual_engine.resolvers import (
+    DEFAULT_FLOW_PROJECT_ID,
+    OMNI_FLASH_DURATIONS,
+    resolve_flow_project_id,
+    resolve_video_duration,
+    resolve_video_model,
+)
+
 __all__ = [
     "FlowKitAdapter",
     "FlowConnectionStatus",
@@ -21,5 +29,10 @@ __all__ = [
     "VisualScene",
     "VisualAssetManager",
     "FinalVideoRenderer",
+    "DEFAULT_FLOW_PROJECT_ID",
+    "OMNI_FLASH_DURATIONS",
+    "resolve_flow_project_id",
+    "resolve_video_duration",
+    "resolve_video_model",
 ]
 

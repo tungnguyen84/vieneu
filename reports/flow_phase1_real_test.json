@@ -1,0 +1,72 @@
+{
+  "test_type": "REAL_GOOGLE_FLOW",
+  "mock": false,
+  "project_id": "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e",
+  "repo_confirmation": {
+    "remote": "https://github.com/tungnguyen84/vieneu.git",
+    "branch": "main",
+    "head_commit": "d373739e190e92a846424ad27b8cdbb196d48767",
+    "verified": true
+  },
+  "resolver_tests": {
+    "flow_project_id_precedence": "PASS",
+    "video_duration_precedence": "PASS",
+    "video_duration_validation": "PASS",
+    "video_model_resolution": "PASS"
+  },
+  "image": {
+    "model_wire": "GEM_PIX_2",
+    "model_config": "NANO_BANANA_PRO",
+    "media_id": "5db82943-2ba0-4bb9-97bd-41d84c151fd5",
+    "file_size_bytes": 126675,
+    "width": 1376,
+    "height": 768,
+    "download_verified": true
+  },
+  "video": {
+    "model_display_name": "Omni 1.1 Flash",
+    "internal_model_family": "omni_flash",
+    "actual_wire_rpc": "eb1hJf",
+    "wire_model_keys": {
+      "4s": "abra_i2v_4s",
+      "8s": "abra_i2v_8s"
+    },
+    "tested_durations": [
+      4,
+      8
+    ],
+    "results": {
+      "4s": {
+        "requested_duration": 4,
+        "probed_duration": 4.01,
+        "width": 1280,
+        "height": 720,
+        "fps": "24/1",
+        "codec": "h264",
+        "has_audio": true,
+        "file_size_bytes": 1341217,
+        "download_verified": true
+      },
+      "8s": {
+        "requested_duration": 8,
+        "probed_duration": 8.0,
+        "width": 1280,
+        "height": 720,
+        "fps": "24/1",
+        "codec": "h264",
+        "has_audio": true,
+        "file_size_bytes": 777475,
+        "download_verified": true
+      }
+    },
+    "download_verified": true
+  },
+  "audio_regression": {
+    "final_mix_intact": true,
+    "final_mix_duration_s": 731.73,
+    "voice_master_intact": true,
+    "story_json_intact": true,
+    "audio_formula_v1_locked": true
+  },
+  "status": "PASS"
+}

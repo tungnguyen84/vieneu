@@ -26,9 +26,10 @@ logger = logging.getLogger(__name__)
 class FinalVideoRenderer:
     """Renders composite MP4 episodes from images, clips, and master audio."""
 
-    def __init__(self, asset_mgr: VisualAssetManager, ffmpeg_bin: str = "ffmpeg"):
+    def __init__(self, asset_mgr: VisualAssetManager, ffmpeg_bin: str = "ffmpeg", ffprobe_bin: str = "ffprobe"):
         self.asset_mgr = asset_mgr
         self.ffmpeg = ffmpeg_bin
+        self.ffprobe = ffprobe_bin
         self.final_dir = self.asset_mgr.project_dir / "final"
         self.final_dir.mkdir(parents=True, exist_ok=True)
 

@@ -18,6 +18,7 @@ from apps.visual_engine.asset_manager import VisualAssetManager, QueueItem
 from apps.visual_engine.character_manager import CharacterProfile, save_character
 from apps.visual_engine.flowkit_adapter import FlowKitAdapter, GeneratedMediaAsset
 from apps.visual_engine.visual_planner import VisualScene
+from apps.visual_engine.resolvers import resolve_flow_project_id
 
 logger = logging.getLogger(__name__)
 
@@ -29,17 +30,24 @@ class BananaClient:
         self,
         adapter: FlowKitAdapter,
         asset_mgr: VisualAssetManager,
-        character_lib: Dict[str, CharacterProfile]
+        character_lib: Dict[str, CharacterProfile],
+        preset: Optional[Dict[str, Any]] = None
     ):
         self.adapter = adapter
         self.asset_mgr = asset_mgr
         self.character_lib = character_lib
+        self.preset = preset
 
     def ensure_character_references(self, char_id: str, project_id: str = "") -> List[str]:
         """
         Uploads local reference images for a character to Google Flow if not already uploaded.
         Returns list of Google Flow media_id UUIDs.
         """
+        target_pid = resolve_flow_project_id(
+            ui_project_id=project_id,
+            visual_preset=self.preset,
+            adapter_default=self.adapter.default_project_id
+        )
         char = self.character_lib.get(char_id)
         if not char or not char.references:
             return []
@@ -59,8 +67,8 @@ class BananaClient:
             ref_path = char_dir / ref_filename
             if ref_path.exists():
                 try:
-                    logger.info(f"[BananaClient] Uploading reference {ref_filename} for character {char_id}...")
-                    media_id = self.adapter.upload_image_file(ref_path, project_id=project_id)
+                    logger.info(f"[BananaClient] Uploading reference {ref_filename} for character {char_id} to Flow project {target_pid}...")
+                    media_id = self.adapter.upload_image_file(ref_path, project_id=target_pid)
                     char.flow_media_ids[ref_filename] = media_id
                     flow_ids.append(media_id)
                     updated = True
@@ -83,6 +91,12 @@ class BananaClient:
         Generates and downloads a keyframe for a single scene.
         Returns local image Path on success, None on failure.
         """
+        target_pid = resolve_flow_project_id(
+            ui_project_id=project_id,
+            visual_preset=self.preset,
+            adapter_default=self.adapter.default_project_id
+        )
+
         out_image_path = self.asset_mgr.images_dir / f"{scene.scene_id}.jpg"
 
         # Check resume condition
@@ -99,12 +113,12 @@ class BananaClient:
             # Resolve character references
             ref_media_ids: List[str] = []
             for c_id in scene.characters:
-                ref_media_ids.extend(self.ensure_character_references(c_id, project_id=project_id))
+                ref_media_ids.extend(self.ensure_character_references(c_id, project_id=target_pid))
 
-            logger.info(f"[BananaClient] Requesting Banana Pro for {scene.scene_id} ({scene.visual_type})...")
+            logger.info(f"[BananaClient] Requesting Banana Pro for {scene.scene_id} ({scene.visual_type}) on Flow project {target_pid}...")
             assets = self.adapter.generate_image(
                 prompt=scene.image_prompt,
-                project_id=project_id,
+                project_id=target_pid,
                 aspect_ratio="IMAGE_ASPECT_RATIO_LANDSCAPE",
                 image_model="NANO_BANANA_PRO",
                 reference_media_ids=ref_media_ids or None,
