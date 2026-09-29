@@ -1,0 +1,2333 @@
+{
+  "episode_id": "EP011",
+  "title": "Bức Ảnh Lạ Trong Điện Thoại Cũ",
+  "audio_duration_sec": 743.721,
+  "total_scenes": 45,
+  "images_required": 45,
+  "image_only_count": 37,
+  "video_recommended_count": 8,
+  "video_ratio_pct": 17.78,
+  "timeline_status": "LOCKED_TO_AUDIO_MASTER",
+  "qc_status": "PASS",
+  "scenes": [
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_001",
+      "order": 1,
+      "start_time": 0.0,
+      "end_time": 17.627,
+      "duration": 17.627,
+      "source_segments": [
+        "001",
+        "002"
+      ],
+      "narrative_function": "HOOK",
+      "location_id": "LOC_KHO_DO_CU",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [
+        "PROP_OLD_PHONE_01"
+      ],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "motion_value": "MEDIUM",
+      "video_priority": "P2",
+      "video_value_scores": {
+        "camera_motion_value": 2,
+        "character_interaction": 0,
+        "physical_action": 3,
+        "story_information_from_motion": 2,
+        "total_score": 7
+      },
+      "visual_mode_reason": "Hook hành động thực tế (Điểm 7/10): Linh cắm sạc cho chiếc điện thoại Nokia cũ, màn hình nhấp nháy sáng bừng sau hơn mười năm.",
+      "image_prompt": "Cinematic documentary close-up of a 32-year-old Vietnamese woman (CHAR_LINH) in casual navy clothes plugging a charging cable into a vintage grey feature phone (PROP_OLD_PHONE_01) in a cozy storage room, the screen illuminating with a soft blue glow, dust particles in the warm lamplight, realistic skin texture, 35mm lens.",
+      "video_prompt": "Start: A 32-year-old Vietnamese woman (CHAR_LINH) in casual home clothes sits at a dusty storage desk holding an old grey feature phone. Action: Her hands plug the thin cylindrical charging pin into the base of the phone; after a two-second pause, the LCD screen suddenly flickers on. Camera: Macro close-up on her hands and the phone screen as the pale blue backlight illuminates her fingers. End: Linh raises the phone toward her eyes with startled curiosity. Domestic storage room lighting.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "PHONE_SCREEN",
+        "type": "SLOW_PUSH_IN"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "7978b7136b6b",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_002",
+      "order": 2,
+      "start_time": 17.627,
+      "end_time": 33.059,
+      "duration": 15.432,
+      "source_segments": [
+        "003",
+        "004"
+      ],
+      "narrative_function": "HOOK_SHOCK",
+      "location_id": "LOC_KHO_DO_CU",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [
+        "PROP_OLD_PHONE_01"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Khoảnh khắc bàng hoàng tĩnh lặng: Linh sững sờ khi nhìn thấy bức ảnh lạ năm 2012 trên màn hình.",
+      "image_prompt": "Close-up of a 32-year-old Vietnamese woman (CHAR_LINH), eyes wide in disbelief and growing sorrow, holding the glowing phone, soft bluish screen light reflecting in her dark pupils, warm domestic shadows around her, photorealistic documentary realism, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FACE",
+        "type": "SUBTLE_REFRAME"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "c3e5787c2ca2",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_003",
+      "order": 3,
+      "start_time": 33.059,
+      "end_time": 51.382,
+      "duration": 18.323,
+      "source_segments": [
+        "005",
+        "006"
+      ],
+      "narrative_function": "HOST_INTRO",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 0,
+        "story_information_from_motion": 1,
+        "total_score": 2
+      },
+      "visual_mode_reason": "Thiết lập không gian Sau Cánh Cửa: Căn phòng khách gia đình êm đềm chứa đựng góc khuất thầm lặng.",
+      "image_prompt": "Cinematic establishing shot of a tasteful Vietnamese apartment living room, sheer white curtains filtering soft afternoon daylight, a comfortable grey sofa, framed photos on a wooden credenza, quiet domestic harmony, 35mm photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LIVING_ROOM",
+        "type": "PAN_LEFT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "340ee8125c09",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_004",
+      "order": 4,
+      "start_time": 51.382,
+      "end_time": 68.202,
+      "duration": 16.82,
+      "source_segments": [
+        "007",
+        "008"
+      ],
+      "narrative_function": "MARITAL_HARMONY",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Bức tranh gia đình hạnh phúc: Khung ảnh cưới 7 năm trước của Linh và Nam trên bàn gỗ.",
+      "image_prompt": "Close-up of a framed wedding photograph on a wooden credenza: A smiling young Vietnamese couple (Linh and Nam) dressed in elegant wedding attire, warm natural light catching the glass frame, a small vase of dried lavender beside it, cinematic realism, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "NORMAL",
+        "subject_anchor": "WEDDING_FRAME",
+        "type": "STATIC_INTENTIONAL"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "030ee2eb2545",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_005",
+      "order": 5,
+      "start_time": 68.202,
+      "end_time": 83.982,
+      "duration": 15.78,
+      "source_segments": [
+        "009",
+        "010"
+      ],
+      "narrative_function": "EXPOSITION_LINH_WORK",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 0,
+        "story_information_from_motion": 1,
+        "total_score": 2
+      },
+      "visual_mode_reason": "Giới thiệu Linh trong công việc thiết kế nội thất tỉ mỉ, trân trọng tổ ấm gia đình.",
+      "image_prompt": "A 32-year-old Vietnamese woman (CHAR_LINH) in a cream sweater working at an oak drafting table, architectural interior sketches and fabric swatches, soft natural daylight, thoughtful artistic atmosphere, 35mm lens.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER_LEFT",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_WORKING",
+        "type": "PAN_RIGHT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "7ea4064c424d",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_006",
+      "order": 6,
+      "start_time": 83.982,
+      "end_time": 99.852,
+      "duration": 15.87,
+      "source_segments": [
+        "011",
+        "012"
+      ],
+      "narrative_function": "NAM_HOMECOMING",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [
+        "CHAR_NAM_PRESENT"
+      ],
+      "story_characters": [
+        "CHAR_NAM_PRESENT",
+        "CHAR_THAO_2012"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 3/10): Quan sát tĩnh tại bàn làm việc, chuyển động thực tế thấp, ưu tiên Dynamic Still để đặc tả ánh mắt trăn trở của Linh.",
+      "image_prompt": "Medium shot of a 35-year-old Vietnamese man (CHAR_NAM_PRESENT) in a charcoal jacket standing in the entryway of a warm apartment, taking off his coat, subtle exhaustion around his kind eyes, soft warm domestic hallway light, 35mm documentary realism.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "NAM_FIGURE",
+        "type": "PAN_LEFT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "f4e2cee41298",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_007",
+      "order": 7,
+      "start_time": 99.852,
+      "end_time": 118.092,
+      "duration": 18.24,
+      "source_segments": [
+        "013",
+        "014"
+      ],
+      "narrative_function": "STORAGE_CLEANING",
+      "location_id": "LOC_KHO_DO_CU",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Linh dọn dẹp các thùng các-tông kỷ vật cũ trong phòng lưu trữ.",
+      "image_prompt": "A 32-year-old Vietnamese woman (CHAR_LINH) in casual home t-shirt kneeling on the floor of a small storage room, opening an old cardboard archive box labeled with university mementos, soft warm tungsten lamp illumination, dust specks, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_AND_BOX",
+        "type": "SLOW_PUSH_IN"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "c35e952efcc4",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_008",
+      "order": 8,
+      "start_time": 118.092,
+      "end_time": 134.598,
+      "duration": 16.506,
+      "source_segments": [
+        "015",
+        "016"
+      ],
+      "narrative_function": "PHONE_GALLERY_SCROLL",
+      "location_id": "LOC_KHO_DO_CU",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_YOUNG_2012"
+      ],
+      "props": [
+        "PROP_OLD_PHONE_01"
+      ],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "video_value_scores": {
+        "camera_motion_value": 2,
+        "character_interaction": 2,
+        "physical_action": 3,
+        "story_information_from_motion": 2,
+        "total_score": 9
+      },
+      "visual_mode_reason": "Hành động kịch tính (Điểm 9/10): Tiếng chìa khóa xoay cửa đột ngột, Linh giật mình vội vàng giấu chiếc điện thoại Nokia dưới tập tài liệu trước khi Nam bước vào.",
+      "image_prompt": "Macro photography of a Vietnamese woman's hand holding an illuminated vintage feature phone (PROP_OLD_PHONE_01), thumb resting on the keypad, the screen displaying an authentic 2012 photo of a young man and woman with an infant in a hospital, warm lighting, 35mm lens.",
+      "video_prompt": "Start: Close macro view of Linh's hand holding the vintage grey Nokia phone. Action: Her thumb slowly presses the central navigation key; the low-resolution color screen scrolls through photo filenames until an image opens. Camera: Macro focus on the screen as the 2012 hospital image loads pixel by pixel under her thumb. End: The photo is fully displayed, her thumb freezing in place as her hand slightly trembles. Warm desk lamplight.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "PHONE_DISPLAY",
+        "type": "EVIDENCE_INSPECTION"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "c4e603a26ffd",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_009",
+      "order": 9,
+      "start_time": 134.598,
+      "end_time": 150.025,
+      "duration": 15.427,
+      "source_segments": [
+        "017",
+        "018"
+      ],
+      "narrative_function": "EVIDENCE_PHOTO_SCREEN_OVERLAY",
+      "location_id": "LOC_KHO_DO_CU",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_NAM_YOUNG_2012",
+        "CHAR_THAO_2012",
+        "CHAR_BE_AN_INFANT_2012"
+      ],
+      "props": [
+        "PROP_OLD_PHONE_01",
+        "PROP_HOSPITAL_PHOTO_2012"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 0,
+        "story_information_from_motion": 1,
+        "total_score": 2
+      },
+      "visual_mode_reason": "Chụp cận cảnh màn hình điện thoại hiển thị bức ảnh bệnh viện tỉnh Nam Định năm 2012 kèm lớp phủ thông tin.",
+      "image_prompt": "Direct top-down macro shot of the vintage feature phone LCD screen (PROP_OLD_PHONE_01), displaying a poignant 2012 Vietnamese hospital snapshot of young Nam and a young woman (Thảo) holding a newborn infant, soft pixel grid texture of vintage display, clean documentary focus, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "SCREEN_CENTER",
+        "type": "EVIDENCE_INSPECTION"
+      },
+      "requires_overlay": true,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "255cdb114106",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01",
+        "PROP_HOSPITAL_PHOTO_2012"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_010",
+      "order": 10,
+      "start_time": 150.025,
+      "end_time": 166.75,
+      "duration": 16.725,
+      "source_segments": [
+        "019",
+        "020"
+      ],
+      "narrative_function": "BEWILDERMENT",
+      "location_id": "LOC_KHO_DO_CU",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [
+        "PROP_OLD_PHONE_01"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Cảm xúc hoang mang bắt đầu xâm chiếm: Linh ngồi bất động nhìn chiếc điện thoại trên bàn.",
+      "image_prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_LINH) seated at the storage desk, hands clasped tightly under her chin, gazing at the glowing phone with deep confusion and heart-wrenching suspicion, warm tungsten shadows, 35mm film.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FACE",
+        "type": "SLOW_PUSH_IN"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "3881493b37ac",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_011",
+      "order": 11,
+      "start_time": 166.75,
+      "end_time": 185.727,
+      "duration": 18.977,
+      "source_segments": [
+        "021",
+        "022"
+      ],
+      "narrative_function": "EVIDENCE_CALL_LOG_OVERLAY",
+      "location_id": "LOC_KHO_DO_CU",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [
+        "PROP_OLD_PHONE_01"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 0,
+        "story_information_from_motion": 1,
+        "total_score": 2
+      },
+      "visual_mode_reason": "Hiển thị chứng cứ nhật ký cuộc gọi: Danh bạ lưu tên 'Công việc' với các cuộc gọi đêm muộn và cuối tuần.",
+      "image_prompt": "Macro photography of the vintage feature phone screen displaying a call log menu in Vietnamese, monochrome/color low-res font listing incoming and outgoing calls under contact name 'Cong Viec', clean documentary angle, soft warm backlighting, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "CALL_LOG",
+        "type": "EVIDENCE_INSPECTION"
+      },
+      "requires_overlay": true,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "2a3b6997ed0c",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_012",
+      "order": 12,
+      "start_time": 185.727,
+      "end_time": 202.868,
+      "duration": 17.141,
+      "source_segments": [
+        "023",
+        "024"
+      ],
+      "narrative_function": "SECRET_VIBRATION",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 3/10): Màn hình nhật ký cuộc gọi tĩnh, thông tin chủ yếu là số liệu và văn bản, Dynamic Still push-in đạt hiệu quả tối ưu.",
+      "image_prompt": "Atmospheric low-key shot of a modern Vietnamese apartment at night: A 35-year-old man (CHAR_NAM_PRESENT) at a dining table turning his phone screen-down, while in the shadowed foreground doorway, a 32-year-old woman (CHAR_LINH) watches quietly, cinematic realism, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "NAM_AND_LINH",
+        "type": "PAN_LEFT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "87c995267711",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_013",
+      "order": 13,
+      "start_time": 202.868,
+      "end_time": 216.357,
+      "duration": 13.489,
+      "source_segments": [
+        "025",
+        "026"
+      ],
+      "narrative_function": "FALSE_LEAD_FAIRNESS",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 1,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 4
+      },
+      "visual_mode_reason": "Nghi vấn hợp lý (False Lead Fairness): Linh đứng bên cửa sổ ban đêm, cảm giác bị phản bội dâng trào nhưng không bịa đặt hình ảnh sai sự thật.",
+      "image_prompt": "A 32-year-old Vietnamese woman (CHAR_LINH) standing by the apartment balcony window at night, city lights blurred outside, tears shining in her eyes, arms wrapped around herself defensively, raw emotional pain, 35mm lens.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FIGURE",
+        "type": "SLOW_PULL_OUT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "1f0cdea8c3cf",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_014",
+      "order": 14,
+      "start_time": 216.357,
+      "end_time": 231.594,
+      "duration": 15.237,
+      "source_segments": [
+        "027",
+        "028"
+      ],
+      "narrative_function": "DRAWER_SEARCH",
+      "location_id": "LOC_KHO_DO_CU",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 3,
+        "physical_action": 2,
+        "story_information_from_motion": 2,
+        "total_score": 8
+      },
+      "visual_mode_reason": "Tương tác tâm lý căng thẳng (Điểm 8/10): Bữa cơm tối đầy im lặng gượng gạo, Nam tránh ánh mắt của Linh khi với tay lấy cốc nước, sự nghi ngờ âm thầm dâng cao.",
+      "image_prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_LINH) searching through the open wooden drawer of an old desk, discovering a small red velvet pouch among old student certificates and papers, warm overhead lamp light, 35mm.",
+      "video_prompt": "Start: A 32-year-old Vietnamese woman (CHAR_LINH) stands in front of the vintage desk in the storage room. Action: She slowly slides the wooden desk drawer all the way open, carefully moving aside old certificates and student notebooks. Camera: Overhead medium close-up tracking into the opening drawer. End: Her hand discovers a small red velvet drawstring pouch tucked in the back corner. Consistent warm storage lighting.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "DRAWER_INTERIOR",
+        "type": "SLOW_PUSH_IN"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "e6c295db3683",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_015",
+      "order": 15,
+      "start_time": 231.594,
+      "end_time": 248.015,
+      "duration": 16.421,
+      "source_segments": [
+        "029",
+        "030"
+      ],
+      "narrative_function": "DISCOVERY_SILVER_BRACELET",
+      "location_id": "LOC_KHO_DO_CU",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [
+        "PROP_SILVER_BRACELET"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 1,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 4
+      },
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 4/10): Không gian phòng ngủ tĩnh lặng trong đêm, sự nghi ngờ nội tâm phù hợp với khung hình tĩnh và chuyển động máy chậm.",
+      "image_prompt": "Close-up of a delicate polished sterling silver baby bracelet (PROP_SILVER_BRACELET) resting in the open palm of a 32-year-old Vietnamese woman (CHAR_LINH), fine engraved inscription catching the light, emotional tension, 35mm macro lens.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "BRACELET_PALM",
+        "type": "EVIDENCE_INSPECTION"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "9decf9457f0a",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_SILVER_BRACELET"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_016",
+      "order": 16,
+      "start_time": 248.015,
+      "end_time": 268.789,
+      "duration": 20.774,
+      "source_segments": [
+        "031",
+        "032"
+      ],
+      "narrative_function": "EVIDENCE_BRACELET_ENGRAVING_OVERLAY",
+      "location_id": "LOC_KHO_DO_CU",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [
+        "PROP_SILVER_BRACELET",
+        "PROP_OLD_PHONE_01"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 0,
+        "story_information_from_motion": 1,
+        "total_score": 2
+      },
+      "visual_mode_reason": "Chụp cận cảnh chiếc vòng bạc khắc tên 'An - 15/08/2013' đặt cạnh chiếc điện thoại Nokia kèm lớp phủ văn bản.",
+      "image_prompt": "Macro still life photography of the small silver baby bracelet (PROP_SILVER_BRACELET) placed neatly beside the vintage feature phone (PROP_OLD_PHONE_01) on dark aged Vietnamese wood, clear sharp focus on the silver band and phone casing, warm directional light, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "BRACELET_DETAILS",
+        "type": "EVIDENCE_INSPECTION"
+      },
+      "requires_overlay": true,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "89cb2d9459cc",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_SILVER_BRACELET",
+        "PROP_OLD_PHONE_01"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_017",
+      "order": 17,
+      "start_time": 268.789,
+      "end_time": 286.478,
+      "duration": 17.689,
+      "source_segments": [
+        "033",
+        "034"
+      ],
+      "narrative_function": "CALENDAR_AND_SUSPICION",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Linh đối chiếu các khoản chi tiêu chuyển khoản định kỳ và những chuyến đi về quê của Nam trong sổ tay.",
+      "image_prompt": "A 32-year-old Vietnamese woman (CHAR_LINH) seated at the dining table with a desk calendar and personal expense ledger, pen in hand, calculating recurring monthly dates, deeply troubled and anxious expression, afternoon window light, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_AND_NOTEBOOK",
+        "type": "PAN_RIGHT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "5418adaa6e0b",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_018",
+      "order": 18,
+      "start_time": 286.478,
+      "end_time": 303.531,
+      "duration": 17.053,
+      "source_segments": [
+        "035",
+        "036"
+      ],
+      "narrative_function": "TEARS_AND_RESOLVE",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 3/10): Tòa nhà bệnh viện tỉnh từ xa, thiết lập bối cảnh địa lý không đòi hỏi chuyển động video phức tạp.",
+      "image_prompt": "Cinematic close-up of a 32-year-old Vietnamese woman (CHAR_LINH) wiping a tear from her cheek, resolute and determined gaze, natural lighting framing her face, dignified vulnerability, 35mm film.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FACE",
+        "type": "SUBTLE_REFRAME"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "8193e10a1a5f",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_019",
+      "order": 19,
+      "start_time": 303.531,
+      "end_time": 322.019,
+      "duration": 18.488,
+      "source_segments": [
+        "037",
+        "038"
+      ],
+      "narrative_function": "JOURNEY_NAM_DINH",
+      "location_id": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "video_value_scores": {
+        "camera_motion_value": 2,
+        "character_interaction": 1,
+        "physical_action": 3,
+        "story_information_from_motion": 2,
+        "total_score": 8
+      },
+      "visual_mode_reason": "Chuyển động điều tra thực địa (Điểm 8/10): Camera tracking theo bước chân Linh đi dọc hành lang Bệnh viện Đa khoa Nam Định tấp nập, tìm kiếm manh mối quá khứ.",
+      "image_prompt": "Documentary exterior shot of a 32-year-old Vietnamese woman (CHAR_LINH) in an olive trench coat walking past the front gate of Nam Định provincial hospital, quiet northern Vietnamese provincial street in the morning, realistic atmospheric depth, cinematic 35mm documentary photography.",
+      "video_prompt": "Start: An intercity passenger coach pulls up to a bus stop near Nam Định provincial hospital. Action: Linh (32, female) in an olive trench coat steps down from the bus carrying her shoulder bag, walking purposefully down the street toward the hospital gate. Camera: Medium tracking shot following her stride past provincial shops and motorbikes. End: She pauses before the hospital entrance sign, taking a steadying breath. Overcast daylight.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_WALKING",
+        "type": "PAN_LEFT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "e535fd0dbaa2",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_020",
+      "order": 20,
+      "start_time": 322.019,
+      "end_time": 341.37,
+      "duration": 19.351,
+      "source_segments": [
+        "039",
+        "040"
+      ],
+      "narrative_function": "HOSPITAL_CORRIDOR_SEARCH",
+      "location_id": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 1,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 4
+      },
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 4/10): Cuộc trò chuyện tại bàn tiếp dân bệnh viện, ưu tiên biểu cảm và không khí tài liệu tĩnh lặng.",
+      "image_prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_LINH) walking through the mint-green hallway of a provincial public hospital in Nam Định, holding her bag, cool fluorescent lighting, authentic Vietnamese public medical facility, 35mm lens.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_CORRIDOR",
+        "type": "SLOW_PUSH_IN"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "77b5aa8c554b",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_021",
+      "order": 21,
+      "start_time": 341.37,
+      "end_time": 355.584,
+      "duration": 14.214,
+      "source_segments": [
+        "041",
+        "042"
+      ],
+      "narrative_function": "NURSE_TESTIMONY",
+      "location_id": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "visible_characters": [
+        "CHAR_LINH",
+        "CHAR_NURSE_OLD"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NURSE_OLD",
+        "CHAR_THAO_2012",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Cuộc trao đổi xúc động: Y tá già nhận ra thông tin về cô gái tên Thảo từng sinh con và qua đời sau tai biến.",
+      "image_prompt": "Medium two-shot of an experienced 58-year-old Vietnamese hospital nurse (CHAR_NURSE_OLD) in white uniform speaking with compassionate solemnity to a 32-year-old woman (CHAR_LINH) across a wooden hospital counter, medical archive binders in background, fluorescent light, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "NORMAL",
+        "subject_anchor": "NURSE_AND_LINH",
+        "type": "STATIC_INTENTIONAL"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "8e88ebd448c0",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NURSE_OLD"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_022",
+      "order": 22,
+      "start_time": 355.584,
+      "end_time": 369.707,
+      "duration": 14.123,
+      "source_segments": [
+        "043",
+        "044"
+      ],
+      "narrative_function": "CLUES_DEEPENING",
+      "location_id": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Linh đứng ngoài cổng bệnh viện cầm mảnh giấy ghi địa chỉ nhà cũ của Thảo ở ngoại ô.",
+      "image_prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_LINH) standing outside the hospital building, looking at a handwritten address note in her hand, thoughtful and complex expression as the puzzle pieces shift, overcast provincial morning sky, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FACE",
+        "type": "SUBTLE_REFRAME"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "6c2d2ecb95b7",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_023",
+      "order": 23,
+      "start_time": 369.707,
+      "end_time": 385.259,
+      "duration": 15.552,
+      "source_segments": [
+        "045",
+        "046"
+      ],
+      "narrative_function": "SUBURBAN_ARRIVAL",
+      "location_id": "LOC_NHA_CU_THAO_NGOAI_O",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "motion_value": "MEDIUM",
+      "video_priority": "P2",
+      "video_value_scores": {
+        "camera_motion_value": 2,
+        "character_interaction": 0,
+        "physical_action": 3,
+        "story_information_from_motion": 2,
+        "total_score": 7
+      },
+      "visual_mode_reason": "Hành động khám phá thực địa (Điểm 7/10): Linh mở cánh cửa tủ gỗ kẽo kẹt trong căn nhà vắng, với tay tìm thấy chiếc hộp thiếc kỷ vật bám bụi.",
+      "image_prompt": "A 32-year-old Vietnamese woman (CHAR_LINH) in an olive trench coat walking into the courtyard of an old brick village house in suburban Nam Định, overgrown moss, potted plants, quiet northern Vietnamese rural atmosphere, 35mm photography.",
+      "video_prompt": "Start: Linh (32, female) walks down a quiet narrow village lane lined with weathered brick walls in suburban Nam Định. Action: She reaches a small rusted iron gate, pushes it open with a soft metallic creak, and steps into the quiet overgrown courtyard. Camera: Low tracking shot moving forward with her, showing the mossy bricks and rustic single-story house facade. End: She walks up to the wooden front door, pausing respectfully before turning the latch. Soft misty daylight.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FIGURE",
+        "type": "PAN_RIGHT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "9f868ba81684",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_024",
+      "order": 24,
+      "start_time": 385.259,
+      "end_time": 402.728,
+      "duration": 17.469,
+      "source_segments": [
+        "047",
+        "048"
+      ],
+      "narrative_function": "ENTER_THAO_ROOM",
+      "location_id": "LOC_NHA_CU_THAO_NGOAI_O",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "motion_value": "MEDIUM",
+      "video_priority": "P2",
+      "video_value_scores": {
+        "camera_motion_value": 2,
+        "character_interaction": 0,
+        "physical_action": 3,
+        "story_information_from_motion": 2,
+        "total_score": 7
+      },
+      "visual_mode_reason": "Hành động lật mở chứng cứ (Điểm 7/10): Tay Linh run rẩy mở nắp hộp thiếc, nhấc từng phong bì và biên bản bảo lãnh có tên Nam ra xem.",
+      "image_prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_LINH) inside a quiet rustic room in Nam Định, opening a vintage keepsake box on a wooden table, soft shafts of sunlight illuminating floating dust, atmosphere of preserved history, 35mm lens.",
+      "video_prompt": "Start: Linh (32, female) steps quietly into a dimly lit rural bedroom where dust motes float in shafts of sunlight. Action: She approaches the wooden writing desk, gently lifts the lid of a tin keepsake box, and reveals stacked old letters and documents. Camera: Medium shot panning down from her respectful face to her hands lifting the box lid. End: Her fingers carefully touch an official notarized legal paper inside. Warm diffused window light.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "KEEPSAKE_BOX",
+        "type": "SLOW_PUSH_IN"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "37aa5c72557f",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_025",
+      "order": 25,
+      "start_time": 402.728,
+      "end_time": 419.705,
+      "duration": 16.977,
+      "source_segments": [
+        "049",
+        "050"
+      ],
+      "narrative_function": "EVIDENCE_ADOPTION_DRAFT_OVERLAY",
+      "location_id": "LOC_NHA_CU_THAO_NGOAI_O",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_YOUNG_2012"
+      ],
+      "props": [
+        "PROP_ADOPTION_RECORD_2013"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 0,
+        "story_information_from_motion": 1,
+        "total_score": 2
+      },
+      "visual_mode_reason": "Chụp cận cảnh hồ sơ thỏa thuận hỗ trợ y tế & bảo lãnh nuôi dưỡng năm 2013 mang chữ ký của Nam kèm lớp phủ văn bản.",
+      "image_prompt": "Macro shot of an official 2013 Vietnamese medical and guardianship agreement paper, typed formal layout, blue ink signatures, notary stamp in red ink, resting on dark weathered wood, soft natural window light, sharp documentary focus, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LEGAL_DOCUMENT",
+        "type": "EVIDENCE_INSPECTION"
+      },
+      "requires_overlay": true,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "24188d420329",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [
+        "PROP_ADOPTION_RECORD_2013"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_026",
+      "order": 26,
+      "start_time": 419.705,
+      "end_time": 437.097,
+      "duration": 17.392,
+      "source_segments": [
+        "051",
+        "052"
+      ],
+      "narrative_function": "NAM_HANDWRITTEN_LETTER",
+      "location_id": "LOC_NHA_CU_THAO_NGOAI_O",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_NAM_YOUNG_2012",
+        "CHAR_THAO_2012"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Cận cảnh bức thư tay đầy giằng xé và trách nhiệm của Nam gửi lại bên giường bệnh.",
+      "image_prompt": "Macro photography of a handwritten letter in Vietnamese, blue ballpoint pen on lined paper, sincere emotional handwriting, slight creases where tears once fell, resting on rustic wooden desk, soft warm sidelight, 35mm lens.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LETTER_TEXT",
+        "type": "SLOW_PUSH_IN"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "8ffc10cbca01",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_027",
+      "order": 27,
+      "start_time": 437.097,
+      "end_time": 452.079,
+      "duration": 14.982,
+      "source_segments": [
+        "053",
+        "054"
+      ],
+      "narrative_function": "ADOPTIVE_FAMILY_RECORD",
+      "location_id": "LOC_NHA_CU_THAO_NGOAI_O",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_NAM_YOUNG_2012",
+        "CHAR_BE_AN_INFANT_2012"
+      ],
+      "props": [
+        "PROP_ADOPTION_RECORD_2013"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Hồ sơ xác nhận gia đình hiếm muộn nhận nuôi bé An: Nam chỉ đóng vai trò người bảo lãnh danh dự.",
+      "image_prompt": "Macro shot of legal adoption consent papers dated late 2013, clean official Vietnamese administrative formatting, red circular seals, documenting the formal legal adoption of infant An by a loving infertile family, documentary realism, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "DOCUMENT_SEALS",
+        "type": "PAN_LEFT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "1e2d41e7d3d0",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [
+        "PROP_ADOPTION_RECORD_2013"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_028",
+      "order": 28,
+      "start_time": 452.079,
+      "end_time": 468.396,
+      "duration": 16.317,
+      "source_segments": [
+        "055",
+        "056"
+      ],
+      "narrative_function": "WALL_CRUMBLES",
+      "location_id": "LOC_NHA_CU_THAO_NGOAI_O",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Bức tường nghi ngờ sụp đổ hoàn toàn: Linh ôm tập thư vào ngực, bàng hoàng nhận ra tấm lòng cao thượng của chồng.",
+      "image_prompt": "Medium close-up of a 32-year-old Vietnamese woman (CHAR_LINH) pressing the letters against her chest, eyes closed, tears streaming down her cheeks in overwhelming relief, profound empathy, and awe, soft window light, 35mm film.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "NORMAL",
+        "subject_anchor": "LINH_FACE",
+        "type": "STATIC_INTENTIONAL"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "0c06f4784fbf",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_029",
+      "order": 29,
+      "start_time": 468.396,
+      "end_time": 482.153,
+      "duration": 13.757,
+      "source_segments": [
+        "057",
+        "058"
+      ],
+      "narrative_function": "MEMORY_THAO_PEACE",
+      "location_id": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "visible_characters": [
+        "CHAR_THAO_2012"
+      ],
+      "story_characters": [
+        "CHAR_THAO_2012",
+        "CHAR_NAM_YOUNG_2012"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Ký ức năm 2012: Thảo mỉm cười thanh thản trên giường bệnh, trao gửi niềm tin tuyệt đối nơi người anh họ.",
+      "image_prompt": "Archival memory portrait of a 21-year-old Vietnamese young woman (CHAR_THAO_2012) in a pale hospital gown resting against pillows, serene maternal smile, holding a swaddled newborn, soft natural morning window light, subtle 2012 documentary grain, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "THAO_FIGURE",
+        "type": "SLOW_PULL_OUT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "5dab0056894e",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_THAO_2012"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_030",
+      "order": 30,
+      "start_time": 482.153,
+      "end_time": 496.247,
+      "duration": 14.094,
+      "source_segments": [
+        "059",
+        "060"
+      ],
+      "narrative_function": "YOUNG_NAM_GRIEF",
+      "location_id": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "visible_characters": [
+        "CHAR_NAM_YOUNG_2012"
+      ],
+      "story_characters": [
+        "CHAR_NAM_YOUNG_2012"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 2,
+        "total_score": 4
+      },
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 4/10): Cận cảnh chiếc vòng bạc khắc tên An, vật chứng tĩnh mang tính biểu tượng, phóng to chi tiết qua Dynamic Still.",
+      "image_prompt": "Dramatic archival memory shot from 2013: A 23-year-old Vietnamese young man (CHAR_NAM_YOUNG_2012) sitting on a hospital bench outside an intensive care ward, head in hands, raw sorrow and immense moral burden, cool flickering fluorescent light, 35mm documentary realism.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "YOUNG_NAM",
+        "type": "SLOW_PUSH_IN"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "a027049dd60a",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_NAM_YOUNG_2012"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_031",
+      "order": 31,
+      "start_time": 496.247,
+      "end_time": 510.462,
+      "duration": 14.215,
+      "source_segments": [
+        "061",
+        "062"
+      ],
+      "narrative_function": "REVEAL_1_TRUTH",
+      "location_id": "LOC_NHA_CU_THAO_NGOAI_O",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_NAM_YOUNG_2012",
+        "CHAR_THAO_2012",
+        "CHAR_BE_AN_INFANT_2012"
+      ],
+      "props": [
+        "PROP_ADOPTION_RECORD_2013",
+        "PROP_SILVER_BRACELET"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 0,
+        "story_information_from_motion": 1,
+        "total_score": 2
+      },
+      "visual_mode_reason": "Bước ngoặt 1 (Reveal 1): Thân phận thực sự của Thảo và bé An được xác minh. IMAGE_ONLY tĩnh lặng để giọng đọc chiếm trọn sự chú ý.",
+      "image_prompt": "Solemn macro still life of the official 2013 Vietnamese adoption guardianship certificate bearing Nam's signature (PROP_ADOPTION_RECORD_2013), the silver baby bracelet 'An - 15/08/2013' resting on top of the legal seal, bathed in warm reverent sunlight, 35mm film.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "DOCUMENT_AND_BRACELET",
+        "type": "EVIDENCE_INSPECTION"
+      },
+      "requires_overlay": true,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "3b9ced2425c4",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [
+        "PROP_ADOPTION_RECORD_2013",
+        "PROP_SILVER_BRACELET"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_032",
+      "order": 32,
+      "start_time": 510.462,
+      "end_time": 525.895,
+      "duration": 15.433,
+      "source_segments": [
+        "063",
+        "064"
+      ],
+      "narrative_function": "PURE_DEVOTION",
+      "location_id": "LOC_NHA_CU_THAO_NGOAI_O",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_NAM_PRESENT",
+        "CHAR_THAO_2012"
+      ],
+      "props": [
+        "PROP_SILVER_BRACELET"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Biểu tượng của tình yêu thương và lời hứa không vụ lợi: Chiếc vòng bạc tỏa sáng dưới ánh nắng chiều.",
+      "image_prompt": "Artistic close-up of the small engraved silver bracelet resting on weathered red Vietnamese brick, soft warm sunlight gleaming on the metal, symbolizing pure selfless devotion and an unbroken promise, cinematic documentary realism, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "NORMAL",
+        "subject_anchor": "SILVER_BRACELET",
+        "type": "STATIC_INTENTIONAL"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "e458db1300b2",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [
+        "PROP_SILVER_BRACELET"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_033",
+      "order": 33,
+      "start_time": 525.895,
+      "end_time": 547.508,
+      "duration": 21.613,
+      "source_segments": [
+        "065",
+        "066"
+      ],
+      "narrative_function": "MEMORY_NAM_HOLDING_BABY",
+      "location_id": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "visible_characters": [
+        "CHAR_NAM_YOUNG_2012",
+        "CHAR_BE_AN_INFANT_2012"
+      ],
+      "story_characters": [
+        "CHAR_NAM_YOUNG_2012",
+        "CHAR_BE_AN_INFANT_2012"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Ký ức năm 2013: Nam trẻ tuổi bế đứa trẻ sơ sinh đỏ hỏn trong vòng tay với ánh mắt nguyện chở che.",
+      "image_prompt": "Emotional archival documentary photo from 2013: A 23-year-old Vietnamese young man (CHAR_NAM_YOUNG_2012) gently cradling a newborn baby swaddled in yellow flannel in a quiet hospital room, eyes glistening with tears of protective love, soft natural light, 35mm.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "NAM_AND_BABY",
+        "type": "SLOW_PUSH_IN"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "3c831d9b610f",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_NAM_YOUNG_2012",
+        "CHAR_BE_AN_INFANT_2012"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_034",
+      "order": 34,
+      "start_time": 547.508,
+      "end_time": 560.682,
+      "duration": 13.174,
+      "source_segments": [
+        "067",
+        "068"
+      ],
+      "narrative_function": "EVIDENCE_TRANSFERS_OVERLAY",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [
+        "PROP_BANK_TRANSFER_NOTES"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 0,
+        "story_information_from_motion": 1,
+        "total_score": 2
+      },
+      "visual_mode_reason": "Hiển thị chứng từ chuyển khoản và sao kê mười năm chắt chiu tiền làm thêm của Nam gửi nuôi dưỡng bé An.",
+      "image_prompt": "Macro photography of a personal savings ledger and Vietnamese bank transaction slips spread on an oak table, handwritten records of regular monthly support payments over ten years, official blue stamps, soft warm domestic lighting, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "TRANSACTION_SLIPS",
+        "type": "EVIDENCE_INSPECTION"
+      },
+      "requires_overlay": true,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "badc2ac48265",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [
+        "PROP_BANK_TRANSFER_NOTES"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_035",
+      "order": 35,
+      "start_time": 560.682,
+      "end_time": 575.121,
+      "duration": 14.439,
+      "source_segments": [
+        "069",
+        "070"
+      ],
+      "narrative_function": "LATE_NIGHT_WORK_MEMORY",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [
+        "CHAR_NAM_PRESENT"
+      ],
+      "story_characters": [
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Ký ức Nam làm việc cật lực thâu đêm tại bàn máy tính để có thêm thu nhập chu cấp, gánh vác trong lặng lẽ.",
+      "image_prompt": "Atmospheric documentary scene: A 35-year-old Vietnamese engineer (CHAR_NAM_PRESENT) working late into the night at a computer workstation, desk illuminated by a single warm desk lamp, technical blueprints and coffee mug, exhausted yet steadfast expression, 35mm.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "NAM_WORKING",
+        "type": "PAN_LEFT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "58862cff33a4",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_036",
+      "order": 36,
+      "start_time": 575.121,
+      "end_time": 589.816,
+      "duration": 14.695,
+      "source_segments": [
+        "071",
+        "072"
+      ],
+      "narrative_function": "LINH_COMPASSIONATE_TEARS",
+      "location_id": "LOC_NHA_CU_THAO_NGOAI_O",
+      "visible_characters": [
+        "CHAR_LINH"
+      ],
+      "story_characters": [
+        "CHAR_LINH"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 3
+      },
+      "visual_mode_reason": "Linh ngồi giữa những lá thư và giấy tờ, không còn một chút giận hờn, chỉ còn lòng khâm phục và xót xa cho chồng.",
+      "image_prompt": "Medium close-up of a 32-year-old Vietnamese woman (CHAR_LINH) sitting in the quiet room, a tender compassionate smile emerging through tears, warm golden sunlight breaking through the wooden shutters onto her face, emotional catharsis, 35mm lens.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FACE",
+        "type": "SUBTLE_REFRAME"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "968d0d9276f6",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_037",
+      "order": 37,
+      "start_time": 589.816,
+      "end_time": 604.261,
+      "duration": 14.445,
+      "source_segments": [
+        "073",
+        "074"
+      ],
+      "narrative_function": "DUSK_WAITING",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 1,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 4
+      },
+      "visual_mode_reason": "Căn hộ lúc hoàng hôn: Linh đã trở về Hà Nội, chuẩn bị bước vào cuộc nói chuyện chân thành nhất cuộc đời.",
+      "image_prompt": "Interior establishing shot of the Vietnamese apartment living room at twilight, warm table lamp glowing, tea pot steeping, outside window showing the deep blue evening sky of Hanoi, peaceful contemplative suspense, 35mm photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "TWILIGHT_ROOM",
+        "type": "PAN_RIGHT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "efe56b62becb",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_038",
+      "order": 38,
+      "start_time": 604.261,
+      "end_time": 620.995,
+      "duration": 16.734,
+      "source_segments": [
+        "075",
+        "076"
+      ],
+      "narrative_function": "CONFRONTATION_DOORWAY",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [
+        "PROP_SILVER_BRACELET",
+        "PROP_OLD_PHONE_01"
+      ],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "video_value_scores": {
+        "camera_motion_value": 2,
+        "character_interaction": 3,
+        "physical_action": 2,
+        "story_information_from_motion": 2,
+        "total_score": 9
+      },
+      "visual_mode_reason": "Đỉnh điểm kịch tính đối đầu (Điểm 9/10): Linh đặt hồ sơ và kỷ vật lên bàn chất vấn, Nam quỳ sụp xuống ôm mặt bật khóc trong giải tỏa và ân hận.",
+      "image_prompt": "Medium two-shot in a warm apartment living room: A 35-year-old Vietnamese man (CHAR_NAM_PRESENT) frozen at the entrance, while his 32-year-old wife (CHAR_LINH) stands by the table holding the silver bracelet, intense emotional truth, 35mm documentary.",
+      "video_prompt": "Start: Nam (35, male) enters the apartment carrying his work bag, stopping dead in his tracks. Action: Linh (32, female) stands up slowly from the dining table where the old phone and silver bracelet rest; she looks at him with moist, earnest eyes. Camera: Medium two-shot steadily pushing in toward Nam as his bag slips from his hand and his face turns pale. End: Nam takes a trembling step forward, his voice choked. Intimate warm evening domestic lighting.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "NAM_AND_LINH",
+        "type": "SLOW_PUSH_IN"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "247ceed6ade8",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [
+        "PROP_SILVER_BRACELET",
+        "PROP_OLD_PHONE_01"
+      ]
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_039",
+      "order": 39,
+      "start_time": 620.995,
+      "end_time": 648.652,
+      "duration": 27.657,
+      "source_segments": [
+        "077",
+        "078"
+      ],
+      "narrative_function": "REVEAL_2_EMOTIONAL_TRUTH",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 2,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 5
+      },
+      "visual_mode_reason": "BƯỚC NGOẶT 2 (REVEAL 2): Bản chất sự việc được làm sáng tỏ trọn vẹn: Nam thú nhận mặc cảm nghèo khó và lời hứa bên giường bệnh; Linh trách giận sự giấu giếm nhưng mở lòng thấu hiểu.",
+      "image_prompt": "Emotional medium two-shot: A 35-year-old Vietnamese man (CHAR_NAM_PRESENT) seated with head bowed in raw vulnerability, while his wife (CHAR_LINH) stands beside him, one hand resting gently on his shoulder, both faces marked by honest tears, 35mm film.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "COUPLE_EMBRACE",
+        "type": "SLOW_PUSH_IN"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "dbb73c4b46fe",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_040",
+      "order": 40,
+      "start_time": 648.652,
+      "end_time": 665.16,
+      "duration": 16.508,
+      "source_segments": [
+        "079",
+        "080"
+      ],
+      "narrative_function": "HOLDING_HANDS_RECONCILIATION",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 2,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 5
+      },
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 5/10): Lời thú nhận thầm lặng của Nam, cận cảnh gương mặt hối hận và nhẹ nhõm, nhịp điệu tĩnh tăng chiều sâu cảm xúc.",
+      "image_prompt": "Close-up of two pairs of Vietnamese hands clasped tightly across a wooden dining table, silver wedding rings catching warm domestic lamplight, symbolizing forgiveness, shared responsibility, and renewed marital trust, 35mm macro lens.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "NORMAL",
+        "subject_anchor": "HANDS_CLASPED",
+        "type": "STATIC_INTENTIONAL"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "5e41938e1d80",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_041",
+      "order": 41,
+      "start_time": 665.16,
+      "end_time": 684.558,
+      "duration": 19.398,
+      "source_segments": [
+        "081",
+        "082"
+      ],
+      "narrative_function": "MARRIAGE_REFLECTION",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [],
+      "story_characters": [],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 2,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 5
+      },
+      "visual_mode_reason": "Chiêm nghiệm Sau Cánh Cửa: Hôn nhân cần sự bao dung đi đôi với sự minh bạch từ nay về sau.",
+      "image_prompt": "Artistic still life on an oak credenza in a Vietnamese home: Two ceramic cups of tea with steam rising in morning sunlight, beside a small green succulent, atmosphere of healing, honesty, and peaceful domestic dawn, cinematic realism, cinematic 35mm documentary photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "TEA_CUPS",
+        "type": "PAN_LEFT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "fedf26aa8810",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_042",
+      "order": 42,
+      "start_time": 684.558,
+      "end_time": 700.37,
+      "duration": 15.812,
+      "source_segments": [
+        "083",
+        "084"
+      ],
+      "narrative_function": "LOOKING_AT_AN_ALBUM",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT",
+        "CHAR_BE_AN_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 2,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 5
+      },
+      "visual_mode_reason": "Vợ chồng cùng nhau xem những bức ảnh trưởng thành của bé An qua từng năm tháng do gia đình nhận nuôi gửi tặng.",
+      "image_prompt": "Medium two-shot of a 32-year-old Vietnamese woman (CHAR_LINH) and a 35-year-old Vietnamese man (CHAR_NAM_PRESENT) sitting together on the sofa, smiling warmly as they look at photos of a growing cheerful schoolgirl (An), soft morning daylight, harmonious love, 35mm.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "COUPLE_ALBUM",
+        "type": "SLOW_PUSH_IN"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "90f10acfb0c5",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_043",
+      "order": 43,
+      "start_time": 700.37,
+      "end_time": 716.497,
+      "duration": 16.127,
+      "source_segments": [
+        "085",
+        "086"
+      ],
+      "narrative_function": "MEETING_AN_CAFE",
+      "location_id": "LOC_CONG_VIEN_CHIEU",
+      "visible_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT",
+        "CHAR_BE_AN_PRESENT"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT",
+        "CHAR_BE_AN_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 1,
+        "physical_action": 1,
+        "story_information_from_motion": 1,
+        "total_score": 4
+      },
+      "visual_mode_reason": "Gặp gỡ bé An: Linh và Nam ngồi trò chuyện cùng bé An tại quán cà phê sân vườn rợp bóng cây, sự gắn kết tự nhiên.",
+      "image_prompt": "A cheerful 11-year-old Vietnamese schoolgirl (CHAR_BE_AN_PRESENT) smiling brightly across a garden cafe table toward Linh and Nam, warm golden sunshine through green foliage, atmosphere of openhearted acceptance and family extension, 35mm lens.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "AN_AND_COUPLE",
+        "type": "SUBTLE_REFRAME"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "11b72f53cb7e",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT",
+        "CHAR_BE_AN_PRESENT"
+      ],
+      "location_ref": "LOC_CONG_VIEN_CHIEU",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_044",
+      "order": 44,
+      "start_time": 716.497,
+      "end_time": 730.679,
+      "duration": 14.182,
+      "source_segments": [
+        "087",
+        "088"
+      ],
+      "narrative_function": "PARK_WALK_TOGETHER",
+      "location_id": "LOC_CONG_VIEN_CHIEU",
+      "visible_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT",
+        "CHAR_BE_AN_PRESENT"
+      ],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT",
+        "CHAR_BE_AN_PRESENT"
+      ],
+      "props": [],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "video_value_scores": {
+        "camera_motion_value": 2,
+        "character_interaction": 3,
+        "physical_action": 3,
+        "story_information_from_motion": 2,
+        "total_score": 10
+      },
+      "visual_mode_reason": "Hành động kết thúc giàu ý nghĩa (Điểm 10/10): Bé An chạy lại ôm chầm lấy Nam và Linh trên con đường ngập nắng chiều công viên, giải tỏa trọn vẹn nỗi đau 10 năm.",
+      "image_prompt": "Wide cinematic shot of a Vietnamese family trio: A 32-year-old woman (CHAR_LINH), a 35-year-old man (CHAR_NAM_PRESENT), and an 11-year-old girl (CHAR_BE_AN_PRESENT) walking together along a tree-lined lakeside park in Hanoi, golden hour amber sunlight, authentic heartwarming closure, 35mm.",
+      "video_prompt": "Start: Linh (32, female), Nam (35, male), and 11-year-old An walk side by side along an urban park pathway beside a lake. Action: An skips cheerfully between them holding both their hands; Nam looks down at An with a joyful smile, while Linh exchanges a loving look with Nam. Camera: Wide tracking shot moving backwards ahead of the three, framing them against shimmering lake water and golden trees. End: They continue walking into the soft golden sunset. Warm, tranquil golden hour lighting.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "FAMILY_TRIO",
+        "type": "PAN_RIGHT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "8db43316a049",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT",
+        "CHAR_BE_AN_PRESENT"
+      ],
+      "location_ref": "LOC_CONG_VIEN_CHIEU",
+      "prop_refs": []
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_045",
+      "order": 45,
+      "start_time": 730.679,
+      "end_time": 743.721,
+      "duration": 13.042,
+      "source_segments": [
+        "089",
+        "090"
+      ],
+      "narrative_function": "FINAL_FAREWELL",
+      "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+      "visible_characters": [],
+      "story_characters": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT",
+        "CHAR_BE_AN_PRESENT"
+      ],
+      "props": [
+        "PROP_OLD_PHONE_01",
+        "PROP_SILVER_BRACELET"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "video_value_scores": {
+        "camera_motion_value": 1,
+        "character_interaction": 0,
+        "physical_action": 0,
+        "story_information_from_motion": 1,
+        "total_score": 2
+      },
+      "visual_mode_reason": "Hình ảnh kết tập: Chiếc điện thoại cũ và vòng bạc nằm yên bình bên bức ảnh mới chụp ba người trong công viên.",
+      "image_prompt": "Closing still of a modern Vietnamese oak credenza: Beside the retired vintage feature phone (PROP_OLD_PHONE_01) and silver bracelet rests a newly printed photograph of Linh, Nam, and An smiling together in the park, soft evening ambient light, golden warmth of Sau Cánh Cửa, 35mm photography.",
+      "video_prompt": null,
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "CREDENZA_KEEPSAKES",
+        "type": "SLOW_PULL_OUT"
+      },
+      "requires_overlay": false,
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "0057b7318b00",
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "character_refs_required": [],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01",
+        "PROP_SILVER_BRACELET"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "repository": "https://github.com/tungnguyen84/vieneu",
+  "branch": "main",
+  "baseline_commit": "40ba785",
+  "status": "AWAITING_USER_VISUAL_PLAN_REVIEW",
+  "version": "V1.0a",
+  "episodes": {
+    "EP003": {
+      "title": "Chiếc Hộp Gỗ Của Người Bà Quá Cố",
+      "audio_duration_sec": 730.627,
+      "total_scenes": 45,
+      "image_only_count": 38,
+      "video_recommended_count": 7,
+      "video_percentage": 15.56,
+      "downgraded_scenes_count": 8,
+      "primary_characters": [
+        "Mai"
+      ],
+      "secondary_characters": [
+        "Bà Hảo (Elder)",
+        "Bà Hảo (Young 1970s-1990s)",
+        "Bà Thoa (Elder)",
+        "Bà Thoa (Young 1970s-1990s)",
+        "Chú Minh"
+      ],
+      "character_references_required": 6,
+      "identity_families": [
+        {
+          "identity_family_id": "BA_HAO",
+          "description": "Bà Hảo across generations (1980s young textile worker vs 2010s-2020s elder)",
+          "adult_reference": "CHAR_BA_HAO_ELDER",
+          "younger_variant": "CHAR_BA_HAO_YOUNG"
+        },
+        {
+          "identity_family_id": "BA_THOA",
+          "description": "Bà Thoa across generations (1980s young textile coworker vs 2024 elder in rest home)",
+          "adult_reference": "CHAR_BA_THOA_ELDER",
+          "younger_variant": "CHAR_BA_THOA_YOUNG"
+        }
+      ],
+      "locations_count": 5,
+      "props_count": 5,
+      "prop_references_required": 2,
+      "overlay_scenes_count": 5,
+      "ungrounded_overlay_facts": 0,
+      "forbidden_labels_detected": 0,
+      "reveal_1_scene": "SC_031",
+      "reveal_1_visual_mode": "IMAGE_ONLY",
+      "reveal_2_scene": "SC_039",
+      "reveal_2_visual_mode": "IMAGE_ONLY",
+      "visual_spoiler_guard": "PASS",
+      "fact_grounding": "PASS",
+      "overlay_fact_grounding": "PASS",
+      "character_continuity": "PASS",
+      "location_continuity": "PASS",
+      "prop_continuity": "PASS",
+      "timeline_coverage": "PASS",
+      "prompt_qc": "PASS",
+      "flow_package_dir": "production_pilot_03_visual_v1_0a\\EP003\\flow_package",
+      "status": "AWAITING_USER_VISUAL_PLAN_REVIEW"
+    },
+    "EP011": {
+      "title": "Bức Ảnh Lạ Trong Điện Thoại Cũ",
+      "audio_duration_sec": 743.721,
+      "total_scenes": 45,
+      "image_only_count": 37,
+      "video_recommended_count": 8,
+      "video_percentage": 17.78,
+      "downgraded_scenes_count": 7,
+      "primary_characters": [
+        "Linh",
+        "Nam (Present)"
+      ],
+      "secondary_characters": [
+        "Nam (Young 2012)",
+        "Thảo (2012)",
+        "Bé An (Present)"
+      ],
+      "character_references_required": 7,
+      "identity_families": [
+        {
+          "adult_reference": "CHAR_NAM_PRESENT",
+          "description": "Nguyễn Hoài Nam across timeline (2012 youthful 23yo vs 2024 mature 35yo)",
+          "identity_family_id": "NAM",
+          "younger_variant": "CHAR_NAM_YOUNG_2012"
+        }
+      ],
+      "locations_count": 5,
+      "props_count": 5,
+      "prop_references_required": 3,
+      "overlay_scenes_count": 6,
+      "ungrounded_overlay_facts": 0,
+      "forbidden_labels_detected": 0,
+      "reveal_1_scene": "SC_031",
+      "reveal_1_visual_mode": "IMAGE_ONLY",
+      "reveal_2_scene": "SC_039",
+      "reveal_2_visual_mode": "IMAGE_ONLY",
+      "visual_spoiler_guard": "PASS",
+      "fact_grounding": "PASS",
+      "overlay_fact_grounding": "PASS",
+      "character_continuity": "PASS",
+      "location_continuity": "PASS",
+      "prop_continuity": "PASS",
+      "timeline_coverage": "PASS",
+      "prompt_qc": "PASS",
+      "flow_package_dir": "production_pilot_03_visual_v1_0a\\EP011\\flow_package",
+      "status": "AWAITING_USER_VISUAL_PLAN_REVIEW"
+    }
+  }
+}

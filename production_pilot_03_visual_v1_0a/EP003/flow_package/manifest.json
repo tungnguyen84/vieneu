@@ -1,0 +1,1352 @@
+{
+  "flow_package_version": "1.0.0a",
+  "series": "Sau Cánh Cửa",
+  "episode_id": "EP003",
+  "title": "Chiếc Hộp Gỗ Của Người Bà Quá Cố",
+  "aspect_ratio": "16:9",
+  "total_scenes": 45,
+  "models": {
+    "image_model": "NANO_BANANA_PRO",
+    "video_model": "omni_flash"
+  },
+  "generation_constraints": {
+    "concurrency": 1,
+    "delay_between_requests_sec": 10,
+    "video_generation_policy": "RECOMMENDED_ONLY",
+    "audio_handling": "STRIP_VIDEO_AUDIO",
+    "video_budget_rule": "SCORE_7_OR_HIGHER"
+  },
+  "scenes": [
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_001",
+      "order": 1,
+      "start_time": 0.0,
+      "end_time": 19.34,
+      "duration": 19.34,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 7,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_GAC_XEP_BAO_LOC",
+      "prop_refs": [
+        "PROP_WOODEN_BOX"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "149544b53ada",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "visual_mode_reason": "Hook hành động thực tế (Điểm 7/10): Nhân vật trèo lên gác xép tối, bước qua sàn gỗ bụi bặm rọi đèn pin tìm thấy hòm gỗ.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "WOODEN_BOX",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_002",
+      "order": 2,
+      "start_time": 19.34,
+      "end_time": 34.774,
+      "duration": 15.434,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_GAC_XEP_BAO_LOC",
+      "prop_refs": [
+        "PROP_WOODEN_BOX"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "4fc56e9f85bf",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Khoảnh khắc tĩnh tâm lý: Nhân vật đứng sững nhìn chiếc hộp, mở đầu không gian suy ngẫm của Sau Cánh Cửa.",
+      "image_motion": {
+        "type": "SUBTLE_REFRAME",
+        "speed": "SLOW",
+        "subject_anchor": "MAI_FACE",
+        "safe_crop_zone": "CENTER_RIGHT"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_003",
+      "order": 3,
+      "start_time": 34.774,
+      "end_time": 50.138,
+      "duration": 15.364,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_GAC_XEP_BAO_LOC",
+      "prop_refs": [
+        "PROP_WOODEN_BOX"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "2a2740b48004",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Cảnh thiết lập không gian tĩnh lặng mang tính biểu tượng của Sau Cánh Cửa.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "WOODEN_BOX",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_004",
+      "order": 4,
+      "start_time": 50.138,
+      "end_time": 65.293,
+      "duration": 15.155,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_NHA_MAI_HCM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "1bc21e95f091",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Giới thiệu nhân vật Mai trong bối cảnh cuộc sống đô thị ổn định và thành đạt.",
+      "image_motion": {
+        "type": "PAN_RIGHT",
+        "speed": "SLOW",
+        "subject_anchor": "MAI_FIGURE",
+        "safe_crop_zone": "CENTER_LEFT"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_005",
+      "order": 5,
+      "start_time": 65.293,
+      "end_time": 79.734,
+      "duration": 14.441,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "24ba5649e716",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Khoảnh khắc tưởng nhớ thiêng liêng: Bàn thờ gia tiên với di ảnh người bà quá cố.",
+      "image_motion": {
+        "type": "STATIC_INTENTIONAL",
+        "speed": "NORMAL",
+        "subject_anchor": "ALTAR_PORTRAIT",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_006",
+      "order": 6,
+      "start_time": 79.734,
+      "end_time": 92.043,
+      "duration": 12.309,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 7,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_GAC_XEP_BAO_LOC",
+      "prop_refs": [
+        "PROP_WOODEN_BOX"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "175776d45232",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "visual_mode_reason": "Hành động vật lý then chốt (Điểm 7/10): Đôi tay nhân vật gạt chốt đồng và nâng nắp chiếc hộp gỗ hé mở bí mật 30 năm.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "BOX_AND_HANDS",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_007",
+      "order": 7,
+      "start_time": 92.043,
+      "end_time": 104.35,
+      "duration": 12.307,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_GAC_XEP_BAO_LOC",
+      "prop_refs": [
+        "PROP_WOODEN_BOX",
+        "PROP_PASSBOOK_1994",
+        "PROP_LAND_DEED_1992",
+        "PROP_VINTAGE_PHOTO_BAO_THOA"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "f2d7a86f8b6d",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Chụp cận cảnh tĩnh toàn bộ chứng cứ bên trong hộp: sổ tiết kiệm, giấy tờ nhà đất và bức ảnh cũ.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "BOX_CONTENTS",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_008",
+      "order": 8,
+      "start_time": 104.35,
+      "end_time": 117.418,
+      "duration": 13.068,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_GAC_XEP_BAO_LOC",
+      "prop_refs": [
+        "PROP_VINTAGE_PHOTO_BAO_THOA"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "ac5b9389776d",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Cận cảnh bức ảnh ố vàng hai người phụ nữ thời trẻ khơi dậy nghi vấn lớn trong lòng Mai.",
+      "image_motion": {
+        "type": "EVIDENCE_INSPECTION",
+        "speed": "SLOW",
+        "subject_anchor": "PHOTO_SURFACE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_009",
+      "order": 9,
+      "start_time": 117.418,
+      "end_time": 135.814,
+      "duration": 18.396,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_NHA_MAI_HCM",
+      "prop_refs": [
+        "PROP_PASSBOOK_1994",
+        "PROP_LAND_DEED_1992"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "190ffe453459",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Kiểm toán video: Hành động trải giấy tờ được tối ưu hóa bằng Dynamic Still SLOW_PUSH_IN thay vì dựng video tốn kém.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "DOCUMENT_SURFACE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_010",
+      "order": 10,
+      "start_time": 135.814,
+      "end_time": 149.96,
+      "duration": 14.146,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_MAI_HCM",
+      "prop_refs": [
+        "PROP_PASSBOOK_1994"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "7ddc2953dc0c",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Hiển thị chứng cứ số 1: Sổ tiết kiệm 1994 với lớp phủ văn bản đã được đối chiếu nghiêm ngặt theo Fact Lock.",
+      "image_motion": {
+        "type": "EVIDENCE_INSPECTION",
+        "speed": "SLOW",
+        "subject_anchor": "PASSBOOK_DETAILS",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_011",
+      "order": 11,
+      "start_time": 149.96,
+      "end_time": 164.27,
+      "duration": 14.31,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_MAI_HCM",
+      "prop_refs": [
+        "PROP_HANDWRITTEN_NOTE"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "ca5bc608c8ee",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Hiển thị manh mối viết tay ghi địa chỉ viện dưỡng lão ở Lâm Đồng (đã chuẩn hóa bỏ địa chỉ hư cấu).",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "HANDWRITING",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_012",
+      "order": 12,
+      "start_time": 164.27,
+      "end_time": 177.827,
+      "duration": 13.557,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 4,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_NHA_MAI_HCM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "08a5a878ecac",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Kiểm toán video (Điểm 4/10): Căng thẳng nội tâm đứng nhìn ra cửa sổ được thể hiện tinh tế qua Dynamic Still PAN_LEFT.",
+      "image_motion": {
+        "type": "PAN_LEFT",
+        "speed": "SLOW",
+        "subject_anchor": "MAI_FIGURE",
+        "safe_crop_zone": "CENTER_RIGHT"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_013",
+      "order": 13,
+      "start_time": 177.827,
+      "end_time": 188.855,
+      "duration": 11.028,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_NHA_MAI_HCM",
+      "prop_refs": [
+        "PROP_VINTAGE_PHOTO_BAO_THOA"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "f3f5ffff54d5",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Nghi ngờ hợp lý (False Lead Fairness): Mai băn khoăn về người phụ nữ lạ mà không dựng hình ảnh bịa đặt sai sự thật.",
+      "image_motion": {
+        "type": "SUBTLE_REFRAME",
+        "speed": "SLOW",
+        "subject_anchor": "MAI_FACE",
+        "safe_crop_zone": "CENTER_LEFT"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_014",
+      "order": 14,
+      "start_time": 188.855,
+      "end_time": 200.609,
+      "duration": 11.754,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 4,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_NHA_MAI_HCM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "3dbc54946bb9",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Kiểm toán video (Điểm 4/10): Quyết định lên đường thể hiện qua tư thế tĩnh đứng bên ngưỡng cửa đầy quyết tâm.",
+      "image_motion": {
+        "type": "PAN_RIGHT",
+        "speed": "SLOW",
+        "subject_anchor": "MAI_FIGURE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_015",
+      "order": 15,
+      "start_time": 200.609,
+      "end_time": 213.619,
+      "duration": 13.01,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_NHA_MAI_HCM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "8e5997a6423e",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Không gian trầm tư tưởng tượng về quá khứ chưa biết của người bà.",
+      "image_motion": {
+        "type": "SLOW_PULL_OUT",
+        "speed": "SLOW",
+        "subject_anchor": "MAI_SILHOUETTE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_016",
+      "order": 16,
+      "start_time": 213.619,
+      "end_time": 225.921,
+      "duration": 12.302,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_NHA_MAI_HCM",
+      "prop_refs": [
+        "PROP_PASSBOOK_1994"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "2824c722d47b",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Khủng hoảng niềm tin: Hình ảnh người bà hoàn hảo bị lung lay trước chứng cứ tài sản lớn.",
+      "image_motion": {
+        "type": "STATIC_INTENTIONAL",
+        "speed": "NORMAL",
+        "subject_anchor": "MAI_FACE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_017",
+      "order": 17,
+      "start_time": 225.921,
+      "end_time": 241.321,
+      "duration": 15.4,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_NHA_MAI_HCM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "13354d524897",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Kiểm toán video (Điểm 3/10): Hành động tìm kiếm trong ký ức được thể hiện qua ảnh tĩnh bên kệ sách ấm áp.",
+      "image_motion": {
+        "type": "PAN_LEFT",
+        "speed": "SLOW",
+        "subject_anchor": "ALBUM_PAGES",
+        "safe_crop_zone": "CENTER_RIGHT"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_018",
+      "order": 18,
+      "start_time": 241.321,
+      "end_time": 253.798,
+      "duration": 12.477,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_MAI_HCM",
+      "prop_refs": [
+        "PROP_HANDWRITTEN_NOTE"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "0b94b7a51d13",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Tĩnh vật ẩn dụ: Những con số bí ẩn và ghi chú cổ xưa đặt bên cạnh chiếc tách trà nguội.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "NOTE_PAPER",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_019",
+      "order": 19,
+      "start_time": 253.798,
+      "end_time": 266.343,
+      "duration": 12.545,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 8,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "e0c7355c32d5",
+      "motion_value": "HIGH",
+      "video_priority": "P2",
+      "visual_mode_reason": "Hành động di chuyển ngoại cảnh (Điểm 8/10): Mai bước qua cổng ngõ cây xanh vào sân nhà Chú Minh ở Bảo Lộc, gõ cửa gỗ.",
+      "image_motion": {
+        "type": "PAN_RIGHT",
+        "speed": "SLOW",
+        "subject_anchor": "MAI_FIGURE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_020",
+      "order": 20,
+      "start_time": 266.343,
+      "end_time": 277.694,
+      "duration": 11.351,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 6,
+      "character_refs_required": [
+        "CHAR_MAI",
+        "CHAR_CHU_MINH"
+      ],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "61179a304d02",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Kiểm toán video (Điểm 6/10 -> OPTIONAL, mặc định IMAGE_ONLY): Không gian trà đàm đạo được xử lý hoàn hảo bằng Dynamic Still SUBTLE_REFRAME.",
+      "image_motion": {
+        "type": "SUBTLE_REFRAME",
+        "speed": "SLOW",
+        "subject_anchor": "TEA_TABLE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_021",
+      "order": 21,
+      "start_time": 277.694,
+      "end_time": 291.902,
+      "duration": 14.208,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_CHU_MINH"
+      ],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [
+        "PROP_VINTAGE_PHOTO_BAO_THOA"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "5e96863538fd",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Khoảnh khắc nhận ra người quen: Chú Minh đeo kính lão, ánh mắt ngấn lệ xúc động khi nhìn bức ảnh bà Thoa.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "MINH_FACE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_022",
+      "order": 22,
+      "start_time": 291.902,
+      "end_time": 302.938,
+      "duration": 11.036,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [
+        "CHAR_CHU_MINH"
+      ],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "fbe5ee07c452",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Chú Minh kể lại câu chuyện về người bạn tri kỷ tên Thoa từng làm việc tại xưởng dệt và bị tàn tật sau tai nạn.",
+      "image_motion": {
+        "type": "PAN_LEFT",
+        "speed": "SLOW",
+        "subject_anchor": "MINH_FIGURE",
+        "safe_crop_zone": "CENTER_LEFT"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_023",
+      "order": 23,
+      "start_time": 302.938,
+      "end_time": 322.537,
+      "duration": 19.599,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "15640f5eb03a",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Góc nhìn mới hé lộ: Người phụ nữ lạ không phải tình địch mà là bạn tri kỷ, mở ra cuộc điều tra sâu sắc hơn.",
+      "image_motion": {
+        "type": "STATIC_INTENTIONAL",
+        "speed": "NORMAL",
+        "subject_anchor": "MAI_FACE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_024",
+      "order": 24,
+      "start_time": 322.537,
+      "end_time": 343.802,
+      "duration": 21.265,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 5,
+      "character_refs_required": [
+        "CHAR_MAI",
+        "CHAR_CHU_MINH"
+      ],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [
+        "PROP_PASSBOOK_1994",
+        "PROP_LAND_DEED_1992"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "abfe7097b4b3",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Kiểm toán video (Điểm 5/10 -> OPTIONAL, mặc định IMAGE_ONLY): Đối chiếu tài liệu trên bàn gỗ thể hiện xuất sắc qua Ken Burns SLOW_PUSH_IN.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "TABLE_DOCUMENTS",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_025",
+      "order": 25,
+      "start_time": 343.802,
+      "end_time": 362.144,
+      "duration": 18.342,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [
+        "PROP_PASSBOOK_1994"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "7fcb7f7dc04e",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Chụp cận cảnh giấy biên nhận tiền gửi định kỳ có tên bà Hảo theo đúng Fact Lock.",
+      "image_motion": {
+        "type": "EVIDENCE_INSPECTION",
+        "speed": "SLOW",
+        "subject_anchor": "RECEIPT_SURFACE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_026",
+      "order": 26,
+      "start_time": 362.144,
+      "end_time": 379.796,
+      "duration": 17.652,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "b047db5e5eb9",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Chụp cận cảnh những bức thư tay bằng mực tím phai màu giữa hai người bạn thời trẻ.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "LETTERS_SURFACE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_027",
+      "order": 27,
+      "start_time": 379.796,
+      "end_time": 397.848,
+      "duration": 18.052,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [
+        "CHAR_CHU_MINH"
+      ],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "323c85dd3473",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Chú Minh xúc động chia sẻ về giao ước thanh cao giữa hai người phụ nữ lao động nghèo.",
+      "image_motion": {
+        "type": "PAN_RIGHT",
+        "speed": "SLOW",
+        "subject_anchor": "MINH_FACE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_028",
+      "order": 28,
+      "start_time": 397.848,
+      "end_time": 417.152,
+      "duration": 19.304,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "a0a06bc4fce4",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Sự nghi ngờ vụ lợi hoàn toàn tan biến trong lòng Mai, thay bằng lòng tôn kính sâu sắc.",
+      "image_motion": {
+        "type": "STATIC_INTENTIONAL",
+        "speed": "NORMAL",
+        "subject_anchor": "MAI_FACE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_029",
+      "order": 29,
+      "start_time": 417.152,
+      "end_time": 437.321,
+      "duration": 20.169,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 9,
+      "character_refs_required": [
+        "CHAR_BA_HAO_YOUNG",
+        "CHAR_BA_THOA_YOUNG"
+      ],
+      "location_ref": "LOC_GAC_XEP_BAO_LOC",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "9242d0bbfd12",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "visual_mode_reason": "Chuyển động có giá trị cao (Điểm 9/10): Tái hiện hai nữ công nhân trẻ vận hành máy dệt cơ khí nhịp nhàng trong xưởng dệt thập niên 1980.",
+      "image_motion": {
+        "type": "PAN_LEFT",
+        "speed": "SLOW",
+        "subject_anchor": "WORKERS_FIGURES",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_030",
+      "order": 30,
+      "start_time": 437.321,
+      "end_time": 460.248,
+      "duration": 22.927,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [
+        "PROP_LAND_DEED_1992"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "45add87ea0df",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Hiển thị chứng cứ đất đai 650m2 trước khi bước vào Reveal 1, chuẩn hóa theo FACT_006.",
+      "image_motion": {
+        "type": "EVIDENCE_INSPECTION",
+        "speed": "SLOW",
+        "subject_anchor": "DEED_SEAL",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_031",
+      "order": 31,
+      "start_time": 460.248,
+      "end_time": 478.553,
+      "duration": 18.305,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [
+        "PROP_VINTAGE_PHOTO_BAO_THOA",
+        "PROP_PASSBOOK_1994",
+        "PROP_LAND_DEED_1992"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "7ce11091e585",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "BƯỚC NGOẶT 1 (REVEAL 1): Tài sản là quỹ chung danh dự của hai người phụ nữ lao động nghèo. Tuyệt đối không dùng bảng chữ nhân tạo giải thích; để giọng đọc dry MC chi phối.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "PHOTO_AND_DOCUMENTS",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_032",
+      "order": 32,
+      "start_time": 478.553,
+      "end_time": 498.168,
+      "duration": 19.615,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "c4113ecb6fd0",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Tôn vinh lời hứa thiêng liêng: Bức tranh tình bạn cao cả vượt qua thời gian và gian khó.",
+      "image_motion": {
+        "type": "SLOW_PULL_OUT",
+        "speed": "SLOW",
+        "subject_anchor": "TWO_FRIENDS",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_033",
+      "order": 33,
+      "start_time": 498.168,
+      "end_time": 520.468,
+      "duration": 22.3,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [
+        "PROP_WOODEN_BOX"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "2e75e8b008e8",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Hình ảnh người bà âm thầm giữ gìn trách nhiệm và bảo quản quỹ chung suốt gần ba mươi năm.",
+      "image_motion": {
+        "type": "STATIC_INTENTIONAL",
+        "speed": "NORMAL",
+        "subject_anchor": "BA_HAO_FIGURE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_034",
+      "order": 34,
+      "start_time": 520.468,
+      "end_time": 538.092,
+      "duration": 17.624,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "5b6a8e9618ac",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Kiểm toán video theo hướng dẫn Section 10 (Điểm 3/10): Không lãng phí tạo video cho vi biểu cảm bên cửa sổ; xử lý hoàn hảo bằng Dynamic Still SUBTLE_REFRAME.",
+      "image_motion": {
+        "type": "SUBTLE_REFRAME",
+        "speed": "SLOW",
+        "subject_anchor": "MAI_FACE",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_035",
+      "order": 35,
+      "start_time": 538.092,
+      "end_time": 555.06,
+      "duration": 16.968,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 5,
+      "character_refs_required": [
+        "CHAR_MAI",
+        "CHAR_CHU_MINH"
+      ],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "b0c1679bd19b",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Kiểm toán video (Điểm 5/10 -> OPTIONAL, mặc định IMAGE_ONLY): Khoảnh khắc gia đình đồng thuận được tôn vinh qua Dynamic Still SLOW_PUSH_IN.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "CLASPED_HANDS",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_036",
+      "order": 36,
+      "start_time": 555.06,
+      "end_time": 572.039,
+      "duration": 16.979,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [
+        "PROP_WOODEN_BOX"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "39b4cb3ed034",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Bí mật chuyển hóa thành di sản tinh thần: Chiếc hộp gỗ nằm yên bình cạnh bình hoa cúc vàng.",
+      "image_motion": {
+        "type": "PAN_LEFT",
+        "speed": "SLOW",
+        "subject_anchor": "BOX_AND_FLOWERS",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_037",
+      "order": 37,
+      "start_time": 572.039,
+      "end_time": 588.9,
+      "duration": 16.861,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CHU_MINH",
+      "prop_refs": [
+        "PROP_VINTAGE_PHOTO_BAO_THOA"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "11601173b755",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Chiêm nghiệm triết lý: Giá trị nhân văn của những lời hứa danh dự thầm lặng.",
+      "image_motion": {
+        "type": "STATIC_INTENTIONAL",
+        "speed": "NORMAL",
+        "subject_anchor": "HANDS_AND_PHOTO",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_038",
+      "order": 38,
+      "start_time": 588.9,
+      "end_time": 606.445,
+      "duration": 17.545,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 7,
+      "character_refs_required": [
+        "CHAR_MAI"
+      ],
+      "location_ref": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "e6608e0a2b39",
+      "motion_value": "HIGH",
+      "video_priority": "P2",
+      "visual_mode_reason": "Hành trình thực địa địa lý (Điểm 7/10): Xe ô tô đi dọc theo đường đèo uốn lượn mù sương ở Lâm Đồng hướng về viện dưỡng lão.",
+      "image_motion": {
+        "type": "PAN_RIGHT",
+        "speed": "SLOW",
+        "subject_anchor": "BUILDING_AND_MAI",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_039",
+      "order": 39,
+      "start_time": 606.445,
+      "end_time": 624.122,
+      "duration": 17.677,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 5,
+      "character_refs_required": [
+        "CHAR_MAI",
+        "CHAR_BA_THOA_ELDER"
+      ],
+      "location_ref": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+      "prop_refs": [
+        "PROP_VINTAGE_PHOTO_BAO_THOA"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "f6a37dcbc8ab",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "BƯỚC NGOẶT 2 (REVEAL 2): Gặp gỡ bà Thoa tại viện dưỡng lão; đích đến thực sự của quỹ là mái ấm tình thương cho trẻ mồ côi. Giữ ảnh tĩnh để khoảnh khắc thiêng liêng đọng lại.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "TWO_WOMEN",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_040",
+      "order": 40,
+      "start_time": 624.122,
+      "end_time": 642.856,
+      "duration": 18.734,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 10,
+      "character_refs_required": [
+        "CHAR_MAI",
+        "CHAR_BA_THOA_ELDER"
+      ],
+      "location_ref": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "5265a1e056a2",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "visual_mode_reason": "Hành động kết nối thế hệ có giá trị vận động tối đa (Điểm 10/10): Mai đẩy xe lăn cho bà Thoa dạo bước trong sân vườn đầy nắng thông xanh.",
+      "image_motion": {
+        "type": "PAN_RIGHT",
+        "speed": "SLOW",
+        "subject_anchor": "WHEELCHAIR_WALK",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_041",
+      "order": 41,
+      "start_time": 642.856,
+      "end_time": 660.151,
+      "duration": 17.295,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 5,
+      "character_refs_required": [
+        "CHAR_MAI",
+        "CHAR_BA_THOA_ELDER"
+      ],
+      "location_ref": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "45fab7b654a8",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Cận cảnh bàn tay trẻ tuổi của Mai đan chặt bàn tay già nua nhăn nheo của bà Thoa.",
+      "image_motion": {
+        "type": "STATIC_INTENTIONAL",
+        "speed": "NORMAL",
+        "subject_anchor": "HANDS_CLASPED",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_042",
+      "order": 42,
+      "start_time": 660.151,
+      "end_time": 677.903,
+      "duration": 17.752,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_KHU_DAT_BAO_LOC",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "094624023e5b",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Khung cảnh chiêm nghiệm Sau Cánh Cửa: Đồi chè Bảo Lộc trong nắng sớm thanh khiết.",
+      "image_motion": {
+        "type": "PAN_LEFT",
+        "speed": "SLOW",
+        "subject_anchor": "TEA_HILLS",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_043",
+      "order": 43,
+      "start_time": 677.903,
+      "end_time": 695.984,
+      "duration": 18.081,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_KHU_DAT_BAO_LOC",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "afcc9db4171e",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Bản vẽ phác thảo mái ấm tình thương trẻ em đặt trên bàn gỗ ngoài trời bên mảnh đất 650m2.",
+      "image_motion": {
+        "type": "SLOW_PUSH_IN",
+        "speed": "SLOW",
+        "subject_anchor": "BLUEPRINT_DETAILS",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_044",
+      "order": 44,
+      "start_time": 695.984,
+      "end_time": 713.607,
+      "duration": 17.623,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 9,
+      "character_refs_required": [
+        "CHAR_MAI",
+        "CHAR_CHU_MINH"
+      ],
+      "location_ref": "LOC_KHU_DAT_BAO_LOC",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "88c2fbc8c059",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "visual_mode_reason": "Hành động kết thúc giàu ý nghĩa (Điểm 9/10): Mai, Chú Minh cùng bước đi trên sườn đồi chè, hướng về tương lai khởi công mái ấm.",
+      "image_motion": {
+        "type": "PAN_RIGHT",
+        "speed": "SLOW",
+        "subject_anchor": "TWO_FIGURES",
+        "safe_crop_zone": "CENTER"
+      }
+    },
+    {
+      "episode_id": "EP003",
+      "scene_id": "SC_045",
+      "order": 45,
+      "start_time": 713.607,
+      "end_time": 730.627,
+      "duration": 17.02,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_MAI_HCM",
+      "prop_refs": [
+        "PROP_WOODEN_BOX",
+        "PROP_VINTAGE_PHOTO_BAO_THOA"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "8d40c428193b",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Hình ảnh kết tập: Khung ảnh kỷ niệm mới chụp Mai cùng bà Thoa đặt trang trọng bên chiếc hộp gỗ mở nắp.",
+      "image_motion": {
+        "type": "SLOW_PULL_OUT",
+        "speed": "SLOW",
+        "subject_anchor": "FRAMED_PHOTO",
+        "safe_crop_zone": "CENTER"
+      }
+    }
+  ]
+}

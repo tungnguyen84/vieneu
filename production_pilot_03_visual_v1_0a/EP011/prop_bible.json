@@ -1,0 +1,48 @@
+[
+  {
+    "brand_neutral_desc": "Vintage brand-neutral grey/silver candybar feature phone from early 2010s, monochrome/low-res color LCD screen, physical numeric keypad.",
+    "condition": "Faint hairline scratches on plastic screen cover, edge wear on silver trim, perfectly preserved operational state.",
+    "contents": "Saved 2012 hospital photograph in gallery, contact list with repeated calls to 'Công việc'.",
+    "continuity_notes": "Key prop of the episode. Must retain exact physical shape, dark grey casing, and screen aspect ratio across all scenes.",
+    "dimensions": "10.5cm x 4.5cm x 1.4cm",
+    "hardware": "Small round 2mm pin charging jack connected to a thin black charging cable, slightly worn rubber keypad buttons.",
+    "name": "Điện thoại Nokia cũ thời sinh viên",
+    "prop_id": "PROP_OLD_PHONE_01",
+    "prop_reference_required": true
+  },
+  {
+    "condition": "Digital screen pixels visible on LCD display; poignant, genuine, ambiguous to an outsider.",
+    "continuity_notes": "Must maintain exact character ages and hospital room setting whenever seen.",
+    "format": "Low-resolution 2012 digital phone camera photograph displayed on phone LCD, or printed snapshot in keepsake box.",
+    "name": "Bức ảnh trong màn hình điện thoại / kỷ vật",
+    "prop_id": "PROP_HOSPITAL_PHOTO_2012",
+    "prop_reference_required": true,
+    "visual_content": "Young Nam (23, male) in a casual hoodie standing beside young Thảo (21, female) resting in a green hospital gown, holding a swaddled infant wrapped in a yellow blanket at Nam Định provincial hospital in August 2012."
+  },
+  {
+    "condition": "Immaculately kept in a small red velvet drawstring pouch inside Nam's memento drawer.",
+    "continuity_notes": "Appears in drawer search, comparison with phone photo, and climax reconciliation.",
+    "dimensions": "Diameter 4.5cm, adjustable open cuff design.",
+    "engraving": "Hand-engraved inscription on the outer curved surface: 'An - 15/08/2013'.",
+    "material": "Solid sterling silver, polished surface with delicate gentle patina.",
+    "name": "Chiếc vòng tay trẻ em bằng bạc",
+    "prop_id": "PROP_SILVER_BRACELET",
+    "prop_reference_required": true
+  },
+  {
+    "continuity_notes": "Clean legal paper surface in image prompt, exact legal text rendered via overlay.",
+    "evidence_text": "Biên Bản Thỏa Thuận Bảo Lãnh Nuôi Dưỡng Trẻ Mồ Côi (2013) | Đại diện bảo lãnh: Nguyễn Hoài Nam | Người nhận nuôi hợp pháp: Gia đình hiếm muộn",
+    "format": "Official stamped Vietnamese notarized agreement on legal paper, dated late 2013.",
+    "name": "Giấy tờ bảo lãnh viện phí và hồ sơ nhận con nuôi 2013",
+    "prop_id": "PROP_ADOPTION_RECORD_2013",
+    "prop_reference_required": false
+  },
+  {
+    "continuity_notes": "Demonstrates Nam's ten years of quiet, honest sacrifice.",
+    "evidence_text": "Nhật ký chu cấp bé An (2013 - 2024): Tiền làm thêm ca đêm, hỗ trợ học phí và sinh hoạt định kỳ qua tài khoản gia đình nhận nuôi.",
+    "format": "Small personal ledger notebook with handwritten dates and monthly amounts from 2013 to 2024.",
+    "name": "Giấy sao kê / ghi chép các khoản chu cấp làm thêm",
+    "prop_id": "PROP_BANK_TRANSFER_NOTES",
+    "prop_reference_required": false
+  }
+]

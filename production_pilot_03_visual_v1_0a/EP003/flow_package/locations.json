@@ -1,0 +1,67 @@
+[
+  {
+    "location_id": "LOC_GAC_XEP_BAO_LOC",
+    "name": "Căn gác xép nhà bà cố tại Bảo Lộc",
+    "city_region": "Bảo Lộc, Lâm Đồng",
+    "type": "INTERIOR",
+    "architecture": "Rustic traditional Vietnamese highland attic, exposed dark timber beams, wooden floorboards with visible grain, aged terracotta roof tiles with gaps letting in slivers of daylight, accumulation of vintage cardboard boxes and wooden trunks.",
+    "era": "Present (2024) with preserved historical items",
+    "key_furniture": "Old wooden chests, bamboo drying trays, stacks of yellowed books, vintage wooden trunk on low bench.",
+    "lighting": "Slanted golden daylight filtering through dust motes from small attic dormer window, warm contrast.",
+    "color_material_characteristics": "Deep warm wood tones, dusty golden rays, weathered cedar and bamboo.",
+    "story_function": "Where Mai discovers the mysterious wooden box and begins her investigation.",
+    "reference_prompt": "Interior photograph of a rustic wooden attic in an old Vietnamese house in Bảo Lộc, exposed cedar rafters, dust motes floating in diagonal beams of golden sunlight, vintage wooden storage boxes on floorboards, 35mm documentary realism."
+  },
+  {
+    "location_id": "LOC_NHA_MAI_HCM",
+    "name": "Căn hộ của Mai tại TP. Hồ Chí Minh",
+    "city_region": "TP. Hồ Chí Minh",
+    "type": "INTERIOR",
+    "architecture": "Modern urban Vietnamese apartment, clean white walls, light oak wooden desk, bookshelf, balcony overlooking Saigon nightscape.",
+    "era": "Present (2024)",
+    "key_furniture": "Study desk, warm desk lamp, laptop, ergonomic chair, photo frame on shelf.",
+    "lighting": "Focused warm tungsten task light on desk, soft ambient city glow from window.",
+    "color_material_characteristics": "Clean neutral grays, warm wood accents, urban evening palette.",
+    "story_function": "Mai analyzes the box contents, wrestles with suspicion, examines financial clues.",
+    "reference_prompt": "Interior of a modern Vietnamese apartment study at night, wooden desk illuminated by an anglepoise lamp, papers neatly arranged, large window overlooking distant city lights of Ho Chi Minh City, subtle cinematic lighting, 35mm photography."
+  },
+  {
+    "location_id": "LOC_NHA_CHU_MINH",
+    "name": "Nhà riêng của Chú Minh",
+    "city_region": "Bảo Lộc, Lâm Đồng",
+    "type": "INTERIOR",
+    "architecture": "Traditional Vietnamese provincial house, polished dark wood furniture set (bộ bàn ghế gỗ), carved wooden ancestor altar with bronze incense burner in background, ceramic tea set on table.",
+    "era": "Present (2024)",
+    "key_furniture": "Heavy wooden dining/tea table, wooden armchairs, glass display cabinet with family mementos, ancestor altar.",
+    "lighting": "Gentle natural daylight through sheer lace curtains, warm inviting indoor ambiance.",
+    "color_material_characteristics": "Warm mahogany wood, glazed ceramic green tea, muted white walls.",
+    "story_function": "Mai shows the photo to Chú Minh; Chú Minh reveals Bà Thoa's identity and past.",
+    "reference_prompt": "Interior of a provincial Vietnamese living room in Lâm Đồng, traditional carved mahogany armchairs and low tea table with porcelain tea pot, ancestor altar softly lit in background, gentle daylight filtering through lace curtains, cinematic 35mm documentary realism."
+  },
+  {
+    "location_id": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+    "name": "Viện dưỡng lão tại Lâm Đồng",
+    "city_region": "Lâm Đồng (Highland region)",
+    "type": "INTERIOR/EXTERIOR",
+    "architecture": "Highland rest home facility, colonial-influenced architecture, French shuttered windows, sunroom with potted orchids, manicured pine tree garden and stone pathways outside.",
+    "era": "Present (2024)",
+    "key_furniture": "Wheelchair, comfortable cushioned armchairs, low wooden tea table, large bay windows overlooking pine hills.",
+    "lighting": "Cool soft highland morning light mixed with gentle golden sunshine, misty pine background.",
+    "color_material_characteristics": "Earthy highland tones, pine green, misty white, warm wood interiors.",
+    "story_function": "Climax meeting with elderly Bà Thoa; Reveal 2 of the orphan shelter promise.",
+    "reference_prompt": "Bright sunlit dayroom of a highland nursing home in Lâm Đồng, large French windows looking out onto pine-covered hills in gentle mist, potted green ferns, calm peaceful documentary atmosphere, 35mm lens."
+  },
+  {
+    "location_id": "LOC_KHU_DAT_BAO_LOC",
+    "name": "Mảnh đất vườn 650m2 tại Bảo Lộc",
+    "city_region": "Bảo Lộc, Lâm Đồng",
+    "type": "EXTERIOR",
+    "architecture": "Peaceful highland hillside garden plot, gentle sloping red basalt soil, rows of tea shrubs and fruit trees, wooden boundary fence, panoramic view of rolling mist-covered hills.",
+    "era": "Present (2024)",
+    "key_furniture": "Rustic wooden boundary marker, small wooden bench under shade tree.",
+    "lighting": "Bright warm morning highland sunshine, clear blue sky with drifting clouds.",
+    "color_material_characteristics": "Vibrant tea foliage green, red basalt earth, mountain blue.",
+    "story_function": "Ending resolution; site where the family and community will fulfill the shelter di nguyện.",
+    "reference_prompt": "Cinematic landscape of a 650-square-meter garden plot on a hillside in Bảo Lộc Vietnam, lush green tea bushes, red basalt soil, rustic timber boundary posts, distant mountain silhouette in morning sunlight, 35mm wide shot."
+  }
+]

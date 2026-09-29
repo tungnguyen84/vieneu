@@ -1,0 +1,1344 @@
+{
+  "flow_package_version": "1.0.0a",
+  "series": "Sau Cánh Cửa",
+  "episode_id": "EP011",
+  "title": "Bức Ảnh Lạ Trong Điện Thoại Cũ",
+  "aspect_ratio": "16:9",
+  "total_scenes": 45,
+  "models": {
+    "image_model": "NANO_BANANA_PRO",
+    "video_model": "omni_flash"
+  },
+  "generation_constraints": {
+    "concurrency": 1,
+    "delay_between_requests_sec": 10,
+    "video_generation_policy": "RECOMMENDED_ONLY",
+    "audio_handling": "STRIP_VIDEO_AUDIO",
+    "video_budget_rule": "SCORE_7_OR_HIGHER"
+  },
+  "scenes": [
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_001",
+      "order": 1,
+      "start_time": 0.0,
+      "end_time": 17.627,
+      "duration": 17.627,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 7,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "7978b7136b6b",
+      "motion_value": "MEDIUM",
+      "video_priority": "P2",
+      "visual_mode_reason": "Hook hành động thực tế (Điểm 7/10): Linh cắm sạc cho chiếc điện thoại Nokia cũ, màn hình nhấp nháy sáng bừng sau hơn mười năm.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "PHONE_SCREEN",
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_002",
+      "order": 2,
+      "start_time": 17.627,
+      "end_time": 33.059,
+      "duration": 15.432,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "c3e5787c2ca2",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Khoảnh khắc bàng hoàng tĩnh lặng: Linh sững sờ khi nhìn thấy bức ảnh lạ năm 2012 trên màn hình.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FACE",
+        "type": "SUBTLE_REFRAME"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_003",
+      "order": 3,
+      "start_time": 33.059,
+      "end_time": 51.382,
+      "duration": 18.323,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "340ee8125c09",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Thiết lập không gian Sau Cánh Cửa: Căn phòng khách gia đình êm đềm chứa đựng góc khuất thầm lặng.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LIVING_ROOM",
+        "type": "PAN_LEFT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_004",
+      "order": 4,
+      "start_time": 51.382,
+      "end_time": 68.202,
+      "duration": 16.82,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "030ee2eb2545",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Bức tranh gia đình hạnh phúc: Khung ảnh cưới 7 năm trước của Linh và Nam trên bàn gỗ.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "NORMAL",
+        "subject_anchor": "WEDDING_FRAME",
+        "type": "STATIC_INTENTIONAL"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_005",
+      "order": 5,
+      "start_time": 68.202,
+      "end_time": 83.982,
+      "duration": 15.78,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "7ea4064c424d",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Giới thiệu Linh trong công việc thiết kế nội thất tỉ mỉ, trân trọng tổ ấm gia đình.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER_LEFT",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_WORKING",
+        "type": "PAN_RIGHT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_006",
+      "order": 6,
+      "start_time": 83.982,
+      "end_time": 99.852,
+      "duration": 15.87,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "f4e2cee41298",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 3/10): Quan sát tĩnh tại bàn làm việc, chuyển động thực tế thấp, ưu tiên Dynamic Still để đặc tả ánh mắt trăn trở của Linh.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "NAM_FIGURE",
+        "type": "PAN_LEFT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_007",
+      "order": 7,
+      "start_time": 99.852,
+      "end_time": 118.092,
+      "duration": 18.24,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "c35e952efcc4",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Linh dọn dẹp các thùng các-tông kỷ vật cũ trong phòng lưu trữ.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_AND_BOX",
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_008",
+      "order": 8,
+      "start_time": 118.092,
+      "end_time": 134.598,
+      "duration": 16.506,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 9,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "c4e603a26ffd",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "visual_mode_reason": "Hành động kịch tính (Điểm 9/10): Tiếng chìa khóa xoay cửa đột ngột, Linh giật mình vội vàng giấu chiếc điện thoại Nokia dưới tập tài liệu trước khi Nam bước vào.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "PHONE_DISPLAY",
+        "type": "EVIDENCE_INSPECTION"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_009",
+      "order": 9,
+      "start_time": 134.598,
+      "end_time": 150.025,
+      "duration": 15.427,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01",
+        "PROP_HOSPITAL_PHOTO_2012"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "255cdb114106",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Chụp cận cảnh màn hình điện thoại hiển thị bức ảnh bệnh viện tỉnh Nam Định năm 2012 kèm lớp phủ thông tin.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "SCREEN_CENTER",
+        "type": "EVIDENCE_INSPECTION"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_010",
+      "order": 10,
+      "start_time": 150.025,
+      "end_time": 166.75,
+      "duration": 16.725,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "3881493b37ac",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Cảm xúc hoang mang bắt đầu xâm chiếm: Linh ngồi bất động nhìn chiếc điện thoại trên bàn.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FACE",
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_011",
+      "order": 11,
+      "start_time": 166.75,
+      "end_time": 185.727,
+      "duration": 18.977,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "2a3b6997ed0c",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Hiển thị chứng cứ nhật ký cuộc gọi: Danh bạ lưu tên 'Công việc' với các cuộc gọi đêm muộn và cuối tuần.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "CALL_LOG",
+        "type": "EVIDENCE_INSPECTION"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_012",
+      "order": 12,
+      "start_time": 185.727,
+      "end_time": 202.868,
+      "duration": 17.141,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "87c995267711",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 3/10): Màn hình nhật ký cuộc gọi tĩnh, thông tin chủ yếu là số liệu và văn bản, Dynamic Still push-in đạt hiệu quả tối ưu.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "NAM_AND_LINH",
+        "type": "PAN_LEFT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_013",
+      "order": 13,
+      "start_time": 202.868,
+      "end_time": 216.357,
+      "duration": 13.489,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 4,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "1f0cdea8c3cf",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Nghi vấn hợp lý (False Lead Fairness): Linh đứng bên cửa sổ ban đêm, cảm giác bị phản bội dâng trào nhưng không bịa đặt hình ảnh sai sự thật.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FIGURE",
+        "type": "SLOW_PULL_OUT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_014",
+      "order": 14,
+      "start_time": 216.357,
+      "end_time": 231.594,
+      "duration": 15.237,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 8,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "e6c295db3683",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "visual_mode_reason": "Tương tác tâm lý căng thẳng (Điểm 8/10): Bữa cơm tối đầy im lặng gượng gạo, Nam tránh ánh mắt của Linh khi với tay lấy cốc nước, sự nghi ngờ âm thầm dâng cao.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "DRAWER_INTERIOR",
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_015",
+      "order": 15,
+      "start_time": 231.594,
+      "end_time": 248.015,
+      "duration": 16.421,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 4,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_SILVER_BRACELET"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "9decf9457f0a",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 4/10): Không gian phòng ngủ tĩnh lặng trong đêm, sự nghi ngờ nội tâm phù hợp với khung hình tĩnh và chuyển động máy chậm.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "BRACELET_PALM",
+        "type": "EVIDENCE_INSPECTION"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_016",
+      "order": 16,
+      "start_time": 248.015,
+      "end_time": 268.789,
+      "duration": 20.774,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_KHO_DO_CU",
+      "prop_refs": [
+        "PROP_SILVER_BRACELET",
+        "PROP_OLD_PHONE_01"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "89cb2d9459cc",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Chụp cận cảnh chiếc vòng bạc khắc tên 'An - 15/08/2013' đặt cạnh chiếc điện thoại Nokia kèm lớp phủ văn bản.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "BRACELET_DETAILS",
+        "type": "EVIDENCE_INSPECTION"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_017",
+      "order": 17,
+      "start_time": 268.789,
+      "end_time": 286.478,
+      "duration": 17.689,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "5418adaa6e0b",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Linh đối chiếu các khoản chi tiêu chuyển khoản định kỳ và những chuyến đi về quê của Nam trong sổ tay.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_AND_NOTEBOOK",
+        "type": "PAN_RIGHT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_018",
+      "order": 18,
+      "start_time": 286.478,
+      "end_time": 303.531,
+      "duration": 17.053,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "8193e10a1a5f",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 3/10): Tòa nhà bệnh viện tỉnh từ xa, thiết lập bối cảnh địa lý không đòi hỏi chuyển động video phức tạp.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FACE",
+        "type": "SUBTLE_REFRAME"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_019",
+      "order": 19,
+      "start_time": 303.531,
+      "end_time": 322.019,
+      "duration": 18.488,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 8,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "e535fd0dbaa2",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "visual_mode_reason": "Chuyển động điều tra thực địa (Điểm 8/10): Camera tracking theo bước chân Linh đi dọc hành lang Bệnh viện Đa khoa Nam Định tấp nập, tìm kiếm manh mối quá khứ.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_WALKING",
+        "type": "PAN_LEFT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_020",
+      "order": 20,
+      "start_time": 322.019,
+      "end_time": 341.37,
+      "duration": 19.351,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 4,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "77b5aa8c554b",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 4/10): Cuộc trò chuyện tại bàn tiếp dân bệnh viện, ưu tiên biểu cảm và không khí tài liệu tĩnh lặng.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_CORRIDOR",
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_021",
+      "order": 21,
+      "start_time": 341.37,
+      "end_time": 355.584,
+      "duration": 14.214,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NURSE_OLD"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "8e88ebd448c0",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Cuộc trao đổi xúc động: Y tá già nhận ra thông tin về cô gái tên Thảo từng sinh con và qua đời sau tai biến.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "NORMAL",
+        "subject_anchor": "NURSE_AND_LINH",
+        "type": "STATIC_INTENTIONAL"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_022",
+      "order": 22,
+      "start_time": 355.584,
+      "end_time": 369.707,
+      "duration": 14.123,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "6c2d2ecb95b7",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Linh đứng ngoài cổng bệnh viện cầm mảnh giấy ghi địa chỉ nhà cũ của Thảo ở ngoại ô.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FACE",
+        "type": "SUBTLE_REFRAME"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_023",
+      "order": 23,
+      "start_time": 369.707,
+      "end_time": 385.259,
+      "duration": 15.552,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 7,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "9f868ba81684",
+      "motion_value": "MEDIUM",
+      "video_priority": "P2",
+      "visual_mode_reason": "Hành động khám phá thực địa (Điểm 7/10): Linh mở cánh cửa tủ gỗ kẽo kẹt trong căn nhà vắng, với tay tìm thấy chiếc hộp thiếc kỷ vật bám bụi.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FIGURE",
+        "type": "PAN_RIGHT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_024",
+      "order": 24,
+      "start_time": 385.259,
+      "end_time": 402.728,
+      "duration": 17.469,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 7,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "37aa5c72557f",
+      "motion_value": "MEDIUM",
+      "video_priority": "P2",
+      "visual_mode_reason": "Hành động lật mở chứng cứ (Điểm 7/10): Tay Linh run rẩy mở nắp hộp thiếc, nhấc từng phong bì và biên bản bảo lãnh có tên Nam ra xem.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "KEEPSAKE_BOX",
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_025",
+      "order": 25,
+      "start_time": 402.728,
+      "end_time": 419.705,
+      "duration": 16.977,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [
+        "PROP_ADOPTION_RECORD_2013"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "24188d420329",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Chụp cận cảnh hồ sơ thỏa thuận hỗ trợ y tế & bảo lãnh nuôi dưỡng năm 2013 mang chữ ký của Nam kèm lớp phủ văn bản.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LEGAL_DOCUMENT",
+        "type": "EVIDENCE_INSPECTION"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_026",
+      "order": 26,
+      "start_time": 419.705,
+      "end_time": 437.097,
+      "duration": 17.392,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "8ffc10cbca01",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Cận cảnh bức thư tay đầy giằng xé và trách nhiệm của Nam gửi lại bên giường bệnh.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LETTER_TEXT",
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_027",
+      "order": 27,
+      "start_time": 437.097,
+      "end_time": 452.079,
+      "duration": 14.982,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [
+        "PROP_ADOPTION_RECORD_2013"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "1e2d41e7d3d0",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Hồ sơ xác nhận gia đình hiếm muộn nhận nuôi bé An: Nam chỉ đóng vai trò người bảo lãnh danh dự.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "DOCUMENT_SEALS",
+        "type": "PAN_LEFT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_028",
+      "order": 28,
+      "start_time": 452.079,
+      "end_time": 468.396,
+      "duration": 16.317,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "0c06f4784fbf",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Bức tường nghi ngờ sụp đổ hoàn toàn: Linh ôm tập thư vào ngực, bàng hoàng nhận ra tấm lòng cao thượng của chồng.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "NORMAL",
+        "subject_anchor": "LINH_FACE",
+        "type": "STATIC_INTENTIONAL"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_029",
+      "order": 29,
+      "start_time": 468.396,
+      "end_time": 482.153,
+      "duration": 13.757,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_THAO_2012"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "5dab0056894e",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Ký ức năm 2012: Thảo mỉm cười thanh thản trên giường bệnh, trao gửi niềm tin tuyệt đối nơi người anh họ.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "THAO_FIGURE",
+        "type": "SLOW_PULL_OUT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_030",
+      "order": 30,
+      "start_time": 482.153,
+      "end_time": 496.247,
+      "duration": 14.094,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 4,
+      "character_refs_required": [
+        "CHAR_NAM_YOUNG_2012"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "a027049dd60a",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 4/10): Cận cảnh chiếc vòng bạc khắc tên An, vật chứng tĩnh mang tính biểu tượng, phóng to chi tiết qua Dynamic Still.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "YOUNG_NAM",
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_031",
+      "order": 31,
+      "start_time": 496.247,
+      "end_time": 510.462,
+      "duration": 14.215,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [
+        "PROP_ADOPTION_RECORD_2013",
+        "PROP_SILVER_BRACELET"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "3b9ced2425c4",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Bước ngoặt 1 (Reveal 1): Thân phận thực sự của Thảo và bé An được xác minh. IMAGE_ONLY tĩnh lặng để giọng đọc chiếm trọn sự chú ý.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "DOCUMENT_AND_BRACELET",
+        "type": "EVIDENCE_INSPECTION"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_032",
+      "order": 32,
+      "start_time": 510.462,
+      "end_time": 525.895,
+      "duration": 15.433,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [
+        "PROP_SILVER_BRACELET"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "e458db1300b2",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Biểu tượng của tình yêu thương và lời hứa không vụ lợi: Chiếc vòng bạc tỏa sáng dưới ánh nắng chiều.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "NORMAL",
+        "subject_anchor": "SILVER_BRACELET",
+        "type": "STATIC_INTENTIONAL"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_033",
+      "order": 33,
+      "start_time": 525.895,
+      "end_time": 547.508,
+      "duration": 21.613,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_NAM_YOUNG_2012",
+        "CHAR_BE_AN_INFANT_2012"
+      ],
+      "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "3c831d9b610f",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Ký ức năm 2013: Nam trẻ tuổi bế đứa trẻ sơ sinh đỏ hỏn trong vòng tay với ánh mắt nguyện chở che.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "NAM_AND_BABY",
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_034",
+      "order": 34,
+      "start_time": 547.508,
+      "end_time": 560.682,
+      "duration": 13.174,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [
+        "PROP_BANK_TRANSFER_NOTES"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "badc2ac48265",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Hiển thị chứng từ chuyển khoản và sao kê mười năm chắt chiu tiền làm thêm của Nam gửi nuôi dưỡng bé An.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "TRANSACTION_SLIPS",
+        "type": "EVIDENCE_INSPECTION"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_035",
+      "order": 35,
+      "start_time": 560.682,
+      "end_time": 575.121,
+      "duration": 14.439,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "58862cff33a4",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Ký ức Nam làm việc cật lực thâu đêm tại bàn máy tính để có thêm thu nhập chu cấp, gánh vác trong lặng lẽ.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "NAM_WORKING",
+        "type": "PAN_LEFT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_036",
+      "order": 36,
+      "start_time": 575.121,
+      "end_time": 589.816,
+      "duration": 14.695,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 3,
+      "character_refs_required": [
+        "CHAR_LINH"
+      ],
+      "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "968d0d9276f6",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Linh ngồi giữa những lá thư và giấy tờ, không còn một chút giận hờn, chỉ còn lòng khâm phục và xót xa cho chồng.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "LINH_FACE",
+        "type": "SUBTLE_REFRAME"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_037",
+      "order": 37,
+      "start_time": 589.816,
+      "end_time": 604.261,
+      "duration": 14.445,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 4,
+      "character_refs_required": [],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "efe56b62becb",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Căn hộ lúc hoàng hôn: Linh đã trở về Hà Nội, chuẩn bị bước vào cuộc nói chuyện chân thành nhất cuộc đời.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "TWILIGHT_ROOM",
+        "type": "PAN_RIGHT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_038",
+      "order": 38,
+      "start_time": 604.261,
+      "end_time": 620.995,
+      "duration": 16.734,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 9,
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [
+        "PROP_SILVER_BRACELET",
+        "PROP_OLD_PHONE_01"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "247ceed6ade8",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "visual_mode_reason": "Đỉnh điểm kịch tính đối đầu (Điểm 9/10): Linh đặt hồ sơ và kỷ vật lên bàn chất vấn, Nam quỳ sụp xuống ôm mặt bật khóc trong giải tỏa và ân hận.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "NAM_AND_LINH",
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_039",
+      "order": 39,
+      "start_time": 620.995,
+      "end_time": 648.652,
+      "duration": 27.657,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 5,
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "dbb73c4b46fe",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "BƯỚC NGOẶT 2 (REVEAL 2): Bản chất sự việc được làm sáng tỏ trọn vẹn: Nam thú nhận mặc cảm nghèo khó và lời hứa bên giường bệnh; Linh trách giận sự giấu giếm nhưng mở lòng thấu hiểu.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "COUPLE_EMBRACE",
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_040",
+      "order": 40,
+      "start_time": 648.652,
+      "end_time": 665.16,
+      "duration": 16.508,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 5,
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "5e41938e1d80",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Đánh giá ngân sách chuyển động (Điểm 5/10): Lời thú nhận thầm lặng của Nam, cận cảnh gương mặt hối hận và nhẹ nhõm, nhịp điệu tĩnh tăng chiều sâu cảm xúc.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "NORMAL",
+        "subject_anchor": "HANDS_CLASPED",
+        "type": "STATIC_INTENTIONAL"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_041",
+      "order": 41,
+      "start_time": 665.16,
+      "end_time": 684.558,
+      "duration": 19.398,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 5,
+      "character_refs_required": [],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "fedf26aa8810",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Chiêm nghiệm Sau Cánh Cửa: Hôn nhân cần sự bao dung đi đôi với sự minh bạch từ nay về sau.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "TEA_CUPS",
+        "type": "PAN_LEFT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_042",
+      "order": 42,
+      "start_time": 684.558,
+      "end_time": 700.37,
+      "duration": 15.812,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 5,
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT"
+      ],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "90f10acfb0c5",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Vợ chồng cùng nhau xem những bức ảnh trưởng thành của bé An qua từng năm tháng do gia đình nhận nuôi gửi tặng.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "COUPLE_ALBUM",
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_043",
+      "order": 43,
+      "start_time": 700.37,
+      "end_time": 716.497,
+      "duration": 16.127,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 4,
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT",
+        "CHAR_BE_AN_PRESENT"
+      ],
+      "location_ref": "LOC_CONG_VIEN_CHIEU",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "11b72f53cb7e",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Gặp gỡ bé An: Linh và Nam ngồi trò chuyện cùng bé An tại quán cà phê sân vườn rợp bóng cây, sự gắn kết tự nhiên.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "AN_AND_COUPLE",
+        "type": "SUBTLE_REFRAME"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_044",
+      "order": 44,
+      "start_time": 716.497,
+      "end_time": 730.679,
+      "duration": 14.182,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "video_recommended": true,
+      "video_score": 10,
+      "character_refs_required": [
+        "CHAR_LINH",
+        "CHAR_NAM_PRESENT",
+        "CHAR_BE_AN_PRESENT"
+      ],
+      "location_ref": "LOC_CONG_VIEN_CHIEU",
+      "prop_refs": [],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "8db43316a049",
+      "motion_value": "HIGH",
+      "video_priority": "P1",
+      "visual_mode_reason": "Hành động kết thúc giàu ý nghĩa (Điểm 10/10): Bé An chạy lại ôm chầm lấy Nam và Linh trên con đường ngập nắng chiều công viên, giải tỏa trọn vẹn nỗi đau 10 năm.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "FAMILY_TRIO",
+        "type": "PAN_RIGHT"
+      }
+    },
+    {
+      "episode_id": "EP011",
+      "scene_id": "SC_045",
+      "order": 45,
+      "start_time": 730.679,
+      "end_time": 743.721,
+      "duration": 13.042,
+      "image_status": "NOT_GENERATED",
+      "video_status": "NOT_GENERATED",
+      "visual_mode": "IMAGE_ONLY",
+      "video_recommended": false,
+      "video_score": 2,
+      "character_refs_required": [],
+      "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+      "prop_refs": [
+        "PROP_OLD_PHONE_01",
+        "PROP_SILVER_BRACELET"
+      ],
+      "prompt_version": "1.0.0a",
+      "prompt_hash": "0057b7318b00",
+      "motion_value": "LOW",
+      "video_priority": null,
+      "visual_mode_reason": "Hình ảnh kết tập: Chiếc điện thoại cũ và vòng bạc nằm yên bình bên bức ảnh mới chụp ba người trong công viên.",
+      "image_motion": {
+        "safe_crop_zone": "CENTER",
+        "speed": "SLOW",
+        "subject_anchor": "CREDENZA_KEEPSAKES",
+        "type": "SLOW_PULL_OUT"
+      }
+    }
+  ]
+}

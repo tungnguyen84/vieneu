@@ -1,0 +1,96 @@
+[
+  {
+    "scene_id": "SC_010",
+    "start_time": 135.814,
+    "end_time": 149.96,
+    "duration": 14.146,
+    "overlay_type": "DOCUMENT",
+    "overlay_title": null,
+    "overlay_text": "SỔ TIẾT KIỆM KỲ HẠN DÀI (1994)\nChủ sở hữu: Bà Hảo\nSố tiền: 15 triệu đồng",
+    "declared_claims": [
+      "Sổ tiết kiệm kỳ hạn dài",
+      "1994",
+      "Bà Hảo",
+      "15 triệu đồng"
+    ],
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_PASSBOOK_1994"
+    ]
+  },
+  {
+    "scene_id": "SC_011",
+    "start_time": 149.96,
+    "end_time": 164.27,
+    "duration": 14.31,
+    "overlay_type": "DOCUMENT",
+    "overlay_title": null,
+    "overlay_text": "GHI CHÉP ĐỊA CHỈ LIÊN HỆ\nCơ sở chăm sóc người cao tuổi, Lâm Đồng",
+    "declared_claims": [
+      "viện dưỡng lão",
+      "Lâm Đồng"
+    ],
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_HANDWRITTEN_NOTE"
+    ]
+  },
+  {
+    "scene_id": "SC_025",
+    "start_time": 343.802,
+    "end_time": 362.144,
+    "duration": 18.342,
+    "overlay_type": "DOCUMENT",
+    "overlay_title": null,
+    "overlay_text": "BIÊN NHẬN TIỀN GỬI ĐỊNH KỲ (1994)\nNgười đứng tên: Bà Hảo",
+    "declared_claims": [
+      "1994",
+      "Bà Hảo"
+    ],
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_PASSBOOK_1994"
+    ]
+  },
+  {
+    "scene_id": "SC_030",
+    "start_time": 437.321,
+    "end_time": 460.248,
+    "duration": 22.927,
+    "overlay_type": "DOCUMENT",
+    "overlay_title": null,
+    "overlay_text": "GIẤY CHỨNG NHẬN QUYỀN SỬ DỤNG ĐẤT (1992)\nThửa đất: 650m2 đất vườn tại Bảo Lộc, Lâm Đồng\nĐại diện đứng tên: Bà Hảo",
+    "declared_claims": [
+      "1992",
+      "650m2",
+      "Bảo Lộc, Lâm Đồng",
+      "Bà Hảo"
+    ],
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_LAND_DEED_1992"
+    ]
+  },
+  {
+    "scene_id": "SC_043",
+    "start_time": 677.903,
+    "end_time": 695.984,
+    "duration": 18.081,
+    "overlay_type": "DOCUMENT",
+    "overlay_title": null,
+    "overlay_text": "MÁI ẤM TÌNH THƯƠNG (TIẾP NỐI DI NGUYỆN)\nĐịa điểm: Thửa đất 650m2 tại Bảo Lộc, Lâm Đồng",
+    "declared_claims": [
+      "mái ấm tình thương",
+      "650m2",
+      "Bảo Lộc, Lâm Đồng",
+      "di nguyện"
+    ],
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": []
+  }
+]

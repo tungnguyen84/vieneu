@@ -1,0 +1,560 @@
+{
+  "SC_001": {
+    "prompt": "Cinematic documentary close-up of a 32-year-old Vietnamese woman (CHAR_LINH) in casual navy clothes plugging a charging cable into a vintage grey feature phone (PROP_OLD_PHONE_01) in a cozy storage room, the screen illuminating with a soft blue glow, dust particles in the warm lamplight, realistic skin texture, 35mm lens.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "7978b7136b6b",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_KHO_DO_CU",
+    "prop_refs": [
+      "PROP_OLD_PHONE_01"
+    ]
+  },
+  "SC_002": {
+    "prompt": "Close-up of a 32-year-old Vietnamese woman (CHAR_LINH), eyes wide in disbelief and growing sorrow, holding the glowing phone, soft bluish screen light reflecting in her dark pupils, warm domestic shadows around her, photorealistic documentary realism, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "c3e5787c2ca2",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_KHO_DO_CU",
+    "prop_refs": [
+      "PROP_OLD_PHONE_01"
+    ]
+  },
+  "SC_003": {
+    "prompt": "Cinematic establishing shot of a tasteful Vietnamese apartment living room, sheer white curtains filtering soft afternoon daylight, a comfortable grey sofa, framed photos on a wooden credenza, quiet domestic harmony, 35mm photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "340ee8125c09",
+    "character_refs": [],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_004": {
+    "prompt": "Close-up of a framed wedding photograph on a wooden credenza: A smiling young Vietnamese couple (Linh and Nam) dressed in elegant wedding attire, warm natural light catching the glass frame, a small vase of dried lavender beside it, cinematic realism, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "030ee2eb2545",
+    "character_refs": [],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_005": {
+    "prompt": "A 32-year-old Vietnamese woman (CHAR_LINH) in a cream sweater working at an oak drafting table, architectural interior sketches and fabric swatches, soft natural daylight, thoughtful artistic atmosphere, 35mm lens.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "7ea4064c424d",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_006": {
+    "prompt": "Medium shot of a 35-year-old Vietnamese man (CHAR_NAM_PRESENT) in a charcoal jacket standing in the entryway of a warm apartment, taking off his coat, subtle exhaustion around his kind eyes, soft warm domestic hallway light, 35mm documentary realism.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "f4e2cee41298",
+    "character_refs": [
+      "CHAR_NAM_PRESENT"
+    ],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_007": {
+    "prompt": "A 32-year-old Vietnamese woman (CHAR_LINH) in casual home t-shirt kneeling on the floor of a small storage room, opening an old cardboard archive box labeled with university mementos, soft warm tungsten lamp illumination, dust specks, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "c35e952efcc4",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_KHO_DO_CU",
+    "prop_refs": []
+  },
+  "SC_008": {
+    "prompt": "Macro photography of a Vietnamese woman's hand holding an illuminated vintage feature phone (PROP_OLD_PHONE_01), thumb resting on the keypad, the screen displaying an authentic 2012 photo of a young man and woman with an infant in a hospital, warm lighting, 35mm lens.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "c4e603a26ffd",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_KHO_DO_CU",
+    "prop_refs": [
+      "PROP_OLD_PHONE_01"
+    ]
+  },
+  "SC_009": {
+    "prompt": "Direct top-down macro shot of the vintage feature phone LCD screen (PROP_OLD_PHONE_01), displaying a poignant 2012 Vietnamese hospital snapshot of young Nam and a young woman (Thảo) holding a newborn infant, soft pixel grid texture of vintage display, clean documentary focus, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "255cdb114106",
+    "character_refs": [],
+    "location_ref": "LOC_KHO_DO_CU",
+    "prop_refs": [
+      "PROP_OLD_PHONE_01",
+      "PROP_HOSPITAL_PHOTO_2012"
+    ]
+  },
+  "SC_010": {
+    "prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_LINH) seated at the storage desk, hands clasped tightly under her chin, gazing at the glowing phone with deep confusion and heart-wrenching suspicion, warm tungsten shadows, 35mm film.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "3881493b37ac",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_KHO_DO_CU",
+    "prop_refs": [
+      "PROP_OLD_PHONE_01"
+    ]
+  },
+  "SC_011": {
+    "prompt": "Macro photography of the vintage feature phone screen displaying a call log menu in Vietnamese, monochrome/color low-res font listing incoming and outgoing calls under contact name 'Cong Viec', clean documentary angle, soft warm backlighting, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "2a3b6997ed0c",
+    "character_refs": [],
+    "location_ref": "LOC_KHO_DO_CU",
+    "prop_refs": [
+      "PROP_OLD_PHONE_01"
+    ]
+  },
+  "SC_012": {
+    "prompt": "Atmospheric low-key shot of a modern Vietnamese apartment at night: A 35-year-old man (CHAR_NAM_PRESENT) at a dining table turning his phone screen-down, while in the shadowed foreground doorway, a 32-year-old woman (CHAR_LINH) watches quietly, cinematic realism, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "87c995267711",
+    "character_refs": [
+      "CHAR_LINH",
+      "CHAR_NAM_PRESENT"
+    ],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_013": {
+    "prompt": "A 32-year-old Vietnamese woman (CHAR_LINH) standing by the apartment balcony window at night, city lights blurred outside, tears shining in her eyes, arms wrapped around herself defensively, raw emotional pain, 35mm lens.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "1f0cdea8c3cf",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_014": {
+    "prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_LINH) searching through the open wooden drawer of an old desk, discovering a small red velvet pouch among old student certificates and papers, warm overhead lamp light, 35mm.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "e6c295db3683",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_KHO_DO_CU",
+    "prop_refs": []
+  },
+  "SC_015": {
+    "prompt": "Close-up of a delicate polished sterling silver baby bracelet (PROP_SILVER_BRACELET) resting in the open palm of a 32-year-old Vietnamese woman (CHAR_LINH), fine engraved inscription catching the light, emotional tension, 35mm macro lens.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "9decf9457f0a",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_KHO_DO_CU",
+    "prop_refs": [
+      "PROP_SILVER_BRACELET"
+    ]
+  },
+  "SC_016": {
+    "prompt": "Macro still life photography of the small silver baby bracelet (PROP_SILVER_BRACELET) placed neatly beside the vintage feature phone (PROP_OLD_PHONE_01) on dark aged Vietnamese wood, clear sharp focus on the silver band and phone casing, warm directional light, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "89cb2d9459cc",
+    "character_refs": [],
+    "location_ref": "LOC_KHO_DO_CU",
+    "prop_refs": [
+      "PROP_SILVER_BRACELET",
+      "PROP_OLD_PHONE_01"
+    ]
+  },
+  "SC_017": {
+    "prompt": "A 32-year-old Vietnamese woman (CHAR_LINH) seated at the dining table with a desk calendar and personal expense ledger, pen in hand, calculating recurring monthly dates, deeply troubled and anxious expression, afternoon window light, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "5418adaa6e0b",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_018": {
+    "prompt": "Cinematic close-up of a 32-year-old Vietnamese woman (CHAR_LINH) wiping a tear from her cheek, resolute and determined gaze, natural lighting framing her face, dignified vulnerability, 35mm film.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "8193e10a1a5f",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_019": {
+    "prompt": "Documentary exterior shot of a 32-year-old Vietnamese woman (CHAR_LINH) in an olive trench coat walking past the front gate of Nam Định provincial hospital, quiet northern Vietnamese provincial street in the morning, realistic atmospheric depth, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "e535fd0dbaa2",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+    "prop_refs": []
+  },
+  "SC_020": {
+    "prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_LINH) walking through the mint-green hallway of a provincial public hospital in Nam Định, holding her bag, cool fluorescent lighting, authentic Vietnamese public medical facility, 35mm lens.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "77b5aa8c554b",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+    "prop_refs": []
+  },
+  "SC_021": {
+    "prompt": "Medium two-shot of an experienced 58-year-old Vietnamese hospital nurse (CHAR_NURSE_OLD) in white uniform speaking with compassionate solemnity to a 32-year-old woman (CHAR_LINH) across a wooden hospital counter, medical archive binders in background, fluorescent light, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "8e88ebd448c0",
+    "character_refs": [
+      "CHAR_LINH",
+      "CHAR_NURSE_OLD"
+    ],
+    "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+    "prop_refs": []
+  },
+  "SC_022": {
+    "prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_LINH) standing outside the hospital building, looking at a handwritten address note in her hand, thoughtful and complex expression as the puzzle pieces shift, overcast provincial morning sky, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "6c2d2ecb95b7",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+    "prop_refs": []
+  },
+  "SC_023": {
+    "prompt": "A 32-year-old Vietnamese woman (CHAR_LINH) in an olive trench coat walking into the courtyard of an old brick village house in suburban Nam Định, overgrown moss, potted plants, quiet northern Vietnamese rural atmosphere, 35mm photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "9f868ba81684",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+    "prop_refs": []
+  },
+  "SC_024": {
+    "prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_LINH) inside a quiet rustic room in Nam Định, opening a vintage keepsake box on a wooden table, soft shafts of sunlight illuminating floating dust, atmosphere of preserved history, 35mm lens.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "37aa5c72557f",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+    "prop_refs": []
+  },
+  "SC_025": {
+    "prompt": "Macro shot of an official 2013 Vietnamese medical and guardianship agreement paper, typed formal layout, blue ink signatures, notary stamp in red ink, resting on dark weathered wood, soft natural window light, sharp documentary focus, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "24188d420329",
+    "character_refs": [],
+    "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+    "prop_refs": [
+      "PROP_ADOPTION_RECORD_2013"
+    ]
+  },
+  "SC_026": {
+    "prompt": "Macro photography of a handwritten letter in Vietnamese, blue ballpoint pen on lined paper, sincere emotional handwriting, slight creases where tears once fell, resting on rustic wooden desk, soft warm sidelight, 35mm lens.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "8ffc10cbca01",
+    "character_refs": [],
+    "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+    "prop_refs": []
+  },
+  "SC_027": {
+    "prompt": "Macro shot of legal adoption consent papers dated late 2013, clean official Vietnamese administrative formatting, red circular seals, documenting the formal legal adoption of infant An by a loving infertile family, documentary realism, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "1e2d41e7d3d0",
+    "character_refs": [],
+    "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+    "prop_refs": [
+      "PROP_ADOPTION_RECORD_2013"
+    ]
+  },
+  "SC_028": {
+    "prompt": "Medium close-up of a 32-year-old Vietnamese woman (CHAR_LINH) pressing the letters against her chest, eyes closed, tears streaming down her cheeks in overwhelming relief, profound empathy, and awe, soft window light, 35mm film.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "0c06f4784fbf",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+    "prop_refs": []
+  },
+  "SC_029": {
+    "prompt": "Archival memory portrait of a 21-year-old Vietnamese young woman (CHAR_THAO_2012) in a pale hospital gown resting against pillows, serene maternal smile, holding a swaddled newborn, soft natural morning window light, subtle 2012 documentary grain, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "5dab0056894e",
+    "character_refs": [
+      "CHAR_THAO_2012"
+    ],
+    "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+    "prop_refs": []
+  },
+  "SC_030": {
+    "prompt": "Dramatic archival memory shot from 2013: A 23-year-old Vietnamese young man (CHAR_NAM_YOUNG_2012) sitting on a hospital bench outside an intensive care ward, head in hands, raw sorrow and immense moral burden, cool flickering fluorescent light, 35mm documentary realism.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "a027049dd60a",
+    "character_refs": [
+      "CHAR_NAM_YOUNG_2012"
+    ],
+    "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+    "prop_refs": []
+  },
+  "SC_031": {
+    "prompt": "Solemn macro still life of the official 2013 Vietnamese adoption guardianship certificate bearing Nam's signature (PROP_ADOPTION_RECORD_2013), the silver baby bracelet 'An - 15/08/2013' resting on top of the legal seal, bathed in warm reverent sunlight, 35mm film.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "3b9ced2425c4",
+    "character_refs": [],
+    "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+    "prop_refs": [
+      "PROP_ADOPTION_RECORD_2013",
+      "PROP_SILVER_BRACELET"
+    ]
+  },
+  "SC_032": {
+    "prompt": "Artistic close-up of the small engraved silver bracelet resting on weathered red Vietnamese brick, soft warm sunlight gleaming on the metal, symbolizing pure selfless devotion and an unbroken promise, cinematic documentary realism, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "e458db1300b2",
+    "character_refs": [],
+    "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+    "prop_refs": [
+      "PROP_SILVER_BRACELET"
+    ]
+  },
+  "SC_033": {
+    "prompt": "Emotional archival documentary photo from 2013: A 23-year-old Vietnamese young man (CHAR_NAM_YOUNG_2012) gently cradling a newborn baby swaddled in yellow flannel in a quiet hospital room, eyes glistening with tears of protective love, soft natural light, 35mm.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "3c831d9b610f",
+    "character_refs": [
+      "CHAR_NAM_YOUNG_2012",
+      "CHAR_BE_AN_INFANT_2012"
+    ],
+    "location_ref": "LOC_BENH_VIEN_NAM_DINH_2012",
+    "prop_refs": []
+  },
+  "SC_034": {
+    "prompt": "Macro photography of a personal savings ledger and Vietnamese bank transaction slips spread on an oak table, handwritten records of regular monthly support payments over ten years, official blue stamps, soft warm domestic lighting, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "badc2ac48265",
+    "character_refs": [],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": [
+      "PROP_BANK_TRANSFER_NOTES"
+    ]
+  },
+  "SC_035": {
+    "prompt": "Atmospheric documentary scene: A 35-year-old Vietnamese engineer (CHAR_NAM_PRESENT) working late into the night at a computer workstation, desk illuminated by a single warm desk lamp, technical blueprints and coffee mug, exhausted yet steadfast expression, 35mm.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "58862cff33a4",
+    "character_refs": [
+      "CHAR_NAM_PRESENT"
+    ],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_036": {
+    "prompt": "Medium close-up of a 32-year-old Vietnamese woman (CHAR_LINH) sitting in the quiet room, a tender compassionate smile emerging through tears, warm golden sunlight breaking through the wooden shutters onto her face, emotional catharsis, 35mm lens.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "968d0d9276f6",
+    "character_refs": [
+      "CHAR_LINH"
+    ],
+    "location_ref": "LOC_NHA_CU_THAO_NGOAI_O",
+    "prop_refs": []
+  },
+  "SC_037": {
+    "prompt": "Interior establishing shot of the Vietnamese apartment living room at twilight, warm table lamp glowing, tea pot steeping, outside window showing the deep blue evening sky of Hanoi, peaceful contemplative suspense, 35mm photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "efe56b62becb",
+    "character_refs": [],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_038": {
+    "prompt": "Medium two-shot in a warm apartment living room: A 35-year-old Vietnamese man (CHAR_NAM_PRESENT) frozen at the entrance, while his 32-year-old wife (CHAR_LINH) stands by the table holding the silver bracelet, intense emotional truth, 35mm documentary.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "247ceed6ade8",
+    "character_refs": [
+      "CHAR_LINH",
+      "CHAR_NAM_PRESENT"
+    ],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": [
+      "PROP_SILVER_BRACELET",
+      "PROP_OLD_PHONE_01"
+    ]
+  },
+  "SC_039": {
+    "prompt": "Emotional medium two-shot: A 35-year-old Vietnamese man (CHAR_NAM_PRESENT) seated with head bowed in raw vulnerability, while his wife (CHAR_LINH) stands beside him, one hand resting gently on his shoulder, both faces marked by honest tears, 35mm film.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "dbb73c4b46fe",
+    "character_refs": [
+      "CHAR_LINH",
+      "CHAR_NAM_PRESENT"
+    ],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_040": {
+    "prompt": "Close-up of two pairs of Vietnamese hands clasped tightly across a wooden dining table, silver wedding rings catching warm domestic lamplight, symbolizing forgiveness, shared responsibility, and renewed marital trust, 35mm macro lens.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "5e41938e1d80",
+    "character_refs": [
+      "CHAR_LINH",
+      "CHAR_NAM_PRESENT"
+    ],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_041": {
+    "prompt": "Artistic still life on an oak credenza in a Vietnamese home: Two ceramic cups of tea with steam rising in morning sunlight, beside a small green succulent, atmosphere of healing, honesty, and peaceful domestic dawn, cinematic realism, cinematic 35mm documentary photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "fedf26aa8810",
+    "character_refs": [],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_042": {
+    "prompt": "Medium two-shot of a 32-year-old Vietnamese woman (CHAR_LINH) and a 35-year-old Vietnamese man (CHAR_NAM_PRESENT) sitting together on the sofa, smiling warmly as they look at photos of a growing cheerful schoolgirl (An), soft morning daylight, harmonious love, 35mm.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "90f10acfb0c5",
+    "character_refs": [
+      "CHAR_LINH",
+      "CHAR_NAM_PRESENT"
+    ],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": []
+  },
+  "SC_043": {
+    "prompt": "A cheerful 11-year-old Vietnamese schoolgirl (CHAR_BE_AN_PRESENT) smiling brightly across a garden cafe table toward Linh and Nam, warm golden sunshine through green foliage, atmosphere of openhearted acceptance and family extension, 35mm lens.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "11b72f53cb7e",
+    "character_refs": [
+      "CHAR_LINH",
+      "CHAR_NAM_PRESENT",
+      "CHAR_BE_AN_PRESENT"
+    ],
+    "location_ref": "LOC_CONG_VIEN_CHIEU",
+    "prop_refs": []
+  },
+  "SC_044": {
+    "prompt": "Wide cinematic shot of a Vietnamese family trio: A 32-year-old woman (CHAR_LINH), a 35-year-old man (CHAR_NAM_PRESENT), and an 11-year-old girl (CHAR_BE_AN_PRESENT) walking together along a tree-lined lakeside park in Hanoi, golden hour amber sunlight, authentic heartwarming closure, 35mm.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "8db43316a049",
+    "character_refs": [
+      "CHAR_LINH",
+      "CHAR_NAM_PRESENT",
+      "CHAR_BE_AN_PRESENT"
+    ],
+    "location_ref": "LOC_CONG_VIEN_CHIEU",
+    "prop_refs": []
+  },
+  "SC_045": {
+    "prompt": "Closing still of a modern Vietnamese oak credenza: Beside the retired vintage feature phone (PROP_OLD_PHONE_01) and silver bracelet rests a newly printed photograph of Linh, Nam, and An smiling together in the park, soft evening ambient light, golden warmth of Sau Cánh Cửa, 35mm photography.",
+    "negative_prompt": "anime, cartoon, 3d render, fantasy, exaggerated expressions, glamorous fashion, western faces, oversaturated, text, logo, watermark, subtitle, plastic skin, bad anatomy, blurry, disfigured, horror look",
+    "aspect_ratio": "16:9",
+    "model": "NANO_BANANA_PRO",
+    "prompt_hash": "0057b7318b00",
+    "character_refs": [],
+    "location_ref": "LOC_PHONG_KHACH_LINH_NAM",
+    "prop_refs": [
+      "PROP_OLD_PHONE_01",
+      "PROP_SILVER_BRACELET"
+    ]
+  }
+}
