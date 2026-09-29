@@ -324,7 +324,7 @@ class VisualAssetManager:
             if qc_stat != "APPROVED":
                 unapproved_chars.append(f"{cid} ({qc_stat})")
 
-        # Semantic hash check
+        # Semantic plan lock check (Section 4 & Section 7)
         plan_file = self.visual_dir / "visual_plan.json"
         semantic_hash_ok = True
         hash_err = None
@@ -332,14 +332,29 @@ class VisualAssetManager:
             try:
                 with open(plan_file, "r", encoding="utf-8") as f:
                     plan_data = json.load(f)
-                stored_hash = plan_data.get("semantic_hash")
-                computed_hash = compute_visual_plan_semantic_hash(plan_data.get("scenes", []))
-                if not stored_hash or stored_hash != computed_hash:
+                approved_hash = plan_data.get("approved_semantic_hash")
+                current_hash = plan_data.get("current_semantic_hash") or compute_visual_plan_semantic_hash(plan_data.get("scenes", []))
+                qc_status = plan_data.get("semantic_qc_status", "NEEDS_REVIEW")
+                computed_scenes_hash = compute_visual_plan_semantic_hash(plan_data.get("scenes", []))
+
+                if computed_scenes_hash != current_hash:
                     semantic_hash_ok = False
-                    hash_err = "Semantic hash mismatch: visual_plan.json has been modified post-QC."
+                    hash_err = "LOCKED_SEMANTIC_PLAN_CHANGED: visual_plan.json scenes do not match current_semantic_hash."
+                elif not approved_hash:
+                    semantic_hash_ok = False
+                    hash_err = "LOCKED_SEMANTIC_PLAN_CHANGED: Visual plan has not been approved (approved_semantic_hash missing)."
+                elif approved_hash != current_hash:
+                    semantic_hash_ok = False
+                    hash_err = f"LOCKED_SEMANTIC_PLAN_CHANGED: Visual plan modified post-approval (approved: {approved_hash[:8]}, current: {current_hash[:8]}). Re-approval required."
+                elif qc_status != "APPROVED":
+                    semantic_hash_ok = False
+                    hash_err = f"LOCKED_SEMANTIC_PLAN_CHANGED: Visual plan semantic QC status is '{qc_status}', expected 'APPROVED'."
             except Exception as e:
                 semantic_hash_ok = False
                 hash_err = f"Failed to verify semantic hash: {e}"
+        else:
+            semantic_hash_ok = False
+            hash_err = "visual_plan.json not found on disk."
 
         unlocked = (
             len(missing_chars) == 0
@@ -392,7 +407,7 @@ class VisualAssetManager:
             if pid in scene_map and (getattr(scene_map[pid], "visual_type", None) or scene_map[pid].get("visual_type")) in ("OMNI_FLASH_I2V", "VEO_I2V")
         ]
 
-        # 1. Semantic hash check
+        # 1. Semantic hash & approval check
         plan_file = self.visual_dir / "visual_plan.json"
         semantic_hash_ok = True
         hash_err = None
@@ -400,14 +415,29 @@ class VisualAssetManager:
             try:
                 with open(plan_file, "r", encoding="utf-8") as f:
                     plan_data = json.load(f)
-                stored_hash = plan_data.get("semantic_hash")
-                computed_hash = compute_visual_plan_semantic_hash(plan_data.get("scenes", []))
-                if not stored_hash or stored_hash != computed_hash:
+                approved_hash = plan_data.get("approved_semantic_hash")
+                current_hash = plan_data.get("current_semantic_hash") or compute_visual_plan_semantic_hash(plan_data.get("scenes", []))
+                qc_status = plan_data.get("semantic_qc_status", "NEEDS_REVIEW")
+                computed_scenes_hash = compute_visual_plan_semantic_hash(plan_data.get("scenes", []))
+
+                if computed_scenes_hash != current_hash:
                     semantic_hash_ok = False
-                    hash_err = "Semantic hash mismatch: visual_plan.json has been modified post-QC."
+                    hash_err = "LOCKED_SEMANTIC_PLAN_CHANGED: visual_plan.json scenes do not match current_semantic_hash."
+                elif not approved_hash:
+                    semantic_hash_ok = False
+                    hash_err = "LOCKED_SEMANTIC_PLAN_CHANGED: Visual plan has not been approved (approved_semantic_hash missing)."
+                elif approved_hash != current_hash:
+                    semantic_hash_ok = False
+                    hash_err = f"LOCKED_SEMANTIC_PLAN_CHANGED: Visual plan modified post-approval (approved: {approved_hash[:8]}, current: {current_hash[:8]}). Re-approval required."
+                elif qc_status != "APPROVED":
+                    semantic_hash_ok = False
+                    hash_err = f"LOCKED_SEMANTIC_PLAN_CHANGED: Visual plan semantic QC status is '{qc_status}', expected 'APPROVED'."
             except Exception as e:
                 semantic_hash_ok = False
                 hash_err = f"Failed to verify semantic hash: {e}"
+        else:
+            semantic_hash_ok = False
+            hash_err = "visual_plan.json not found on disk."
 
         # 2. Required character references & approval
         required_chars = ["LAN_ADULT", "HUNG", "UNCLE", "LAN_YOUNG"]

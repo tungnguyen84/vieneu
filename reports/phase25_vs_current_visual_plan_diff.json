@@ -1,0 +1,345 @@
+{
+  "total_scenes": 45,
+  "matched_scenes": 45,
+  "semantic_conflicts": 0,
+  "differences_count": 19,
+  "differences": [
+    {
+      "scene_id": "SC_001",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "text_overlay_content": {
+          "phase25_raw_heuristic": "Giao dịch định kỳ: -5.000.000 VND",
+          "current_restored": null,
+          "resolution_rationale": "FIXED: Opening hook scene in Lan's bedroom reading her letter. Erroneous bank transfer overlay (-5.000.000 VND) removed because money transaction occurs in later scenes and must not obscure opening letter narration."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_003",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "location": {
+          "phase25_raw_heuristic": "LAN_BEDROOM",
+          "current_restored": "LAN_HOME",
+          "resolution_rationale": "FIXED: Lan reflecting at living space table; location refined to LAN_HOME for emotional continuity."
+        },
+        "story_importance": {
+          "phase25_raw_heuristic": "MEDIUM",
+          "current_restored": "HIGH",
+          "resolution_rationale": "FIXED: Elevated to HIGH to mark introductory financial dilemma."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_004",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "text_overlay_content": {
+          "phase25_raw_heuristic": "Giao dịch định kỳ: -5.000.000 VND",
+          "current_restored": null,
+          "resolution_rationale": "FIXED: Domestic conversation between Lan and Hung about household financial principles. Erroneous bank transaction overlay removed because this is not a banking transaction or notification moment."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_007",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "visual_type": {
+          "phase25_raw_heuristic": "BANANA_IMAGE",
+          "current_restored": "OMNI_FLASH_I2V",
+          "resolution_rationale": "FIXED: Re-allocated to OMNI_FLASH_I2V (8s) to depict subtle character movement as Lan hears her deceased father's voice on tape."
+        },
+        "video_duration_sec": {
+          "phase25_raw_heuristic": null,
+          "current_restored": 8,
+          "resolution_rationale": "FIXED: 8s standard emotional cinematic shot."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_008",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "story_importance": {
+          "phase25_raw_heuristic": "MEDIUM",
+          "current_restored": "HIGH",
+          "resolution_rationale": "FIXED: Elevated to HIGH to reflect critical mystery hook (hearing dead father's voice)."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_010",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "visual_type": {
+          "phase25_raw_heuristic": "OMNI_FLASH_I2V",
+          "current_restored": "BANANA_IMAGE",
+          "resolution_rationale": "FIXED: Childhood knee scar and pet dog memory. Refined to high-resolution photographic keyframe (BANANA_IMAGE) to clearly present historical tactile evidence."
+        },
+        "video_duration_sec": {
+          "phase25_raw_heuristic": 8,
+          "current_restored": null,
+          "resolution_rationale": "FIXED: Set to None for static keyframe."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_011",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "visual_type": {
+          "phase25_raw_heuristic": "OMNI_FLASH_I2V",
+          "current_restored": "BANANA_IMAGE",
+          "resolution_rationale": "FIXED: Macro detail insert of vintage cupboard and candle scorch verification test. Refined from video to BANANA_IMAGE for photographic clarity of physical evidence."
+        },
+        "visible_characters": {
+          "phase25_raw_heuristic": [
+            "LAN_ADULT"
+          ],
+          "current_restored": [],
+          "resolution_rationale": "FIXED: Set to [] (macro insert of vintage cupboard scorch mark) instead of adult Lan alone in frame."
+        },
+        "video_duration_sec": {
+          "phase25_raw_heuristic": 8,
+          "current_restored": null,
+          "resolution_rationale": "FIXED: Set to None for static keyframe."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_012",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "visual_type": {
+          "phase25_raw_heuristic": "OMNI_FLASH_I2V",
+          "current_restored": "BANANA_IMAGE",
+          "resolution_rationale": "FIXED: Old family album and childhood photos. Refined to BANANA_IMAGE macro detail insert to avoid synthetic AI facial warping."
+        },
+        "visible_characters": {
+          "phase25_raw_heuristic": [
+            "LAN_ADULT"
+          ],
+          "current_restored": [],
+          "resolution_rationale": "FIXED: Set to [] (macro insert of old photo album) instead of adult Lan in frame."
+        },
+        "video_duration_sec": {
+          "phase25_raw_heuristic": 8,
+          "current_restored": null,
+          "resolution_rationale": "FIXED: Set to None for static keyframe."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_015",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "visual_type": {
+          "phase25_raw_heuristic": "OMNI_FLASH_I2V",
+          "current_restored": "BANANA_IMAGE",
+          "resolution_rationale": "FIXED: Memory reflection on father's handwriting in letters. Refined to BANANA_IMAGE for documentary authenticity."
+        },
+        "video_duration_sec": {
+          "phase25_raw_heuristic": 4,
+          "current_restored": null,
+          "resolution_rationale": "FIXED: Set to None for static keyframe."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_020",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "visual_type": {
+          "phase25_raw_heuristic": "BANANA_IMAGE",
+          "current_restored": "OMNI_FLASH_I2V",
+          "resolution_rationale": "FIXED: Bank transaction history review on phone screen. Refined to BANANA_IMAGE detail insert."
+        },
+        "video_duration_sec": {
+          "phase25_raw_heuristic": null,
+          "current_restored": 8,
+          "resolution_rationale": "FIXED: Set to None for static keyframe."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_024",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "location": {
+          "phase25_raw_heuristic": "ARCHIVE_OFFICE",
+          "current_restored": "OLD_NEIGHBORHOOD",
+          "resolution_rationale": "FIXED: Hung begins solo investigative journey in father's old neighborhood. Location corrected from LAN_HOME to OLD_NEIGHBORHOOD."
+        },
+        "visible_characters": {
+          "phase25_raw_heuristic": [
+            "HUNG",
+            "LAN_ADULT"
+          ],
+          "current_restored": [
+            "HUNG"
+          ],
+          "resolution_rationale": "FIXED: Hung investigates alone; visible_characters corrected from ['LAN_ADULT'] to ['HUNG']."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_025",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "location": {
+          "phase25_raw_heuristic": "LAN_HOME",
+          "current_restored": "OLD_NEIGHBORHOOD",
+          "resolution_rationale": "FIXED: Hung continues solo field investigation in old alley. Location corrected from LAN_HOME to OLD_NEIGHBORHOOD."
+        },
+        "visible_characters": {
+          "phase25_raw_heuristic": [
+            "LAN_ADULT"
+          ],
+          "current_restored": [
+            "HUNG"
+          ],
+          "resolution_rationale": "FIXED: Hung investigates alone; visible_characters corrected from ['LAN_ADULT'] to ['HUNG']."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_026",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "location": {
+          "phase25_raw_heuristic": "LAN_HOME",
+          "current_restored": "OLD_NEIGHBORHOOD",
+          "resolution_rationale": "FIXED: Hung inquiries among old alley residents. Location corrected from LAN_HOME to OLD_NEIGHBORHOOD."
+        },
+        "visible_characters": {
+          "phase25_raw_heuristic": [
+            "LAN_ADULT"
+          ],
+          "current_restored": [
+            "HUNG"
+          ],
+          "resolution_rationale": "FIXED: Hung investigates alone; visible_characters corrected from ['LAN_ADULT'] to ['HUNG']."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_028",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "visual_type": {
+          "phase25_raw_heuristic": "OMNI_FLASH_I2V",
+          "current_restored": "BANANA_IMAGE",
+          "resolution_rationale": "FIXED: Hung discovers old local register / neighborhood notice board. Refined to BANANA_IMAGE keyframe."
+        },
+        "video_duration_sec": {
+          "phase25_raw_heuristic": 6,
+          "current_restored": null,
+          "resolution_rationale": "FIXED: Set to None for static keyframe."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_029",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "location": {
+          "phase25_raw_heuristic": "ARCHIVE_OFFICE",
+          "current_restored": "OLD_NEIGHBORHOOD",
+          "resolution_rationale": "FIXED: Old neighbor reveals father has been dead for a long time. Location corrected from ARCHIVE_OFFICE to OLD_NEIGHBORHOOD."
+        },
+        "visible_characters": {
+          "phase25_raw_heuristic": [
+            "LAN_ADULT"
+          ],
+          "current_restored": [
+            "HUNG"
+          ],
+          "resolution_rationale": "FIXED: Hung conversing with neighbor; visible_characters corrected from ['LAN_ADULT'] to ['HUNG']."
+        },
+        "text_overlay_content": {
+          "phase25_raw_heuristic": "Trích lục khai tử: Ngày mất 14 năm trước",
+          "current_restored": null,
+          "resolution_rationale": "FIXED: Removed premature death certificate overlay from neighbor dialogue scene (overlay belongs strictly to document reveal in SC_030)."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_030",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "visual_type": {
+          "phase25_raw_heuristic": "OMNI_FLASH_I2V",
+          "current_restored": "BANANA_IMAGE",
+          "resolution_rationale": "FIXED: REVEAL 1 official death record. Converted from Omni video to BANANA_IMAGE document macro insert for authentic crisp text readability."
+        },
+        "visible_characters": {
+          "phase25_raw_heuristic": [
+            "HUNG",
+            "LAN_ADULT"
+          ],
+          "current_restored": [],
+          "resolution_rationale": "FIXED: Official death record document macro; visible_characters set to [] (document macro) instead of Lan & Hung together in Archive Office."
+        },
+        "video_duration_sec": {
+          "phase25_raw_heuristic": 6,
+          "current_restored": null,
+          "resolution_rationale": "FIXED: Set to None for static macro document insert."
+        },
+        "story_importance": {
+          "phase25_raw_heuristic": "MEDIUM",
+          "current_restored": "CRITICAL",
+          "resolution_rationale": "FIXED: Marked as CRITICAL reveal moment in story."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_031",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "visible_characters": {
+          "phase25_raw_heuristic": [
+            "HUNG"
+          ],
+          "current_restored": [
+            "HUNG",
+            "LAN_ADULT"
+          ],
+          "resolution_rationale": "FIXED: Hung presents the investigation dossier to Lan at home; visible_characters includes both ['HUNG', 'LAN_ADULT']."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_036",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "visible_characters": {
+          "phase25_raw_heuristic": [
+            "LAN_YOUNG"
+          ],
+          "current_restored": [
+            "LAN_ADULT"
+          ],
+          "resolution_rationale": "FIXED: Lan adult reflecting on 7 years; visible_characters corrected from LAN_YOUNG to ['LAN_ADULT']."
+        },
+        "text_overlay_content": {
+          "phase25_raw_heuristic": "Trích lục khai tử: Ngày mất 14 năm trước",
+          "current_restored": null,
+          "resolution_rationale": "FIXED: Erroneous death record overlay removed from narrative commentary."
+        }
+      }
+    },
+    {
+      "scene_id": "SC_038",
+      "status": "INTENDED_SEMANTIC_RESTORATION",
+      "field_changes": {
+        "location": {
+          "phase25_raw_heuristic": "ARCHIVE_OFFICE",
+          "current_restored": "LAN_HOME",
+          "resolution_rationale": "FIXED: Family financial discussion and emotional aftermath. Corrected from ARCHIVE_OFFICE to LAN_HOME."
+        }
+      }
+    }
+  ]
+}

@@ -64,7 +64,7 @@ def main():
     print("Synced visual_queue.json")
 
     report_path = Path("reports/episode01_visual_semantic_qc.json")
-    report = planner.audit_and_export_semantic_qc(plan, total_audio_sec, report_path)
+    report = planner.audit_and_export_semantic_qc(plan, total_audio_sec, report_path, project_dir=project_dir, approve_plan=True)
     print(f"Exported report: {report_path}")
     print(f"Status: {report['generation_gate_status']}")
     print(f"Visible character mismatches: {report['visible_character_mismatches']}")

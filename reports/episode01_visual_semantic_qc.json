@@ -2,19 +2,23 @@
   "total_scenes_audited": 45,
   "generation_gate_status": "PASS",
   "generation_gate_issues": [],
-  "banana_images_count": 27,
-  "omni_videos_count": 18,
+  "semantic_qc_status": "APPROVED",
+  "approved_semantic_hash": "9f1e070209c0c4f6b964d12da6e475ebf5bec32f1a2eefe078a021839db30fb8",
+  "current_semantic_hash": "9f1e070209c0c4f6b964d12da6e475ebf5bec32f1a2eefe078a021839db30fb8",
+  "visual_plan_semantic_hash": "9f1e070209c0c4f6b964d12da6e475ebf5bec32f1a2eefe078a021839db30fb8",
+  "banana_images_count": 31,
+  "omni_videos_count": 14,
   "omni_duration_distribution": {
-    "4s": 2,
-    "6s": 5,
-    "8s": 9,
+    "4s": 1,
+    "6s": 3,
+    "8s": 8,
     "10s": 2
   },
   "visible_character_mismatches": 0,
   "location_mismatches": 0,
   "chronology_mismatches": 0,
-  "critical_scenes_count": 5,
-  "critical_scenes_passed": 5,
+  "critical_scenes_count": 6,
+  "critical_scenes_passed": 6,
   "scenes": [
     {
       "scene_id": "SC_001",
@@ -43,8 +47,8 @@
         "001",
         "002"
       ],
-      "requires_text_overlay": true,
-      "text_overlay_content": "Giao dịch định kỳ: -5.000.000 VND",
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
       "semantic_qc": {
         "source_grounded": true,
         "character_match": true,
@@ -101,10 +105,10 @@
       "scene_index": 3,
       "timeline": "27.2s - 46.1s (18.8s)",
       "story_beat": "Chào mừng bạn đến với Sau Cánh Cửa",
-      "importance": "MEDIUM",
+      "importance": "HIGH",
       "visual_type": "BANANA_IMAGE",
       "omni_duration_sec": null,
-      "motion": "pan_left",
+      "motion": "slow_push_in",
       "shot_composition": "medium_shot",
       "story_characters": [
         "HUNG",
@@ -113,7 +117,7 @@
       "visible_characters": [
         "LAN_ADULT"
       ],
-      "location": "LAN_BEDROOM",
+      "location": "LAN_HOME",
       "fact_ids": [
         "FACT_TIME_02_MARRIAGE"
       ],
@@ -162,8 +166,8 @@
       "source_segment_ids": [
         "007"
       ],
-      "requires_text_overlay": true,
-      "text_overlay_content": "Giao dịch định kỳ: -5.000.000 VND",
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
       "semantic_qc": {
         "source_grounded": true,
         "character_match": true,
@@ -256,8 +260,8 @@
       "timeline": "85.8s - 101.6s (15.8s)",
       "story_beat": "Chiều hôm ấy, Lan đang ở lại công ty làm nốt sổ sách thì một số lạ gọi đến",
       "importance": "MEDIUM",
-      "visual_type": "BANANA_IMAGE",
-      "omni_duration_sec": null,
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 8,
       "motion": "slow_pull_out",
       "shot_composition": "medium_shot",
       "story_characters": [
@@ -293,7 +297,7 @@
       "scene_index": 8,
       "timeline": "101.6s - 117.9s (16.3s)",
       "story_beat": "Lan viết: “Tôi nhận ra giọng bố",
-      "importance": "MEDIUM",
+      "importance": "HIGH",
       "visual_type": "OMNI_FLASH_I2V",
       "omni_duration_sec": 8,
       "motion": "pan_left",
@@ -372,9 +376,9 @@
       "timeline": "132.0s - 150.7s (18.7s)",
       "story_beat": "Ông nhớ vết sẹo nhỏ ở đầu gối Lan do ngã xe năm lớp sáu",
       "importance": "MEDIUM",
-      "visual_type": "OMNI_FLASH_I2V",
-      "omni_duration_sec": 8,
-      "motion": "slow_push_in",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "static",
       "shot_composition": "detail_insert",
       "story_characters": [
         "LAN_YOUNG"
@@ -410,16 +414,14 @@
       "timeline": "150.7s - 166.4s (15.7s)",
       "story_beat": "Có một chi tiết khác khiến Lan càng tin",
       "importance": "MEDIUM",
-      "visual_type": "OMNI_FLASH_I2V",
-      "omni_duration_sec": 8,
-      "motion": "slow_push_in",
-      "shot_composition": "medium_shot",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "static",
+      "shot_composition": "detail_insert",
       "story_characters": [
         "LAN_ADULT"
       ],
-      "visible_characters": [
-        "LAN_ADULT"
-      ],
+      "visible_characters": [],
       "location": "OLD_NEIGHBORHOOD",
       "fact_ids": [
         "FACT_ID_CUPBOARD_SCORCH"
@@ -447,17 +449,15 @@
       "timeline": "166.4s - 182.3s (16.0s)",
       "story_beat": "Lan nhớ vết cháy đó",
       "importance": "MEDIUM",
-      "visual_type": "OMNI_FLASH_I2V",
-      "omni_duration_sec": 8,
-      "motion": "slow_pull_out",
-      "shot_composition": "medium_shot",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "static",
+      "shot_composition": "detail_insert",
       "story_characters": [
         "HUNG",
         "LAN_ADULT"
       ],
-      "visible_characters": [
-        "LAN_ADULT"
-      ],
+      "visible_characters": [],
       "location": "LAN_HOME",
       "fact_ids": [
         "FACT_ID_WOODEN_HAIRPIN",
@@ -561,8 +561,8 @@
       "timeline": "215.4s - 231.5s (16.0s)",
       "story_beat": "Mười phút sau khi Lan rời quán, điện thoại nhận được tin nhắn: bố nhìn thấy con rồi, nhưng bố c",
       "importance": "MEDIUM",
-      "visual_type": "OMNI_FLASH_I2V",
-      "omni_duration_sec": 4,
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
       "motion": "static",
       "shot_composition": "medium_shot",
       "story_characters": [
@@ -753,8 +753,8 @@
       "timeline": "298.1s - 313.5s (15.4s)",
       "story_beat": "Lan bắt đầu nghi ngờ",
       "importance": "MEDIUM",
-      "visual_type": "BANANA_IMAGE",
-      "omni_duration_sec": null,
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 8,
       "motion": "static",
       "shot_composition": "medium_shot",
       "story_characters": [
@@ -913,16 +913,15 @@
       "visual_type": "BANANA_IMAGE",
       "omni_duration_sec": null,
       "motion": "pan_right",
-      "shot_composition": "two_shot",
+      "shot_composition": "medium_shot",
       "story_characters": [
         "HUNG",
         "LAN_ADULT"
       ],
       "visible_characters": [
-        "HUNG",
-        "LAN_ADULT"
+        "HUNG"
       ],
-      "location": "ARCHIVE_OFFICE",
+      "location": "OLD_NEIGHBORHOOD",
       "fact_ids": [],
       "source_segment_ids": [
         "046",
@@ -957,9 +956,9 @@
         "LAN_ADULT"
       ],
       "visible_characters": [
-        "LAN_ADULT"
+        "HUNG"
       ],
-      "location": "LAN_HOME",
+      "location": "OLD_NEIGHBORHOOD",
       "fact_ids": [
         "FACT_TIME_04_TRANSFER_ROUTINE",
         "FACT_MONEY_01"
@@ -996,9 +995,9 @@
         "LAN_ADULT"
       ],
       "visible_characters": [
-        "LAN_ADULT"
+        "HUNG"
       ],
-      "location": "LAN_HOME",
+      "location": "OLD_NEIGHBORHOOD",
       "fact_ids": [
         "FACT_TIME_04_TRANSFER_ROUTINE",
         "FACT_MONEY_01"
@@ -1068,8 +1067,8 @@
       "timeline": "428.9s - 448.4s (19.5s)",
       "story_beat": "Hùng vẫn chưa tin lời người hàng xóm",
       "importance": "MEDIUM",
-      "visual_type": "OMNI_FLASH_I2V",
-      "omni_duration_sec": 6,
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
       "motion": "pan_left",
       "shot_composition": "medium_shot",
       "story_characters": [
@@ -1110,14 +1109,14 @@
       "visual_type": "BANANA_IMAGE",
       "omni_duration_sec": null,
       "motion": "slow_push_in",
-      "shot_composition": "medium_close_up",
+      "shot_composition": "medium_shot",
       "story_characters": [
-        "LAN_ADULT"
+        "HUNG"
       ],
       "visible_characters": [
-        "LAN_ADULT"
+        "HUNG"
       ],
-      "location": "ARCHIVE_OFFICE",
+      "location": "OLD_NEIGHBORHOOD",
       "fact_ids": [
         "FACT_REVEAL_NEIGHBOR_WORDS",
         "FACT_REVEAL_DEATH_RECORD"
@@ -1126,8 +1125,8 @@
         "055",
         "056"
       ],
-      "requires_text_overlay": true,
-      "text_overlay_content": "Trích lục khai tử: Ngày mất 14 năm trước",
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
       "semantic_qc": {
         "source_grounded": true,
         "character_match": true,
@@ -1145,19 +1144,16 @@
       "scene_index": 30,
       "timeline": "457.8s - 475.1s (17.3s)",
       "story_beat": "Hùng không kể chuyện đó cho vợ ngay",
-      "importance": "MEDIUM",
-      "visual_type": "OMNI_FLASH_I2V",
-      "omni_duration_sec": 6,
+      "importance": "CRITICAL",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
       "motion": "static",
-      "shot_composition": "two_shot",
+      "shot_composition": "detail_insert",
       "story_characters": [
         "HUNG",
         "LAN_ADULT"
       ],
-      "visible_characters": [
-        "HUNG",
-        "LAN_ADULT"
-      ],
+      "visible_characters": [],
       "location": "ARCHIVE_OFFICE",
       "fact_ids": [
         "FACT_REVEAL_DEATH_RECORD"
@@ -1191,12 +1187,13 @@
       "visual_type": "OMNI_FLASH_I2V",
       "omni_duration_sec": 6,
       "motion": "slow_push_in",
-      "shot_composition": "medium_shot",
+      "shot_composition": "two_shot",
       "story_characters": [
         "HUNG"
       ],
       "visible_characters": [
-        "HUNG"
+        "HUNG",
+        "LAN_ADULT"
       ],
       "location": "LAN_HOME",
       "fact_ids": [
@@ -1392,10 +1389,10 @@
       "motion": "slow_push_in",
       "shot_composition": "medium_close_up",
       "story_characters": [
-        "LAN_YOUNG"
+        "LAN_ADULT"
       ],
       "visible_characters": [
-        "LAN_YOUNG"
+        "LAN_ADULT"
       ],
       "location": "LAN_HOME",
       "fact_ids": [
@@ -1406,8 +1403,8 @@
       "source_segment_ids": [
         "075"
       ],
-      "requires_text_overlay": true,
-      "text_overlay_content": "Trích lục khai tử: Ngày mất 14 năm trước",
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
       "semantic_qc": {
         "source_grounded": true,
         "character_match": true,
@@ -1473,7 +1470,7 @@
       "visible_characters": [
         "LAN_ADULT"
       ],
-      "location": "ARCHIVE_OFFICE",
+      "location": "LAN_HOME",
       "fact_ids": [
         "FACT_MONEY_02"
       ],
@@ -1762,6 +1759,5 @@
       "location_match": true,
       "chronology_match": true
     }
-  ],
-  "visual_plan_semantic_hash": "73bd140353d1164d0d3a96f3d4e5b466ae50086554dc39f89186d32b4a3bd21a"
+  ]
 }

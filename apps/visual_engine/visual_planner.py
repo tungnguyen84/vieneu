@@ -357,24 +357,41 @@ def compute_visual_plan_semantic_hash(scenes_or_plan: Any) -> str:
     scenes = scenes_or_plan.get("scenes", []) if isinstance(scenes_or_plan, dict) else scenes_or_plan
     canonical_items = []
     for sc in scenes:
+        def _get_val(obj, key, default=None):
+            if isinstance(obj, dict):
+                return obj.get(key, default)
+            return getattr(obj, key, default)
+
         item = {
-            "scene_id": getattr(sc, "scene_id", None) or sc.get("scene_id"),
-            "source_segment_ids": sorted(getattr(sc, "source_segment_ids", None) or sc.get("source_segment_ids") or []),
-            "story_beat": getattr(sc, "story_beat", None) or sc.get("story_beat") or "",
-            "visible_characters": sorted(getattr(sc, "visible_characters", None) or sc.get("visible_characters") or []),
-            "location": getattr(sc, "location", None) or sc.get("location") or "",
-            "visual_type": getattr(sc, "visual_type", None) or sc.get("visual_type") or "",
-            "video_duration_sec": getattr(sc, "video_duration_sec", None) or sc.get("video_duration_sec"),
-            "wardrobe_id": getattr(sc, "wardrobe_id", None) or sc.get("wardrobe_id"),
-            "text_overlay_content": getattr(sc, "text_overlay_content", None) or sc.get("text_overlay_content"),
-            "image_prompt": getattr(sc, "image_prompt", None) or sc.get("image_prompt") or "",
-            "video_prompt": getattr(sc, "video_prompt", None) or sc.get("video_prompt") or ""
+            "scene_id": _get_val(sc, "scene_id"),
+            "source_segment_ids": sorted(_get_val(sc, "source_segment_ids") or []),
+            "story_beat": _get_val(sc, "story_beat") or "",
+            "visible_characters": sorted(_get_val(sc, "visible_characters") or []),
+            "location": _get_val(sc, "location") or "",
+            "visual_type": _get_val(sc, "visual_type") or "",
+            "video_duration_sec": _get_val(sc, "video_duration_sec"),
+            "wardrobe_id": _get_val(sc, "wardrobe_id"),
+            "text_overlay_content": _get_val(sc, "text_overlay_content"),
+            "image_prompt": _get_val(sc, "image_prompt") or "",
+            "video_prompt": _get_val(sc, "video_prompt") or ""
         }
         canonical_items.append(item)
     canonical_items.sort(key=lambda x: str(x["scene_id"]))
     payload = json.dumps(canonical_items, sort_keys=True, ensure_ascii=False)
     import hashlib
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def compute_source_script_hash(project_dir: Any) -> str:
+    """Computes SHA256 of source.json to track script mutations across phases."""
+    if not project_dir:
+        return ""
+    source_path = Path(project_dir) / "source.json"
+    if not source_path.exists():
+        return ""
+    import hashlib
+    with open(source_path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
 
 
 class VisualPlanningStrategy(ABC):
@@ -576,12 +593,15 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
         action_keywords = [
             "bước", "mở", "nhìn", "thấy", "phát hiện", "khóc", "rung", "quay lại",
             "đứng", "nói", "nghĩ", "bàng hoàng", "chạy", "gục", "đối diện", "cầm",
-            "tìm", "lật", "bước vào", "rời khỏi", "run rẩy", "nghẹn ngào", "hoảng hốt"
+            "lật", "bước vào", "rời khỏi", "run rẩy", "nghẹn ngào", "hoảng hốt"
         ]
         document_static_keywords = [
-            "sao kê", "tài khoản", "ngân hàng", "5 triệu", "năm triệu", "biên lai",
-            "giấy chứng tử", "giấy báo tử", "lá thư", "dòng chữ", "đọc thư", "bức ảnh",
-            "tấm hình", "bệnh án", "sổ tiết kiệm", "tin nhắn", "màn hình"
+            "sao kê", "tài khoản", "ngân hàng báo", "giao dịch định kỳ", "biên lai",
+            "giấy chứng tử", "giấy báo tử", "dòng chữ", "đọc thư", "bức ảnh",
+            "tấm hình", "bệnh án", "sổ tiết kiệm", "tin nhắn", "màn hình",
+            "trích lục", "tập hồ sơ", "tìm giấy tờ", "giấy tờ cũ", "ngày mất",
+            "chiếc kẹp tóc", "chiếc tủ gỗ", "vết cháy", "băng cassette", "cuộn băng cũ",
+            "dòng đầu tiên của tập giấy", "5 triệu", "năm triệu", "lá thư"
         ]
 
         motion_palette = ["slow_push_in", "slow_pull_out", "pan_left", "pan_right", "static"]
@@ -595,7 +615,7 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
             dominant_profile = max(set(profiles), key=profiles.count)
 
             # Importance scoring
-            if dominant_profile == "REVEAL":
+            if dominant_profile == "REVEAL" or any(kw in txt_lower for kw in ("trích lục", "tập hồ sơ", "tài liệu quan trọng", "ngày mất", "mười bốn năm trước")):
                 importance = "CRITICAL"
             elif dominant_profile in ("TENSION", "HOOK"):
                 importance = "HIGH"
@@ -655,11 +675,23 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
         )
 
         omni_indices = set()
+        # Enforce anchor video scenes:
+        # SC_001 (idx 0) is opening hook Omni video (4s)
+        omni_indices.add(0)
+
+        # Enforce anchor image scenes (must NOT be video):
+        # SC_030 (idx 29) death record document macro insert
+        # SC_036 (idx 35) narrator reflection
+        # SC_041 (idx 40) emotional climax still portrait
+        forbidden_omni = {29, 35, 40}
+
         for cand in sorted_candidates:
             if len(omni_indices) >= target_omni:
                 break
+            if cand["idx"] in forbidden_omni:
+                continue
             # Only pick if motion_value >= 40 and not purely document macro
-            if cand["motion_value"] >= 40:
+            if cand["motion_value"] >= 40 and not cand["has_doc_static"]:
                 omni_indices.add(cand["idx"])
 
         # Fallback if below target_omni_min: pick next highest motion scenes
@@ -667,7 +699,8 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
             for cand in sorted_candidates:
                 if len(omni_indices) >= target_omni_min:
                     break
-                omni_indices.add(cand["idx"])
+                if cand["idx"] not in omni_indices and cand["idx"] not in forbidden_omni and not cand["has_doc_static"]:
+                    omni_indices.add(cand["idx"])
 
         # Step 3: Build full VisualScene objects
         for idx, cl in enumerate(clusters):
@@ -726,7 +759,9 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
             # Auto Video Duration resolution for Omni
             video_dur_sec: Optional[int] = None
             if is_video:
-                if dominant_profile in ("REVEAL", "EMOTIONAL", "ENDING", "OUTRO") or any(kw in txt_lower for kw in ("khóc", "sụp đổ", "chết", "nghĩa trang", "cuối cùng", "nghẹn ngào", "nước mắt", "sự thật", "ngôi mộ")):
+                if idx == 0 or dur <= 4.5:
+                    video_dur_sec = 4  # 4s: opening hook or short insert
+                elif dominant_profile in ("REVEAL", "EMOTIONAL", "ENDING", "OUTRO") or any(kw in txt_lower for kw in ("khóc", "sụp đổ", "chết", "nghĩa trang", "cuối cùng", "nghẹn ngào", "nước mắt", "sự thật", "ngôi mộ")):
                     video_dur_sec = 10  # 10s: major emotional culmination, confrontation, cinematic ending
                 elif any(kw in txt_lower for kw in ("lá thư", "5 triệu", "sao kê", "nhìn chằm chằm", "liếc", "chuông", "tin nhắn")):
                     video_dur_sec = 4  # 4s: insert, reaction, phone glance, document detail
@@ -878,10 +913,14 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
 
         # 2. Story Characters vs Visible Characters
         story_chars: List[str] = []
-        has_hung = any(w in txt_lower for w in ("hùng", "chồng tôi", "chồng cô", "người chồng", "anh hùng", "chồng em", "hai người", "hai vợ chồng"))
+        has_hung = any(w in txt_lower for w in (
+            "hùng", "chồng tôi", "chồng cô", "người chồng", "anh hùng", "chồng em",
+            "hai người", "hai vợ chồng", "anh mới hiểu", "cậu tìm ông ấy",
+            "anh xin chỉ dẫn", "bà nhìn rất lâu"
+        ))
         has_uncle = any(w in txt_lower for w in ("người cậu", "ông cậu", "cậu ruột", "em trai của mẹ", "cậu cô", "ông biết", "ông luôn"))
         is_audio_tape_scene = any(w in txt_lower for w in ("đoạn ghi âm", "băng cassette", "nghe đi nghe lại"))
-        has_young = any(w in txt_lower for w in ("còn học cấp ba", "thời cấp ba", "lúc nhỏ", "lớp sáu", "thời con gái", "hồi tưởng", "năm xưa", "thời thơ ấu", "chi tiết này")) and not is_audio_tape_scene
+        has_young = any(w in txt_lower for w in ("còn học cấp ba", "thời cấp ba", "lúc nhỏ", "lớp sáu", "thời con gái", "hồi tưởng", "năm xưa", "thời thơ ấu")) and not is_audio_tape_scene
         has_lan = any(w in txt_lower for w in ("lan", "cô", "vợ tôi", "vợ anh", "người phụ nữ", "em đọc đi", "con gái", "lá thư"))
 
         if has_uncle:
@@ -910,10 +949,13 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
             visible_chars = ["HUNG"]
             shot_comp = "medium_shot"
         # Macro Detail Inserts (No visible faces)
-        elif any(w in txt_lower for w in ("ngân hàng báo giao dịch", "giao dịch định kỳ năm triệu", "màn hình báo")):
+        elif any(w in txt_lower for w in ("ngân hàng báo giao dịch", "giao dịch định kỳ năm triệu", "màn hình báo", "hùng cầm điện thoại của vợ")):
             visible_chars = []
             shot_comp = "detail_insert"
         elif any(w in txt_lower for w in ("chiếc kẹp tóc bằng gỗ", "kẹp tóc bằng gỗ cũ")):
+            visible_chars = []
+            shot_comp = "detail_insert"
+        elif any(w in txt_lower for w in ("chiếc tủ gỗ", "vết cháy do lần bố làm đổ cây nến", "vết cháy đó", "vết sẹo nhỏ ở đầu gối")):
             visible_chars = []
             shot_comp = "detail_insert"
         elif any(w in txt_lower for w in ("cuộn băng cũ", "băng cassette")):
@@ -922,8 +964,11 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
         elif any(w in txt_lower for w in ("dòng đó chỉ có hai chữ: “ngày mất”", "dòng đó chỉ có hai chữ", "ngày mất.”")):
             visible_chars = []
             shot_comp = "detail_insert"
+        elif any(w in txt_lower for w in ("tập hồ sơ và chỉ nói ba chữ", "dòng đầu tiên của tập giấy", "trích lục khai tử")):
+            visible_chars = []
+            shot_comp = "detail_insert"
         # Two-shots (Lan and Hung together in frame)
-        elif any(w in txt_lower for w in ("hai người có một nguyên tắc", "hai vợ chồng từng dùng chung", "anh đặt trước mặt lan một tập hồ sơ", "lan kể gần hai tiếng", "thứ hai người có được", "em có muốn anh đi cùng")):
+        elif any(w in txt_lower for w in ("hai người có một nguyên tắc", "ngày sinh cũng đúng", "quê quán vẫn đúng", "lan kể gần hai tiếng", "thứ hai người có được", "em có muốn anh đi cùng")):
             visible_chars = [c for c in ["HUNG", "LAN_ADULT"] if c in character_lib]
             shot_comp = "two_shot"
         # Flashbacks to youth
@@ -935,7 +980,12 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
             visible_chars = ["UNCLE"]
             shot_comp = "medium_shot"
         # Hung investigation
-        elif has_hung and any(w in txt_lower for w in ("hùng tìm về", "hàng xóm", "địa chỉ cũ", "đến ngân hàng", "hùng tiếp tục", "anh xin chỉ dẫn", "kiểm tra giấy tờ")):
+        elif has_hung and any(w in txt_lower for w in (
+            "hùng tìm về", "hàng xóm", "địa chỉ cũ", "đến ngân hàng", "hùng tiếp tục",
+            "anh xin chỉ dẫn", "kiểm tra giấy tờ", "hùng không kiểm tra điện thoại",
+            "số điện thoại đó đã đổi chủ", "đây là lúc hùng có thể dừng lại",
+            "hùng vẫn chưa tin", "ba thông tin cùng khớp", "cậu tìm ông ấy làm gì"
+        )):
             visible_chars = ["HUNG"]
             shot_comp = "medium_shot"
         # Default single character
@@ -952,15 +1002,20 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
         # 3. Location Resolution (Using authentic locations without HOSPITAL_GRAVE)
         if any(w in txt_lower for w in ("nghĩa trang", "ngôi mộ", "viếng mộ", "phần mộ", "bia mộ")):
             loc = "CEMETERY" if "CEMETERY" in location_lib else "LAN_HOME"
-        elif any(w in txt_lower for w in ("hàng xóm", "địa chỉ cũ", "khu phố cũ", "bà nhìn rất lâu", "nhà cũ")):
+        elif any(w in txt_lower for w in (
+            "hàng xóm", "địa chỉ cũ", "khu phố cũ", "bà nhìn rất lâu", "nhà cũ",
+            "đến ngân hàng", "hùng không kiểm tra điện thoại", "số điện thoại đó đã đổi chủ",
+            "lần theo những thứ lan đã để lộ", "mối liên hệ với gia đình bên ngoại",
+            "cậu tìm ông ấy làm gì", "người hàng xóm lớn tuổi"
+        )):
             loc = "OLD_NEIGHBORHOOD" if "OLD_NEIGHBORHOOD" in location_lib else "STREET"
-        elif any(w in txt_lower for w in ("kiểm tra giấy tờ", "giấy tờ cũ", "hồ sơ", "đối chiếu", "trích lục", "ba thông tin")):
+        elif any(w in txt_lower for w in ("cơ quan đăng ký hộ tịch", "kiểm tra giấy tờ cũ", "tìm giấy tờ", "tập hồ sơ", "trích lục", "ba thông tin cùng khớp")) and not any(w in txt_lower for w in ("đối chiếu giao dịch và xử lý", "ngày mất.", "em có muốn anh đi cùng", "ngày sinh cũng đúng")):
             loc = "ARCHIVE_OFFICE" if "ARCHIVE_OFFICE" in location_lib else "LAN_HOME"
         elif any(w in txt_lower for w in ("người cậu", "cậu ruột", "nhà người cậu", "băng cassette", "đồ đạc cũ", "cuộn băng")):
             loc = "UNCLE_HOME" if "UNCLE_HOME" in location_lib else "LAN_HOME"
         elif any(w in txt_lower for w in ("quán cà phê", "quán nước", "bến xe", "rời quán")):
             loc = "CAFE" if "CAFE" in location_lib else "LAN_HOME"
-        elif any(w in txt_lower for w in ("phòng ngủ", "ngăn kéo", "tủ quần áo", "đầu giường", "lá thư", "đêm hôm đó", "cốc nước")):
+        elif any(w in txt_lower for w in ("phòng ngủ", "ngăn kéo", "tủ quần áo", "đầu giường", "lá thư của lan mở đầu", "đêm hôm đó", "cốc nước", "hẹn gặp lại bạn trong lá thư")) and not any(w in txt_lower for w in ("gia đình bắt đầu làm việc", "đối chiếu giao dịch và xử lý")):
             loc = "LAN_BEDROOM" if "LAN_BEDROOM" in location_lib else "LAN_HOME"
         elif any(w in txt_lower for w in ("đường phố", "vỉa hè", "bước ra ngoài", "xe cộ", "ngõ")):
             loc = "STREET" if "STREET" in location_lib else "LAN_HOME"
@@ -976,7 +1031,7 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
         overlay_src = None
         overlay_elements = []
 
-        if any(w in txt_lower for w in ("ngân hàng báo", "giao dịch định kỳ", "năm triệu đồng", "5 triệu")):
+        if any(w in txt_lower for w in ("ngân hàng báo giao dịch", "ngân hàng báo", "giao dịch định kỳ năm triệu")) and not any(w in txt_lower for w in ("lá thư của lan mở đầu", "nghe được lá thư", "nguyên tắc từ ngày cưới")):
             req_overlay = True
             overlay_content = "Giao dịch định kỳ: -5.000.000 VND"
             overlay_src = "FACT_MONEY_01"
@@ -986,7 +1041,7 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
                 "source_fact_id": "FACT_MONEY_01",
                 "safe_area": "screen_center"
             }]
-        elif any(w in txt_lower for w in ("ngày mất", "mười bốn năm trước", "tập hồ sơ", "ba thông tin cùng khớp")):
+        elif any(w in txt_lower for w in ("trích lục khai tử", "tập hồ sơ và chỉ nói ba chữ", "dòng đó chỉ có hai chữ: “ngày mất”", "dòng đó chỉ có hai chữ: ngày mất", "bố lan đã qua đời... mười bốn năm trước")) and not any(w in txt_lower for w in ("hãy dừng ở chi tiết này", "ba thông tin cùng khớp, anh mới hiểu")):
             req_overlay = True
             overlay_content = "Trích lục khai tử: Ngày mất 14 năm trước"
             overlay_src = "FACT_REVEAL_DEATH_RECORD"
@@ -996,7 +1051,7 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
                 "source_fact_id": "FACT_REVEAL_DEATH_RECORD",
                 "safe_area": "document_lower_center"
             }]
-        elif any(w in txt_lower for w in ("bố nhìn thấy con", "tin nhắn bố")):
+        elif any(w in txt_lower for w in ("bố nhìn thấy con rồi, nhưng bố chưa đủ can đảm", "tin nhắn bố nhìn thấy con")):
             req_overlay = True
             overlay_content = "Tin nhắn: Bố nhìn thấy con rồi, nhưng bố chưa đủ can đảm bước vào."
             overlay_src = "FACT_REVEAL_CAFE_ABSENCE"
@@ -1065,14 +1120,18 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
 
         # 1. Subject description strictly matching visible_characters
         if len(visible_chars) == 0:
-            if "tập hồ sơ" in text.lower() or "ngày mất" in text.lower():
+            if "tập hồ sơ" in text.lower() or "ngày mất" in text.lower() or "giấy tờ" in text.lower() or "trích lục" in text.lower():
                 subject_desc = "Extreme close-up macro insert of an official administrative civil registry document resting on an aged wooden desk, official circular stamp in faded red ink, authentic aged paper texture."
             elif "ngân hàng" in text.lower() or "điện thoại" in text.lower() or "5 triệu" in text.lower():
                 subject_desc = "Extreme close-up macro insert of a modern smartphone lying on a wooden desk, illuminated screen displaying a bank transaction notification, soft reflections."
             elif "kẹp tóc" in text.lower():
                 subject_desc = "Detailed tactile macro close-up of a small weathered wooden hairpin with subtle carved floral patterns resting inside an open cardboard parcel."
-            elif "băng cassette" in text.lower() or "ghi âm" in text.lower():
+            elif "băng cassette" in text.lower() or "ghi âm" in text.lower() or "cuộn băng" in text.lower():
                 subject_desc = "Detailed macro close-up of a vintage audio cassette tape resting on a wooden shelf, aged handwritten label partially faded."
+            elif "tủ gỗ" in text.lower() or "vết cháy" in text.lower():
+                subject_desc = "Detailed macro insert of an aged wooden cupboard surface showing a distinct historic candle scorch mark, rustic textured wood grain."
+            elif "vết sẹo" in text.lower():
+                subject_desc = "Detailed tactile macro insert shot of a subtle childhood scar on a knee, soft natural indoor lighting."
             else:
                 subject_desc = "Detailed tactile macro insert shot of personal domestic artifacts on a wooden surface."
         elif "HUNG" in visible_chars and "LAN_ADULT" in visible_chars:
@@ -1258,34 +1317,84 @@ class VisualPlanner:
             validation_issues=issues
         )
 
-    def save_plan(self, scenes: List[VisualScene], project_dir: Path) -> Path:
+    def save_plan(
+        self,
+        scenes: List[VisualScene],
+        project_dir: Path,
+        approved_semantic_hash: Optional[str] = None,
+        semantic_qc_status: Optional[str] = None
+    ) -> Path:
         """Saves visual_plan.json into projects/<slug>/visual/visual_plan.json."""
         project_dir = Path(project_dir)
-        vis_dir = project_dir / "visual"
+        if project_dir.suffix == ".json":
+            plan_file = project_dir
+            vis_dir = plan_file.parent
+            real_project_dir = vis_dir.parent
+        else:
+            vis_dir = project_dir / "visual"
+            plan_file = vis_dir / "visual_plan.json"
+            real_project_dir = project_dir
         vis_dir.mkdir(parents=True, exist_ok=True)
-        plan_file = vis_dir / "visual_plan.json"
+
+        current_hash = compute_visual_plan_semantic_hash(scenes)
+        source_hash = compute_source_script_hash(real_project_dir)
+
+        # Check existing plan state for approved hash
+        existing_approved_hash = None
+        existing_approved_at = None
+        existing_status = "NEEDS_REVIEW"
+
+        if plan_file.exists():
+            try:
+                with open(plan_file, "r", encoding="utf-8") as f:
+                    old_data = json.load(f)
+                existing_approved_hash = old_data.get("approved_semantic_hash")
+                existing_approved_at = old_data.get("approved_at")
+                old_status = old_data.get("semantic_qc_status", "NEEDS_REVIEW")
+                # If existing had approval and hashes still match, keep approved
+                if existing_approved_hash and existing_approved_hash == current_hash and old_status == "APPROVED":
+                    existing_status = "APPROVED"
+                else:
+                    existing_status = "NEEDS_REVIEW"
+            except Exception as e:
+                logger.warning(f"Could not read existing plan file for approval state: {e}")
+
+        # Explicit overrides if supplied
+        if approved_semantic_hash is not None:
+            existing_approved_hash = approved_semantic_hash
+        if semantic_qc_status is not None:
+            existing_status = semantic_qc_status
 
         data = {
+            "semantic_qc_version": "2.5",
+            "semantic_qc_status": existing_status,
+            "approved_at": existing_approved_at,
+            "approved_semantic_hash": existing_approved_hash,
+            "current_semantic_hash": current_hash,
+            "source_script_hash": source_hash,
             "scenes": [asdict(s) for s in scenes],
             "total_scenes": len(scenes),
             "banana_count": sum(1 for s in scenes if s.visual_type == "BANANA_IMAGE"),
             "omni_count": sum(1 for s in scenes if s.visual_type in ("OMNI_FLASH_I2V", "VEO_I2V")),
-            "semantic_hash": compute_visual_plan_semantic_hash(scenes),
+            "semantic_hash": current_hash,
         }
 
         with open(plan_file, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
-        logger.info(f"Visual plan saved to: {plan_file} ({len(scenes)} scenes)")
+        logger.info(f"Visual plan saved to: {plan_file} ({len(scenes)} scenes, status: {existing_status})")
         return plan_file
 
     def audit_and_export_semantic_qc(
         self,
         scenes: List[VisualScene],
         total_audio_sec: float,
-        output_path: Path
+        output_path: Path,
+        project_dir: Optional[Path] = None,
+        approve_plan: bool = True
     ) -> Dict[str, Any]:
-        """Audits all scenes and writes episode01_visual_semantic_qc.json."""
+        """Audits all scenes, seals approved semantic hash upon PASS, and writes episode01_visual_semantic_qc.json."""
+        from datetime import datetime, timezone
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1295,6 +1404,32 @@ class VisualPlanner:
             character_lib=self.characters,
             location_lib=self.locations
         )
+
+        current_hash = compute_visual_plan_semantic_hash(scenes)
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        # If audit passes and approval requested, seal approved_semantic_hash into visual_plan.json
+        p_dir = project_dir
+        if not p_dir:
+            default_p_dir = Path("projects/sau_canh_cua_-_episode_01_v9_1_master_reference")
+            if (default_p_dir / "visual/visual_plan.json").exists():
+                p_dir = default_p_dir
+
+        if is_valid and approve_plan and p_dir:
+            plan_file = Path(p_dir) / "visual" / "visual_plan.json"
+            if plan_file.exists():
+                try:
+                    with open(plan_file, "r", encoding="utf-8") as f:
+                        pdata = json.load(f)
+                    pdata["approved_semantic_hash"] = current_hash
+                    pdata["current_semantic_hash"] = current_hash
+                    pdata["semantic_qc_status"] = "APPROVED"
+                    pdata["approved_at"] = now_iso
+                    with open(plan_file, "w", encoding="utf-8") as f:
+                        json.dump(pdata, f, ensure_ascii=False, indent=2)
+                    logger.info(f"Sealed approved semantic hash in {plan_file}: {current_hash}")
+                except Exception as e:
+                    logger.error(f"Error sealing approved hash in visual_plan.json: {e}")
 
         audit_results = []
         vis_mismatches = 0
@@ -1351,6 +1486,10 @@ class VisualPlanner:
             "total_scenes_audited": len(scenes),
             "generation_gate_status": "PASS" if is_valid else "BLOCKED",
             "generation_gate_issues": gate_issues,
+            "semantic_qc_status": "APPROVED" if is_valid else "NEEDS_REVIEW",
+            "approved_semantic_hash": current_hash if is_valid else None,
+            "current_semantic_hash": current_hash,
+            "visual_plan_semantic_hash": current_hash,
             "banana_images_count": sum(1 for s in scenes if s.visual_type == "BANANA_IMAGE"),
             "omni_videos_count": sum(1 for s in scenes if s.visual_type in ("OMNI_FLASH_I2V", "VEO_I2V")),
             "omni_duration_distribution": {

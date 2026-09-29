@@ -412,6 +412,18 @@ def test_full_generation_locked_before_pilot_approval(temp_project):
     pilot_ids = ["SC_001", "SC_005", "SC_011", "SC_025", "SC_030", "SC_035", "SC_041", "SC_045"]
     pilot_omni_ids = ["SC_001", "SC_005", "SC_011", "SC_030"]
 
+    # Create a valid approved visual_plan.json so semantic gate passes
+    from apps.visual_engine.visual_planner import compute_visual_plan_semantic_hash
+    scenes_dicts = [s.__dict__ if hasattr(s, "__dict__") else s for s in scenes]
+    h = compute_visual_plan_semantic_hash(scenes_dicts)
+    plan_file = temp_project / "visual/visual_plan.json"
+    plan_file.write_text(json.dumps({
+        "scenes": scenes_dicts,
+        "approved_semantic_hash": h,
+        "current_semantic_hash": h,
+        "semantic_qc_status": "APPROVED"
+    }), encoding="utf-8")
+
     # Initially empty queue -> locked!
     unlocked, info = asset_mgr.is_full_generation_unlocked(scenes, char_lib)
     assert not unlocked
@@ -438,8 +450,9 @@ def test_full_generation_locked_before_pilot_approval(temp_project):
     assert info["reason"] == "Ready"
 
 
+
 def test_pilot_metadata_loaded_from_visual_plan():
-    """13. Pilot source-of-truth test (Phase 3.1):
+    """13. Pilot source-of-truth test (Phase 3.2 restored):
     All metadata MUST be loaded directly from visual/visual_plan.json.
     """
     plan_path = REPO_ROOT / "projects/sau_canh_cua_-_episode_01_v9_1_master_reference/visual/visual_plan.json"
@@ -459,46 +472,85 @@ def test_pilot_metadata_loaded_from_visual_plan():
         assert s.get("visual_type") in ("BANANA_IMAGE", "OMNI_FLASH_I2V"), f"{pid} invalid visual_type"
         assert s.get("image_prompt"), f"{pid} has empty image_prompt"
 
-    # Dynamic Omni count in pilot must be exactly 4 (SC_001, SC_005, SC_011, SC_030), total 26s
+    # Restored Pilot Omni count: SC_001 (4s) and SC_005 (8s) -> 2 clips, total 12s
     pilot_omni_scenes = [scenes_by_id[pid] for pid in PILOT_SCENE_IDS if scenes_by_id[pid].get("visual_type") == "OMNI_FLASH_I2V"]
-    assert len(pilot_omni_scenes) == 4
-    assert [s["scene_id"] for s in pilot_omni_scenes] == ["SC_001", "SC_005", "SC_011", "SC_030"]
+    assert len(pilot_omni_scenes) == 2
+    assert [s["scene_id"] for s in pilot_omni_scenes] == ["SC_001", "SC_005"]
     total_omni_sec = sum(s.get("video_duration_sec", 0) for s in pilot_omni_scenes)
-    assert total_omni_sec == 26
+    assert total_omni_sec == 12
 
-    # Verify SC_030 Archive Office death record 14 years ago
+    # Verify SC_030 REVEAL 1: Archive Office death record 14 years ago, macro insert (BANANA_IMAGE)
     sc_030 = scenes_by_id["SC_030"]
     assert sc_030["location"] == "ARCHIVE_OFFICE"
-    assert sc_030["visible_characters"] == ["HUNG", "LAN_ADULT"]
-    assert sc_030["visual_type"] == "OMNI_FLASH_I2V"
-    assert sc_030["video_duration_sec"] == 6
+    assert sc_030["visible_characters"] == []
+    assert sc_030["visual_type"] == "BANANA_IMAGE"
+    assert sc_030["story_importance"] == "CRITICAL"
     assert "14 năm trước" in sc_030["text_overlay_content"]
 
-    # Verify SC_041 Climax at Lan Home
+    # Verify SC_041 Climax at Lan Home (BANANA_IMAGE, critical still)
     sc_041 = scenes_by_id["SC_041"]
     assert sc_041["location"] == "LAN_HOME"
     assert sc_041["visible_characters"] == ["HUNG", "LAN_ADULT"]
     assert sc_041["visual_type"] == "BANANA_IMAGE"
+    assert sc_041["story_importance"] == "CRITICAL"
+    assert sc_041.get("text_overlay_content") is None
 
-    # Verify SC_001 Lan Bedroom Bank Transfer overlay
+    # Verify SC_001 Lan Bedroom opening hook (OMNI_FLASH_I2V, 4s, no money overlay)
     sc_001 = scenes_by_id["SC_001"]
     assert sc_001["location"] == "LAN_BEDROOM"
     assert sc_001["visible_characters"] == ["LAN_ADULT"]
     assert sc_001["visual_type"] == "OMNI_FLASH_I2V"
     assert sc_001["video_duration_sec"] == 4
-    assert "-5.000.000 VND" in sc_001["text_overlay_content"]
+    assert sc_001.get("text_overlay_content") is None
 
-    # Verify SC_005 Lan Young flashback at Lan Home
+    # Verify SC_005 Lan Young flashback at Lan Home (OMNI_FLASH_I2V, 8s)
     sc_005 = scenes_by_id["SC_005"]
     assert sc_005["location"] == "LAN_HOME"
     assert sc_005["visible_characters"] == ["LAN_YOUNG"]
     assert sc_005["visual_type"] == "OMNI_FLASH_I2V"
     assert sc_005["video_duration_sec"] == 8
 
+    # Verify SC_011 Macro cupboard evidence (BANANA_IMAGE, no characters)
+    sc_011 = scenes_by_id["SC_011"]
+    assert sc_011["location"] == "OLD_NEIGHBORHOOD"
+    assert sc_011["visible_characters"] == []
+    assert sc_011["visual_type"] == "BANANA_IMAGE"
+
+    # Verify SC_025 Hung investigating alone in Old Neighborhood
+    sc_025 = scenes_by_id["SC_025"]
+    assert sc_025["location"] == "OLD_NEIGHBORHOOD"
+    assert sc_025["visible_characters"] == ["HUNG"]
+    assert sc_025["visual_type"] == "BANANA_IMAGE"
+
+    # Verify SC_035 Uncle house cassette macro
+    sc_035 = scenes_by_id["SC_035"]
+    assert sc_035["location"] == "UNCLE_HOME"
+    assert sc_035["visible_characters"] == []
+    assert sc_035["visual_type"] == "BANANA_IMAGE"
+    assert "Bố nhìn thấy con rồi" in sc_035["text_overlay_content"]
+
+    # Verify SC_045 Lan Bedroom outro reflection
+    sc_045 = scenes_by_id["SC_045"]
+    assert sc_045["location"] == "LAN_BEDROOM"
+    assert sc_045["visible_characters"] == ["LAN_ADULT"]
+    assert sc_045["visual_type"] == "BANANA_IMAGE"
+
 
 def test_pilot_generation_gate_character_approval(temp_project):
     """14. Pilot generation is locked until all 4 characters are approved."""
     asset_mgr = VisualAssetManager(temp_project)
+    from apps.visual_engine.visual_planner import compute_visual_plan_semantic_hash
+
+    # Create dummy valid visual_plan.json
+    scenes = [{"scene_id": "SC_001", "story_beat": "Intro", "visual_type": "BANANA_IMAGE", "location": "LAN_BEDROOM"}]
+    h = compute_visual_plan_semantic_hash(scenes)
+    plan_file = temp_project / "visual/visual_plan.json"
+    plan_file.write_text(json.dumps({
+        "scenes": scenes,
+        "approved_semantic_hash": h,
+        "current_semantic_hash": h,
+        "semantic_qc_status": "APPROVED"
+    }), encoding="utf-8")
 
     # Characters with AWAITING_REVIEW
     char_lib = {
@@ -553,7 +605,12 @@ def test_semantic_hash_tamper_protection(temp_project):
     correct_hash = compute_visual_plan_semantic_hash(scenes)
 
     plan_file = temp_project / "visual/visual_plan.json"
-    plan_data = {"scenes": scenes, "semantic_hash": correct_hash}
+    plan_data = {
+        "scenes": scenes,
+        "approved_semantic_hash": correct_hash,
+        "current_semantic_hash": correct_hash,
+        "semantic_qc_status": "APPROVED"
+    }
     with open(plan_file, "w", encoding="utf-8") as f:
         json.dump(plan_data, f)
 
@@ -566,7 +623,12 @@ def test_semantic_hash_tamper_protection(temp_project):
     tampered_scenes = [
         {"scene_id": "SC_001", "story_beat": "Altered beat", "visual_type": "BANANA_IMAGE", "location": "LAN_BEDROOM"}
     ]
-    tampered_data = {"scenes": tampered_scenes, "semantic_hash": correct_hash}
+    tampered_data = {
+        "scenes": tampered_scenes,
+        "approved_semantic_hash": correct_hash,
+        "current_semantic_hash": correct_hash,
+        "semantic_qc_status": "APPROVED"
+    }
     with open(plan_file, "w", encoding="utf-8") as f:
         json.dump(tampered_data, f)
 
@@ -574,4 +636,101 @@ def test_semantic_hash_tamper_protection(temp_project):
     unlocked, info = asset_mgr.is_pilot_generation_unlocked(char_lib)
     assert not unlocked
     assert info["semantic_hash_valid"] is False
-    assert "Semantic hash mismatch" in info["reason"]
+    assert "LOCKED_SEMANTIC_PLAN_CHANGED" in info["reason"]
+
+
+def test_phase3_operations_do_not_mutate_visual_plan(temp_project):
+    """16. Phase 3 operations (character approval, reference resolve) MUST NOT mutate visual_plan.json."""
+    from apps.visual_engine.visual_planner import compute_visual_plan_semantic_hash
+    asset_mgr = VisualAssetManager(temp_project)
+
+    scenes = [
+        {"scene_id": "SC_001", "story_beat": "Intro", "visual_type": "BANANA_IMAGE", "location": "LAN_BEDROOM"}
+    ]
+    correct_hash = compute_visual_plan_semantic_hash(scenes)
+    plan_file = temp_project / "visual/visual_plan.json"
+    plan_content = json.dumps({
+        "scenes": scenes,
+        "approved_semantic_hash": correct_hash,
+        "current_semantic_hash": correct_hash,
+        "semantic_qc_status": "APPROVED"
+    }, indent=2)
+    plan_file.write_text(plan_content, encoding="utf-8")
+
+    char_lib = {
+        cid: CharacterProfile(char_id=cid, name=cid, references=["ref.png"], qc_status="APPROVED")
+        for cid in ["LAN_ADULT", "HUNG", "UNCLE", "LAN_YOUNG"]
+    }
+
+    # Perform character checks
+    asset_mgr.is_pilot_generation_unlocked(char_lib)
+    asset_mgr.approve_keyframe("SC_001")
+    asset_mgr.approve_video("SC_001")
+
+    # Verify visual_plan.json remained completely untouched
+    assert plan_file.read_text(encoding="utf-8") == plan_content
+
+
+def test_approved_semantic_hash_not_auto_updated(temp_project):
+    """17. save_plan() MUST NOT auto-update approved_semantic_hash."""
+    from apps.visual_engine.visual_planner import VisualPlanner, compute_visual_plan_semantic_hash
+    planner = VisualPlanner()
+
+    scenes = [
+        VisualScene(scene_id="SC_001", start_sec=0.0, end_sec=4.0, duration_sec=4.0, story_beat="Intro", visual_type="BANANA_IMAGE")
+    ]
+    initial_hash = compute_visual_plan_semantic_hash(scenes)
+    out_file = temp_project / "visual/visual_plan.json"
+
+    # Save with initial approval
+    planner.save_plan(scenes, out_file, approved_semantic_hash=initial_hash, semantic_qc_status="APPROVED")
+    data1 = json.loads(out_file.read_text(encoding="utf-8"))
+    assert data1["approved_semantic_hash"] == initial_hash
+    assert data1["semantic_qc_status"] == "APPROVED"
+
+    # Now modify scenes and call save_plan() without explicit re-approval
+    modified_scenes = [
+        VisualScene(scene_id="SC_001", start_sec=0.0, end_sec=4.0, duration_sec=4.0, story_beat="Modified beat", visual_type="BANANA_IMAGE")
+    ]
+    planner.save_plan(modified_scenes, out_file)
+    data2 = json.loads(out_file.read_text(encoding="utf-8"))
+
+    # approved_semantic_hash must STILL be initial_hash, not auto-promoted!
+    assert data2["approved_semantic_hash"] == initial_hash
+    assert data2["current_semantic_hash"] != initial_hash
+    assert data2["semantic_qc_status"] == "NEEDS_REVIEW"
+
+
+def test_visual_plan_rebuild_requires_semantic_reapproval(temp_project):
+    """18. Any silent rebuild of visual_plan locks generation gates until re-approved."""
+    from apps.visual_engine.visual_planner import VisualPlanner, compute_visual_plan_semantic_hash
+    planner = VisualPlanner()
+    asset_mgr = VisualAssetManager(temp_project)
+
+    scenes = [
+        VisualScene(scene_id="SC_001", start_sec=0.0, end_sec=4.0, duration_sec=4.0, story_beat="Intro", visual_type="BANANA_IMAGE")
+    ]
+    initial_hash = compute_visual_plan_semantic_hash(scenes)
+    plan_file = temp_project / "visual/visual_plan.json"
+
+    char_lib = {
+        cid: CharacterProfile(char_id=cid, name=cid, references=["ref_portrait.png"], qc_status="APPROVED")
+        for cid in ["LAN_ADULT", "HUNG", "UNCLE", "LAN_YOUNG"]
+    }
+
+    # Initial approved state
+    planner.save_plan(scenes, plan_file, approved_semantic_hash=initial_hash, semantic_qc_status="APPROVED")
+    unlocked, _ = asset_mgr.is_pilot_generation_unlocked(char_lib)
+    assert unlocked is True
+
+    # Rebuild plan with changes -> status becomes NEEDS_REVIEW, hashes diverge
+    modified_scenes = [
+        VisualScene(scene_id="SC_001", start_sec=0.0, end_sec=4.0, duration_sec=4.0, story_beat="Altered beat", visual_type="BANANA_IMAGE")
+    ]
+    planner.save_plan(modified_scenes, plan_file)
+
+    # Gate must lock!
+    unlocked, info = asset_mgr.is_pilot_generation_unlocked(char_lib)
+    assert unlocked is False
+    assert "LOCKED_SEMANTIC_PLAN_CHANGED" in info["reason"]
+
