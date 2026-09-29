@@ -150,6 +150,8 @@ class CostController:
             pass
         return records[-limit:]
 
+    get_audit_records = get_logs
+
     def get_daily_spend_usd(self) -> float:
         """Returns total spend in USD for the last 24 hours."""
         now = time.time()

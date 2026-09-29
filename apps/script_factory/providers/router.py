@@ -8,18 +8,19 @@ from typing import Any, Dict, Optional
 
 from apps.script_factory.providers.base import ScriptAIProvider
 from apps.script_factory.providers.mock_provider import MockScriptAIProvider
+from apps.script_factory.providers.gemini_provider import GeminiScriptAIProvider, _get_api_key
 
 logger = logging.getLogger("VieNeu.ModelRouter")
 
 
 @dataclass
 class RouterConfig:
-    idea_model: str = "mock-model"
-    planner_model: str = "mock-model"
-    writer_model: str = "mock-model"
-    qc_model: str = "mock-model"
-    embedding_model: str = "mock-embedding"
-    preferred_provider: str = "mock"
+    idea_model: str = "gemini-2.5-flash"
+    planner_model: str = "gemini-2.5-flash"
+    writer_model: str = "gemini-2.5-flash"
+    qc_model: str = "gemini-2.5-flash"
+    embedding_model: str = "gemini-embedding-001"
+    preferred_provider: str = "gemini"
 
 
 class ModelRouter:
@@ -30,6 +31,17 @@ class ModelRouter:
         self._providers: Dict[str, ScriptAIProvider] = {
             "mock": MockScriptAIProvider()
         }
+        # Check if Gemini API key exists
+        gemini_key = _get_api_key()
+        if gemini_key:
+            self._providers["gemini"] = GeminiScriptAIProvider(
+                api_key=gemini_key,
+                default_model=self.config.idea_model,
+                embedding_model=self.config.embedding_model,
+            )
+        elif self.config.preferred_provider == "gemini":
+            # Fallback to mock if no key found
+            self.config.preferred_provider = "mock"
 
     def register_provider(self, name: str, provider: ScriptAIProvider) -> None:
         self._providers[name.lower()] = provider
@@ -41,18 +53,37 @@ class ModelRouter:
             return self._providers[pref]
 
         # Check environment for real keys if requested
-        if pref == "openai" and os.environ.get("OPENAI_API_KEY"):
-            # Could instantiate real OpenAI adapter
-            return self._providers.get("openai", self._providers["mock"])
-        elif pref == "gemini" and os.environ.get("GEMINI_API_KEY"):
-            return self._providers.get("gemini", self._providers["mock"])
-        elif pref == "anthropic" and os.environ.get("ANTHROPIC_API_KEY"):
-            return self._providers.get("anthropic", self._providers["mock"])
+        gemini_key = _get_api_key()
+        if gemini_key:
+            if "gemini" not in self._providers:
+                self._providers["gemini"] = GeminiScriptAIProvider(api_key=gemini_key)
+            return self._providers["gemini"]
 
-        # Default fallback is always Mock provider
+        # Default fallback is Mock provider
         return self._providers["mock"]
 
+    def get_connection_status(self) -> Dict[str, Any]:
+        """Returns clear status for UI: Provider, Model, Connection Status."""
+        provider = self.get_provider()
+        model = self.get_model_for_task("idea")
+        if provider.provider_name == "mock":
+            return {
+                "provider": "Mock Provider",
+                "model": "mock-model",
+                "status": "MOCK PROVIDER — NOT FOR PRODUCTION",
+                "is_mock": True,
+            }
+        return {
+            "provider": provider.provider_name.upper(),
+            "model": model,
+            "status": "CONNECTED (Ready for Pilot)",
+            "is_mock": False,
+        }
+
     def get_model_for_task(self, task: str) -> str:
+        provider = self.get_provider()
+        if provider.provider_name == "mock":
+            return "mock-model"
         if task == "idea":
             return self.config.idea_model
         elif task == "planner":
@@ -63,4 +94,4 @@ class ModelRouter:
             return self.config.qc_model
         elif task == "embedding":
             return self.config.embedding_model
-        return "default-model"
+        return self.config.idea_model

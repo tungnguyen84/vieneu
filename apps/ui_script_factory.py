@@ -98,8 +98,47 @@ def _render_dashboard_md(counts: Dict[str, int]) -> str:
     )
 
 
+def _render_provider_status_md() -> str:
+    try:
+        router = ModelRouter()
+        st = router.get_connection_status()
+        color = "#10b981" if not st["is_mock"] else "#ef4444"
+        badge = f"<span style='color:{color}; font-weight:bold;'>{st['status']}</span>"
+        return (
+            f"**AI Provider:** `{st['provider']}` &nbsp;|&nbsp; "
+            f"**Model:** `{st['model']}` &nbsp;|&nbsp; "
+            f"**Connection Status:** {badge}"
+        )
+    except Exception as e:
+        return f"**Connection Status:** `Error: {e}`"
+
+
+IDEA_TABLE_HEADERS = [
+    "ID",
+    "Working Title",
+    "Hook",
+    "Protagonist",
+    "Relationship",
+    "Central Secret",
+    "Mystery Question",
+    "False Lead",
+    "Clue 1",
+    "Clue 2",
+    "Clue 3",
+    "Reveal 1",
+    "Reveal 2",
+    "Emotional Payoff",
+    "Reflection Theme",
+    "Hook Archetype",
+    "Twist Archetype",
+    "Novelty",
+    "Closest Episode",
+    "Status",
+]
+
+
 def _load_ideas_dataframe(filter_status: str = "ALL") -> List[List[Any]]:
-    """Loads Idea Bank dataframe filtered by status."""
+    """Loads Idea Bank dataframe filtered by status adhering to Section 11 schema."""
     ideas_file = Path("script_factory/idea_bank.json")
     if not ideas_file.exists():
         return []
@@ -113,7 +152,9 @@ def _load_ideas_dataframe(filter_status: str = "ALL") -> List[List[Any]]:
     rows = []
     for it in ideas:
         if filter_status != "ALL":
-            if filter_status == "PASS" and it.status not in ["PASS", "DRAFT"]:
+            if filter_status == "AWAITING_REVIEW" and it.status != "AWAITING_USER_REVIEW":
+                continue
+            elif filter_status == "PASS" and it.status not in ["PASS", "DRAFT"]:
                 continue
             elif filter_status == "BLOCKED" and it.status != "BLOCKED_DUPLICATE":
                 continue
@@ -122,20 +163,34 @@ def _load_ideas_dataframe(filter_status: str = "ALL") -> List[List[Any]]:
             elif filter_status == "DRAFT" and it.status != "DRAFT":
                 continue
 
-        novelty_str = f"{it.novelty_score:.0f}/100" if it.novelty_score is not None else "Chưa kiểm tra"
-        status_badge = "✅ PASS" if it.status in ["PASS", "DRAFT"] else ("⛔ BLOCKED" if it.status == "BLOCKED_DUPLICATE" else it.status)
+        novelty_str = f"{it.novelty_score:.1f}%" if it.novelty_score is not None else "N/A"
+        closest_str = it.closest_episode or "EP001"
+        status_badge = (
+            "⏳ REVIEW" if it.status == "AWAITING_USER_REVIEW"
+            else ("⛔ BLOCKED" if it.status == "BLOCKED_DUPLICATE"
+            else ("✅ APPROVED" if it.status == "APPROVED" else it.status))
+        )
 
         rows.append([
             it.idea_id,
             it.working_title,
-            it.hook[:50] + "...",
-            it.twist_archetype,
+            it.hook,
+            it.protagonist,
             it.relationship,
-            it.central_secret[:50] + "...",
-            it.reveal_1[:40] + "...",
-            it.reveal_2[:40] + "...",
+            it.central_secret,
+            it.mystery_question,
+            it.false_lead,
+            it.clue_1,
+            it.clue_2,
+            it.clue_3,
+            it.reveal_1,
+            it.reveal_2,
+            it.emotional_payoff,
+            it.reflection_theme,
             it.hook_archetype,
+            it.twist_archetype,
             novelty_str,
+            closest_str,
             status_badge,
         ])
     return rows
@@ -146,6 +201,7 @@ def render_script_factory_ui() -> Dict[str, Any]:
     counts = _get_dashboard_counts()
 
     with gr.Column():
+        provider_status_md = gr.Markdown(_render_provider_status_md())
         dashboard_md = gr.Markdown(_render_dashboard_md(counts))
 
         # Main action toolbar
@@ -157,6 +213,7 @@ def render_script_factory_ui() -> Dict[str, Any]:
                 scale=1,
             )
             btn_gen_ideas = gr.Button("✨ Generate Ideas", variant="primary", scale=2)
+            btn_run_pilot = gr.Button("🚀 Chạy Real Pilot 01 (20 Ideas)", variant="primary", scale=2)
             btn_check_novelty = gr.Button("🔍 Check Novelty", variant="secondary", scale=2)
             btn_create_bible = gr.Button("📖 Create Story Bible", variant="secondary", scale=2)
             btn_gen_script = gr.Button("✍️ Generate Script", variant="primary", scale=2)
@@ -172,18 +229,18 @@ def render_script_factory_ui() -> Dict[str, Any]:
             with gr.Row():
                 filter_status_radio = gr.Radio(
                     label="Lọc theo trạng thái",
-                    choices=["ALL", "DRAFT", "PASS", "BLOCKED", "APPROVED"],
+                    choices=["ALL", "AWAITING_REVIEW", "DRAFT", "PASS", "BLOCKED", "APPROVED"],
                     value="ALL",
                     scale=3,
                 )
                 btn_refresh_ideas = gr.Button("🔄 Tải lại bảng", scale=1)
 
             idea_bank_df = gr.Dataframe(
-                headers=["ID", "Title", "Hook", "Category", "Relationship", "Central Secret", "Reveal 1", "Reveal 2", "Twist Type", "Novelty", "Status"],
-                datatype=["str", "str", "str", "str", "str", "str", "str", "str", "str", "str", "str"],
+                headers=IDEA_TABLE_HEADERS,
+                datatype=["str"] * len(IDEA_TABLE_HEADERS),
                 value=_load_ideas_dataframe("ALL"),
                 interactive=False,
-                label="Danh sách ý tưởng tập phim",
+                label="Danh sách ý tưởng tập phim (20 trường chi tiết theo Section 11)",
             )
 
         # Episode Editor Section
@@ -242,9 +299,11 @@ def render_script_factory_ui() -> Dict[str, Any]:
     selected_ep_state = gr.State("EP001")
 
     components = {
+        "provider_status_md": provider_status_md,
         "dashboard_md": dashboard_md,
         "idea_count_dd": idea_count_dd,
         "btn_gen_ideas": btn_gen_ideas,
+        "btn_run_pilot": btn_run_pilot,
         "btn_check_novelty": btn_check_novelty,
         "btn_create_bible": btn_create_bible,
         "btn_gen_script": btn_gen_script,
@@ -301,6 +360,27 @@ def bind_script_factory_events(c: Dict[str, Any]) -> None:
         counts = _get_dashboard_counts()
         status = f"✅ Đã tạo thành công {len(new_ideas)} ý tưởng mới vào Idea Bank."
         return _render_dashboard_md(counts), df_data, status
+
+    def _on_run_pilot():
+        try:
+            from apps.script_factory.pilot_runner import run_pilot_01
+            res = run_pilot_01(count=20, model="gemini-2.5-flash", force_real_provider=True)
+            counts = _get_dashboard_counts()
+            df_data = _load_ideas_dataframe("ALL")
+            cost_rep = res["cost_report"]
+            status = (
+                f"### 🚀 {res['status']}\n\n"
+                f"- **Total Ideas:** {res['total_ideas']}\n"
+                f"- **JSON Export:** `{res['json_path']}`\n"
+                f"- **CSV Export:** `{res['csv_path']}`\n"
+                f"- **Provider:** {cost_rep['provider']} ({cost_rep['model']})\n"
+                f"- **Tokens:** {cost_rep['input_tokens']} in / {cost_rep['output_tokens']} out\n"
+                f"- **Est. Cost:** ${cost_rep['estimated_cost_usd']:.6f} USD\n"
+                f"- **Generation Time:** {cost_rep['generation_time_sec']}s"
+            )
+            return _render_dashboard_md(counts), df_data, status, _render_provider_status_md()
+        except Exception as e:
+            return _render_dashboard_md(_get_dashboard_counts()), _load_ideas_dataframe("ALL"), f"❌ Lỗi Pilot: {e}", _render_provider_status_md()
 
     def _on_check_novelty():
         ideas = idea_gen.load_idea_bank()
@@ -415,6 +495,7 @@ def bind_script_factory_events(c: Dict[str, Any]) -> None:
 
     # Wire event clicks
     c["btn_gen_ideas"].click(fn=_on_generate_ideas, inputs=[c["idea_count_dd"]], outputs=[c["dashboard_md"], c["idea_bank_df"], c["action_status_md"]])
+    c["btn_run_pilot"].click(fn=_on_run_pilot, inputs=[], outputs=[c["dashboard_md"], c["idea_bank_df"], c["action_status_md"], c["provider_status_md"]])
     c["btn_check_novelty"].click(fn=_on_check_novelty, inputs=[], outputs=[c["action_status_md"], c["idea_bank_df"]])
     c["btn_create_bible"].click(fn=_on_create_bible, inputs=[], outputs=[c["action_status_md"]])
     c["btn_gen_script"].click(fn=_on_generate_script, inputs=[c["ep_select_dd"]], outputs=[c["action_status_md"]])

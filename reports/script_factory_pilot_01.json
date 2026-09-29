@@ -1,4 +1,12 @@
 {
+  "pilot": "PILOT_01",
+  "series": "Sau Cánh Cửa",
+  "timestamp": 1790664612.45956,
+  "provider": "GEMINI",
+  "model": "gemini-2.5-flash",
+  "generation_time_sec": 87.65,
+  "total_ideas": 20,
+  "status": "SCRIPT FACTORY PILOT 01 — 20 IDEAS READY FOR HUMAN REVIEW",
   "ideas": [
     {
       "idea_id": "IDEA_002",
@@ -640,7 +648,5 @@
       "long_form_potential": 9.1,
       "created_at": 1790664612.1687021
     }
-  ],
-  "updated_at": 1790664612.4563394,
-  "total_count": 20
+  ]
 }

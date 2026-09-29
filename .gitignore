@@ -33,3 +33,6 @@ visual/generated/
 projects/*/visual/images/
 projects/*/visual/videos/
 projects/*/visual/generated/
+
+# Script Factory runtime logs
+script_factory/logs/

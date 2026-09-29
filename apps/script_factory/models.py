@@ -16,6 +16,7 @@ class ApprovalStatus(str, Enum):
     PRODUCTION_READY = "PRODUCTION_READY"
     BLOCKED_DUPLICATE = "BLOCKED_DUPLICATE"
     USER_REVIEW_REQUIRED = "USER_REVIEW_REQUIRED"
+    AWAITING_USER_REVIEW = "AWAITING_USER_REVIEW"
     STORY_BIBLE_CHANGED = "STORY_BIBLE_CHANGED"
 
 
@@ -66,6 +67,15 @@ class IdeaItem:
     estimated_strength: Optional[float] = None
     status: str = "DRAFT"
     novelty_score: Optional[float] = None
+    premise_similarity: Optional[float] = None
+    twist_similarity: Optional[float] = None
+    hook_similarity: Optional[float] = None
+    closest_episode: str = ""
+    curiosity: Optional[float] = None
+    emotional_potential: Optional[float] = None
+    mystery_potential: Optional[float] = None
+    logical_plausibility: Optional[float] = None
+    long_form_potential: Optional[float] = None
     created_at: float = field(default_factory=time.time)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -73,7 +83,10 @@ class IdeaItem:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> IdeaItem:
-        return cls(**data)
+        import dataclasses
+        valid_keys = {f.name for f in dataclasses.fields(cls)}
+        filtered = {k: v for k, v in data.items() if k in valid_keys}
+        return cls(**filtered)
 
 
 @dataclass

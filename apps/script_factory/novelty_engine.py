@@ -101,14 +101,14 @@ class NoveltyEngine:
             # Hook similarity
             hook_sim = _jaccard_similarity(candidate_idea.hook, other.hook)
             if candidate_idea.hook_archetype == other.hook_archetype and candidate_idea.hook_archetype:
-                hook_sim = max(hook_sim, 0.40)
+                hook_sim = min(1.0, hook_sim + 0.10)
 
             # Twist similarity
-            twist_cand = f"{candidate_idea.twist_archetype} {candidate_idea.reveal_1} {candidate_idea.reveal_2}"
-            twist_other = f"{other.twist_archetype} {other.reveal_1} {other.reveal_2}"
+            twist_cand = f"{candidate_idea.reveal_1} {candidate_idea.reveal_2}"
+            twist_other = f"{other.reveal_1} {other.reveal_2}"
             twist_sim = _jaccard_similarity(twist_cand, twist_other)
             if candidate_idea.twist_archetype == other.twist_archetype and candidate_idea.twist_archetype:
-                twist_sim = max(twist_sim, 0.45)
+                twist_sim = min(1.0, twist_sim + 0.10)
 
             # Overall premise similarity
             other_text = f"{other.working_title} {other.hook} {other.central_secret} {other.reveal_1} {other.reveal_2}"
@@ -150,6 +150,15 @@ class NoveltyEngine:
             comp = (premise_sim * 0.6 + twist_sim * 0.4) * 100.0
             if comp > 10.0:
                 closest_matches.append((comp, bible.episode_id, bible.title))
+
+        # EP001 Structural Variant Detection (Section 6: Do not copy EP001)
+        cand_lower = cand_text.lower()
+        has_ep1_money = any(w in cand_lower for w in ["chuyển tiền", "gửi tiền", "tiền hàng tháng", "tiền mỗi tháng"]) and any(w in cand_lower for w in ["cha", "bố", "mẹ", "đã mất", "đã khuất"])
+        has_ep1_impersonation = any(w in cand_lower for w in ["giả giọng", "mạo danh", "đóng giả", "giả danh"]) and any(w in cand_lower for w in ["cậu", "dì", "chú", "bác", "anh họ", "người thân"])
+        if has_ep1_money and has_ep1_impersonation:
+            highest_premise_sim = max(highest_premise_sim, 0.78)
+            highest_twist_sim = max(highest_twist_sim, 0.85)
+            closest_matches.append((82.0, "EP001", "7 năm giấu chồng chuyển tiền cho một người đàn ông"))
 
         closest_matches.sort(key=lambda x: x[0], reverse=True)
         closest_episodes = [
