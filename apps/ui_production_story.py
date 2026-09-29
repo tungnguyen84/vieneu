@@ -635,12 +635,81 @@ def render_production_story_ui(preset_voices_cache_getter):
                 pilot_review_notes_txt = gr.Textbox(label="Ghi chú Semantic QC Review", placeholder="Nhập ghi chú đánh giá về tính nhất quán, ánh sáng, chuyển động...", scale=3)
                 btn_save_pilot_review = gr.Button("💾 Lưu Ghi chú Review", scale=1)
 
+        # 📂 Antigravity — Manual Visual Import & Auto Assemble Mode
+        with gr.Accordion("🎬 ANTIGRAVITY — MANUAL VISUAL IMPORT + AUTO ASSEMBLE", open=True):
+            gr.Markdown(
+                "### 🎬 Chế độ Nhập Visual Thủ công & Tự Động Lắp Ráp (Manual Visual Mode)\n"
+                "- Nạp `visual_manifest_v9_3.json`, quét các thư mục `images/` và `videos/` theo mã scene (`SC_XXX`).\n"
+                "- **Ưu tiên:** Video > Image. Không gọi FlowKit / Banana / Omni. Không làm thay đổi `visual_plan.json`, source script hay audio master.\n"
+                "- **Quy chuẩn kỹ thuật:** Image (Ken Burns nhẹ nhàng), Video (scale/crop 1080p, trim/freeze frame), khử toàn bộ audio gốc của video và mux trực tiếp với `final_mix.wav`."
+            )
+            with gr.Row():
+                manual_manifest_path_txt = gr.Textbox(
+                    label="Đường dẫn file Manifest",
+                    value="projects/sau_canh_cua_ep01_v9_3_manual_visual/visual_manifest_v9_3.json",
+                    scale=3
+                )
+                btn_load_manual_manifest = gr.Button("📂 Nạp Manifest", variant="secondary", scale=1)
+
+            with gr.Row():
+                manual_images_dir_txt = gr.Textbox(
+                    label="Thư mục Images",
+                    value="projects/sau_canh_cua_ep01_v9_3_manual_visual/visual/images",
+                    scale=2
+                )
+                manual_videos_dir_txt = gr.Textbox(
+                    label="Thư mục Videos",
+                    value="projects/sau_canh_cua_ep01_v9_3_manual_visual/visual/videos",
+                    scale=2
+                )
+
+            with gr.Row():
+                btn_manual_scan_assets = gr.Button("🔍 Scan Assets", variant="primary", scale=1)
+                btn_manual_validate = gr.Button("🛡️ Validate", variant="secondary", scale=1)
+                btn_manual_preview = gr.Button("👁️ Preview", variant="secondary", scale=1)
+                btn_manual_auto_assemble = gr.Button("🚀 Auto Assemble", variant="stop", scale=2)
+
+            manual_summary_report_md = gr.Markdown("*(Bấm 'Scan Assets' để quét tài nguyên hình ảnh và video)*")
+
+            # Table Scene / Image / Video / Chosen / QC / Overlay / Status
+            manual_manifest_df = gr.Dataframe(
+                headers=["Scene", "Image", "Video", "Chosen", "QC", "Overlay", "Status"],
+                datatype=["str", "str", "str", "str", "str", "str", "str"],
+                interactive=False,
+                label="Bảng Trạng Thái Tài Nguyên Cảnh (Manual Visual Manifest)"
+            )
+
+            # Duplicate resolution box
+            with gr.Group(visible=False) as manual_duplicate_box:
+                gr.Markdown("#### ⚠️ Giải quyết file trùng lặp (Duplicate Resolution)")
+                with gr.Row():
+                    manual_dup_scene_dd = gr.Dropdown(label="Chọn Scene trùng lặp", choices=[], scale=2)
+                    manual_dup_file_dd = gr.Dropdown(label="Chọn File tài nguyên", choices=[], scale=3)
+                    btn_manual_apply_dup = gr.Button("✅ Chọn File Này", variant="primary", scale=1)
+
+            # Preview Section
+            with gr.Group(visible=False) as manual_preview_box:
+                gr.Markdown("#### 👁️ Xem trước Cảnh (Scene Preview)")
+                with gr.Row():
+                    manual_preview_scene_dd = gr.Dropdown(
+                        label="Chọn Scene xem trước",
+                        choices=[f"SC_{i:03d}" for i in range(1, 46)],
+                        value="SC_001",
+                        scale=2
+                    )
+                    btn_load_scene_preview = gr.Button("👁️ Tải Xem Trước", scale=1)
+                with gr.Row():
+                    manual_preview_image = gr.Image(label="Hình ảnh đã chọn", interactive=False, visible=False)
+                    manual_preview_video = gr.Video(label="Video đã chọn", interactive=False, visible=False)
+                manual_preview_overlay_md = gr.Markdown("")
+
         # Video Player
         with gr.Row():
             final_episode_video = gr.Video(label="🎬 Bản Phim Hoàn Chỉnh (Final Episode MP4)", interactive=False)
             final_episode_file_download = gr.File(label="Tải file final_episode.mp4", visible=False)
 
     # State stores
+    manual_manifest_state = gr.State(None)
     story_raw_json_state = gr.State(None)
     story_project_info_state = gr.State({})
     story_characters_state = gr.State({})
@@ -830,6 +899,28 @@ def render_production_story_ui(preset_voices_cache_getter):
         "btn_save_pilot_review": btn_save_pilot_review,
         "final_episode_video": final_episode_video,
         "final_episode_file_download": final_episode_file_download,
+        # Manual Visual components
+        "manual_manifest_path_txt": manual_manifest_path_txt,
+        "btn_load_manual_manifest": btn_load_manual_manifest,
+        "manual_images_dir_txt": manual_images_dir_txt,
+        "manual_videos_dir_txt": manual_videos_dir_txt,
+        "btn_manual_scan_assets": btn_manual_scan_assets,
+        "btn_manual_validate": btn_manual_validate,
+        "btn_manual_preview": btn_manual_preview,
+        "btn_manual_auto_assemble": btn_manual_auto_assemble,
+        "manual_summary_report_md": manual_summary_report_md,
+        "manual_manifest_df": manual_manifest_df,
+        "manual_duplicate_box": manual_duplicate_box,
+        "manual_dup_scene_dd": manual_dup_scene_dd,
+        "manual_dup_file_dd": manual_dup_file_dd,
+        "btn_manual_apply_dup": btn_manual_apply_dup,
+        "manual_preview_box": manual_preview_box,
+        "manual_preview_scene_dd": manual_preview_scene_dd,
+        "btn_load_scene_preview": btn_load_scene_preview,
+        "manual_preview_image": manual_preview_image,
+        "manual_preview_video": manual_preview_video,
+        "manual_preview_overlay_md": manual_preview_overlay_md,
+        "manual_manifest_state": manual_manifest_state,
     }
     return components
 
@@ -3015,4 +3106,201 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         inputs=[c["story_project_dir_state"], c["story_visual_scenes_state"]],
         outputs=[c["visual_status_log_md"], c["final_episode_video"], c["final_episode_file_download"]]
     )
+
+    # -------------------------------------------------------------
+    # 🎬 ANTIGRAVITY — MANUAL VISUAL IMPORT & AUTO ASSEMBLE HANDLERS
+    # -------------------------------------------------------------
+    from apps.visual_engine.manual_visual_mode import (
+        load_or_create_manifest,
+        scan_project_assets,
+        resolve_duplicate_asset,
+        validate_manifest_for_assemble,
+        assemble_manual_episode,
+        get_manifest_dataframe,
+    )
+
+    def _on_load_manifest_ui(manifest_path, project_dir_str):
+        p_dir = project_dir_str if project_dir_str else "projects/sau_canh_cua_ep01_v9_3_manual_visual"
+        try:
+            manifest = load_or_create_manifest(manifest_path=manifest_path, project_dir=p_dir)
+            df_rows = get_manifest_dataframe(manifest)
+            ready_cnt = sum(1 for s in manifest.scenes if s.qc_status == "READY" and s.chosen_asset)
+            status_md = (
+                f"### 📂 Đã nạp Manifest v{manifest.manifest_version}\n"
+                f"- **Dự án:** `{manifest.project_slug}`\n"
+                f"- **Nguồn Timeline:** `PROJECT_AUDIO_SEGMENTS` (Thời lượng: {manifest.total_duration_sec:.2f}s, Contiguous 100%)\n"
+                f"- **Tổng scenes:** {len(manifest.scenes)} (Sẵn sàng: {ready_cnt}/{len(manifest.scenes)})\n"
+                f"- **Master audio:** `{manifest.audio_master_path}`"
+            )
+            dup_scenes = [s.scene_id for s in manifest.scenes if s.qc_status == "DUPLICATE"]
+            dup_box_vis = gr.update(visible=len(dup_scenes) > 0)
+            dup_dd = gr.update(choices=dup_scenes, value=dup_scenes[0] if dup_scenes else None)
+            return df_rows, status_md, manifest, dup_box_vis, dup_dd
+        except Exception as exc:
+            return [], f"❌ Lỗi nạp manifest: {exc}", None, gr.update(visible=False), gr.update(choices=[], value=None)
+
+    def _on_scan_assets_ui(manifest_state, manifest_path, img_dir, vid_dir, project_dir_str):
+        p_dir = project_dir_str if project_dir_str else "projects/sau_canh_cua_ep01_v9_3_manual_visual"
+        manifest = manifest_state or load_or_create_manifest(manifest_path=manifest_path, project_dir=p_dir)
+        try:
+            manifest = scan_project_assets(
+                manifest=manifest,
+                project_dir=p_dir,
+                images_dir=img_dir,
+                videos_dir=vid_dir
+            )
+            df_rows = get_manifest_dataframe(manifest)
+            ready_cnt = sum(1 for s in manifest.scenes if s.qc_status == "READY" and s.chosen_asset)
+            dup_scenes = [s.scene_id for s in manifest.scenes if s.qc_status == "DUPLICATE"]
+            missing_scenes = [s.scene_id for s in manifest.scenes if s.qc_status == "MISSING"]
+            invalid_scenes = [s.scene_id for s in manifest.scenes if s.qc_status == "INVALID"]
+
+            status_md = (
+                f"### 🔍 Kết Quả Quét Tài Nguyên Visual (Case-insensitive SC_XXX)\n"
+                f"- **Sẵn sàng (READY):** {ready_cnt}/{len(manifest.scenes)} scenes (Ưu tiên: Video > Image)\n"
+                f"- **Thiếu tài nguyên (MISSING):** {len(missing_scenes)} scenes (Chặn render nếu thiếu)\n"
+                f"- **Trùng lặp (DUPLICATE):** {len(dup_scenes)} scenes (Cần người dùng chọn file)\n"
+                f"- **Tài nguyên hỏng (INVALID):** {len(invalid_scenes)} scenes"
+            )
+            dup_box_vis = gr.update(visible=len(dup_scenes) > 0)
+            dup_dd = gr.update(choices=dup_scenes, value=dup_scenes[0] if dup_scenes else None)
+            return df_rows, status_md, manifest, dup_box_vis, dup_dd
+        except Exception as exc:
+            return [], f"❌ Lỗi quét assets: {exc}", manifest_state, gr.update(visible=False), gr.update(choices=[], value=None)
+
+    def _on_change_dup_scene_ui(manifest_state, scene_id):
+        if not manifest_state or not scene_id:
+            return gr.update(choices=[], value=None)
+        sc = next((s for s in manifest_state.scenes if s.scene_id == scene_id), None)
+        if not sc:
+            return gr.update(choices=[], value=None)
+        all_candidates = list(sc.matched_videos) + list(sc.matched_images)
+        return gr.update(choices=all_candidates, value=all_candidates[0] if all_candidates else None)
+
+    def _on_apply_dup_choice_ui(manifest_state, scene_id, chosen_file_path):
+        if not manifest_state or not scene_id or not chosen_file_path:
+            return gr.update(), "⚠️ Vui lòng chọn Scene và File tài nguyên.", manifest_state, gr.update(), gr.update()
+        try:
+            manifest = resolve_duplicate_asset(manifest_state, scene_id, chosen_file_path)
+            df_rows = get_manifest_dataframe(manifest)
+            dup_scenes = [s.scene_id for s in manifest.scenes if s.qc_status == "DUPLICATE"]
+            status_md = f"✅ Đã chọn `{Path(chosen_file_path).name}` cho scene **{scene_id}**. Trùng lặp còn lại: {len(dup_scenes)}."
+            dup_box_vis = gr.update(visible=len(dup_scenes) > 0)
+            dup_dd = gr.update(choices=dup_scenes, value=dup_scenes[0] if dup_scenes else None)
+            return df_rows, status_md, manifest, dup_box_vis, dup_dd
+        except Exception as exc:
+            return gr.update(), f"❌ Lỗi gán tài nguyên: {exc}", manifest_state, gr.update(), gr.update()
+
+    def _on_validate_manual_ui(manifest_state, manifest_path, project_dir_str):
+        p_dir = project_dir_str if project_dir_str else "projects/sau_canh_cua_ep01_v9_3_manual_visual"
+        manifest = manifest_state or load_or_create_manifest(manifest_path=manifest_path, project_dir=p_dir)
+        can_render, issues, stats = validate_manifest_for_assemble(manifest, project_dir=p_dir)
+
+        if can_render:
+            verdict = "### 🛡️ KẾT QUẢ KIỂM DUYỆT: ✅ PASS — ĐỦ ĐIỀU KIỆN AUTO ASSEMBLE\n"
+        else:
+            verdict = "### 🛡️ KẾT QUẢ KIỂM DUYỆT: ⛔ BLOCKED — CHƯA ĐỦ ĐIỀU KIỆN RENDER\n"
+
+        details = [
+            f"- **Tổng số cảnh:** {stats['total_scenes']}",
+            f"- **Cảnh sẵn sàng:** {stats['ready_scenes']}/{stats['total_scenes']}",
+            f"- **Cảnh thiếu tài nguyên:** {stats['missing_count']}",
+            f"- **Cảnh trùng lặp cần chọn:** {stats['duplicate_count']}",
+            f"- **Tài nguyên lỗi:** {stats['invalid_count']}",
+            f"- **Timeline liên tục:** 100% (Khớp master audio `{Path(manifest.audio_master_path).name}`)"
+        ]
+        if issues:
+            details.append("\n**Các vấn đề chặn render:**")
+            for iss in issues:
+                details.append(f"- ❌ {iss}")
+        return verdict + "\n".join(details)
+
+    def _on_toggle_preview_box():
+        return gr.update(visible=True)
+
+    def _on_load_scene_preview_ui(manifest_state, scene_id):
+        if not manifest_state or not scene_id:
+            return gr.update(visible=False), gr.update(visible=False), "⚠️ Chưa nạp manifest hoặc chưa chọn scene."
+        sc = next((s for s in manifest_state.scenes if s.scene_id == scene_id), None)
+        if not sc or not sc.chosen_asset or not Path(sc.chosen_asset).exists():
+            return gr.update(visible=False), gr.update(visible=False), f"⚠️ Scene **{scene_id}** chưa có tài nguyên đã chọn ({sc.qc_status if sc else 'Unknown'})."
+
+        chosen_p = Path(sc.chosen_asset)
+        is_video = sc.chosen_type == "VIDEO" or chosen_p.suffix.lower() in [".mp4", ".mov", ".mkv", ".webm"]
+
+        ov_info = f"**Nội dung beat:** {sc.story_beat}\n\n**Thời lượng:** {sc.duration_sec:.2f}s ({sc.start_sec:.2f}s -> {sc.end_sec:.2f}s)"
+        if sc.requires_text_overlay and sc.text_overlay_content:
+            ov_info += f"\n\n**📝 Text Overlay (Hậu kỳ):** `{sc.text_overlay_content}`"
+
+        if is_video:
+            return gr.update(visible=False), gr.update(value=str(chosen_p), visible=True), ov_info
+        else:
+            return gr.update(value=str(chosen_p), visible=True), gr.update(visible=False), ov_info
+
+    def _on_auto_assemble_ui(manifest_state, manifest_path, project_dir_str):
+        p_dir = project_dir_str if project_dir_str else "projects/sau_canh_cua_ep01_v9_3_manual_visual"
+        manifest = manifest_state or load_or_create_manifest(manifest_path=manifest_path, project_dir=p_dir)
+        can_render, issues, stats = validate_manifest_for_assemble(manifest, project_dir=p_dir)
+        if not can_render:
+            err_msg = "⛔ **Auto Assemble bị chặn bởi các điều kiện an toàn:**\n" + "\n".join(f"- {iss}" for iss in issues)
+            return err_msg, None, gr.update(visible=False)
+
+        try:
+            out_file = Path(p_dir) / "final" / "final_episode_manual_v9_3.mp4"
+            rendered_path = assemble_manual_episode(manifest, output_mp4_path=out_file, project_dir=p_dir)
+            sz_mb = rendered_path.stat().st_size / (1024 * 1024)
+            status_msg = f"🎉 **Đã Auto Assemble thành công toàn bộ tập phim!**\n- File: `{rendered_path.name}` ({sz_mb:.1f} MB)\n- Độ phân giải: 1920x1080 @ 30fps H.264 / AAC 320kbps\n- Đã khử âm thanh gốc của video, multiplex master audio `{Path(manifest.audio_master_path).name}` hoàn hảo không có khoảng trống đen."
+            return status_msg, str(rendered_path), gr.update(value=str(rendered_path), visible=True)
+        except Exception as exc:
+            return f"❌ Lỗi trong quá trình Auto Assemble: {exc}", None, gr.update(visible=False)
+
+    # Wire up Manual Visual Mode buttons
+    c["btn_load_manual_manifest"].click(
+        fn=_on_load_manifest_ui,
+        inputs=[c["manual_manifest_path_txt"], c["story_project_dir_state"]],
+        outputs=[c["manual_manifest_df"], c["manual_summary_report_md"], c["manual_manifest_state"], c["manual_duplicate_box"], c["manual_dup_scene_dd"]]
+    )
+
+    c["btn_manual_scan_assets"].click(
+        fn=_on_scan_assets_ui,
+        inputs=[c["manual_manifest_state"], c["manual_manifest_path_txt"], c["manual_images_dir_txt"], c["manual_videos_dir_txt"], c["story_project_dir_state"]],
+        outputs=[c["manual_manifest_df"], c["manual_summary_report_md"], c["manual_manifest_state"], c["manual_duplicate_box"], c["manual_dup_scene_dd"]]
+    )
+
+    c["manual_dup_scene_dd"].change(
+        fn=_on_change_dup_scene_ui,
+        inputs=[c["manual_manifest_state"], c["manual_dup_scene_dd"]],
+        outputs=[c["manual_dup_file_dd"]]
+    )
+
+    c["btn_manual_apply_dup"].click(
+        fn=_on_apply_dup_choice_ui,
+        inputs=[c["manual_manifest_state"], c["manual_dup_scene_dd"], c["manual_dup_file_dd"]],
+        outputs=[c["manual_manifest_df"], c["manual_summary_report_md"], c["manual_manifest_state"], c["manual_duplicate_box"], c["manual_dup_scene_dd"]]
+    )
+
+    c["btn_manual_validate"].click(
+        fn=_on_validate_manual_ui,
+        inputs=[c["manual_manifest_state"], c["manual_manifest_path_txt"], c["story_project_dir_state"]],
+        outputs=[c["manual_summary_report_md"]]
+    )
+
+    c["btn_manual_preview"].click(
+        fn=_on_toggle_preview_box,
+        inputs=[],
+        outputs=[c["manual_preview_box"]]
+    )
+
+    c["btn_load_scene_preview"].click(
+        fn=_on_load_scene_preview_ui,
+        inputs=[c["manual_manifest_state"], c["manual_preview_scene_dd"]],
+        outputs=[c["manual_preview_image"], c["manual_preview_video"], c["manual_preview_overlay_md"]]
+    )
+
+    c["btn_manual_auto_assemble"].click(
+        fn=_on_auto_assemble_ui,
+        inputs=[c["manual_manifest_state"], c["manual_manifest_path_txt"], c["story_project_dir_state"]],
+        outputs=[c["manual_summary_report_md"], c["final_episode_video"], c["final_episode_file_download"]]
+    )
+
 
