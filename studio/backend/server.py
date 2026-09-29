@@ -29,6 +29,7 @@ from studio.backend.credentials import (
     save_provider_credentials,
     test_provider_connection,
 )
+from studio.backend.db import get_db_connection
 from studio.backend.project_manager import ProjectManager
 from studio.backend.services.asset_service import AssetService
 from studio.backend.services.audio_service import AudioService
@@ -217,6 +218,12 @@ def select_project_idea(project_id: str, req: SelectIdeaRequest):
         data["topic"] = premise
         with open(p_json, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+
+    if title:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE projects SET title = ? WHERE project_id = ?", (title, project_id))
+            conn.commit()
 
     return pm.update_stage_status(project_id, StageId.IDEA, StageStatus.APPROVED)
 

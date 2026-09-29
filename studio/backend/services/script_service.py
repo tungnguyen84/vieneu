@@ -35,9 +35,35 @@ class ScriptService:
             bible_path = PILOT_02_SCRIPTS / idea_id / "story_bible.json"
 
         if not bible_path.exists():
+            proj_dir = PROJECTS_DIR / project_id
+            premise_file = proj_dir / "story" / "premise.txt"
+            p_json = proj_dir / "project.json"
+            premise_text = ""
+            mystery_text = "Đang chờ phát triển cốt truyện..."
+            if premise_file.exists():
+                try:
+                    content = premise_file.read_text(encoding="utf-8").strip()
+                    lines = content.splitlines()
+                    for line in lines:
+                        if line.startswith("Ý tưởng:"):
+                            premise_text = line.replace("Ý tưởng:", "").strip()
+                        elif line.startswith("Bí ẩn:") and line.replace("Bí ẩn:", "").strip():
+                            mystery_text = line.replace("Bí ẩn:", "").strip()
+                    if not premise_text and content:
+                        premise_text = content
+                except Exception:
+                    pass
+            elif p_json.exists():
+                try:
+                    with open(p_json, "r", encoding="utf-8") as f:
+                        meta = json.load(f)
+                        premise_text = meta.get("topic") or meta.get("premise") or ""
+                except Exception:
+                    pass
+
             return StoryBibleSection(
-                premise="Câu chuyện chưa có Story Bible chi tiết.",
-                mystery_core="Đang chờ phát triển cốt truyện..."
+                premise=premise_text or "Câu chuyện chưa có Story Bible chi tiết.",
+                mystery_core=mystery_text
             )
 
         with open(bible_path, "r", encoding="utf-8") as f:

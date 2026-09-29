@@ -4,11 +4,14 @@ import { IdeaItem } from '../types';
 
 interface Props {
   projectId: string;
+  onNavigate?: (tab: string) => void;
+  onProjectUpdated?: (updated: any) => void;
 }
 
-export const IdeasView: React.FC<Props> = ({ projectId }) => {
+export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpdated }) => {
   const [direction, setDirection] = useState<string>('BÍ MẬT GIA ĐÌNH');
   const [loading, setLoading] = useState<boolean>(false);
+  const [selectingId, setSelectingId] = useState<string>('');
   const [customIdeas, setCustomIdeas] = useState<IdeaItem[]>([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
@@ -58,17 +61,38 @@ export const IdeasView: React.FC<Props> = ({ projectId }) => {
     }
   };
 
-  const handleSelectIdea = async (idea: IdeaItem) => {
+  const handleSelectIdea = async (idea: IdeaItem | any) => {
+    const idKey = idea.idea_id || idea.id;
+    setSelectingId(idKey);
     try {
-      await fetch(`/api/projects/${projectId}/ideas/select`, {
+      const ideaPayload = {
+        idea_id: idKey,
+        title: idea.title,
+        premise: idea.premise,
+        core_mystery: idea.core_mystery || '',
+        possible_reveal: idea.possible_reveal || '',
+        novelty_score: idea.novelty_score || idea.novelty || 8.5,
+      };
+      const res = await fetch(`/api/projects/${projectId}/ideas/select`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea }),
+        body: JSON.stringify({ idea: ideaPayload }),
       });
-      setSelectedIdeaId(idea.idea_id);
-      setSuccessMsg(`Đã áp dụng ý tưởng "${idea.title}" cho tập ${projectId}. Vui lòng chuyển sang tab Cốt truyện (Story) để duyệt!`);
+      if (res.ok) {
+        const updatedProj = await res.json();
+        onProjectUpdated?.(updatedProj);
+      }
+      setSelectedIdeaId(idKey);
+      setSuccessMsg(`Đã áp dụng ý tưởng "${idea.title}" cho tập ${projectId}.`);
+      if (onNavigate) {
+        setTimeout(() => {
+          onNavigate('story');
+        }, 500);
+      }
     } catch (e) {
       console.error(e);
+    } finally {
+      setSelectingId('');
     }
   };
 
@@ -87,9 +111,20 @@ export const IdeasView: React.FC<Props> = ({ projectId }) => {
       </div>
 
       {successMsg && (
-        <div className="p-3 rounded bg-[#10B981]/15 border border-[#10B981]/30 text-[#10B981] text-xs flex items-center space-x-2">
-          <CheckCircle2 size={15} />
-          <span>{successMsg}</span>
+        <div className="p-3.5 rounded-lg bg-[#10B981]/15 border border-[#10B981]/30 text-[#10B981] text-xs flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <CheckCircle2 size={16} />
+            <span className="font-semibold">{successMsg}</span>
+          </div>
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('story')}
+              className="bg-[#10B981] hover:bg-[#059669] text-white font-bold text-xs px-3 py-1.5 rounded flex items-center space-x-1 cursor-pointer shadow"
+            >
+              <span>Phát triển Story Bible ngay</span>
+              <ArrowRight size={13} />
+            </button>
+          )}
         </div>
       )}
 
@@ -170,10 +205,20 @@ export const IdeasView: React.FC<Props> = ({ projectId }) => {
                         </div>
                         <button
                           onClick={() => handleSelectIdea(idea)}
-                          className="mt-3 bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[11px] font-semibold px-3 py-1.5 rounded flex items-center space-x-1 cursor-pointer shadow"
+                          disabled={selectingId === idea.idea_id}
+                          className="mt-3 bg-[#E11D48] hover:bg-[#BE123C] disabled:opacity-50 text-white font-bold text-[11px] px-3 py-1.5 rounded flex items-center space-x-1 cursor-pointer shadow-md active:scale-95 transition-all"
                         >
-                          <span>Chọn cho tập này</span>
-                          <ArrowRight size={12} />
+                          {selectingId === idea.idea_id ? (
+                            <>
+                              <Loader2 size={12} className="animate-spin" />
+                              <span>Đang chọn...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 size={12} />
+                              <span>CHỌN TẬP NÀY</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -216,11 +261,32 @@ export const IdeasView: React.FC<Props> = ({ projectId }) => {
                   </p>
                 </div>
 
-                <div className="text-right shrink-0 ml-4">
-                  <span className="text-[10px] text-[#64748B] block">Novelty Score</span>
-                  <span className="font-mono-code text-sm font-bold text-[#10B981]">
-                    {idea.novelty} / 10
-                  </span>
+                <div className="text-right shrink-0 ml-4 flex flex-col items-end justify-between h-full">
+                  <div>
+                    <span className="text-[10px] text-[#64748B] block">Novelty Score</span>
+                    <span className="font-mono-code text-sm font-bold text-[#10B981]">
+                      {idea.novelty} / 10
+                    </span>
+                  </div>
+                  {!isCurrent && (
+                    <button
+                      onClick={() => handleSelectIdea(idea)}
+                      disabled={selectingId === idea.id}
+                      className="mt-3 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white font-bold text-[11px] px-3 py-1.5 rounded flex items-center space-x-1 cursor-pointer shadow active:scale-95 transition-all"
+                    >
+                      {selectingId === idea.id ? (
+                        <>
+                          <Loader2 size={12} className="animate-spin" />
+                          <span>Đang chọn...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 size={12} />
+                          <span>CHỌN TẬP NÀY</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
 

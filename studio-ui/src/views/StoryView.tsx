@@ -43,7 +43,9 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory }) => {
       .then((res) => res.json())
       .then((data: StoryBibleSection) => {
         setBible(data);
-        if (data.premise) setCustomTopic(data.premise);
+        if (data.premise && !data.premise.includes('chưa có Story Bible')) {
+          setCustomTopic(data.premise);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -225,10 +227,12 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory }) => {
           </div>
           <div>
             <h3 className="text-sm font-bold text-[#F8FAFC]">
-              Tập phim này chưa có Story Bible chi tiết
+              {customTopic ? 'Ý tưởng đã chọn — Sẵn sàng phát triển Story Bible' : 'Tập phim này chưa có Story Bible chi tiết'}
             </h3>
             <p className="text-xs text-[#94A3B8] mt-1">
-              Nhập tóm tắt ý tưởng hoặc tiền đề câu chuyện bên dưới để AI tự động xây dựng cấu trúc cốt truyện 6 giai đoạn và thiết lập Fact Lock.
+              {customTopic
+                ? 'Ý tưởng đã được nạp cho tập phim này. Bấm nút bên dưới để AI tự động xây dựng Story Bible, Timeline và Fact Lock.'
+                : 'Nhập tóm tắt ý tưởng hoặc tiền đề câu chuyện bên dưới để AI tự động xây dựng cấu trúc cốt truyện 6 giai đoạn và thiết lập Fact Lock.'}
             </p>
           </div>
 

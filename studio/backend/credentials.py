@@ -223,7 +223,7 @@ def test_provider_connection(
         return {"success": False, "message": "Vui lòng nhập API Key trước khi kiểm tra."}
 
     # Test logic
-    if provider_id == "gemini":
+    if pid == "gemini":
         try:
             # Minimal check using google-genai or urllib
             import urllib.request
@@ -247,7 +247,7 @@ def test_provider_connection(
         except Exception:
             return {"success": False, "message": "Không thể kết nối mạng đến Google Gemini."}
 
-    elif provider_id in ["openai", "openai_compatible"]:
+    elif pid in ["openai", "openai_compatible"]:
         api_base = actual_url or "https://api.openai.com/v1"
         try:
             import urllib.request
@@ -267,7 +267,7 @@ def test_provider_connection(
         except Exception:
             return {"success": False, "message": "Không thể kết nối mạng đến OpenAI."}
 
-    elif provider_id == "local":
+    elif pid == "local":
         api_base = actual_url or "http://localhost:11434"
         try:
             import urllib.request
@@ -279,7 +279,7 @@ def test_provider_connection(
             return {"success": False, "message": f"Không thể kết nối đến Local endpoint tại {api_base}."}
 
     # Fallback simulated pass if configured
-    return {"success": True, "message": f"Cấu hình {provider_id} hợp lệ ✓", "model": actual_model}
+    return {"success": True, "message": f"Cấu hình {pid} hợp lệ ✓", "model": actual_model}
 
 
 def get_active_api_key(provider_id: str) -> Optional[str]:

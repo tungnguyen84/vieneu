@@ -166,7 +166,16 @@ export const App: React.FC = () => {
 
 
           {activeTab === 'ideas' && currentProject && (
-            <IdeasView projectId={currentProject.project_id} />
+            <IdeasView
+              projectId={currentProject.project_id}
+              onNavigate={(tab) => setActiveTab(tab)}
+              onProjectUpdated={(updated) => {
+                setCurrentProject(updated);
+                setProjects((prev) =>
+                  prev.map((p) => (p.project_id === updated.project_id ? updated : p))
+                );
+              }}
+            />
           )}
 
           {activeTab === 'story' && currentProject && (
@@ -266,7 +275,17 @@ export const App: React.FC = () => {
       <NewEpisodeModal
         isOpen={isNewEpisodeModalOpen}
         onClose={() => setIsNewEpisodeModalOpen(false)}
-        onSuccess={(newId, targetTab) => {
+        onSuccess={async (newId, targetTab) => {
+          setIsNewEpisodeModalOpen(false);
+          try {
+            const res = await fetch(`/api/projects/${newId}`);
+            if (res.ok) {
+              const p = await res.json();
+              setCurrentProject(p);
+            }
+          } catch (e) {
+            console.error(e);
+          }
           fetchProjects(newId);
           setActiveTab(targetTab);
         }}

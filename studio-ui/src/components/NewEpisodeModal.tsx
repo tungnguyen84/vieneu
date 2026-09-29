@@ -74,6 +74,55 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
     }
   };
 
+  const handleSelectIdeaAndCreate = async (idea: IdeaItem) => {
+    if (!episodeId.trim()) {
+      setErrorMessage('Vui lòng nhập Mã tập phim (Episode ID)');
+      return;
+    }
+    setSubmitting(true);
+    setErrorMessage('');
+    setSelectedIdea(idea);
+
+    try {
+      // 1. Create project with this idea
+      const createRes = await fetch('/api/projects/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          episode_id: episodeId.trim().toUpperCase(),
+          title: idea.title || `Tập ${episodeId}`,
+          premise: idea.premise,
+          target_duration: targetDuration,
+          category,
+        }),
+      });
+
+      if (!createRes.ok) {
+        const err = await createRes.json();
+        throw new Error(err.detail || 'Không thể tạo tập phim');
+      }
+      const createdProj = await createRes.json();
+      const newId = createdProj.project_id;
+
+      // 2. Select idea to set 01_idea to APPROVED and write premise.txt
+      const selRes = await fetch(`/api/projects/${newId}/ideas/select`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea }),
+      });
+      if (!selRes.ok) {
+        console.warn('Idea select non-200:', await selRes.text());
+      }
+
+      onSuccess(newId, 'story');
+      onClose();
+    } catch (e: any) {
+      setErrorMessage(e.message || 'Lỗi khi khởi tạo tập phim');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!episodeId.trim()) {
       setErrorMessage('Vui lòng nhập Mã tập phim (Episode ID)');
@@ -81,6 +130,10 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
     }
     if (!title.trim() && startMode !== 'ideas') {
       setErrorMessage('Vui lòng nhập Tên tập phim');
+      return;
+    }
+    if (startMode === 'ideas' && selectedIdea) {
+      await handleSelectIdeaAndCreate(selectedIdea);
       return;
     }
 
@@ -391,7 +444,7 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
                     </div>
 
                     {generatedIdeas.length > 0 && (
-                      <div className="space-y-2 max-h-48 overflow-y-auto mt-2">
+                      <div className="space-y-2 max-h-56 overflow-y-auto mt-2 pr-1">
                         {generatedIdeas.map((idea) => {
                           const isSelected = selectedIdea?.idea_id === idea.idea_id;
                           return (
@@ -401,19 +454,56 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
                                 setSelectedIdea(idea);
                                 setTitle(idea.title);
                               }}
-                              className={`p-3 rounded border transition-all cursor-pointer ${
+                              className={`p-3.5 rounded-lg border transition-all cursor-pointer ${
                                 isSelected
-                                  ? 'bg-[#E11D48]/15 border-[#E11D48]'
+                                  ? 'bg-[#161F36] border-[#E11D48] ring-1 ring-[#E11D48]'
                                   : 'bg-[#111827] border-[#28354D] hover:bg-[#161F36]'
                               }`}
                             >
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-xs text-[#F8FAFC]">{idea.title}</span>
-                                <span className="font-mono-code text-[11px] text-[#10B981] font-semibold">
-                                  Novelty: {idea.novelty_score}/10
-                                </span>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 mr-3">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="font-mono-code text-[11px] text-[#E11D48] font-bold">
+                                      {idea.idea_id}
+                                    </span>
+                                    <span>•</span>
+                                    <span className="font-bold text-xs text-[#F8FAFC]">{idea.title}</span>
+                                  </div>
+                                  <p className="text-[11px] text-[#CBD5E1] mt-1 leading-relaxed">{idea.premise}</p>
+                                  {idea.core_mystery && (
+                                    <div className="text-[10px] text-[#94A3B8] mt-1.5 space-y-0.5">
+                                      <p><strong className="text-[#A5B4FC]">Bí ẩn:</strong> {idea.core_mystery}</p>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="text-right shrink-0 flex flex-col items-end justify-between">
+                                  <span className="font-mono-code text-[11px] text-[#10B981] font-semibold bg-[#10B981]/10 px-1.5 py-0.5 rounded">
+                                    Novelty: {idea.novelty_score}/10
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSelectIdeaAndCreate(idea);
+                                    }}
+                                    disabled={submitting}
+                                    className="mt-3 bg-[#E11D48] hover:bg-[#BE123C] disabled:opacity-50 text-white font-bold text-[11px] px-3 py-1.5 rounded flex items-center space-x-1.5 cursor-pointer shadow-md transition-all active:scale-95"
+                                  >
+                                    {submitting && selectedIdea?.idea_id === idea.idea_id ? (
+                                      <>
+                                        <Loader2 size={12} className="animate-spin" />
+                                        <span>Đang chọn...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle2 size={12} />
+                                        <span>CHỌN TẬP NÀY</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
                               </div>
-                              <p className="text-[11px] text-[#94A3B8] mt-1">{idea.premise}</p>
                             </div>
                           );
                         })}
