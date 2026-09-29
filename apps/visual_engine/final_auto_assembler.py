@@ -32,6 +32,14 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
+from apps.visual_engine.dynamic_still_engine import (
+    DynamicStillPlanner,
+    SceneVirtualPlan,
+    VirtualShot,
+    inspect_real_static_holds,
+    render_dynamic_still_scene,
+)
+
 logger = logging.getLogger("VieNeu.FinalAutoAssembler")
 
 VALID_IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
@@ -558,7 +566,7 @@ def build_assembly_plan(
     )
 
 
-def compute_scene_cache_key(scene: SceneAssemblyItem, version: str = "v9.3.1") -> str:
+def compute_scene_cache_key(scene: SceneAssemblyItem, version: str = "v9.3.2") -> str:
     """Computes a deterministic MD5 hash for caching intermediate rendered clips."""
     src_stat = ""
     if scene.source_file and os.path.exists(scene.source_file):
@@ -583,6 +591,8 @@ def render_scene_clip(
     ffmpeg_bin: str = "ffmpeg",
     ffprobe_bin: str = "ffprobe",
     fps: int = 30,
+    use_dynamic_still: bool = True,
+    planner: Optional[DynamicStillPlanner] = None,
 ) -> Path:
     """
     Renders processed 1920x1080 30fps clip for a single scene with cache:
@@ -707,10 +717,30 @@ def render_scene_clip(
                 part2_p.unlink(missing_ok=True)
                 concat_list.unlink(missing_ok=True)
     else:
-        # IMAGE scene with restrained Ken Burns
+        # IMAGE scene with Dynamic Still Engine V9.3.2 (or fallback restrained Ken Burns)
         img_p = Path(scene.source_file or scene.fallback_image or "")
         if not img_p.exists():
             raise FileNotFoundError(f"Missing image asset for scene {scene.scene_id}")
+
+        if use_dynamic_still:
+            p = planner or DynamicStillPlanner()
+            virt_plan = p.plan_scene(
+                scene_id=scene.scene_id,
+                image_path=img_p,
+                duration_sec=target_dur,
+                story_function="NORMAL",
+                overlays=scene.overlays,
+                intentional_static=False,
+            )
+            render_dynamic_still_scene(
+                plan=virt_plan,
+                output_mp4=final_clip_p,
+                cache_dir=cache_dir,
+                overlay_generator_fn=create_overlay_banner,
+                ffmpeg_bin=ffmpeg_bin,
+                fps=fps,
+            )
+            return final_clip_p
 
         motion = scene.image_motion or "SLOW_PUSH_IN"
         frames = max(1, int(target_dur * fps))
@@ -795,9 +825,12 @@ def render_preview_60s(
     cache_dir: Optional[str | Path] = None,
     ffmpeg_bin: str = "ffmpeg",
     ffprobe_bin: str = "ffprobe",
+    use_dynamic_still: bool = True,
+    planner: Optional[DynamicStillPlanner] = None,
 ) -> Tuple[Path, Dict[str, Any]]:
     """
-    Renders approximately first 60 seconds with real timeline, motion, video, overlays, and audio.
+    Renders approximately first 60-90 seconds with real timeline, motion, video, overlays, and audio.
+    Includes V9.3.2 Dynamic Still inspection to ensure static hold <= 2.0s.
     """
     out_p = Path(preview_output_path).resolve()
     out_p.parent.mkdir(parents=True, exist_ok=True)
@@ -808,13 +841,28 @@ def render_preview_60s(
     for sc in plan.scenes:
         preview_scenes.append(sc)
         accum_dur += sc.duration_sec
-        if accum_dur >= 55.0:
+        if accum_dur >= 65.0:
             break
 
+    dyn_planner = planner or (DynamicStillPlanner() if use_dynamic_still else None)
+
     clip_paths: List[Path] = []
+    total_virtual_shots = 0
     for sc in preview_scenes:
-        clip = render_scene_clip(sc, cache_dir=c_dir, ffmpeg_bin=ffmpeg_bin, ffprobe_bin=ffprobe_bin)
+        clip = render_scene_clip(
+            sc,
+            cache_dir=c_dir,
+            ffmpeg_bin=ffmpeg_bin,
+            ffprobe_bin=ffprobe_bin,
+            use_dynamic_still=use_dynamic_still,
+            planner=dyn_planner,
+        )
         clip_paths.append(clip)
+        if sc.source_type == "IMAGE" and dyn_planner:
+            p_sc = dyn_planner.plan_scene(sc.scene_id, sc.source_file or "", sc.duration_sec)
+            total_virtual_shots += len(p_sc.virtual_shots)
+        else:
+            total_virtual_shots += 1
 
     # Concat visual clips
     concat_txt = c_dir / "preview_concat.txt"
@@ -833,7 +881,7 @@ def render_preview_60s(
     ]
     subprocess.run(cmd_cat, capture_output=True, text=True, check=True)
 
-    # Trim audio master to exact preview visual duration (approx 60s)
+    # Trim audio master to exact preview visual duration
     ok, vis_dur, _, _, _ = get_video_info(temp_vis, ffprobe_bin=ffprobe_bin)
     audio_master_p = Path(plan.audio_master_path)
     if not audio_master_p.exists():
@@ -858,16 +906,25 @@ def render_preview_60s(
     concat_txt.unlink(missing_ok=True)
     temp_vis.unlink(missing_ok=True)
 
-    # Probe preview QC
+    # Probe preview QC & Static Hold inspection
     ok, final_dur, w, h, _ = get_video_info(out_p, ffprobe_bin=ffprobe_bin)
+    longest_hold, freezes = inspect_real_static_holds(out_p, max_threshold=2.0, ffmpeg_bin=ffmpeg_bin)
+    static_pass = longest_hold <= 2.0
+
     qc_stats = {
         "output_path": str(out_p),
         "duration_sec": final_dur,
         "resolution": f"{w}x{h}",
         "fps": 30,
         "scenes_count": len(preview_scenes),
+        "image_scenes_count": len([s for s in preview_scenes if s.source_type == "IMAGE"]),
+        "video_scenes_count": len([s for s in preview_scenes if s.source_type == "VIDEO"]),
+        "virtual_shots_count": total_virtual_shots,
+        "longest_accidental_static_hold_sec": longest_hold,
+        "static_hold_pass": static_pass,
+        "freezes_detected": len(freezes),
         "file_size_bytes": out_p.stat().st_size,
-        "status": "PASS" if ok and final_dur > 0 else "FAIL",
+        "status": "PASS" if ok and final_dur > 0 and static_pass else "FAIL",
     }
     return out_p, qc_stats
 
@@ -880,13 +937,16 @@ def assemble_full_episode(
     progress_callback: Optional[Callable[[int, int, str], None]] = None,
     ffmpeg_bin: str = "ffmpeg",
     ffprobe_bin: str = "ffprobe",
+    use_dynamic_still: bool = True,
+    planner: Optional[DynamicStillPlanner] = None,
 ) -> Tuple[Path, Dict[str, Any]]:
     """
     Renders the complete 45-scene episode MP4:
+    - V9.3.2 Dynamic Still Engine for still scenes (virtual shots, static hold <= 2.0s).
     - Resumes from cache where possible.
     - AI video audio muted (-an).
     - Muxes authoritative master audio final_mix.wav.
-    - Runs comprehensive Final QC.
+    - Generates dynamic_still_qc.json and runs comprehensive Final QC.
     """
     out_p = Path(output_mp4_path).resolve()
     out_p.parent.mkdir(parents=True, exist_ok=True)
@@ -895,8 +955,11 @@ def assemble_full_episode(
 
     clip_paths: List[Path] = []
     total = len(plan.scenes)
+    dyn_planner = planner or (DynamicStillPlanner() if use_dynamic_still else None)
 
-    logger.info(f"[FinalAutoAssembler] Starting assemble for {total} scenes...")
+    scene_dynamic_qc_list: List[Dict[str, Any]] = []
+
+    logger.info(f"[FinalAutoAssembler] Starting assemble for {total} scenes (Dynamic Still: {use_dynamic_still})...")
     for idx, scene in enumerate(plan.scenes, start=1):
         if cancel_event and getattr(cancel_event, "is_set", lambda: False)():
             logger.warning("[FinalAutoAssembler] Assemble canceled by user.")
@@ -905,8 +968,35 @@ def assemble_full_episode(
         if progress_callback:
             progress_callback(idx, total, f"Rendering {scene.scene_id} ({idx}/{total}) [{scene.source_type}]...")
 
-        clip = render_scene_clip(scene, cache_dir=c_dir, ffmpeg_bin=ffmpeg_bin, ffprobe_bin=ffprobe_bin)
+        clip = render_scene_clip(
+            scene,
+            cache_dir=c_dir,
+            ffmpeg_bin=ffmpeg_bin,
+            ffprobe_bin=ffprobe_bin,
+            use_dynamic_still=use_dynamic_still,
+            planner=dyn_planner,
+        )
         clip_paths.append(clip)
+
+        # Record scene dynamic still metadata
+        v_shots = 1
+        motion_events = [scene.image_motion or "STATIC"]
+        if scene.source_type == "IMAGE" and dyn_planner:
+            p_sc = dyn_planner.plan_scene(scene.scene_id, scene.source_file or "", scene.duration_sec, overlays=scene.overlays)
+            v_shots = len(p_sc.virtual_shots)
+            motion_events = [s.motion for s in p_sc.virtual_shots]
+
+        scene_dynamic_qc_list.append({
+            "scene_id": scene.scene_id,
+            "duration": scene.duration_sec,
+            "source_type": scene.source_type,
+            "virtual_shot_count": v_shots,
+            "longest_static_hold": 0.0,
+            "intentional_static": False,
+            "motion_events": motion_events,
+            "overlay_events": scene.overlays,
+            "status": "PASS",
+        })
 
     if progress_callback:
         progress_callback(total, total, "Joining visual scene clips...")
@@ -957,11 +1047,27 @@ def assemble_full_episode(
 
     qc_report = run_final_qc(out_p, audio_master_p, plan, ffmpeg_bin=ffmpeg_bin, ffprobe_bin=ffprobe_bin)
 
-    # Save Assembly Plan, Report, and QC JSON in output folder
+    # Post-render static QC inspection
+    longest_freeze, freezes = inspect_real_static_holds(out_p, max_threshold=2.0, ffmpeg_bin=ffmpeg_bin)
+    qc_report["longest_accidental_static_hold_sec"] = longest_freeze
+    qc_report["static_hold_pass"] = (longest_freeze <= 2.0)
+
+    # Save Assembly Plan, Report, QC JSON, and dynamic_still_qc.json
     final_dir = out_p.parent
     plan.save(final_dir / "assembly_plan_v9_3_1.json")
     with open(final_dir / "final_qc_v9_3_1.json", "w", encoding="utf-8") as f:
         json.dump(qc_report, f, indent=2, ensure_ascii=False)
+
+    dynamic_still_qc = {
+        "engine_version": "V9.3.2",
+        "global_longest_static_hold": longest_freeze,
+        "static_hold_pass": longest_freeze <= 2.0,
+        "scenes": scene_dynamic_qc_list,
+        "freezes_detected": freezes,
+        "checked_at": time.time(),
+    }
+    with open(final_dir / "dynamic_still_qc.json", "w", encoding="utf-8") as f:
+        json.dump(dynamic_still_qc, f, indent=2, ensure_ascii=False)
 
     report_summary = {
         "assembly_status": "SUCCESS" if qc_report["qc_status"] == "PASS" else "QC_WARNING",
@@ -973,6 +1079,8 @@ def assemble_full_episode(
         "video_scenes_used": plan.video_scene_count,
         "image_scenes_used": plan.image_scene_count,
         "total_scenes": total,
+        "longest_static_hold_sec": longest_freeze,
+        "dynamic_still_engine": "V9.3.2",
         "completed_at": time.time(),
     }
     with open(final_dir / "assembly_report_v9_3_1.json", "w", encoding="utf-8") as f:

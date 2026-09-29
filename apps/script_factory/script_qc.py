@@ -9,8 +9,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from apps.script_factory.cost_control import CostController
+from apps.script_factory.information_release_map import (
+    InformationReleaseMap,
+    build_information_release_map,
+)
+from apps.script_factory.leakage_guard import StoryBibleLeakageGuard
 from apps.script_factory.models import FullScript, QCReport, ScriptSegment, StoryBible
 from apps.script_factory.providers.base import ScriptAIProvider
+from apps.script_factory.spoiler_timing_guard import SpoilerTimingGuard
 
 logger = logging.getLogger("VieNeu.ScriptQC")
 
@@ -37,6 +43,7 @@ class ScriptQCEngine:
         story_bible: StoryBible,
         past_scripts: Optional[List[FullScript]] = None,
         model: Optional[str] = None,
+        release_map: Optional[InformationReleaseMap] = None,
     ) -> QCReport:
         """Executes full QC audit."""
         self.cost_ctrl.check_budget_pre_flight(episode_id=script.episode_id)
@@ -45,8 +52,62 @@ class ScriptQCEngine:
         logic_issues: List[str] = []
         repetition_issues: List[str] = []
         revision_requests: List[str] = []
+        evidence_issues: List[Dict[str, Any]] = []
 
         all_text = " ".join(s.text for s in script.segments)
+
+        # 0. STORY BIBLE LEAKAGE AUDIT (Strict meta/database language elimination)
+        leakage_guard = StoryBibleLeakageGuard()
+        leakage_violations = leakage_guard.audit_script(script)
+        for lv in leakage_violations:
+            evidence_issues.append({
+                "segment_id": lv.segment_id,
+                "excerpt": lv.excerpt,
+                "rule": "STORY_BIBLE_LEAKAGE",
+                "severity": lv.severity,
+                "recommended_action": lv.recommended_action,
+                "message": lv.message,
+            })
+            logic_issues.append(f"[{lv.segment_id}] Leakage: {lv.message}")
+            revision_requests.append(f"Remove meta phrasing in segment {lv.segment_id}: {lv.matched_pattern}")
+
+        # 0.1 INFORMATION RELEASE & SPOILER TIMING AUDIT (Premature reveal prevention)
+        rel_map = release_map or build_information_release_map(story_bible)
+        spoiler_guard = SpoilerTimingGuard(rel_map)
+        spoiler_violations = spoiler_guard.audit_script(script)
+        for sv in spoiler_violations:
+            evidence_issues.append({
+                "segment_id": sv.segment_id,
+                "excerpt": sv.excerpt,
+                "rule": "BLOCKED_PREMATURE_REVEAL",
+                "severity": sv.severity,
+                "recommended_action": sv.recommended_action,
+                "message": sv.message,
+            })
+            fact_conflicts.append({
+                "fact_id": sv.fact_id,
+                "segment_id": sv.segment_id,
+                "type": "BLOCKED_PREMATURE_REVEAL",
+                "description": sv.message,
+            })
+            revision_requests.append(f"Fix premature reveal in segment {sv.segment_id}: {sv.matched_term}")
+
+        # 0.2 HOOK SPECIFICITY AUDIT (No generic philosophical filler in opening)
+        for s in script.segments[:3]:
+            txt_lower = s.text.lower().strip()
+            cliches = ["trong cuộc sống", "có những câu chuyện", "có những bí mật", "có bao giờ bạn", "người ta thường nói"]
+            for cl in cliches:
+                if txt_lower.startswith(cl):
+                    evidence_issues.append({
+                        "segment_id": s.id,
+                        "excerpt": s.text[:80],
+                        "rule": "GENERIC_HOOK_OPENING",
+                        "severity": "HIGH",
+                        "recommended_action": "Mở đầu trực tiếp bằng nhân vật cụ thể, dị thường vật lý và rủi ro cảm xúc thay vì câu triết lý chung chung.",
+                        "message": f"Phân đoạn [{s.id}] mở đầu bằng khuôn mẫu sáo rỗng ('{cl}')."
+                    })
+                    logic_issues.append(f"Generic hook opening in segment {s.id}: starts with '{cl}'.")
+                    revision_requests.append(f"Rewrite segment {s.id} with specific concrete person/object/hook.")
 
         # 1. FACT CONSISTENCY AUDIT (Strict Locked Facts Check)
         for fact in story_bible.critical_facts:
@@ -120,6 +181,14 @@ class ScriptQCEngine:
         # No audience address in Major Reveal block
         for s in script.segments:
             if (s.delivery_profile == "REVEAL" or s.importance == "critical") and s.audience_address:
+                evidence_issues.append({
+                    "segment_id": s.id,
+                    "excerpt": s.text[:80],
+                    "rule": "REVEAL_AUDIENCE_RESTRAINT",
+                    "severity": "HIGH",
+                    "recommended_action": "Tập trung tuyệt đối vào diễn biến sự thật, không ngắt quãng bằng giao lưu khán giả.",
+                    "message": f"Phân đoạn [{s.id}] mang nhãn REVEAL nhưng chứa audience_address=True."
+                })
                 logic_issues.append(f"Major Reveal segment {s.id} contains direct audience address, violating reveal restraint rule.")
                 revision_requests.append(f"Remove audience address from reveal segment {s.id} to preserve dramatic weight.")
 
@@ -159,10 +228,10 @@ class ScriptQCEngine:
             revision_requests.append("Add ENDING delivery profile segments in closing act.")
 
         # Compute status
-        has_critical_failure = any(c.get("type") in ["TIMELINE_CONFLICT", "MONEY_CONFLICT", "RELATIONSHIP_CONFLICT"] for c in fact_conflicts)
-        has_issues = bool(fact_conflicts or logic_issues or repetition_issues)
+        has_critical_failure = any(c.get("type") in ["TIMELINE_CONFLICT", "MONEY_CONFLICT", "RELATIONSHIP_CONFLICT", "BLOCKED_PREMATURE_REVEAL"] for c in fact_conflicts) or any(iss.get("severity") == "CRITICAL" for iss in evidence_issues)
+        has_issues = bool(fact_conflicts or logic_issues or repetition_issues or evidence_issues)
 
-        if has_critical_failure or len(logic_issues) > 2:
+        if has_critical_failure or len(logic_issues) > 2 or any(iss.get("severity") == "HIGH" for iss in evidence_issues):
             status = "NEEDS_REVISION"
         elif has_issues:
             status = "NEEDS_REVISION"
@@ -170,9 +239,9 @@ class ScriptQCEngine:
             status = "PASS"
 
         scores = {
-            "hook": 95.0 if has_hook else 50.0,
-            "mystery": 92.0,
-            "logic": 90.0 if not logic_issues else 65.0,
+            "hook": 95.0 if has_hook and not any(iss.get("rule") == "GENERIC_HOOK_OPENING" for iss in evidence_issues) else 60.0,
+            "mystery": 92.0 if not any(iss.get("rule") == "BLOCKED_PREMATURE_REVEAL" for iss in evidence_issues) else 50.0,
+            "logic": 90.0 if not logic_issues and not any(iss.get("rule") == "STORY_BIBLE_LEAKAGE" for iss in evidence_issues) else 60.0,
             "twist": 96.0 if has_reveal else 60.0,
             "emotion": 93.0,
             "novelty": 94.0 if not repetition_issues else 68.0,
@@ -187,6 +256,7 @@ class ScriptQCEngine:
             logic_issues=logic_issues,
             repetition_issues=repetition_issues,
             revision_requests=revision_requests,
+            evidence_issues=evidence_issues,
             checked_at=time.time(),
         )
 

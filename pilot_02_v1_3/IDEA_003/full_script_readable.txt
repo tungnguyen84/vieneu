@@ -1,0 +1,277 @@
+=== EP003: Chiếc Hộp Gỗ Của Người Bà Quá Cố ===
+Ý tưởng gốc: IDEA_003 (Chiếc Hộp Gỗ Của Người Bà Quá Cố)
+Người dẫn chuyện: Minh (Binh)
+Tổng số phân đoạn: 90 | Tổng số từ: 2863 từ
+Thời lượng ước tính: 12.4 phút
+Trạng thái: AWAITING_USER_SCRIPT_REVIEW
+--------------------------------------------------------------------------------
+
+[001] (HOOK | 0.98x)
+MINH: "Trên gác xép cũ kỹ căn nhà ở Bảo Lộc, giữa lớp bụi thời gian dày đặc, một chiếc hộp gỗ sờn cũ hé lộ bí mật kéo dài khoảng 30 năm, thứ mà gia đình Mai tưởng chừng đã ngủ yên."
+
+[002] (HOOK | 0.98x)
+MINH: "Nó không chỉ là nơi cất giữ vật kỷ niệm, mà còn mở ra những câu hỏi nhức nhối về một người bà mà con cháu ngỡ rằng đã thấu hiểu suốt cuộc đời."
+
+[003] (HOOK | 0.98x)
+MINH: "Bí mật trong chiếc hộp ấy, liệu có làm thay đổi mãi mãi cách một gia đình nhìn nhận người thân yêu của mình?"
+
+[004] (NORMAL | 1.01x)
+MINH: "Chào mừng quý vị và các bạn đã quay trở lại với 'Sau Cánh Cửa'. Tôi là Minh, người sẽ đồng hành cùng quý vị trong những câu chuyện đầy chiêm nghiệm về cuộc sống."
+
+[005] (NORMAL | 1.01x)
+MINH: "Trong tập phim hôm nay, chúng ta sẽ cùng Mai, một cô gái 32 tuổi, vén bức màn bí ẩn đằng sau chiếc hộp gỗ của người bà quá cố."
+
+[006] (NORMAL | 1.01x)
+MINH: "Một di vật tưởng chừng bình thường, lại ẩn chứa trong đó cả một câu chuyện dài về tình thân, về những lựa chọn và cả những hy sinh thầm lặng."
+
+[007] (NORMAL | 1.01x)
+MINH: "Mai là một người trẻ thành đạt, đang sống một cuộc sống ổn định tại thành phố, với sự nghiệp vững vàng và một gia đình êm ấm."
+
+[008] (NORMAL | 1.01x)
+MINH: "Bà cố Hảo, người bà mà Mai yêu quý, đã ra đi cách đây vài năm, để lại trong lòng cháu gái những kỷ niệm đẹp đẽ và sự tiếc nuối khôn nguôi."
+
+[009] (NORMAL | 1.01x)
+MINH: "Cuộc sống của Mai trôi qua êm đềm, như dòng sông hiền hòa, ít có sóng gió. Cô luôn nghĩ mình đã hiểu rõ về những người thân yêu."
+
+[010] (NORMAL | 1.01x)
+MINH: "Cho đến một ngày, khi dọn dẹp căn nhà cũ của bà, Mai tình cờ tìm thấy một chiếc hộp gỗ cũ kỹ trên gác xép."
+
+[011] (NORMAL | 1.01x)
+MINH: "Chiếc hộp không có khóa, lớp sơn đã bạc màu theo năm tháng, nhưng nó lại mang một sức hút kỳ lạ, thôi thúc Mai mở ra."
+
+[012] (NORMAL | 1.01x)
+MINH: "Bên trong, không phải là những món đồ trang sức hay kỷ vật quen thuộc, mà là những thứ hoàn toàn xa lạ với Mai."
+
+[013] (NORMAL | 1.01x)
+MINH: "Những giấy tờ tài chính, sổ tiết kiệm đã đáo hạn, giấy tờ chuyển nhượng quyền sử dụng đất, và một bức ảnh ố vàng."
+
+[014] (NORMAL | 1.01x)
+MINH: "Bức ảnh chụp bà cố Hảo khi còn trẻ, bên cạnh là một người phụ nữ lạ lẫm mà Mai chưa từng thấy bao giờ."
+
+[015] (NORMAL | 1.01x)
+MINH: "Một cảm giác bối rối xen lẫn tò mò bắt đầu len lỏi trong tâm trí Mai. Bà của mình có một cuộc sống bí mật nào đó sao?"
+
+[016] (COMMENT | 1.025x) [GIAO LƯU KHÁN GIẢ]
+MINH: "Quý vị đã bao giờ tìm thấy một vật bất ly thân của người thân yêu mà khiến mình phải đặt dấu hỏi lớn về họ chưa?"
+
+[017] (NORMAL | 1.01x)
+MINH: "Đó là những khoảnh khắc, khi ranh giới giữa sự thấu hiểu và những bí ẩn chưa lời giải bỗng trở nên mong manh đến lạ thường."
+
+[018] (MYSTERY | 0.96x)
+MINH: "Mai cẩn thận xem xét từng giấy tờ. Sổ tiết kiệm mở năm 1994, với số tiền không nhỏ vào thời điểm đó. Giấy tờ đất đai ở Bảo Lộc, ký năm 1992."
+
+[019] (MYSTERY | 0.96x)
+MINH: "Những tài sản này, bà cố của cô đã tích lũy từ bao giờ, và với mục đích gì? Tại sao lại giấu kín đến vậy?"
+
+[020] (MYSTERY | 0.96x)
+MINH: "Trong chiếc hộp còn có một tờ giấy viết tay, với những con số và ký hiệu khó hiểu, kèm theo địa chỉ một viện dưỡng lão."
+
+[021] (MYSTERY | 0.96x)
+MINH: "Một viện dưỡng lão ở Đà Lạt, nhưng dòng chữ có vẻ mờ nhạt, có thể là một địa điểm nào đó ở Lâm Đồng."
+
+[022] (MYSTERY | 0.96x)
+MINH: "Bức ảnh người phụ nữ lạ kia, bà là ai? Mối quan hệ của bà với bà cố là gì? Một người tình bí mật, hay một người bạn cũ đã mất liên lạc?"
+
+[023] (MYSTERY | 0.96x)
+MINH: "Mai bắt đầu cảm thấy có điều gì đó không ổn. Bà của cô, người phụ nữ hiền hậu, cả đời vun vén cho gia đình, sao lại có những bí mật này?"
+
+[024] (MYSTERY | 0.96x)
+MINH: "Liệu có một gia đình thứ hai, một mối tình dang dở nào đó mà bà đã chôn giấu suốt bao năm qua?"
+
+[025] (MYSTERY | 0.96x)
+MINH: "Những câu hỏi cứ xoáy sâu vào tâm trí Mai, khiến cô không thể nào yên lòng."
+
+[026] (COMMENT | 1.025x) [GIAO LƯU KHÁN GIẢ]
+MINH: "Trong gia đình mình, có ai từng nhắc đến người phụ nữ trong ảnh hay mối quan hệ đặc biệt nào của bà cố không?"
+
+[027] (NORMAL | 1.01x)
+MINH: "Đôi khi, chính những người thân cận nhất lại là người nắm giữ chìa khóa cho những bí ẩn tưởng chừng không thể giải mã."
+
+[028] (NORMAL | 1.01x)
+MINH: "Mai quyết định sẽ tìm hiểu ngọn ngành, dù biết rằng sự thật có thể không dễ dàng chấp nhận."
+
+[029] (NORMAL | 1.01x)
+MINH: "Giả thuyết về một mối tình bí mật bắt đầu hình thành rõ nét trong đầu Mai. Có lẽ nào bà đã có một người đàn ông khác mà gia đình không hề hay biết?"
+
+[030] (NORMAL | 1.01x)
+MINH: "Hay là một câu chuyện tình cảm phức tạp, có thể liên quan đến người phụ nữ trong bức ảnh kia?"
+
+[031] (NORMAL | 1.01x)
+MINH: "Những giấy tờ tài chính kia, có thể là bà đã âm thầm chu cấp cho ai đó, hoặc chuẩn bị cho một tương lai mà bà không chia sẻ với ai."
+
+[032] (NORMAL | 1.01x)
+MINH: "Sự hoài nghi càng lớn, Mai càng cảm thấy xa lạ với hình ảnh người bà mà cô từng biết."
+
+[033] (NORMAL | 1.01x)
+MINH: "Niềm tin về một người bà hoàn hảo, một cuộc sống không chút tì vết, giờ đây đang lung lay dữ dội trước những bằng chứng hữu hình."
+
+[034] (NORMAL | 1.01x)
+MINH: "Cô bắt đầu lục tìm trong ký ức, cố gắng nhớ lại những câu chuyện bà từng kể, những lời bà từng nói, nhưng tất cả dường như không có manh mối nào."
+
+[035] (MYSTERY | 0.96x)
+MINH: "Liệu bà cố có một bí mật động trời nào đó, một quá khứ mà bà đã cố gắng chôn vùi suốt đời?"
+
+[036] (MYSTERY | 0.96x)
+MINH: "Những con số trên tờ giấy kia có ý nghĩa gì? Một tài khoản ngân hàng, một khoản nợ, hay một lời nhắn gửi nào đó?"
+
+[037] (NORMAL | 1.01x)
+MINH: "Mai cảm thấy mình đang đứng trước một mê cung ký ức, nơi mà mọi lối đi đều dẫn đến sự bế tắc."
+
+[038] (NORMAL | 1.01x)
+MINH: "Không thể giữ im lặng thêm, Mai quyết định tìm gặp chú Minh, anh trai của bố cô, người có thể biết điều gì đó về quá khứ của bà cố."
+
+[039] (NORMAL | 1.01x)
+MINH: "Chú Minh, ở tuổi ngoài bảy mươi, có mái tóc bạc trắng và ánh mắt hiền từ, ban đầu tỏ ra bối rối khi nghe Mai hỏi về chiếc hộp."
+
+[040] (NORMAL | 1.01x)
+MINH: "Nhưng khi Mai đưa bức ảnh ra, đôi mắt chú chợt sáng lên một tia nhận biết."
+
+[041] (NORMAL | 1.01x)
+MINH: "'À, đây là bà Thoa,' chú Minh chậm rãi nói, 'bạn thân của bà Hảo từ hồi còn trẻ. Hai người chơi thân lắm.'"
+
+[042] (NORMAL | 1.01x)
+MINH: "Chú Minh nhớ mang máng bà Thoa sống ở Lâm Đồng, nhưng sau một tai nạn lao động tại xưởng dệt, bà bị tàn tật và hai người mất liên lạc."
+
+[043] (NORMAL | 1.01x)
+MINH: "Thông tin này như một tia sáng lóe lên, hé mở một phần của bức tranh bí ẩn mà Mai đang cố gắng ghép lại."
+
+[044] (NORMAL | 1.01x)
+MINH: "Người phụ nữ lạ không phải là tình địch hay người yêu bí mật, mà là một người bạn tri kỷ của bà cố."
+
+[045] (NORMAL | 1.01x)
+MINH: "Nhưng mục đích thực sự của số tài sản kia, và mối liên hệ với viện dưỡng lão kia, vẫn còn là những câu hỏi lớn chờ đợi lời giải đáp."
+
+[046] (MYSTERY | 0.96x)
+MINH: "Bức ảnh chụp chung với người phụ nữ lạ mặt kia, giờ đây, đã mở ra một hướng suy đoán mới, có vẻ như không hề liên quan đến những mâu thuẫn tình cảm hay tranh giành tài sản như ban đầu chúng ta từng nghĩ."
+
+[047] (NORMAL | 1.01x)
+MINH: "Những tờ giấy cũ sờn màu, được xếp ngay ngắn trong chiếc hộp gỗ, giờ đây lại ẩn chứa nhiều điều hơn vẻ ngoài mộc mạc của chúng. Chúng như những mảnh ghép hé lộ một phần sự thật."
+
+[048] (MYSTERY | 0.96x)
+MINH: "Một trong số đó là giấy biên nhận tiền gửi, ghi rõ tên bà Hảo đứng tên, nhưng số tiền lại được đóng dấu vào một tài khoản đã được mở từ rất lâu, thời điểm mà gia đình Mai vẫn chưa hình dung ra."
+
+[049] (NORMAL | 1.01x)
+MINH: "Những con số ban đầu có vẻ nhỏ bé, nhưng nếu nhìn vào mốc thời gian và giá trị đồng tiền lúc bấy giờ, chúng ta sẽ thấy một sự đầu tư bền bỉ, một kế hoạch dài hơi được vun đắp."
+
+[050] (MYSTERY | 0.96x)
+MINH: "Và rồi, một mảnh giấy khác, có vẻ như là bản sao của một giấy tờ tùy thân cũ kỹ, với thông tin về một người phụ nữ tên là Thoa. Tên này quen thuộc đến lạ."
+
+[051] (NORMAL | 1.01x)
+MINH: "Cùng với đó là những bức thư tay, được viết bằng thứ mực đã nhòe đi theo năm tháng. Lời lẽ chân thành, chia sẻ những buồn vui trong cuộc sống lao động vất vả."
+
+[052] (MYSTERY | 0.96x)
+MINH: "Những bức thư ấy không chỉ là tâm sự giữa hai người bạn, mà còn hé lộ về một hoàn cảnh khó khăn chung, về những ước mơ giản dị và cả những dự định lớn lao hơn."
+
+[053] (NORMAL | 1.01x)
+MINH: "Lời kể của chú Minh về bà Thoa, người bạn thân của bà Hảo, giờ đây trở nên rõ nét hơn bao giờ hết. Mối liên hệ giữa họ không chỉ là bạn bè thông thường."
+
+[054] (MYSTERY | 0.96x)
+MINH: "Tất cả những manh mối này, khi được đặt cạnh nhau, đã bắt đầu vẽ nên một bức tranh hoàn chỉnh hơn, về một tình bạn sâu sắc và một mục đích cao đẹp hơn là sự ích kỷ."
+
+[055] (NORMAL | 1.01x)
+MINH: "Những giả thuyết ban đầu về sự giấu giếm vì mục đích cá nhân dần tan biến, nhường chỗ cho một sự hoài nghi đầy tôn trọng về những gì đã thực sự diễn ra."
+
+[056] (REVEAL | 0.92x)
+MINH: "Sự thật đằng sau bức ảnh và những giấy tờ cũ dần được hé lộ: người phụ nữ trong ảnh chính là bà Thoa, người bạn thân tri kỷ của bà Hảo từ những năm tháng tuổi trẻ."
+
+[057] (REVEAL | 0.92x)
+MINH: "Họ cùng là công nhân xưởng dệt, cùng chia sẻ những tháng ngày gian khó, và cùng nhau gom góp từng đồng, từ những khoản thu nhập thêm ít ỏi, để tạo nên một quỹ nhỏ."
+
+[058] (REVEAL | 0.92x)
+MINH: "Quỹ đó không phải để riêng cho ai, mà là một lời hứa, một kế hoạch chung tay giúp đỡ những đồng đội cũ, những hoàn cảnh khó khăn sau những năm tháng chiến tranh khốc liệt."
+
+[059] (REVEAL | 0.92x)
+MINH: "Bà Hảo đứng tên tài sản, không phải vì muốn chiếm đoạt, mà là bởi bà Thoa đã gặp biến cố, mất đi giấy tờ tùy thân, khiến việc đứng tên trở nên bất khả thi."
+
+[060] (REVEAL | 0.92x)
+MINH: "Mảnh đất 650m2 ở Bảo Lộc, mua năm 1992, và sổ tiết kiệm 15 triệu đồng mở năm 1994, không phải là tài sản cá nhân bà Hảo cất giấu cho riêng mình hay gia đình."
+
+[061] (REVEAL | 0.92x)
+MINH: "Đó là cả một gia tài chung, là kết quả của sự tần tảo, chung sức của hai người phụ nữ lao động nghèo, được tích lũy suốt gần ba mươi năm qua."
+
+[062] (REVEAL | 0.92x)
+MINH: "Đây là một giao ước danh dự giữa hai người bạn, một lời hứa thiêng liêng mà bà Hảo đã âm thầm gìn giữ, một gánh nặng trách nhiệm và tình yêu thương."
+
+[063] (REVEAL | 0.92x)
+MINH: "Bà đã giữ bí mật này không phải để lừa dối, mà là để bảo vệ một di nguyện, một ước mơ chung mà cả hai bà đã ấp ủ từ rất lâu rồi."
+
+[064] (REVEAL | 0.92x)
+MINH: "Một bí mật không phải lỗi lầm, mà là một câu chuyện dài về tình bạn, sự hy sinh và một tấm lòng nhân ái cao cả, chờ đợi thời điểm để được thấu hiểu."
+
+[065] (REVEAL | 0.92x)
+MINH: "Giao ước mà bà Hảo và bà Thoa cùng gìn giữ suốt bao năm, chính là cùng nhau tích cóp tài sản để giúp đỡ những mảnh đời cơ nhỡ sau biến cố chiến tranh, một lời hứa danh dự giữa hai người phụ nữ lao động nghèo."
+
+[066] (REVEAL | 0.92x)
+MINH: "Bà Hảo đã âm thầm thực hiện vai trò người giữ và quản lý quỹ này suốt bao năm, với tất cả sự cẩn trọng và trách nhiệm của một người giữ lời."
+
+[067] (NORMAL | 1.01x)
+MINH: "Chính tình bạn cao đẹp và sự hy sinh thầm lặng này đã khiến Mai xúc động. Cô nhận ra bí mật của bà cố không phải là gánh nặng tội lỗi, mà là tình yêu thương."
+
+[068] (NORMAL | 1.01x)
+MINH: "Mai nhìn lại những gì đã xảy ra, không còn sự trách móc hay nghi ngờ, mà thay vào đó là lòng tự hào về người bà cố của mình và người bạn tri kỷ của bà."
+
+[069] (NORMAL | 1.01x)
+MINH: "Gia đình Mai, sau khi hiểu rõ câu chuyện, cũng cùng chung cảm xúc ấy. Họ cùng nhau nhìn về phía trước, với một quyết tâm mới, một định hướng mới cho tương lai."
+
+[070] (NORMAL | 1.01x)
+MINH: "Họ quyết định sẽ cùng nhau hoàn thành di nguyện dang dở của bà cố và bà Thoa, biến số tài sản này thành một trung tâm bảo trợ trẻ em ý nghĩa."
+
+[071] (NORMAL | 1.01x)
+MINH: "Bí mật của bà cố, cuối cùng, đã không còn là gánh nặng, mà trở thành một di sản tinh thần quý báu, một lời nhắc nhở về tình yêu thương và sự sẻ chia."
+
+[072] (NORMAL | 1.01x)
+MINH: "Câu chuyện của bà Hảo và bà Thoa là minh chứng cho thấy, đôi khi, những điều chúng ta cho là bí mật lại ẩn chứa những giá trị nhân văn sâu sắc."
+
+[073] (NORMAL | 1.01x)
+MINH: "Sự chân thành và tình yêu thương có thể vượt qua mọi rào cản, và những lời hứa, dù được giữ kín bao lâu, vẫn luôn chờ đợi thời điểm để được thực hiện."
+
+[074] (COMMENT | 1.025x) [GIAO LƯU KHÁN GIẢ]
+MINH: "Chúng ta ai cũng có những câu chuyện riêng, những gánh nặng thầm lặng mà không phải ai cũng hiểu. Điều quan trọng là cách chúng ta đối diện và gìn giữ chúng."
+
+[075] (NORMAL | 1.01x)
+MINH: "Mai và gia đình giờ đây đã tìm thấy mục đích thực sự của khối tài sản này, và quan trọng hơn, họ tìm thấy sự đồng điệu trong trái tim mình với di nguyện của bà cố."
+
+[076] (NORMAL | 1.01x)
+MINH: "Họ quyết định hành động, bắt tay vào việc biến ước mơ của hai người phụ nữ năm xưa thành hiện thực. Bước đầu tiên là tìm gặp bà Thoa."
+
+[077] (NORMAL | 1.01x)
+MINH: "Tại viện dưỡng lão ở Lâm Đồng, bà Thoa đã rưng rưng chia sẻ trọn vẹn tâm nguyện cuối cùng: dùng mảnh đất và số tiền tiết kiệm để xây dựng một mái ấm tình thương cho trẻ mồ côi."
+
+[078] (NORMAL | 1.01x)
+MINH: "Bà Thoa lắng nghe Mai kể, có lẽ bà đã chờ đợi giây phút này rất lâu, giây phút mà tình bạn của bà và bà Hảo được thấu hiểu và tiếp nối."
+
+[079] (NORMAL | 1.01x)
+MINH: "Sự gặp gỡ này không chỉ là sự kết nối giữa hai thế hệ, mà còn là sự xác nhận cho một tình bạn vĩnh cửu, vượt qua cả thời gian và những biến cố cuộc đời."
+
+[080] (COMMENT | 1.025x)
+MINH: "Câu chuyện của bà Hảo và bà Thoa nhắc nhở chúng ta về giá trị của lòng nhân ái, về những gì có thể làm được khi con người ta cùng chung tay vì một mục đích tốt đẹp."
+
+[081] (COMMENT | 1.025x)
+MINH: "Đôi khi, những bí mật đằng sau cánh cửa cuộc đời không phải là điều đáng sợ, mà là những bài học quý giá về tình người, về sự sẻ chia và sức mạnh của những lời hứa."
+
+[082] (COMMENT | 1.025x) [GIAO LƯU KHÁN GIẢ]
+MINH: "Liệu chúng ta có đủ bao dung và thấu hiểu để nhìn nhận những bí mật đó bằng một trái tim rộng mở, như cách Mai đã làm với câu chuyện của bà cố mình?"
+
+[083] (COMMENT | 1.025x)
+MINH: "Cuộc sống luôn ẩn chứa những điều bất ngờ, những câu chuyện mà ta không thể đoán trước. Điều quan trọng là chúng ta học cách đón nhận và trân trọng chúng."
+
+[084] (COMMENT | 1.025x)
+MINH: "Tình bạn chân thành, sự hy sinh thầm lặng, và một trái tim nhân ái có sức mạnh phi thường, đủ để lan tỏa yêu thương và tạo nên những điều ý nghĩa."
+
+[085] (COMMENT | 1.025x)
+MINH: "Những bí mật, khi được hé lộ đúng thời điểm, không chỉ giải tỏa uẩn khúc mà còn là động lực để chúng ta tiếp nối những giá trị tốt đẹp của thế hệ đi trước."
+
+[086] (COMMENT | 1.025x)
+MINH: "Ranh giới giữa sự thật và bí mật đôi khi rất mong manh, nhưng tình yêu thương và lòng nhân ái luôn là sợi dây kết nối, giúp chúng ta vượt qua mọi thử thách."
+
+[087] (COMMENT | 1.025x) [GIAO LƯU KHÁN GIẢ]
+MINH: "Hãy luôn mở lòng để thấu hiểu, để sẻ chia, và để những câu chuyện đằng sau cánh cửa kia có thể truyền cảm hứng cho cuộc sống của chính chúng ta."
+
+[088] (ENDING | 0.965x)
+MINH: "Và thế là, câu chuyện về chiếc hộp gỗ của người bà quá cố đã khép lại, nhưng dư âm của tình bạn, của lòng nhân ái thì vẫn còn vang vọng mãi."
+
+[089] (ENDING | 0.965x)
+MINH: "Gia đình Mai cùng bà Thoa đã chính thức bắt tay vào việc xây dựng trung tâm bảo trợ trẻ em, biến di nguyện thành hiện thực, nối dài tình yêu thương của hai người phụ nữ."
+
+[090] (ENDING | 0.965x)
+MINH: "Cảm ơn quý vị đã đồng hành cùng chúng tôi trong tập phim này. Hẹn gặp lại trong những câu chuyện ý nghĩa tiếp theo của 'Sau Cánh Cửa'."

@@ -1,0 +1,157 @@
+{
+  "episode_id": "EP005",
+  "total_segments": 90,
+  "rules": [
+    {
+      "fact_id": "FACT_001",
+      "fact_type": "SETUP",
+      "field": "timeline_years",
+      "description": "Thời gian ước tính bể chứa dầu thải được chôn ngầm.",
+      "target_value": "Khoảng 10-15 năm",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Khoảng"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_002",
+      "fact_type": "SETUP",
+      "field": "relationship_nature",
+      "description": "Mối quan hệ chính xác giữa Lan và Minh.",
+      "target_value": "Hai chị em ruột (Lan và Minh)",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Mối",
+        "Lan",
+        "Minh"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_003",
+      "fact_type": "SETUP",
+      "field": "evidence_origin",
+      "description": "Nguồn gốc của sự cố rò rỉ.",
+      "target_value": "Bể chứa dầu thải/hóa chất cơ khí cũ chôn ngầm dưới đất, bị máy xúc của Minh làm thủng.",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Nguồn",
+        "Minh"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_004",
+      "fact_type": "REVEAL_1",
+      "field": "reveal_1_truth",
+      "description": "Nội dung cốt lõi của Bước ngoặt 1.",
+      "target_value": "Minh vô tình làm thủng bể chứa dầu thải cũ dưới mảnh đất tranh chấp, gây ô nhiễm nguồn nước giếng của hàng xóm.",
+      "earliest_allowed_segment": 61,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 61,
+      "key_entities": [
+        "Minh"
+      ],
+      "sensitivity_level": "CRITICAL"
+    },
+    {
+      "fact_id": "FACT_005",
+      "fact_type": "REVEAL_2",
+      "field": "reveal_2_truth",
+      "description": "Nội dung gốc rễ của Bước ngoặt 2.",
+      "target_value": "Minh che giấu sự cố vì sợ Lan mất lợi thế tranh chấp, sợ bị phạt và muốn tự mình gánh trách nhiệm.",
+      "earliest_allowed_segment": 76,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 76,
+      "key_entities": [
+        "Minh",
+        "Lan"
+      ],
+      "sensitivity_level": "CRITICAL"
+    },
+    {
+      "fact_id": "FACT_006",
+      "fact_type": "SETUP",
+      "field": "land_size",
+      "description": "Diện tích mảnh đất tranh chấp.",
+      "target_value": "1.200 m2",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Diện"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_007",
+      "fact_type": "SETUP",
+      "field": "minh_work",
+      "description": "Nghề nghiệp của Minh.",
+      "target_value": "Thợ làm vườn kiêm thợ cơ khí",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Nghề",
+        "Minh",
+        "Thợ"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_008",
+      "fact_type": "SETUP",
+      "field": "lan_work",
+      "description": "Nghề nghiệp của Lan.",
+      "target_value": "Giáo viên tiểu học",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Nghề",
+        "Lan",
+        "Giáo"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_009",
+      "fact_type": "SETUP",
+      "field": "location_province",
+      "description": "Tỉnh nơi diễn ra sự cố và tranh chấp.",
+      "target_value": "Hải Dương",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Tỉnh",
+        "Hải Dương",
+        "hải dương"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_010",
+      "fact_type": "SETUP",
+      "field": "neighbor_affected",
+      "description": "Hàng xóm bị ảnh hưởng trực tiếp bởi ô nhiễm.",
+      "target_value": "Cụ Trâm",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Hàng",
+        "Cụ Trâm"
+      ],
+      "sensitivity_level": "LOW"
+    }
+  ]
+}

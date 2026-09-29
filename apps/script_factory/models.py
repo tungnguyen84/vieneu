@@ -237,6 +237,7 @@ class QCReport:
     logic_issues: List[str] = field(default_factory=list)
     repetition_issues: List[str] = field(default_factory=list)
     revision_requests: List[str] = field(default_factory=list)
+    evidence_issues: List[Dict[str, Any]] = field(default_factory=list)
     checked_at: float = field(default_factory=time.time)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -244,4 +245,7 @@ class QCReport:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> QCReport:
-        return cls(**data)
+        import dataclasses
+        valid_keys = {f.name for f in dataclasses.fields(cls)}
+        filtered = {k: v for k, v in data.items() if k in valid_keys}
+        return cls(**filtered)

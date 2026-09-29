@@ -1,0 +1,6 @@
+idea_id,episode_id,title,total_segments,total_words,estimated_duration_min,audience_address_count,reveal_audience_count,qc_status,evidence_issues_count,final_script_status
+IDEA_003,EP003,Chiếc Hộp Gỗ Của Người Bà Quá Cố,90,2863,12.4,5,0,PASS,0,AWAITING_USER_SCRIPT_REVIEW
+IDEA_005,EP005,Cuộc Gọi Lúc Nửa Đêm,90,2529,11.0,6,0,PASS,0,AWAITING_USER_SCRIPT_REVIEW
+IDEA_011,EP011,Bức Ảnh Lạ Trong Điện Thoại Cũ,90,2806,12.2,5,0,PASS,0,AWAITING_USER_SCRIPT_REVIEW
+IDEA_018,EP018,Tin Nhắn Từ Căn Nhà Bị Niêm Phong,90,2469,10.7,6,0,PASS,0,AWAITING_USER_SCRIPT_REVIEW
+IDEA_021,EP021,Tài Khoản Mạng Xã Hội Giấu Kín Của Mẹ,90,2578,11.2,5,0,PASS,0,AWAITING_USER_SCRIPT_REVIEW

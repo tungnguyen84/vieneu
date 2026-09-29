@@ -1,0 +1,37 @@
+[
+  {
+    "fact_id": "FACT_001",
+    "field": "timeline_years",
+    "value": "30 năm",
+    "description": "Thời gian cuộc hôn nhân không tình yêu kéo dài",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_002",
+    "field": "relationship_nature",
+    "value": "Con gái và mẹ",
+    "description": "Mối quan hệ cốt lõi thúc đẩy câu chuyện tiến triển",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_003",
+    "field": "evidence_origin",
+    "value": "Tài khoản mạng xã hội ẩn danh và cuốn sổ phác thảo cũ",
+    "description": "Nguồn gốc xác thực của vật chứng dẫn đến sự thật",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_004",
+    "field": "reveal_1_truth",
+    "value": "Tài khoản mạng xã hội là không gian nghệ thuật bí mật của mẹ",
+    "description": "Nội dung cốt lõi của Bước ngoặt 1",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_005",
+    "field": "reveal_2_truth",
+    "value": "Sự vô tâm lâu năm của gia đình đã biến mẹ thành bóng ma trong chính ngôi nhà",
+    "description": "Nội dung gốc rễ của Bước ngoặt 2",
+    "status": "LOCKED"
+  }
+]

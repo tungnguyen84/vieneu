@@ -854,25 +854,11 @@ Trả về JSON Array gồm đúng 45 objects từ id '046' đến '090':
             if s.delivery_profile == "REVEAL" and s.audience_address:
                 s.audience_address = False
 
-        # Automatically check and enforce locked facts in text
-        all_text = " ".join(s.text for s in script.segments)
-        for fact in story_bible.critical_facts:
-            if fact.status == "LOCKED":
-                val = fact.value.strip()
-                if val.lower() not in all_text.lower():
-                    # Insert locked fact into the most appropriate setup or reveal segment
-                    if "year" in fact.field.lower() or "năm" in fact.description.lower():
-                        if len(script.segments) > 2:
-                            script.segments[2].text += f" Thời gian sự việc kéo dài tròn {val}."
-                    elif "money" in fact.field.lower() or "vnd" in val.lower() or "triệu" in val.lower():
-                        if len(script.segments) > 15:
-                            script.segments[15].text += f" Toàn bộ số tiền liên đới được xác định chính xác là {val}."
-                    elif "relat" in fact.field.lower():
-                        if len(script.segments) > 3:
-                            script.segments[3].text += f" Mối quan hệ giữa hai người chính là {val}."
-                    else:
-                        if len(script.segments) > 8:
-                            script.segments[8].text += f" Đáng chú ý, chi tiết liên quan đến {fact.description or fact.field} được xác định là {val}."
+        # Clean any accidental database/prompt leakage from segment text
+        from apps.script_factory.leakage_guard import StoryBibleLeakageGuard
+        leakage_guard = StoryBibleLeakageGuard()
+        for s in script.segments:
+            s.text = leakage_guard.clean_text_from_leakage(s.text)
 
         # Re-check audience address count (must be 3-6)
         aud_indices = [i for i, s in enumerate(script.segments) if s.audience_address and s.delivery_profile != "REVEAL"]

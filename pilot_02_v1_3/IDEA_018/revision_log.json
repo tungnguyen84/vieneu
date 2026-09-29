@@ -1,0 +1,14 @@
+{
+  "idea_id": "IDEA_018",
+  "round": 2,
+  "repaired_at": 1790675099.7886078,
+  "changes_made": [
+    "Eliminated all mechanical prompt/database leakage phrases (Đáng chú ý, chi tiết liên quan đến...)",
+    "Grounded opening hook with concrete character, physical anomaly, and emotional stakes",
+    "Paced Reveal 1 and Reveal 2 to prevent premature disclosure",
+    "Harmonized audience address restraint (0 in REVEAL, balanced across narrative)",
+    "Generated Information Release Map with strict segment timing rules"
+  ],
+  "qc_status": "PASS",
+  "evidence_issues_count": 0
+}

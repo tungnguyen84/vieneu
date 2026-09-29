@@ -63,6 +63,13 @@ def render_final_auto_assembler_ui() -> Dict[str, Any]:
         components["btn_auto_assemble"] = gr.Button("🎬 4. Ghép Video Hoàn Chỉnh", variant="primary")
         components["btn_cancel_assemble"] = gr.Button("⏹ Dừng Render", variant="stop")
 
+    with gr.Row():
+        components["dynamic_still_toggle"] = gr.Checkbox(
+            value=True,
+            label="⚡ Dynamic Still Engine V9.3.2 (Chống đứng hình ảnh tĩnh)",
+            info="Tự động chia ảnh tĩnh dài thành nhiều góc máy tài liệu (Wide/Medium/Detail), cam kết không đứng hình > 2.0s."
+        )
+
     components["md_validation_report"] = gr.Markdown("*(Nhấn 'Kiểm tra Asset' để thẩm định tệp ZIP và Audio Master)*")
 
     # State stores
@@ -248,28 +255,35 @@ def bind_final_auto_assembler_events(components: Dict[str, Any]) -> None:
         ]
     )
 
-    def _on_preview_60s(plan_dict):
+    def _on_preview_60s(plan_dict, dynamic_still_on):
         if not plan_dict:
             return None, "⚠️ Chưa có Assembly Plan. Vui lòng nhấn **Tạo Timeline** trước."
         plan = AssemblyPlan.from_dict(plan_dict)
         preview_out = Path("preview/EP001_preview_60s.mp4")
         cache_dir = Path("cache/final_assembler")
-        out_p, stats = render_preview_60s(plan, preview_output_path=preview_out, cache_dir=cache_dir)
+        out_p, stats = render_preview_60s(
+            plan,
+            preview_output_path=preview_out,
+            cache_dir=cache_dir,
+            use_dynamic_still=dynamic_still_on
+        )
         msg = (
-            f"### ▶ Preview 60 Giây Sẵn Sàng\n"
+            f"### ▶ Preview 60 Giây Sẵn Sàng (Dynamic Still: {'BẬT (V9.3.2)' if dynamic_still_on else 'TẮT'})\n"
             f"- **Tệp:** `{out_p}`\n"
             f"- **Thời lượng:** `{stats['duration_sec']:.2f}s` | **Độ phân giải:** `{stats['resolution']}`\n"
+            f"- **Số virtual shots:** `{stats.get('virtual_shots_count', len(stats.get('scenes_count', [])))}`\n"
+            f"- **Đứng hình dài nhất:** `{stats.get('longest_accidental_static_hold_sec', 0.0):.2f}s` (Chuẩn: <= 2.0s)\n"
             f"- **Kích thước:** `{stats['file_size_bytes']:,} bytes`"
         )
         return str(out_p), msg
 
     components["btn_preview_60s"].click(
         fn=_on_preview_60s,
-        inputs=[components["assembly_plan_state"]],
+        inputs=[components["assembly_plan_state"], components["dynamic_still_toggle"]],
         outputs=[components["preview_video_player"], components["md_status_log"]]
     )
 
-    def _on_auto_assemble(plan_dict):
+    def _on_auto_assemble(plan_dict, dynamic_still_on):
         if not plan_dict:
             return None, None, "⚠️ Chưa có Assembly Plan. Vui lòng nhấn **Tạo Timeline** trước."
         plan = AssemblyPlan.from_dict(plan_dict)
@@ -282,20 +296,22 @@ def bind_final_auto_assembler_events(components: Dict[str, Any]) -> None:
             output_mp4_path=final_out,
             cache_dir=cache_dir,
             cancel_event=cancel_ev,
+            use_dynamic_still=dynamic_still_on
         )
         msg = (
-            f"### 🎉 Ghép Video Hoàn Chỉnh Thành Công!\n"
+            f"### 🎉 Ghép Video Hoàn Chỉnh Thành Công! (V9.3.2 Dynamic Still: {'BẬT' if dynamic_still_on else 'TẮT'})\n"
             f"- **Tệp xuất xưởng:** `{out_p}`\n"
             f"- **QC Status:** `{qc['qc_status']}` | **A/V Sync Delta:** `{qc['av_delta_sec']:.3f}s`\n"
             f"- **Độ phân giải:** `{qc['resolution']}` (30 fps) | **Video Codec:** `{qc['video_codec']}` | **Audio Codec:** `{qc['audio_codec']}`\n"
             f"- **Số scenes:** `{qc['scene_count']}` (Videos: `{qc['video_scenes_count']}`, Images: `{qc['image_scenes_count']}`)\n"
+            f"- **Đứng hình dài nhất:** `{qc.get('longest_accidental_static_hold_sec', 0.0):.2f}s` (Chuẩn <= 2.0s: {'✅ ĐẠT' if qc.get('static_hold_pass', True) else '⚠️ CẢNH BÁO'})\n"
             f"- **Black Gaps:** `{qc['black_gaps_detected']}`\n"
         )
         return str(out_p), str(out_p), msg
 
     components["btn_auto_assemble"].click(
         fn=_on_auto_assemble,
-        inputs=[components["assembly_plan_state"]],
+        inputs=[components["assembly_plan_state"], components["dynamic_still_toggle"]],
         outputs=[
             components["final_video_player"],
             components["final_file_download"],

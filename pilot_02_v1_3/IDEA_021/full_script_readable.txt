@@ -1,0 +1,277 @@
+=== EP021: Tài Khoản Mạng Xã Hội Giấu Kín Của Mẹ ===
+Ý tưởng gốc: IDEA_021 (Tài Khoản Mạng Xã Hội Giấu Kín Của Mẹ)
+Người dẫn chuyện: Minh (Binh)
+Tổng số phân đoạn: 90 | Tổng số từ: 2578 từ
+Thời lượng ước tính: 11.2 phút
+Trạng thái: AWAITING_USER_SCRIPT_REVIEW
+--------------------------------------------------------------------------------
+
+[001] (HOOK | 0.98x)
+MINH: "Tình cờ mở chiếc máy tính bảng trong gian bếp quen thuộc, Mai sững sờ khi phát hiện một tài khoản mạng xã hội giấu kín mang tên Mộc Lan."
+
+[002] (HOOK | 0.98x)
+MINH: "Tài khoản ấy đăng tải những bức tranh màu nước tĩnh vật tuyệt đẹp và những dòng nhật ký u hoài, âm thầm tồn tại suốt 30 năm hôn nhân im lặng."
+
+[003] (HOOK | 0.98x)
+MINH: "Mối quan hệ tưởng chừng gần gũi giữa con gái và mẹ bỗng chốc mở ra một khoảng cách sâu thẳm, khi Mai nhận ra mình chưa từng thấu hiểu thế giới nội tâm của mẹ."
+
+[004] (NORMAL | 1.01x)
+MINH: "Chào mừng quý vị và các bạn đang theo dõi series tài liệu tâm lý xã hội gia đình Sau Cánh Cửa."
+
+[005] (NORMAL | 1.01x)
+MINH: "Tôi là Minh. Hôm nay, chúng ta cùng bước vào câu chuyện mang mã số EP021 mang tên Tài khoản mạng xã hội giấu kín của mẹ."
+
+[006] (NORMAL | 1.01x)
+MINH: "Câu chuyện xoay quanh Mai, một phụ nữ trẻ tình cờ chạm tay vào một bí mật chấn động đằng sau vẻ bề ngoài bình lặng của mẹ mình."
+
+[007] (NORMAL | 1.01x)
+MINH: "Bà Lan ở tuổi năm mươi lăm là hình mẫu quen thuộc của bao người phụ nữ thế hệ trước trong những gia đình truyền thống."
+
+[008] (NORMAL | 1.01x)
+MINH: "Cả thanh xuân của bà gói gọn trong chuỗi những buổi sáng chợ búa, những bữa cơm chiều nóng hổi và ánh nhìn lặng lẽ."
+
+[009] (NORMAL | 1.01x)
+MINH: "Ông Hùng, chồng bà, là một người đàn ông kiệm lời, nguyên tắc nhưng cũng vô cùng hờ hững với những đổi thay tinh tế."
+
+[010] (NORMAL | 1.01x)
+MINH: "Trải qua ba mươi năm chung sống, cuộc hôn nhân của họ giống như một thói quen lâu ngày hơn là sự gắn kết của tâm hồn."
+
+[011] (NORMAL | 1.01x)
+MINH: "Mai là con gái duy nhất, bận rộn với nhịp sống hối hả của thành phố hiện đại và những lo toan riêng của tuổi trưởng thành."
+
+[012] (NORMAL | 1.01x)
+MINH: "Cô vẫn thường ghé thăm bố mẹ vào cuối tuần, mang theo những món đồ tiện ích mới và vài câu hỏi thăm nhanh chóng."
+
+[013] (NORMAL | 1.01x)
+MINH: "Trong mắt Mai, mẹ cô là một người phụ nữ hoàn toàn bằng phẳng, không có sóng gió, không có khát vọng riêng tư."
+
+[014] (NORMAL | 1.01x)
+MINH: "Bà Lan chưa từng phàn nàn về sự vắng mặt của chồng hay sự bận rộn của con cái trong những buổi tối quạnh hiu."
+
+[015] (NORMAL | 1.01x)
+MINH: "Sự nhẫn nhịn lâu năm ấy đã vô tình tạo thành một lớp vỏ bọc hoàn hảo, khiến mọi người xung quanh quên mất bên trong cũng có một con người."
+
+[016] (COMMENT | 1.025x) [GIAO LƯU KHÁN GIẢ]
+MINH: "Một người phụ nữ quanh quẩn bên bếp núc, liệu có thể có một thế giới bí mật nào khác ngoài không gian ngôi nhà chật chội?"
+
+[017] (NORMAL | 1.01x)
+MINH: "Câu trả lời chỉ bắt đầu hé lộ vào một buổi chiều mưa khi Mai vô tình cầm chiếc điện thoại cũ của mẹ để tìm số điện thoại thợ sửa nước."
+
+[018] (MYSTERY | 0.96x)
+MINH: "Trên màn hình chiếc điện thoại thông minh đời cũ, một ứng dụng mạng xã hội ẩn danh đang sáng đèn với thông báo chưa đọc."
+
+[019] (MYSTERY | 0.96x)
+MINH: "Tài khoản mang tên Mộc Lan hiển thị danh sách những bức tranh tĩnh vật vẽ tay vô cùng tinh tế và sắc sảo."
+
+[020] (MYSTERY | 0.96x)
+MINH: "Điểm khiến Mai sững sờ không chỉ là tài năng hội họa bất ngờ của mẹ, mà là những dòng chú thích đượm buồn về sự cô độc."
+
+[021] (MYSTERY | 0.96x)
+MINH: "Những con chữ viết ra từ một tâm hồn dường như chưa từng tìm thấy sự thấu cảm trong chính mái ấm của mình."
+
+[022] (NORMAL | 1.01x)
+MINH: "Mai lướt qua từng bài đăng được lưu trữ từ nhiều năm trước, nhận ra một thế giới nội tâm phong phú chưa từng được bày tỏ."
+
+[023] (MYSTERY | 0.96x)
+MINH: "Bên dưới các bức tranh là những bình luận tương tác từ một tài khoản nam giới với giọng điệu vô cùng thân mật."
+
+[024] (NORMAL | 1.01x)
+MINH: "Họ bàn luận về kỹ thuật pha màu nước, về ánh sáng buổi sớm và những nỗi niềm không tên của tuổi xế chiều."
+
+[025] (MYSTERY | 0.96x)
+MINH: "Có cả những lời hẹn gặp nhau tại một không gian triển lãm nghệ thuật nhỏ nằm ở góc khuất của thành phố."
+
+[026] (NORMAL | 1.01x)
+MINH: "Sự tò mò nhanh chóng chuyển hóa thành một thứ cảm giác bất an len lỏi trong sống lưng người con gái."
+
+[027] (COMMENT | 1.025x) [GIAO LƯU KHÁN GIẢ]
+MINH: "Theo quý vị, nếu phát hiện ra người mẹ hiền lành của mình có những mối quan hệ riêng tư khó hiểu trên mạng, chúng ta nên phản ứng thế nào?"
+
+[028] (NORMAL | 1.01x)
+MINH: "Mai chọn cách giữ im lặng, đặt chiếc điện thoại về chỗ cũ nhưng tâm trí đã bị cuốn vào một vòng xoáy hoài nghi."
+
+[029] (NORMAL | 1.01x)
+MINH: "Những ngày tiếp theo, ánh mắt Mai nhìn mẹ không còn sự vô tư ngày nào mà mang theo sự dò xét đầy ắp lo âu."
+
+[030] (MYSTERY | 0.96x)
+MINH: "Trong đầu người con gái bắt đầu hình thành những giả thuyết đáng sợ về một cuộc tình trái đạo lý ở tuổi xế chiều."
+
+[031] (MYSTERY | 0.96x)
+MINH: "Hay đây là cái bẫy của những kẻ lừa đảo chuyên nhắm vào những phụ nữ trung niên cô đơn trên không gian mạng?"
+
+[032] (NORMAL | 1.01x)
+MINH: "Thời đại công nghệ mang lại kết nối nhưng cũng đồng thời mở ra những khoảng trống dễ bị lợi dụng bởi lòng tham."
+
+[033] (NORMAL | 1.01x)
+MINH: "Mai nhớ lại những buổi tối bố mẹ ngồi xem tivi mà không hề nói với nhau nửa lời trong suốt nhiều giờ đồng hồ."
+
+[034] (MYSTERY | 0.96x)
+MINH: "Sự lạnh lẽo trong căn nhà này chính là mảnh đất màu mỡ cho những mối quan hệ ảo bên ngoài nảy nở."
+
+[035] (NORMAL | 1.01x)
+MINH: "Nhưng nghĩ đến ánh mắt hiền từ và đôi bàn tay chai sần vì làm việc vất vả của mẹ, Mai lại thấy mâu thuẫn khôn cùng."
+
+[036] (NORMAL | 1.01x)
+MINH: "Làm sao một người mẹ cả đời vì con cái lại có thể bước vào một mối quan hệ sai trái ngoài luồng?"
+
+[037] (NORMAL | 1.01x)
+MINH: "Sự dằn vặt đó đẩy Mai đến quyết định phải tự mình tìm ra sự thật đằng sau tài khoản mạng xã hội kia."
+
+[038] (NORMAL | 1.01x)
+MINH: "Nhân lúc bố mẹ đi vắng vào buổi trưa, Mai bắt đầu cuộc tìm kiếm các bằng chứng vật lý trong căn phòng ngủ quen thuộc."
+
+[039] (MYSTERY | 0.96x)
+MINH: "Dưới đáy chiếc tủ quần áo gỗ ép cũ kỹ, một cuốn sổ phác thảo bám đầy bụi thời gian đã thu hút toàn bộ sự chú ý."
+
+[040] (MYSTERY | 0.96x)
+MINH: "Mai run rẩy mở từng trang giấy ngả màu, nơi lưu giữ những bức họa phác thảo bằng chì và màu nước từ hàng chục năm trước."
+
+[041] (NORMAL | 1.01x)
+MINH: "Nội dung bên trong trùng khớp hoàn toàn với những hình ảnh được đăng tải trên tài khoản ẩn danh Mộc Lan."
+
+[042] (NORMAL | 1.01x)
+MINH: "Không có bức thư tình nào của người lạ, không có dấu hiệu của một vụ lừa đảo tài chính hay ngoại tình."
+
+[043] (NORMAL | 1.01x)
+MINH: "Chỉ có những ký ức hội họa thời trẻ của người mẹ bị chôn vùi dưới những gánh nặng mưu sinh của gia đình."
+
+[044] (MYSTERY | 0.96x)
+MINH: "Nhưng câu hỏi lớn hơn vẫn còn bỏ ngỏ khi kẹp giữa những trang giấy là tấm vé vào cửa triển lãm mang tên một người đàn ông lạ."
+
+[045] (NORMAL | 1.01x)
+MINH: "Sự thật phía sau những bức tranh ấy thực chất là gì, mời quý vị tiếp tục theo dõi phần tiếp theo của câu chuyện."
+
+[046] (MYSTERY | 0.96x)
+MINH: "Tấm vé triển lãm mỹ thuật cầm trên tay Mai lúc này như một mảnh ghép cuối cùng, lật mở một khía cạnh hoàn toàn khác mà suốt bao nhiêu năm qua cô chưa từng chạm tới."
+
+[047] (NORMAL | 1.01x)
+MINH: "Những nét chì phác thảo trong cuốn sổ cũ không chỉ đơn thuần là hoa lá hay phong cảnh, mà ẩn chứa một nội tâm dữ dội, đầy khát khao biểu đạt của một người từng gác lại ước mơ."
+
+[048] (MYSTERY | 0.96x)
+MINH: "Mai bắt đầu lật từng trang giấy trong cuốn sổ, nơi có ghi chú những địa điểm trưng bày tranh và tên của một phòng tranh tư nhân nhỏ nằm ở góc khuất thành phố."
+
+[049] (NORMAL | 1.01x)
+MINH: "Mọi giả thuyết ban đầu về một mối quan hệ ngoài luồng hay cạm bẫy trên không gian mạng bỗng chốc sụp đổ hoàn toàn trước những nét vẽ mộc mạc mà đượm buồn."
+
+[050] (NORMAL | 1.01x)
+MINH: "Không có người đàn ông bí mật nào cả. Chỉ có những buổi chiều vắng lặng, khi căn nhà chìm trong tiếng tivi và sự thờ ơ, mẹ ngồi bên khung cửa lặng lẽ vẽ lại chính mình."
+
+[051] (MYSTERY | 0.96x)
+MINH: "Tài khoản mạng xã hội giấu kín ấy không phải là nơi để trốn chạy thực tại bằng những lời đường mật, mà là chiếc phao cứu sinh giữ lại phần hồn nghệ sĩ của bà."
+
+[052] (NORMAL | 1.01x)
+MINH: "Mai mở tệp tin lưu trữ trên máy tính của mẹ, nơi có hàng trăm bức ảnh chụp các tác phẩm hội họa được đăng tải đều đặn trong suốt nhiều năm qua."
+
+[053] (MYSTERY | 0.96x)
+MINH: "Dưới mỗi bức tranh là những bình luận từ một cộng đồng nhỏ những người yêu nghệ thuật, nơi họ gọi mẹ bằng một nghệ danh khác, trân trọng tài năng của bà."
+
+[054] (NORMAL | 1.01x)
+MINH: "Những dòng tương tác ấy không hề mang tính vụ lợi, mà tràn đầy sự thấu cảm và sẻ chia giữa những tâm hồn đồng điệu chưa từng một lần gặp mặt."
+
+[055] (NORMAL | 1.01x)
+MINH: "Khoảnh khắc nhận ra sự thật ấy, lồng ngực Mai thắt lại. Cô hiểu rằng mình vừa chạm tay vào một vùng trời bí mật mà mẹ đã phải nhọc nhằn che giấu."
+
+[056] (REVEAL | 0.92x)
+MINH: "Sự thật đã được phơi bày trọn vẹn: tài khoản mạng xã hội ấy chính là bình dưỡng khí tinh thần, nơi bà Lan được sống thật với đam mê hội họa của mình."
+
+[057] (REVEAL | 0.92x)
+MINH: "Ở đó, bà không phải là người phụ nữ gánh trên vai định kiến về bổn phận dâu con, vợ hiền, mà là một họa sĩ tự do thả hồn vào từng sắc màu."
+
+[058] (REVEAL | 0.92x)
+MINH: "Mỗi nét cọ là một tiếng thở dài kìm nén, mỗi bức tranh hoàn thiện là một lần bà tự vá lành những tổn thương âm ỉ trong suốt ba mươi năm qua."
+
+[059] (REVEAL | 0.92x)
+MINH: "Ba mươi năm chung sống với người chồng gia trưởng và ít nói đã bào mòn dần những nét thanh xuân và niềm vui sống thuở ban đầu của bà."
+
+[060] (REVEAL | 0.92x)
+MINH: "Bữa cơm ngon, nhà cửa tinh tươm, quần áo phẳng phiu.. gia đình đã quen nhận lấy tất cả những điều đó như một hiển nhiên không cần thắc mắc."
+
+[061] (REVEAL | 0.92x)
+MINH: "Và chính sự vô tâm kéo dài ấy đã vô tình đẩy bà Lan vào vị trí của một bóng ma vô hình, tồn tại chỉ để phục vụ cho nhu cầu của người khác."
+
+[062] (REVEAL | 0.92x)
+MINH: "Mai bàng hoàng nhận ra, trong vô thức, cô cũng từng là một phần của guồng máy áp lực đó khi chỉ biết đón nhận sự hy sinh của mẹ mà thôi."
+
+[063] (REVEAL | 0.92x)
+MINH: "Cô chưa bao giờ hỏi mẹ thực sự thích gì, muốn gì hay có những nỗi buồn nào giấu kín sau đôi mắt luôn đượm vẻ lo âu mỗi sớm mai."
+
+[064] (REVEAL | 0.92x)
+MINH: "Màn hình điện thoại tối dần, phản chiếu gương mặt đầy nước mắt của Mai trong căn phòng tối, nơi sự thật đang cào xé tâm can cô."
+
+[065] (REVEAL | 0.92x)
+MINH: "Gốc rễ của nỗi đau không nằm ở những bí mật trên mạng xã hội, mà nằm ở sự thiếu vắng kết nối cảm xúc trầm trọng giữa các thành viên trong gia đình."
+
+[066] (REVEAL | 0.92x)
+MINH: "Bà Lan phải chọn thế giới ảo làm chốn trú ngụ an toàn, bởi vì ngay tại thế giới thực trong chính ngôi nhà của mình, giọng nói của bà không có trọng lượng."
+
+[067] (REVEAL | 0.92x)
+MINH: "Những toan tính cơm áo gạo tiền và sự khô khan trong cách biểu đạt tình cảm của ông Hưng đã biến hôn nhân thành một chiếc lồng kính ngột ngạt."
+
+[068] (REVEAL | 0.92x)
+MINH: "Họ sống chung dưới một mái nhà nhưng mỗi người lại tự giam mình trong một hoang đảo biệt lập, không ai chạm được đến phần sâu thẳm của nhau."
+
+[069] (REVEAL | 0.92x)
+MINH: "Sự hy sinh thầm lặng của người phụ nữ đôi khi không phải là đức tính tự nguyện, mà là sự thỏa hiệp đầy đau đớn khi không còn lối thoát nào khác."
+
+[070] (REVEAL | 0.92x)
+MINH: "Bà giấu giếm tài khoản mạng xã hội vì sợ bị phán xét, sợ bị tước nốt niềm vui nhỏ nhoi cuối cùng trong những năm tháng tuổi xế chiều."
+
+[071] (REVEAL | 0.92x)
+MINH: "Mai cầm cuốn sổ phác thảo bước ra phòng khách, nơi ông Hưng vẫn đang ngồi đọc báo dưới ánh đèn vàng vọt quen thuộc không chút đổi thay."
+
+[072] (REVEAL | 0.92x)
+MINH: "Khoảnh khắc Mai đặt cuốn sổ lên bàn trước mặt bố, cô biết rằng mình không thể tiếp tục im lặng làm ngơ trước những tổn thương đang gặm nhấm gia đình."
+
+[073] (REVEAL | 0.92x)
+MINH: "Ông Hưng ngẩng lên, ánh mắt ngơ ngác nhìn đứa con gái vốn ít khi xen vào chuyện người lớn, lòng trĩu nặng một dự cảm chẳng lành."
+
+[074] (REVEAL | 0.92x)
+MINH: "Cuộc đối thoại trực diện đầu tiên sau ba mươi năm bắt đầu bằng sự thật rỉ máu, trút bỏ hoàn toàn lớp vỏ bọc bình yên giả tạo bấy lâu."
+
+[075] (NORMAL | 1.01x)
+MINH: "Những lời trách móc ban đầu nhanh chóng nhường chỗ cho những giọt nước mắt nghẹn ngào khi ông Hưng tận mắt nhìn thấy các bức vẽ của vợ."
+
+[076] (NORMAL | 1.01x)
+MINH: "Ông lặng người đi trước bức phác thảo vẽ chính góc sân nhà mình, nơi người phụ nữ tóc hoa râm cúi đầu bên luống hoa nhỏ héo úa."
+
+[077] (NORMAL | 1.01x)
+MINH: "Hóa ra, người đàn ông ấy chưa từng thực sự nhìn thấy vợ mình trong suốt bao nhiêu năm chung chăn gác, cứ ngỡ sự tần tảo là điều hiển nhiên."
+
+[078] (NORMAL | 1.01x)
+MINH: "Bà Lan bước ra từ căn bếp, gương mặt thoáng chút hoảng hốt khi thấy những bí mật của mình bị bày biện giữa ánh đèn sáng trưng."
+
+[079] (NORMAL | 1.01x)
+MINH: "Nhưng thay vì sự quở trách hay phán xét như bà từng sợ hãi, vòng tay ôm lấy bà lúc này lại là sự nghẹn ngào từ cô con gái."
+
+[080] (NORMAL | 1.01x)
+MINH: "Và rồi, người chồng già cỗi cũng cất lên tiếng xin lỗi đầu tiên trong đời, khàn đặc và chát đắng sau bao nhiêu năm vô tâm."
+
+[081] (COMMENT | 1.025x) [GIAO LƯU KHÁN GIẢ]
+MINH: "Sự bao dung và thấu hiểu chưa bao giờ là điều dễ dàng, nhưng nó bắt đầu từ một cái chạm tay đầy vụng về giữa những con người từng xa cách."
+
+[082] (NORMAL | 1.01x)
+MINH: "Khoảnh khắc ấy, bức tường vô hình ngăn cách các thế hệ trong căn nhà nhỏ cuối cùng cũng có những vết nứt đầu tiên để ánh sáng len vào."
+
+[083] (COMMENT | 1.025x)
+MINH: "Trong thời đại số hóa này, những bí mật ẩn sau màn hình đôi khi không phải là sự phản bội, mà là tiếng kêu cứu thầm lặng."
+
+[084] (COMMENT | 1.025x)
+MINH: "Đó là nơi những tâm hồn bị bỏ quên tìm kiếm một khoảng trời tự do để thở, để thấy mình vẫn tồn tại giữa cuộc đời."
+
+[085] (COMMENT | 1.025x)
+MINH: "Sau cánh cửa gia đình, điều chúng ta cần nhất không phải là sự phán xét rạch ròi đúng sai, mà là lòng kiên nhẫn để lắng nghe."
+
+[086] (COMMENT | 1.025x) [GIAO LƯU KHÁN GIẢ]
+MINH: "Quý vị có từng tự hỏi, liệu những người thân bên cạnh mình có đang cất giấu một góc đời lặng lẽ nào sau màn hình vô cảm?"
+
+[087] (COMMENT | 1.025x)
+MINH: "Đừng đợi đến khi mọi thứ chìm vào im lặng mới nhận ra ta đã để tuột mất nhau trong chính ngôi nhà của mình."
+
+[088] (ENDING | 0.965x)
+MINH: "Không có phép màu nào hàn gắn tức thì mọi vết nứt, nhưng ông Hưng đã bắt đầu học cách quan tâm đến sở thích của vợ."
+
+[089] (ENDING | 0.965x)
+MINH: "Còn bà Lan, giờ đây không cần lén lút sống trong thế giới ảo nữa, khi bà đã có thể cất tiếng nói ngay trong chính ngôi nhà của mình."
+
+[090] (ENDING | 0.965x) [GIAO LƯU KHÁN GIẢ]
+MINH: "Cảm ơn quý vị đã đồng hành cùng 'Sau Cánh Cửa'. Xin kính chào tạm biệt và hẹn gặp lại trong những câu chuyện tiếp theo."
