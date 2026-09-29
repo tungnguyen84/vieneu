@@ -42,6 +42,7 @@ class CharacterProfile:
     local_reference_id: str = ""
     flow: Dict[str, Any] = field(default_factory=dict)
     qc_status: str = "AWAITING_REVIEW"  # "AWAITING_REVIEW" | "APPROVED" | "REJECTED"
+    reference_source: Optional[str] = None  # "BANANA_PRO", "CUSTOM_UPLOAD", etc.
 
     def __post_init__(self):
         if not self.id and self.char_id:
@@ -117,7 +118,8 @@ def load_character_library(base_dir: Path = CHARACTER_LIB_DIR) -> Dict[str, Char
                     wardrobes=data.get("wardrobes", {}),
                     local_reference_id=data.get("local_reference_id", f"{char_id}_REF_V1"),
                     flow=flow_data,
-                    qc_status=data.get("qc_status", "AWAITING_REVIEW")
+                    qc_status=data.get("qc_status", "AWAITING_REVIEW"),
+                    reference_source=data.get("reference_source")
                 )
             except Exception as e:
                 logger.error(f"Error loading character {json_file}: {e}")
@@ -125,15 +127,213 @@ def load_character_library(base_dir: Path = CHARACTER_LIB_DIR) -> Dict[str, Char
     return characters
 
 
-def save_character(profile: CharacterProfile, base_dir: Path = CHARACTER_LIB_DIR) -> Path:
+def build_character_reference_prompt(character: CharacterProfile | dict) -> str:
+    """Builds a standardized photorealistic identity reference prompt from character.json.
+
+    Follows the strict format specified for Vietnamese cinematic social mystery drama.
+    For younger version characters (e.g. LAN_YOUNG), uses the specialized identity anchor prompt.
+    """
+    identity_rel = getattr(character, "identity_relation", None) if hasattr(character, "identity_relation") else (character.get("identity_relation") if isinstance(character, dict) else None)
+    char_id = getattr(character, "id", None) or getattr(character, "char_id", None) or (character.get("id") or character.get("char_id") if isinstance(character, dict) else "")
+
+    # LAN_YOUNG Special Rule: younger version prompt
+    if (identity_rel and identity_rel.get("type") == "YOUNGER_VERSION_OF") or char_id == "LAN_YOUNG":
+        return (
+            "Create a believable younger version of the SAME Vietnamese woman shown in the identity reference.\n\n"
+            "Age approximately 17–18.\n\n"
+            "Preserve recognizable:\n"
+            "facial bone structure,\n"
+            "eye shape,\n"
+            "nose structure,\n"
+            "mouth shape,\n"
+            "facial proportions,\n"
+            "overall identity.\n\n"
+            "Make her naturally younger rather than changing her into another person.\n\n"
+            "Vietnamese high-school-age appearance.\n"
+            "Natural black hair.\n"
+            "Simple modest Vietnamese student appearance.\n"
+            "White school blouse where appropriate.\n\n"
+            "Neutral character reference portrait.\n"
+            "Soft even lighting.\n"
+            "Simple neutral background.\n"
+            "Photorealistic realistic skin.\n"
+            "No glamour.\n"
+            "No heavy makeup.\n"
+            "No text.\n"
+            "No watermark.\n"
+            "3:4 portrait."
+        )
+
+    # Standard character reference prompt builder
+    def _g(key: str) -> str:
+        if hasattr(character, key):
+            val = getattr(character, key)
+            return str(val) if val else ""
+        if isinstance(character, dict):
+            val = character.get(key)
+            return str(val) if val else ""
+        return ""
+
+    gender = _g("gender").strip()
+    age = _g("age_range").strip()
+    face = _g("face").strip()
+    hair = _g("hair").strip()
+    body = _g("body").strip()
+    appearance = _g("appearance").strip()
+    clothing = _g("default_clothing").strip()
+
+    if gender.lower() == "female":
+        gender_desc = "Vietnamese woman."
+    elif gender.lower() == "male":
+        gender_desc = "Vietnamese man."
+    else:
+        gender_desc = "Vietnamese person."
+
+    age_desc = f"Age approximately {age}." if age else ""
+
+    sections = [
+        "Photorealistic character reference portrait for a Vietnamese cinematic social mystery drama.\n",
+        "Vietnamese person.",
+        gender_desc,
+        age_desc,
+        face,
+        hair,
+        body,
+        appearance,
+        clothing,
+        "\nNeutral natural expression.",
+        "Front-facing or slight three-quarter angle.",
+        "Clearly visible facial features.",
+        "Relaxed natural standing pose.",
+        "Waist-up or three-quarter body character reference.",
+        "Soft even studio-like natural lighting.",
+        "Simple neutral background.",
+        "Realistic Vietnamese facial anatomy.",
+        "Realistic skin texture.",
+        "No glamour retouching.",
+        "No fashion editorial styling.",
+        "No exaggerated makeup.",
+        "No dramatic cinematic shadows.",
+        "No props covering the face.",
+        "No text.",
+        "No watermark.",
+        "3:4 portrait composition.\n",
+        "This is an identity reference image, not a cinematic scene."
+    ]
+
+    return "\n".join(s for s in sections if s.strip() or s == "\n")
+
+
+def save_character(profile: CharacterProfile, base_dir: Optional[Path] = None) -> Path:
     """Save character profile to persistent JSON file on disk."""
-    char_dir = base_dir / profile.id
+    effective_dir = base_dir or CHARACTER_LIB_DIR
+    char_dir = effective_dir / profile.id
     char_dir.mkdir(parents=True, exist_ok=True)
     json_path = char_dir / "character.json"
     data = asdict(profile)
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     return json_path
+
+
+def approve_character_reference(
+    char_id: str,
+    version_filename: Optional[str] = None,
+    base_dir: Optional[Path] = None
+) -> CharacterProfile:
+    """Approves the character reference, promoting candidate version to ref_portrait.png (active reference)."""
+    effective_dir = base_dir or CHARACTER_LIB_DIR
+    chars = load_character_library(effective_dir)
+    profile = chars.get(char_id)
+    if not profile:
+        raise ValueError(f"Character '{char_id}' not found.")
+
+    char_dir = effective_dir / char_id
+    if version_filename:
+        v_path = char_dir / version_filename
+        if v_path.exists():
+            shutil.copy2(v_path, char_dir / "ref_portrait.png")
+            # Promote flow media id if present
+            if version_filename in profile.flow_media_ids:
+                media_id = profile.flow_media_ids[version_filename]
+                profile.flow["media_id"] = media_id
+                profile.flow_media_ids["ref_portrait.png"] = media_id
+
+    profile.qc_status = "APPROVED"
+    profile.flow["upload_status"] = "UPLOADED" if profile.flow.get("media_id") else "LOCAL_ONLY"
+    if "ref_portrait.png" not in profile.references:
+        profile.references.insert(0, "ref_portrait.png")
+
+    save_character(profile, effective_dir)
+    logger.info(f"[CharacterManager] Approved character reference for {char_id} (active: ref_portrait.png).")
+    return profile
+
+
+def reject_character_reference(char_id: str, base_dir: Optional[Path] = None) -> CharacterProfile:
+    """Rejects the character reference candidate without modifying existing approved reference."""
+    effective_dir = base_dir or CHARACTER_LIB_DIR
+    chars = load_character_library(effective_dir)
+    profile = chars.get(char_id)
+    if not profile:
+        raise ValueError(f"Character '{char_id}' not found.")
+
+    profile.qc_status = "REJECTED"
+    save_character(profile, effective_dir)
+    logger.info(f"[CharacterManager] Rejected character reference for {char_id}.")
+    return profile
+
+
+def upload_custom_character_reference(
+    char_id: str,
+    file_path_or_bytes: Path | str | bytes,
+    base_dir: Optional[Path] = None
+) -> Path:
+    """Saves a user-uploaded image as a new reference version for the character."""
+    effective_dir = base_dir or CHARACTER_LIB_DIR
+    chars = load_character_library(effective_dir)
+    profile = chars.get(char_id)
+    if not profile:
+        raise ValueError(f"Character '{char_id}' not found.")
+
+    char_dir = effective_dir / char_id
+    char_dir.mkdir(parents=True, exist_ok=True)
+
+    # Archive existing ref_portrait.png to ref_portrait_v1.png if needed
+    main_ref = char_dir / "ref_portrait.png"
+    existing_versions = list(char_dir.glob("ref_portrait_v*.png"))
+    v_nums = []
+    for p in existing_versions:
+        stem = p.stem
+        parts = stem.split("_v")
+        if len(parts) == 2 and parts[1].isdigit():
+            v_nums.append(int(parts[1]))
+
+    if main_ref.exists() and not existing_versions:
+        v1_path = char_dir / "ref_portrait_v1.png"
+        shutil.copy2(main_ref, v1_path)
+        v_nums.append(1)
+
+    next_v = (max(v_nums) + 1) if v_nums else 1
+    new_version_filename = f"ref_portrait_v{next_v}.png"
+    target_path = char_dir / new_version_filename
+
+    if isinstance(file_path_or_bytes, (str, Path)):
+        shutil.copy2(file_path_or_bytes, target_path)
+    else:
+        target_path.write_bytes(file_path_or_bytes)
+
+    # If no main reference existed yet, initialize it
+    if not main_ref.exists():
+        shutil.copy2(target_path, main_ref)
+
+    profile.references = ["ref_portrait.png", new_version_filename]
+    profile.reference_source = "CUSTOM_UPLOAD"
+    profile.qc_status = "AWAITING_REVIEW"
+    profile.flow["upload_status"] = "LOCAL_ONLY"
+    profile.flow["media_id"] = None
+    save_character(profile, base_dir)
+    logger.info(f"[CharacterManager] Custom reference uploaded for {char_id} ({new_version_filename}).")
+    return target_path
 
 
 def set_character_qc_status(char_id: str, status: str, base_dir: Path = CHARACTER_LIB_DIR) -> Optional[CharacterProfile]:

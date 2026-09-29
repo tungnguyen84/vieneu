@@ -39,8 +39,30 @@ class BananaClient:
         self.character_lib = character_lib
         self.preset = preset
 
-    def generate_character_reference(self, char_id: str, project_id: str = "") -> Path:
-        """Generates a clean identity reference portrait for a character via Banana Pro (Section 4)."""
+    def generate_character_reference(
+        self,
+        char_id: str,
+        project_id: str = "",
+        confirmed: bool = False
+    ) -> Path:
+        """Generates an identity reference portrait for a character via Nano Banana Pro.
+
+        Enforces:
+        - Credit confirmation before Banana API call
+        - Dynamic prompt from character.json using build_character_reference_prompt
+        - Special LAN_YOUNG rule (requires approved LAN_ADULT reference as identity anchor)
+        - Version preservation (ref_portrait_v1.png, ref_portrait_v2.png, ...) without overwriting approved active ref
+        - Sets qc_status="AWAITING_REVIEW" (never auto-approves)
+        - Persists reference_source="BANANA_PRO" and flow media ID
+        - Zero mutations to visual_plan.json or approved_semantic_hash
+        """
+        if not confirmed:
+            raise ValueError(
+                f"Confirmation required: Tạo ảnh reference cho {char_id}\n"
+                f"Model: Nano Banana Pro\n"
+                f"Requests: 1"
+            )
+
         char = self.character_lib.get(char_id)
         if not char:
             raise ValueError(f"Character '{char_id}' not found in character library.")
@@ -51,26 +73,57 @@ class BananaClient:
             adapter_default=self.adapter.default_project_id
         )
 
-        from apps.visual_engine.character_manager import CHARACTER_LIB_DIR
+        from apps.visual_engine.character_manager import (
+            CHARACTER_LIB_DIR,
+            build_character_reference_prompt,
+            save_character
+        )
         char_dir = CHARACTER_LIB_DIR / char_id
         char_dir.mkdir(parents=True, exist_ok=True)
-        out_ref_path = char_dir / "ref_portrait.png"
 
-        # Anchor to LAN_ADULT if younger version (Section 5)
+        # LAN_YOUNG SPECIAL RULE:
         ref_anchor_ids = []
         if char.identity_relation and char.identity_relation.get("type") == "YOUNGER_VERSION_OF":
             anchor_cid = char.identity_relation.get("character_id")
-            if anchor_cid:
-                ref_anchor_ids.extend(self.ensure_character_references(anchor_cid, project_id=target_pid))
+            anchor_char = self.character_lib.get(anchor_cid)
+            if not anchor_char or getattr(anchor_char, "qc_status", "") != "APPROVED":
+                raise ValueError(
+                    f"LAN_YOUNG requires approved {anchor_cid} reference. "
+                    f"Vui lòng phê duyệt {anchor_cid} trước khi tạo reference cho LAN_YOUNG."
+                )
 
-        prompt = (
-            f"Clean character identity reference sheet of {char.name}, {char.appearance}. "
-            f"Neutral solid studio background, waist-up portrait, natural front-facing pose, "
-            f"neutral calm facial expression, soft even cinematic lighting, accurate realistic Vietnamese skin texture and features, "
-            f"no dramatic camera angle, no text, no props obscuring face, 35mm portrait photography."
-        )
+            # Check anchor reference image exists on disk
+            anchor_dir = CHARACTER_LIB_DIR / anchor_cid
+            anchor_ref_img = anchor_dir / "ref_portrait.png"
+            if not anchor_ref_img.exists() or anchor_ref_img.stat().st_size == 0:
+                raise ValueError(f"Approved reference image for {anchor_cid} not found on disk at {anchor_ref_img}.")
 
-        logger.info(f"[BananaClient] Generating clean character reference for {char_id} on Flow project {target_pid}...")
+            ref_anchor_ids = self.ensure_character_references(anchor_cid, project_id=target_pid)
+            if not ref_anchor_ids:
+                raise ValueError(f"Could not resolve Flow Media ID for approved anchor {anchor_cid}.")
+
+        # Versioning management: find next version
+        existing_versions = list(char_dir.glob("ref_portrait_v*.png"))
+        v_nums = []
+        for p in existing_versions:
+            stem = p.stem
+            parts = stem.split("_v")
+            if len(parts) == 2 and parts[1].isdigit():
+                v_nums.append(int(parts[1]))
+
+        main_ref = char_dir / "ref_portrait.png"
+        import shutil
+        if main_ref.exists() and not existing_versions:
+            shutil.copy2(main_ref, char_dir / "ref_portrait_v1.png")
+            v_nums.append(1)
+
+        next_v = (max(v_nums) + 1) if v_nums else 1
+        new_version_filename = f"ref_portrait_v{next_v}.png"
+        new_version_path = char_dir / new_version_filename
+
+        prompt = build_character_reference_prompt(char)
+
+        logger.info(f"[BananaClient] Generating character reference {new_version_filename} for {char_id} on Flow project {target_pid}...")
         assets = self.adapter.generate_image(
             prompt=prompt,
             project_id=target_pid,
@@ -83,27 +136,42 @@ class BananaClient:
             raise RuntimeError(f"Failed to generate character reference for {char_id}")
 
         asset = assets[0]
-        self.adapter.download_asset(asset.url, out_ref_path)
+        self.adapter.download_asset(asset.url, new_version_path)
 
-        if "ref_portrait.png" not in char.references:
-            char.references.append("ref_portrait.png")
-        char.flow_media_ids[target_pid] = asset.media_id
-        save_character(char)
+        # If no main reference existed on disk, initialize ref_portrait.png so preview works
+        if not main_ref.exists() or main_ref.stat().st_size == 0:
+            shutil.copy2(new_version_path, main_ref)
 
-        # Mark all scenes using this character as STALE_REFERENCE (Section 26)
-        self.asset_mgr.mark_character_updated(char_id, asset.media_id)
-
-        # Append generation log (Section 28)
-        self.asset_mgr.append_generation_log({
-            "scene_id": f"REF_{char_id}",
-            "operation": "CHARACTER_REFERENCE",
+        # Persist character metadata
+        char.references = ["ref_portrait.png", new_version_filename]
+        char.flow = {
             "project_id": target_pid,
-            "model": "NANO_BANANA_PRO",
-            "status": "DONE",
-            "media_id": asset.media_id
-        })
+            "media_id": asset.media_id,
+            "upload_status": "UPLOADED"
+        }
+        if not hasattr(char, "flow_media_ids"):
+            char.flow_media_ids = {}
+        char.flow_media_ids[new_version_filename] = asset.media_id
+        char.flow_media_ids["ref_portrait.png"] = asset.media_id
+        char.flow_media_ids[target_pid] = asset.media_id
+        char.reference_source = "BANANA_PRO"
+        char.qc_status = "AWAITING_REVIEW"
+        save_character(char, char_dir.parent)
 
-        return out_ref_path
+        # Mark dependent scenes as STALE_REFERENCE if asset_mgr present
+        if self.asset_mgr:
+            self.asset_mgr.mark_character_updated(char_id, asset.media_id)
+            self.asset_mgr.append_generation_log({
+                "scene_id": f"REF_{char_id}",
+                "operation": "CHARACTER_REFERENCE",
+                "project_id": target_pid,
+                "model": "NANO_BANANA_PRO",
+                "status": "DONE",
+                "media_id": asset.media_id
+            })
+
+        logger.info(f"[BananaClient] Character reference saved as {new_version_filename} for {char_id} (qc_status: AWAITING_REVIEW).")
+        return new_version_path
 
     def ensure_character_references(self, char_id: str, project_id: str = "") -> List[str]:
         """

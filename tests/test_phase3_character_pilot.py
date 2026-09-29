@@ -734,3 +734,201 @@ def test_visual_plan_rebuild_requires_semantic_reapproval(temp_project):
     assert unlocked is False
     assert "LOCKED_SEMANTIC_PLAN_CHANGED" in info["reason"]
 
+
+def test_generate_character_reference_does_not_mutate_visual_plan(temp_project, monkeypatch, tmp_path):
+    """19. Generating a character reference never modifies visual_plan.json or its semantic hash."""
+    from apps.visual_engine.visual_planner import VisualPlanner, compute_visual_plan_semantic_hash
+    plan_file = temp_project / "visual/visual_plan.json"
+    scenes = [
+        VisualScene(scene_id="SC_001", start_sec=0.0, end_sec=4.0, duration_sec=4.0, story_beat="Intro", visual_type="BANANA_IMAGE")
+    ]
+    planner = VisualPlanner()
+    h = compute_visual_plan_semantic_hash(scenes)
+    planner.save_plan(scenes, plan_file, approved_semantic_hash=h, semantic_qc_status="APPROVED")
+    original_plan_bytes = plan_file.read_bytes()
+
+    char_dir = tmp_path / "char_lib"
+    char_dir.mkdir()
+    monkeypatch.setattr("apps.visual_engine.character_manager.CHARACTER_LIB_DIR", char_dir)
+
+    char_lib = {
+        "LAN_ADULT": CharacterProfile(
+            id="LAN_ADULT",
+            char_id="LAN_ADULT",
+            name="Lan Adult",
+            qc_status="AWAITING_REVIEW"
+        )
+    }
+    mock_adapter = MagicMock()
+    mock_asset = MagicMock()
+    mock_asset.media_id = "test-media-123"
+    mock_asset.url = "http://example.com/test.png"
+    mock_adapter.generate_image.return_value = [mock_asset]
+    mock_adapter.download_asset.side_effect = lambda url, path: Path(path).write_bytes(b"image_content")
+
+    asset_mgr = VisualAssetManager(temp_project)
+    banana = BananaClient(mock_adapter, asset_mgr, char_lib)
+
+    banana.generate_character_reference("LAN_ADULT", project_id="proj-test", confirmed=True)
+
+    # visual_plan.json must be 100% byte-for-byte and hash identical
+    assert plan_file.read_bytes() == original_plan_bytes
+    data = json.loads(plan_file.read_text(encoding="utf-8"))
+    assert data["approved_semantic_hash"] == h
+    assert data["semantic_qc_status"] == "APPROVED"
+
+
+def test_character_reference_generation_requires_confirmation(temp_project):
+    """20. Character reference generation requires explicit confirmation to prevent accidental credit spend."""
+    char_lib = {
+        "HUNG": CharacterProfile(id="HUNG", char_id="HUNG", name="Hùng")
+    }
+    mock_adapter = MagicMock()
+    asset_mgr = VisualAssetManager(temp_project)
+    banana = BananaClient(mock_adapter, asset_mgr, char_lib)
+
+    with pytest.raises(ValueError, match="Confirmation required"):
+        banana.generate_character_reference("HUNG", confirmed=False)
+
+    mock_adapter.generate_image.assert_not_called()
+
+
+def test_generated_reference_is_not_auto_approved(temp_project, monkeypatch, tmp_path):
+    """21. Generating a reference sets qc_status to AWAITING_REVIEW and never auto-approves."""
+    char_dir = tmp_path / "char_lib"
+    char_dir.mkdir()
+    monkeypatch.setattr("apps.visual_engine.character_manager.CHARACTER_LIB_DIR", char_dir)
+
+    char_lib = {
+        "HUNG": CharacterProfile(id="HUNG", char_id="HUNG", name="Hùng", qc_status="NOT_GENERATED")
+    }
+    mock_adapter = MagicMock()
+    mock_asset = MagicMock()
+    mock_asset.media_id = "hung-media-999"
+    mock_asset.url = "http://example.com/hung.png"
+    mock_adapter.generate_image.return_value = [mock_asset]
+    mock_adapter.download_asset.side_effect = lambda url, path: Path(path).write_bytes(b"hung_portrait")
+
+    asset_mgr = VisualAssetManager(temp_project)
+    banana = BananaClient(mock_adapter, asset_mgr, char_lib)
+
+    banana.generate_character_reference("HUNG", project_id="proj-hung", confirmed=True)
+
+    hung_profile = char_lib["HUNG"]
+    assert hung_profile.qc_status == "AWAITING_REVIEW"
+    assert hung_profile.reference_source == "BANANA_PRO"
+    assert hung_profile.flow["upload_status"] == "UPLOADED"
+    assert hung_profile.flow["media_id"] == "hung-media-999"
+
+
+def test_regenerate_preserves_previous_reference(temp_project, monkeypatch, tmp_path):
+    """22. Re-generating character references preserves previous versions (v1, v2) without overwriting."""
+    char_dir = tmp_path / "char_lib"
+    char_dir.mkdir()
+    monkeypatch.setattr("apps.visual_engine.character_manager.CHARACTER_LIB_DIR", char_dir)
+
+    lan_dir = char_dir / "LAN_ADULT"
+    lan_dir.mkdir(parents=True)
+    v1_file = lan_dir / "ref_portrait_v1.png"
+    v1_file.write_bytes(b"original v1 bytes")
+
+    char_lib = {
+        "LAN_ADULT": CharacterProfile(id="LAN_ADULT", char_id="LAN_ADULT", name="Lan", references=["ref_portrait.png", "ref_portrait_v1.png"])
+    }
+
+    mock_adapter = MagicMock()
+    mock_asset = MagicMock()
+    mock_asset.media_id = "v2-media-id"
+    mock_asset.url = "http://example.com/v2.png"
+    mock_adapter.generate_image.return_value = [mock_asset]
+    mock_adapter.download_asset.side_effect = lambda url, path: Path(path).write_bytes(b"new v2 bytes")
+
+    asset_mgr = VisualAssetManager(temp_project)
+    banana = BananaClient(mock_adapter, asset_mgr, char_lib)
+
+    new_path = banana.generate_character_reference("LAN_ADULT", project_id="proj-lan", confirmed=True)
+
+    assert v1_file.exists()
+    assert v1_file.read_bytes() == b"original v1 bytes"
+    assert new_path.name == "ref_portrait_v2.png"
+    assert new_path.exists()
+    assert new_path.read_bytes() == b"new v2 bytes"
+
+
+def test_young_lan_requires_approved_adult_reference(temp_project, monkeypatch, tmp_path):
+    """23. LAN_YOUNG generation strictly enforces approved LAN_ADULT reference."""
+    char_dir = tmp_path / "char_lib"
+    char_dir.mkdir()
+    monkeypatch.setattr("apps.visual_engine.character_manager.CHARACTER_LIB_DIR", char_dir)
+
+    char_lib = {
+        "LAN_ADULT": CharacterProfile(
+            id="LAN_ADULT",
+            char_id="LAN_ADULT",
+            name="Lan Adult",
+            qc_status="AWAITING_REVIEW"  # NOT approved!
+        ),
+        "LAN_YOUNG": CharacterProfile(
+            id="LAN_YOUNG",
+            char_id="LAN_YOUNG",
+            name="Lan Young",
+            identity_relation={"type": "YOUNGER_VERSION_OF", "character_id": "LAN_ADULT"}
+        )
+    }
+    mock_adapter = MagicMock()
+    asset_mgr = VisualAssetManager(temp_project)
+    banana = BananaClient(mock_adapter, asset_mgr, char_lib)
+
+    with pytest.raises(ValueError, match="LAN_YOUNG requires approved LAN_ADULT reference"):
+        banana.generate_character_reference("LAN_YOUNG", project_id="proj-123", confirmed=True)
+
+    mock_adapter.generate_image.assert_not_called()
+
+
+def test_young_lan_uses_adult_identity_anchor(temp_project, monkeypatch, tmp_path):
+    """24. LAN_YOUNG generation passes LAN_ADULT's media ID as identity anchor."""
+    char_dir = tmp_path / "char_lib"
+    char_dir.mkdir()
+    monkeypatch.setattr("apps.visual_engine.character_manager.CHARACTER_LIB_DIR", char_dir)
+
+    lan_adult_dir = char_dir / "LAN_ADULT"
+    lan_adult_dir.mkdir(parents=True)
+    (lan_adult_dir / "ref_portrait.png").write_bytes(b"adult_portrait_bytes")
+
+    char_lib = {
+        "LAN_ADULT": CharacterProfile(
+            id="LAN_ADULT",
+            char_id="LAN_ADULT",
+            name="Lan Adult",
+            qc_status="APPROVED",
+            references=["ref_portrait.png"],
+            flow_media_ids={"ref_portrait.png": "flow-adult-anchor-id-999"}
+        ),
+        "LAN_YOUNG": CharacterProfile(
+            id="LAN_YOUNG",
+            char_id="LAN_YOUNG",
+            name="Lan Young",
+            identity_relation={"type": "YOUNGER_VERSION_OF", "character_id": "LAN_ADULT"}
+        )
+    }
+
+    mock_adapter = MagicMock()
+    mock_asset = MagicMock()
+    mock_asset.media_id = "young-lan-media-id"
+    mock_asset.url = "http://example.com/young_lan.png"
+    mock_adapter.generate_image.return_value = [mock_asset]
+    mock_adapter.download_asset.side_effect = lambda url, path: Path(path).write_bytes(b"young_lan_bytes")
+
+    asset_mgr = VisualAssetManager(temp_project)
+    banana = BananaClient(mock_adapter, asset_mgr, char_lib)
+
+    banana.generate_character_reference("LAN_YOUNG", project_id="proj-lan", confirmed=True)
+
+    # Verify adapter called with reference_media_ids containing adult's media ID
+    assert mock_adapter.generate_image.called
+    kwargs = mock_adapter.generate_image.call_args[1]
+    assert kwargs.get("reference_media_ids") == ["flow-adult-anchor-id-999"]
+    assert kwargs.get("image_model") == "NANO_BANANA_PRO"
+    assert kwargs.get("aspect_ratio") == "IMAGE_ASPECT_RATIO_PORTRAIT"
+
+

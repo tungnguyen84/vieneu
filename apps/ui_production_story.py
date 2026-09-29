@@ -499,17 +499,50 @@ def render_production_story_ui(preset_voices_cache_getter):
                                 choices=["LAN_ADULT", "HUNG", "UNCLE", "LAN_YOUNG"],
                                 value="LAN_ADULT",
                                 interactive=True,
-                                scale=2
+                                scale=3
                             )
-                            btn_load_char_ref = gr.Button("👁 Nạp thông tin Reference", scale=1)
+                            btn_load_char_ref = gr.Button("👁 Nạp thông tin", scale=1)
+
+                        char_card_header_md = gr.Markdown("### 🎭 LAN_ADULT")
+
                         with gr.Row():
                             with gr.Column(scale=1):
-                                char_ref_portrait_img = gr.Image(label="🖼 Reference Portrait (ref_portrait.png)", interactive=False)
+                                char_ref_portrait_img = gr.Image(label="Reference Preview", interactive=False)
+                                char_ref_status_md = gr.Markdown(
+                                    "**Status:** `NOT_GENERATED`\n\n"
+                                    "**Flow:** `LOCAL_ONLY`"
+                                )
                             with gr.Column(scale=2):
-                                char_ref_details_md = gr.Markdown("**Thông tin nhân vật:** Bấm 'Nạp thông tin Reference' để xem chi tiết.")
+                                char_ref_details_md = gr.Markdown("**Thông tin nhân vật:** Bấm 'Nạp thông tin' để xem chi tiết.")
+
+                                # Credit confirmation box (hidden by default)
+                                with gr.Group(visible=False) as char_ref_confirm_box:
+                                    char_ref_confirm_msg_md = gr.Markdown(
+                                        "### ⚠️ Xác nhận Tạo ảnh Reference\n"
+                                        "Tạo ảnh reference cho **LAN_ADULT**\n\n"
+                                        "- **Model:** Nano Banana Pro\n"
+                                        "- **Requests:** 1\n"
+                                    )
+                                    with gr.Row():
+                                        btn_cancel_char_gen = gr.Button("❌ Hủy", size="sm")
+                                        btn_confirm_char_gen = gr.Button("🚀 Tạo ảnh", variant="primary", size="sm")
+
                                 with gr.Row():
-                                    btn_approve_char_ref = gr.Button("✅ Phê duyệt Nhân vật (Approve)", variant="primary")
-                                    btn_reject_char_ref = gr.Button("❌ Từ chối Nhân vật (Reject)", variant="stop")
+                                    btn_gen_char_ref = gr.Button("✨ Tạo ảnh nhân vật", variant="primary")
+                                    btn_regen_char_ref = gr.Button("🔄 Tạo lại", variant="secondary")
+                                    btn_toggle_upload = gr.Button("📁 Upload ảnh riêng", variant="secondary")
+
+                                upload_char_ref_file = gr.File(
+                                    label="Chọn tệp ảnh chân dung nhân vật từ máy tính (PNG/JPG)",
+                                    file_types=[".png", ".jpg", ".jpeg"],
+                                    visible=False
+                                )
+
+                                with gr.Row():
+                                    btn_approve_char_ref = gr.Button("✅ Phê duyệt", variant="primary")
+                                    btn_reject_char_ref = gr.Button("❌ Từ chối", variant="stop")
+
+                                char_ref_action_status_md = gr.Markdown("")
                 with gr.Tab("📍 Bối cảnh (Locations)"):
                     loc_lib_table = gr.Dataframe(
                         headers=["Location ID", "Tên bối cảnh", "Tính chất", "Mô tả", "Visual Style", "Ánh sáng mặc định"],
@@ -739,10 +772,21 @@ def render_production_story_ui(preset_voices_cache_getter):
         "btn_refresh_char_lib": btn_refresh_char_lib,
         "char_select_dd": char_select_dd,
         "btn_load_char_ref": btn_load_char_ref,
+        "char_card_header_md": char_card_header_md,
         "char_ref_portrait_img": char_ref_portrait_img,
+        "char_ref_status_md": char_ref_status_md,
         "char_ref_details_md": char_ref_details_md,
+        "char_ref_confirm_box": char_ref_confirm_box,
+        "char_ref_confirm_msg_md": char_ref_confirm_msg_md,
+        "btn_cancel_char_gen": btn_cancel_char_gen,
+        "btn_confirm_char_gen": btn_confirm_char_gen,
+        "btn_gen_char_ref": btn_gen_char_ref,
+        "btn_regen_char_ref": btn_regen_char_ref,
+        "btn_toggle_upload": btn_toggle_upload,
+        "upload_char_ref_file": upload_char_ref_file,
         "btn_approve_char_ref": btn_approve_char_ref,
         "btn_reject_char_ref": btn_reject_char_ref,
+        "char_ref_action_status_md": char_ref_action_status_md,
         "loc_lib_table": loc_lib_table,
         "btn_refresh_loc_lib": btn_refresh_loc_lib,
         "scene_select_dd": scene_select_dd,
@@ -1884,65 +1928,264 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             ])
         return rows
 
+    from apps.visual_engine.character_manager import (
+        CHARACTER_LIB_DIR,
+        approve_character_reference,
+        reject_character_reference,
+        upload_custom_character_reference,
+        build_character_reference_prompt
+    )
+
     def _on_load_char_ref(char_id):
-        from apps.visual_engine.character_manager import CHARACTER_LIB_DIR
         chars = load_character_library()
         c = chars.get(char_id)
         if not c:
-            return None, f"⚠️ Không tìm thấy nhân vật {char_id}"
+            return (
+                None,
+                f"### 🎭 {char_id}",
+                "**Status:** `NOT_GENERATED`\n\n**Flow:** `LOCAL_ONLY`",
+                f"⚠️ Không tìm thấy nhân vật {char_id}",
+                gr.update(visible=False),
+                gr.update(visible=False),
+                ""
+            )
         char_dir = CHARACTER_LIB_DIR / char_id
-        img_p = char_dir / (c.references[0] if c.references else "ref_portrait.png")
+        img_p = char_dir / "ref_portrait.png"
         img_val = str(img_p) if (img_p.exists() and img_p.stat().st_size > 0) else None
 
-        qc_color = "#10b981" if c.qc_status == "APPROVED" else ("#ef4444" if c.qc_status == "REJECTED" else "#f59e0b")
-        flow_media = c.flow.get("media_id") or "Chưa upload (sẽ upload khi generate)"
+        # Status: NOT_GENERATED / AWAITING_REVIEW / APPROVED / REJECTED
+        if not img_val:
+            status_tag = "NOT_GENERATED"
+            status_color = "#94a3b8"
+        elif c.qc_status == "APPROVED":
+            status_tag = "APPROVED"
+            status_color = "#10b981"
+        elif c.qc_status == "REJECTED":
+            status_tag = "REJECTED"
+            status_color = "#ef4444"
+        else:
+            status_tag = "AWAITING_REVIEW"
+            status_color = "#f59e0b"
+
+        # Flow: LOCAL_ONLY / UPLOADED
+        has_media = bool(c.flow.get("media_id"))
+        flow_tag = "UPLOADED" if has_media else "LOCAL_ONLY"
+        flow_color = "#3b82f6" if has_media else "#64748b"
+        flow_media = c.flow.get("media_id") or "None"
+
+        status_md = (
+            f"**Status:** <span style='color:{status_color}; font-weight:bold;'>{status_tag}</span>\n\n"
+            f"**Flow:** <span style='color:{flow_color}; font-weight:bold;'>{flow_tag}</span> (`{flow_media}`)"
+        )
+
+        header_md = f"### 🎭 **{c.name}** (`{c.char_id}`)"
+
+        # Special notice for LAN_YOUNG
+        young_notice = ""
+        if c.identity_relation and c.identity_relation.get("type") == "YOUNGER_VERSION_OF":
+            anchor_cid = c.identity_relation.get("character_id")
+            anchor_char = chars.get(anchor_cid)
+            is_anchor_approved = bool(anchor_char and anchor_char.qc_status == "APPROVED")
+            anchor_badge = "✅ ĐÃ PHÊ DUYỆT" if is_anchor_approved else "⚠️ CHƯA PHÊ DUYỆT (CẦN PHÊ DUYỆT TRƯỚC)"
+            young_notice = f"\n\n> [!NOTE]\n> **Identity Anchor:** Dựa trên `{anchor_cid}` ({anchor_badge})"
+
         details_md = (
-            f"### 🎭 Nhân vật: **{c.name}** (`{c.char_id}`)\n"
-            f"- **Trạng thái Duyệt (QC):** <span style='color: {qc_color}; font-weight: bold;'>{c.qc_status}</span>\n"
-            f"- **Local Reference ID:** `{c.local_reference_id}`\n"
-            f"- **Google Flow Status:** `{c.flow.get('upload_status', 'LOCAL_ONLY')}` | **Media ID:** `{flow_media}`\n"
             f"- **Độ tuổi / Vai trò:** {c.age_range} | {c.role}\n"
             f"- **Ngoại hình:** {c.appearance}\n"
+            f"- **Khuôn mặt:** {c.face}\n"
+            f"- **Mái tóc:** {c.hair}\n"
+            f"- **Vóc dáng:** {c.body}\n"
             f"- **Trang phục mặc định:** {c.default_clothing}\n"
-            f"- **Ghi chú visual:** {c.visual_notes}"
+            f"- **Nguồn ảnh hiện tại:** `{getattr(c, 'reference_source', None) or 'N/A'}`"
+            f"{young_notice}"
         )
-        return img_val, details_md
+
+        return (
+            img_val,
+            header_md,
+            status_md,
+            details_md,
+            gr.update(visible=False),  # confirm box hidden
+            gr.update(visible=False),  # file upload hidden
+            ""                         # clear action status
+        )
+
+    def _on_request_gen_char_ref(char_id, custom_pid):
+        chars = load_character_library()
+        c = chars.get(char_id)
+        if not c:
+            return gr.update(visible=False), "", "⚠️ Chưa chọn nhân vật."
+
+        # Check LAN_YOUNG special rule
+        if c.identity_relation and c.identity_relation.get("type") == "YOUNGER_VERSION_OF":
+            anchor_cid = c.identity_relation.get("character_id")
+            anchor_char = chars.get(anchor_cid)
+            if not anchor_char or anchor_char.qc_status != "APPROVED":
+                err_msg = f"⚠️ **Không thể tạo:** `LAN_YOUNG` yêu cầu reference của `{anchor_cid}` phải được phê duyệt trước (`APPROVED`). Vui lòng chọn và phê duyệt `{anchor_cid}` trước!"
+                return gr.update(visible=False), "", err_msg
+
+        pid = custom_pid or flow_adapter.default_project_id
+        confirm_md = (
+            f"### ⚠️ Xác nhận Tạo ảnh Reference bằng Nano Banana Pro\n\n"
+            f"Tạo ảnh reference cho **{c.name}** (`{char_id}`)\n\n"
+            f"- **Model:** Nano Banana Pro\n"
+            f"- **Requests:** 1\n"
+            f"- **Flow Project:** `{pid}`"
+        )
+        return gr.update(visible=True), confirm_md, ""
+
+    def _on_confirm_gen_char_ref(char_id, custom_pid, project_dir_str):
+        if not char_id:
+            return (gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), "⚠️ Chưa chọn nhân vật.", gr.update())
+
+        p_dir = Path(project_dir_str) if project_dir_str else Path("projects/sau_canh_cua_-_episode_01_v9_1_master_reference")
+        asset_mgr = VisualAssetManager(p_dir) if p_dir.exists() else None
+        char_lib = load_character_library()
+        preset = load_visual_preset("sau_canh_cua")
+
+        banana = BananaClient(flow_adapter, asset_mgr, char_lib, preset=preset)
+        try:
+            new_ref_path = banana.generate_character_reference(
+                char_id=char_id,
+                project_id=custom_pid or "",
+                confirmed=True
+            )
+            img_val, header_md, status_md, details_md, _, _, _ = _on_load_char_ref(char_id)
+            success_msg = f"✨ Đã tạo thành công ảnh reference mới bằng Nano Banana Pro: `{new_ref_path.name}` (Trạng thái: AWAITING_REVIEW. Bấm 'Phê duyệt' để kích hoạt làm active reference)."
+            return (
+                img_val,
+                header_md,
+                status_md,
+                details_md,
+                gr.update(visible=False),
+                success_msg,
+                _build_char_lib_table()
+            )
+        except Exception as e:
+            logger.exception("Error generating character reference: %s", e)
+            return (
+                gr.update(),
+                gr.update(),
+                gr.update(),
+                gr.update(),
+                gr.update(visible=False),
+                f"❌ Lỗi: {e}",
+                gr.update()
+            )
 
     def _on_approve_char_ref(char_id):
         if not char_id:
-            return gr.update(), "⚠️ Chưa chọn nhân vật"
-        from apps.visual_engine.character_manager import set_character_qc_status
-        set_character_qc_status(char_id, "APPROVED")
-        _, details_md = _on_load_char_ref(char_id)
-        return _build_char_lib_table(), details_md
+            return gr.update(), gr.update(), gr.update(), gr.update(), "⚠️ Chưa chọn nhân vật", gr.update()
+        approve_character_reference(char_id)
+        img_val, header_md, status_md, details_md, _, _, _ = _on_load_char_ref(char_id)
+        return img_val, header_md, status_md, details_md, "✅ Đã phê duyệt nhân vật thành công! Reference đã sẵn sàng.", _build_char_lib_table()
 
     def _on_reject_char_ref(char_id):
         if not char_id:
-            return gr.update(), "⚠️ Chưa chọn nhân vật"
-        from apps.visual_engine.character_manager import set_character_qc_status
-        set_character_qc_status(char_id, "REJECTED")
-        _, details_md = _on_load_char_ref(char_id)
-        return _build_char_lib_table(), details_md
+            return gr.update(), gr.update(), gr.update(), gr.update(), "⚠️ Chưa chọn nhân vật", gr.update()
+        reject_character_reference(char_id)
+        img_val, header_md, status_md, details_md, _, _, _ = _on_load_char_ref(char_id)
+        return img_val, header_md, status_md, details_md, "❌ Đã từ chối nhân vật.", _build_char_lib_table()
+
+    def _on_upload_custom_ref(char_id, file_obj):
+        if not char_id or not file_obj:
+            return gr.update(), gr.update(), gr.update(), gr.update(), "⚠️ Chưa có tệp tải lên", gr.update()
+        upload_custom_character_reference(char_id, file_obj.name)
+        img_val, header_md, status_md, details_md, _, _, _ = _on_load_char_ref(char_id)
+        return img_val, header_md, status_md, details_md, "📁 Đã tải lên ảnh riêng thành công (Trạng thái: AWAITING_REVIEW). Bấm 'Phê duyệt' để áp dụng.", _build_char_lib_table()
 
     c["btn_load_char_ref"].click(
         fn=_on_load_char_ref,
         inputs=[c["char_select_dd"]],
-        outputs=[c["char_ref_portrait_img"], c["char_ref_details_md"]]
+        outputs=[
+            c["char_ref_portrait_img"],
+            c["char_card_header_md"],
+            c["char_ref_status_md"],
+            c["char_ref_details_md"],
+            c["char_ref_confirm_box"],
+            c["upload_char_ref_file"],
+            c["char_ref_action_status_md"]
+        ]
     )
     c["char_select_dd"].change(
         fn=_on_load_char_ref,
         inputs=[c["char_select_dd"]],
-        outputs=[c["char_ref_portrait_img"], c["char_ref_details_md"]]
+        outputs=[
+            c["char_ref_portrait_img"],
+            c["char_card_header_md"],
+            c["char_ref_status_md"],
+            c["char_ref_details_md"],
+            c["char_ref_confirm_box"],
+            c["upload_char_ref_file"],
+            c["char_ref_action_status_md"]
+        ]
+    )
+    c["btn_gen_char_ref"].click(
+        fn=_on_request_gen_char_ref,
+        inputs=[c["char_select_dd"], c["flow_project_id_txt"]],
+        outputs=[c["char_ref_confirm_box"], c["char_ref_confirm_msg_md"], c["char_ref_action_status_md"]]
+    )
+    c["btn_regen_char_ref"].click(
+        fn=_on_request_gen_char_ref,
+        inputs=[c["char_select_dd"], c["flow_project_id_txt"]],
+        outputs=[c["char_ref_confirm_box"], c["char_ref_confirm_msg_md"], c["char_ref_action_status_md"]]
+    )
+    c["btn_cancel_char_gen"].click(
+        fn=lambda: gr.update(visible=False),
+        outputs=[c["char_ref_confirm_box"]]
+    )
+    c["btn_confirm_char_gen"].click(
+        fn=_on_confirm_gen_char_ref,
+        inputs=[c["char_select_dd"], c["flow_project_id_txt"], c["story_project_dir_state"]],
+        outputs=[
+            c["char_ref_portrait_img"],
+            c["char_card_header_md"],
+            c["char_ref_status_md"],
+            c["char_ref_details_md"],
+            c["char_ref_confirm_box"],
+            c["char_ref_action_status_md"],
+            c["char_lib_table"]
+        ]
+    )
+    c["btn_toggle_upload"].click(
+        fn=lambda: gr.update(visible=True),
+        outputs=[c["upload_char_ref_file"]]
+    )
+    c["upload_char_ref_file"].upload(
+        fn=_on_upload_custom_ref,
+        inputs=[c["char_select_dd"], c["upload_char_ref_file"]],
+        outputs=[
+            c["char_ref_portrait_img"],
+            c["char_card_header_md"],
+            c["char_ref_status_md"],
+            c["char_ref_details_md"],
+            c["char_ref_action_status_md"],
+            c["char_lib_table"]
+        ]
     )
     c["btn_approve_char_ref"].click(
         fn=_on_approve_char_ref,
         inputs=[c["char_select_dd"]],
-        outputs=[c["char_lib_table"], c["char_ref_details_md"]]
+        outputs=[
+            c["char_ref_portrait_img"],
+            c["char_card_header_md"],
+            c["char_ref_status_md"],
+            c["char_ref_details_md"],
+            c["char_ref_action_status_md"],
+            c["char_lib_table"]
+        ]
     )
     c["btn_reject_char_ref"].click(
         fn=_on_reject_char_ref,
         inputs=[c["char_select_dd"]],
-        outputs=[c["char_lib_table"], c["char_ref_details_md"]]
+        outputs=[
+            c["char_ref_portrait_img"],
+            c["char_card_header_md"],
+            c["char_ref_status_md"],
+            c["char_ref_details_md"],
+            c["char_ref_action_status_md"],
+            c["char_lib_table"]
+        ]
     )
 
     def _build_loc_lib_table():

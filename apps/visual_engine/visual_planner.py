@@ -680,10 +680,11 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
         omni_indices.add(0)
 
         # Enforce anchor image scenes (must NOT be video):
+        # SC_025 (idx 24) Hung solo field investigation in old alley
         # SC_030 (idx 29) death record document macro insert
         # SC_036 (idx 35) narrator reflection
         # SC_041 (idx 40) emotional climax still portrait
-        forbidden_omni = {29, 35, 40}
+        forbidden_omni = {24, 29, 35, 40}
 
         for cand in sorted_candidates:
             if len(omni_indices) >= target_omni:
