@@ -1,0 +1,2161 @@
+{
+  "schema_version": "SCC_FLOW_V1",
+  "project": {
+    "series": "Sau Cánh Cửa",
+    "production_id": "PRODUCTION_PILOT_03",
+    "exported_at": 1790692752.58,
+    "export_status": "GOOGLE_FLOW_EXPORT_READY"
+  },
+  "episodes": [
+    {
+      "episode_id": "EP003",
+      "title": "Chiếc Hộp Gỗ Của Người Bà Quá Cố",
+      "audio_duration": 730.627,
+      "generation_settings": {
+        "image_model": "BANANA_PRO",
+        "video_model": "OMNI",
+        "aspect_ratio": "16:9",
+        "image_concurrency": 1,
+        "image_delay_seconds": 10,
+        "auto_generate_on_import": false,
+        "generate_images": true,
+        "generate_video_mode": "RECOMMENDED_ONLY",
+        "strip_generated_video_audio": true
+      },
+      "identity_families": [
+        {
+          "identity_family_id": "BA_HAO",
+          "description": "Bà Hảo across generations (1980s young textile worker vs 2010s-2020s elder)",
+          "anchor_character": "CHAR_BA_HAO_ELDER",
+          "variants": [
+            "CHAR_BA_HAO_YOUNG"
+          ],
+          "generation_order": [
+            "CHAR_BA_HAO_ELDER",
+            "CHAR_BA_HAO_YOUNG"
+          ]
+        },
+        {
+          "identity_family_id": "BA_THOA",
+          "description": "Bà Thoa across generations (1980s young textile coworker vs 2024 elder in rest home)",
+          "anchor_character": "CHAR_BA_THOA_ELDER",
+          "variants": [
+            "CHAR_BA_THOA_YOUNG"
+          ],
+          "generation_order": [
+            "CHAR_BA_THOA_ELDER",
+            "CHAR_BA_THOA_YOUNG"
+          ]
+        }
+      ],
+      "characters": [
+        {
+          "character_id": "CHAR_MAI",
+          "name": "Mai",
+          "reference_required": true,
+          "reference_status": "NOT_GENERATED",
+          "identity_family_id": null,
+          "identity_role": null,
+          "depends_on_reference": null,
+          "use_identity_anchor": false,
+          "reference_prompt": "Documentary portrait of a 32-year-old Vietnamese woman (CHAR_MAI), natural black hair parted simply, thoughtful contemplative expression, light natural skin texture, wearing a modest beige knit cardigan over cream blouse, soft neutral daylight in domestic interior, 35mm cinematic lens, photorealistic documentary realism.",
+          "appearance": {
+            "gender": "FEMALE",
+            "age": 32,
+            "ethnicity": "Vietnamese",
+            "face_description": "Believable 32-year-old Vietnamese woman, gentle facial structure, intelligent and observant dark eyes, light natural makeup, realistic skin texture with slight natural imperfections, no glamour look.",
+            "hair": "Shoulder-length straight black hair, neatly tied back or parted simply.",
+            "body_build": "Slender, medium build, typical modern urban Vietnamese woman.",
+            "emotional_baseline": "Restrained, thoughtful, navigating from initial curiosity and suspicion to deep empathy and reverence."
+          },
+          "wardrobe": {
+            "baseline": "Modest beige cardigan over a cream cotton blouse, casual dark trousers, practical canvas shoes.",
+            "variants": {
+              "attic_search": "Dark grey long-sleeve cotton shirt, dust-resistant work trousers, hair tied in low ponytail.",
+              "office": "Smart-casual light blue linen button-up shirt, navy trousers.",
+              "travel_nursing_home": "Warm knit dusty-rose cardigan, dark grey slacks, travel tote bag."
+            }
+          },
+          "timeline": "Present (2024, age 32)",
+          "reference_media_id": null
+        },
+        {
+          "character_id": "CHAR_BA_HAO_ELDER",
+          "name": "Bà Hảo (Elder)",
+          "reference_required": true,
+          "reference_status": "NOT_GENERATED",
+          "identity_family_id": "BA_HAO",
+          "identity_role": "ELDER_ANCHOR",
+          "depends_on_reference": null,
+          "use_identity_anchor": false,
+          "reference_prompt": "Documentary portrait of an 82-year-old Vietnamese elderly woman (CHAR_BA_HAO_ELDER), silver hair in traditional low bun, wrinkled kind face, warm gentle eyes, weathered hands, wearing dark brown traditional bà ba silk blouse, soft window daylight, 35mm cinematic realism.",
+          "appearance": {
+            "gender": "FEMALE",
+            "age": 85,
+            "ethnicity": "Vietnamese",
+            "face_description": "Elderly Vietnamese grandmother in her 80s, wrinkled kind face, warm crow's feet around eyes, calm stoic gaze, dignified rural appearance, no heavy makeup.",
+            "hair": "Silver-white hair neatly tied in a small traditional bun.",
+            "body_build": "Small, frail yet upright posture, weathered hands from decades of physical labor.",
+            "emotional_baseline": "Peaceful, serene, guarding a lifetime promise with quiet dignity."
+          },
+          "wardrobe": {
+            "baseline": "Traditional dark brown Vietnamese bà ba blouse, dark trousers, soft cotton slippers.",
+            "variants": {}
+          },
+          "timeline": "Elder years (2015-2022, age 75-85)",
+          "reference_media_id": null
+        },
+        {
+          "character_id": "CHAR_BA_HAO_YOUNG",
+          "name": "Bà Hảo (Young 1970s-1990s)",
+          "reference_required": true,
+          "reference_status": "NOT_GENERATED",
+          "identity_family_id": "BA_HAO",
+          "identity_role": "YOUNGER_VARIANT",
+          "depends_on_reference": "CHAR_BA_HAO_ELDER",
+          "use_identity_anchor": true,
+          "reference_prompt": "Archival documentary portrait of a 30-year-old Vietnamese working-class woman in the 1980s (CHAR_BA_HAO_YOUNG), sturdy build, earnest determined face, wearing faded blue cotton textile mill work shirt with rolled sleeves, subtle film grain, muted 1980s documentary tones, 35mm photography.",
+          "appearance": {
+            "gender": "FEMALE",
+            "age": 32,
+            "ethnicity": "Vietnamese",
+            "face_description": "Believable 1980s Vietnamese woman, resilient hardworking demeanor, earnest expression, natural beauty unadorned by cosmetics.",
+            "hair": "Thick black hair tied back in a utilitarian cloth band or braid.",
+            "body_build": "Sturdy, hardworking build of an industrial textile laborer.",
+            "emotional_baseline": "Earnest, steadfast, determined to build a fund for post-war charity."
+          },
+          "wardrobe": {
+            "baseline": "Faded blue cotton factory work uniform shirt, rolled-up sleeves, dark work trousers.",
+            "variants": {
+              "1992_land_signing": "Simple floral patterned cotton shirt from early 1990s, dark trousers."
+            }
+          },
+          "timeline": "Young adult (1975-1994, age 25-42)",
+          "reference_media_id": null
+        },
+        {
+          "character_id": "CHAR_BA_THOA_ELDER",
+          "name": "Bà Thoa (Elder)",
+          "reference_required": true,
+          "reference_status": "NOT_GENERATED",
+          "identity_family_id": "BA_THOA",
+          "identity_role": "ELDER_ANCHOR",
+          "depends_on_reference": null,
+          "use_identity_anchor": false,
+          "reference_prompt": "Documentary portrait of an 80-year-old Vietnamese woman (CHAR_BA_THOA_ELDER) sitting in a wheelchair, frail delicate frame, silver grey hair, expressive tearful yet peaceful eyes, wearing a teal knit sweater and plaid wool blanket over knees, warm sunlight in nursing home sunroom, 35mm photography.",
+          "appearance": {
+            "gender": "FEMALE",
+            "age": 80,
+            "ethnicity": "Vietnamese",
+            "face_description": "Elderly Vietnamese woman, 80 years old, delicate wrinkled features, gentle tearful eyes reflecting long endurance, physically disabled from past labor injury.",
+            "hair": "Sparse grey hair, combed neatly.",
+            "body_build": "Frail seated in a manual wheelchair or resting in an armchair, frail hands.",
+            "emotional_baseline": "Moved to tears, deeply relieved and grateful that the sacred promise survived."
+          },
+          "wardrobe": {
+            "baseline": "Warm wool knit cardigan in soft teal over pale grey cotton pyjamas, plaid wool lap blanket.",
+            "variants": {}
+          },
+          "timeline": "Present (2024, age 80)",
+          "reference_media_id": null
+        },
+        {
+          "character_id": "CHAR_BA_THOA_YOUNG",
+          "name": "Bà Thoa (Young 1970s-1990s)",
+          "reference_required": true,
+          "reference_status": "NOT_GENERATED",
+          "identity_family_id": "BA_THOA",
+          "identity_role": "YOUNGER_VARIANT",
+          "depends_on_reference": "CHAR_BA_THOA_ELDER",
+          "use_identity_anchor": true,
+          "reference_prompt": "Archival vintage portrait of a 28-year-old Vietnamese woman in the 1980s (CHAR_BA_THOA_YOUNG), gentle smile, authentic vintage Vietnamese features, wearing a blue textile factory worker shirt, archival black and white photograph with soft sepia tint, 35mm photography.",
+          "appearance": {
+            "gender": "FEMALE",
+            "age": 28,
+            "ethnicity": "Vietnamese",
+            "face_description": "Young Vietnamese working woman in the 1980s, gentle smile, hardworking gaze, modest and unassuming.",
+            "hair": "Black hair tied in two modest braids or simple clip.",
+            "body_build": "Slender textile factory worker.",
+            "emotional_baseline": "Warm, hopeful, sharing deep camaraderie with young Bà Hảo."
+          },
+          "wardrobe": {
+            "baseline": "Matching blue cotton textile factory work shirt, faded canvas apron.",
+            "variants": {}
+          },
+          "timeline": "Young adult (1975-1992, age 22-38)",
+          "reference_media_id": null
+        },
+        {
+          "character_id": "CHAR_CHU_MINH",
+          "name": "Chú Minh",
+          "reference_required": true,
+          "reference_status": "NOT_GENERATED",
+          "identity_family_id": null,
+          "identity_role": null,
+          "depends_on_reference": null,
+          "use_identity_anchor": false,
+          "reference_prompt": "Documentary portrait of a 58-year-old Vietnamese man (CHAR_CHU_MINH), salt-and-pepper hair, warm wise eyes, wearing wire-rimmed reading glasses and an olive polo shirt, seated in a traditional wooden Vietnamese living room, natural warm daylight, 35mm photography.",
+          "appearance": {
+            "gender": "MALE",
+            "age": 58,
+            "ethnicity": "Vietnamese",
+            "face_description": "Vietnamese man in his late 50s, kind weathered face, receding pepper-and-salt hair, reading glasses resting on chest or nose, honest and grounded countenance.",
+            "hair": "Short salt-and-pepper hair, thinning slightly at temples.",
+            "body_build": "Average middle-aged Vietnamese build.",
+            "emotional_baseline": "Initially cautious and nostalgic, becomes supportive and deeply respectful upon learning the full story."
+          },
+          "wardrobe": {
+            "baseline": "Dark olive polo shirt, khaki trousers, reading glasses hanging on a lanyard.",
+            "variants": {}
+          },
+          "timeline": "Present (2024, age 58)",
+          "reference_media_id": null
+        }
+      ],
+      "props": [
+        {
+          "prop_id": "PROP_WOODEN_BOX",
+          "name": "Chiếc hộp gỗ sờn cũ",
+          "reference_required": true,
+          "reference_status": "NOT_GENERATED",
+          "reference_prompt": "Studio product documentary photograph of an antique weathered Vietnamese wooden box (PROP_WOODEN_BOX) crafted from aged jackfruit wood (gỗ mít), closed lid, 32cm x 22cm x 14cm proportions, rich natural wood grain with aged weathered patina, darkened antique brass hinges and front brass latch clasp without padlock, fine layer of dust on lid, resting on a clean neutral grey surface, 3/4 angle product view, soft balanced studio lighting, crisp focus, 35mm photography, no people, no hands, no text, no watermark.",
+          "reference_media_id": null,
+          "continuity_description": "Aged Vietnamese jackfruit wood (gỗ mít) with natural grain, unvarnished weathered patina.",
+          "depends_on_characters": []
+        },
+        {
+          "prop_id": "PROP_VINTAGE_PHOTO_BAO_THOA",
+          "name": "Bức ảnh ố vàng chụp Bà Hảo và Bà Thoa thời trẻ",
+          "reference_required": true,
+          "reference_status": "NOT_GENERATED",
+          "reference_prompt": "Authentic vintage 1980s black-and-white photographic print with delicate scalloped edges: Two young Vietnamese factory coworkers (young Bà Hảo, 32, and young Bà Thoa, 28) standing side-by-side outdoors before an old textile mill gate, gentle genuine smiles, wearing authentic 1980s Vietnamese cotton factory workwear matching the reference images, soft sepia tone, authentic photographic grain, 1980s archival documentary snapshot, no modern styling, no text.",
+          "reference_media_id": null,
+          "continuity_description": "Sepia patina, subtle silver mirroring at edges, light crease on upper right corner, no tears.",
+          "depends_on_characters": [
+            "CHAR_BA_HAO_YOUNG",
+            "CHAR_BA_THOA_YOUNG"
+          ]
+        },
+        {
+          "prop_id": "PROP_PASSBOOK_1994",
+          "name": "Sổ tiết kiệm kỳ hạn dài năm 1994",
+          "reference_required": false,
+          "reference_status": "NOT_REQUIRED",
+          "reference_prompt": null,
+          "reference_media_id": null,
+          "continuity_description": "",
+          "depends_on_characters": []
+        },
+        {
+          "prop_id": "PROP_LAND_DEED_1992",
+          "name": "Giấy chuyển nhượng quyền sử dụng đất vườn năm 1992",
+          "reference_required": false,
+          "reference_status": "NOT_REQUIRED",
+          "reference_prompt": null,
+          "reference_media_id": null,
+          "continuity_description": "",
+          "depends_on_characters": []
+        },
+        {
+          "prop_id": "PROP_HANDWRITTEN_NOTE",
+          "name": "Tờ giấy viết tay ghi số và địa chỉ viện dưỡng lão",
+          "reference_required": false,
+          "reference_status": "NOT_REQUIRED",
+          "reference_prompt": null,
+          "reference_media_id": null,
+          "continuity_description": "",
+          "depends_on_characters": []
+        }
+      ],
+      "locations": [
+        {
+          "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "name": "Căn gác xép nhà bà cố tại Bảo Lộc",
+          "city_region": "Bảo Lộc, Lâm Đồng",
+          "type": "INTERIOR",
+          "description": "Rustic traditional Vietnamese highland attic, exposed dark timber beams, wooden floorboards with visible grain, aged terracotta roof tiles with gaps letting in slivers of daylight, accumulation of vintage cardboard boxes and wooden trunks.",
+          "visual_prompt": "Interior photograph of a rustic wooden attic in an old Vietnamese house in Bảo Lộc, exposed cedar rafters, dust motes floating in diagonal beams of golden sunlight, vintage wooden storage boxes on floorboards, 35mm documentary realism.",
+          "reference_required": false,
+          "reference_media_id": null
+        },
+        {
+          "location_id": "LOC_NHA_MAI_HCM",
+          "name": "Căn hộ của Mai tại TP. Hồ Chí Minh",
+          "city_region": "TP. Hồ Chí Minh",
+          "type": "INTERIOR",
+          "description": "Modern urban Vietnamese apartment, clean white walls, light oak wooden desk, bookshelf, balcony overlooking Saigon nightscape.",
+          "visual_prompt": "Interior of a modern Vietnamese apartment study at night, wooden desk illuminated by an anglepoise lamp, papers neatly arranged, large window overlooking distant city lights of Ho Chi Minh City, subtle cinematic lighting, 35mm photography.",
+          "reference_required": false,
+          "reference_media_id": null
+        },
+        {
+          "location_id": "LOC_NHA_CHU_MINH",
+          "name": "Nhà riêng của Chú Minh",
+          "city_region": "Bảo Lộc, Lâm Đồng",
+          "type": "INTERIOR",
+          "description": "Traditional Vietnamese provincial house, polished dark wood furniture set (bộ bàn ghế gỗ), carved wooden ancestor altar with bronze incense burner in background, ceramic tea set on table.",
+          "visual_prompt": "Interior of a provincial Vietnamese living room in Lâm Đồng, traditional carved mahogany armchairs and low tea table with porcelain tea pot, ancestor altar softly lit in background, gentle daylight filtering through lace curtains, cinematic 35mm documentary realism.",
+          "reference_required": false,
+          "reference_media_id": null
+        },
+        {
+          "location_id": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+          "name": "Viện dưỡng lão tại Lâm Đồng",
+          "city_region": "Lâm Đồng (Highland region)",
+          "type": "INTERIOR/EXTERIOR",
+          "description": "Highland rest home facility, colonial-influenced architecture, French shuttered windows, sunroom with potted orchids, manicured pine tree garden and stone pathways outside.",
+          "visual_prompt": "Bright sunlit dayroom of a highland nursing home in Lâm Đồng, large French windows looking out onto pine-covered hills in gentle mist, potted green ferns, calm peaceful documentary atmosphere, 35mm lens.",
+          "reference_required": false,
+          "reference_media_id": null
+        },
+        {
+          "location_id": "LOC_KHU_DAT_BAO_LOC",
+          "name": "Mảnh đất vườn 650m2 tại Bảo Lộc",
+          "city_region": "Bảo Lộc, Lâm Đồng",
+          "type": "EXTERIOR",
+          "description": "Peaceful highland hillside garden plot, gentle sloping red basalt soil, rows of tea shrubs and fruit trees, wooden boundary fence, panoramic view of rolling mist-covered hills.",
+          "visual_prompt": "Cinematic landscape of a 650-square-meter garden plot on a hillside in Bảo Lộc Vietnam, lush green tea bushes, red basalt soil, rustic timber boundary posts, distant mountain silhouette in morning sunlight, 35mm wide shot.",
+          "reference_required": false,
+          "reference_media_id": null
+        }
+      ],
+      "overlays": [
+        {
+          "scene_id": "SC_010",
+          "required": true,
+          "overlay_type": "DOCUMENT",
+          "title": null,
+          "text": "SỔ TIẾT KIỆM KỲ HẠN DÀI (1994)\nChủ sở hữu: Bà Hảo\nSố tiền: 15 triệu đồng",
+          "start_time": 135.814,
+          "end_time": 149.96,
+          "duration": 14.146,
+          "position": "LOWER_THIRD",
+          "font_style": "CLEAN_SERIF_DOCUMENTARY",
+          "render_method": "POST_RENDER",
+          "generate_inside_image": false,
+          "declared_claims": [
+            "Sổ tiết kiệm kỳ hạn dài",
+            "1994",
+            "Bà Hảo",
+            "15 triệu đồng"
+          ]
+        },
+        {
+          "scene_id": "SC_011",
+          "required": true,
+          "overlay_type": "DOCUMENT",
+          "title": null,
+          "text": "GHI CHÉP ĐỊA CHỈ LIÊN HỆ\nCơ sở chăm sóc người cao tuổi, Lâm Đồng",
+          "start_time": 149.96,
+          "end_time": 164.27,
+          "duration": 14.31,
+          "position": "LOWER_THIRD",
+          "font_style": "CLEAN_SERIF_DOCUMENTARY",
+          "render_method": "POST_RENDER",
+          "generate_inside_image": false,
+          "declared_claims": [
+            "viện dưỡng lão",
+            "Lâm Đồng"
+          ]
+        },
+        {
+          "scene_id": "SC_025",
+          "required": true,
+          "overlay_type": "DOCUMENT",
+          "title": null,
+          "text": "BIÊN NHẬN TIỀN GỬI ĐỊNH KỲ (1994)\nNgười đứng tên: Bà Hảo",
+          "start_time": 343.802,
+          "end_time": 362.144,
+          "duration": 18.342,
+          "position": "LOWER_THIRD",
+          "font_style": "CLEAN_SERIF_DOCUMENTARY",
+          "render_method": "POST_RENDER",
+          "generate_inside_image": false,
+          "declared_claims": [
+            "1994",
+            "Bà Hảo"
+          ]
+        },
+        {
+          "scene_id": "SC_030",
+          "required": true,
+          "overlay_type": "DOCUMENT",
+          "title": null,
+          "text": "GIẤY CHỨNG NHẬN QUYỀN SỬ DỤNG ĐẤT (1992)\nThửa đất: 650m2 đất vườn tại Bảo Lộc, Lâm Đồng\nĐại diện đứng tên: Bà Hảo",
+          "start_time": 437.321,
+          "end_time": 460.248,
+          "duration": 22.927,
+          "position": "LOWER_THIRD",
+          "font_style": "CLEAN_SERIF_DOCUMENTARY",
+          "render_method": "POST_RENDER",
+          "generate_inside_image": false,
+          "declared_claims": [
+            "1992",
+            "650m2",
+            "Bảo Lộc, Lâm Đồng",
+            "Bà Hảo"
+          ]
+        },
+        {
+          "scene_id": "SC_043",
+          "required": true,
+          "overlay_type": "DOCUMENT",
+          "title": null,
+          "text": "MÁI ẤM TÌNH THƯƠNG (TIẾP NỐI DI NGUYỆN)\nĐịa điểm: Thửa đất 650m2 tại Bảo Lộc, Lâm Đồng",
+          "start_time": 677.903,
+          "end_time": 695.984,
+          "duration": 18.081,
+          "position": "LOWER_THIRD",
+          "font_style": "CLEAN_SERIF_DOCUMENTARY",
+          "render_method": "POST_RENDER",
+          "generate_inside_image": false,
+          "declared_claims": [
+            "mái ấm tình thương",
+            "650m2",
+            "Bảo Lộc, Lâm Đồng",
+            "di nguyện"
+          ]
+        }
+      ],
+      "scenes": [
+        {
+          "scene_id": "SC_001",
+          "order": 1,
+          "start_time": 0.0,
+          "end_time": 19.34,
+          "duration": 19.34,
+          "source_segments": [
+            "001",
+            "002"
+          ],
+          "narration_summary": "Trên gác xép cũ kỹ căn nhà ở Bảo Lộc, giữa lớp bụi thời gian dày đặc, một chiếc hộp gỗ sờn cũ hé lộ bí mật kéo dài khoảng 30 năm, thứ mà gia đình Mai tưởng chừng đã ngủ yên. Nó không chỉ là nơi cất giữ vật kỷ niệm, mà còn mở ra những câu hỏi nhức nhối về một người bà mà con cháu ngỡ rằng đã thấu hiểu suốt cuộc đời.",
+          "visual_mode": "VIDEO_RECOMMENDED",
+          "video_recommended": true,
+          "video_value_score": 7,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "props": [
+            "PROP_WOODEN_BOX"
+          ],
+          "prop_refs_required": [
+            "PROP_WOODEN_BOX"
+          ],
+          "image_prompt": "Cinematic documentary shot of a 32-year-old Vietnamese woman (CHAR_MAI) in a dark grey work shirt standing inside a dusty attic in Bảo Lộc, holding a flashlight illuminating a weathered wooden box (PROP_WOODEN_BOX) resting on an aged trunk, shafts of afternoon sunlight filtering through terracotta roof tiles, floating dust particles, 35mm photography, realistic skin texture.",
+          "video_prompt": {
+            "start_state": "A 32-year-old Vietnamese woman (CHAR_MAI) in work clothes enters a dusty rustic attic holding a small flashlight.",
+            "action": "She carefully steps across wooden floorboards toward a dusty corner where an old wooden box rests on a timber chest.",
+            "camera": "Slow cinematic push-in from behind her shoulder following her steady footsteps.",
+            "end_state": "She stops directly before the wooden box, flashlight beam illuminating its aged surface. No wardrobe change.",
+            "full_prompt": "Start: A 32-year-old Vietnamese woman (CHAR_MAI) in work clothes enters a dusty rustic attic holding a small flashlight. Action: She carefully steps across wooden floorboards toward a dusty corner where an old wooden box rests on a timber chest. Camera: Slow cinematic push-in from behind her shoulder following her steady footsteps. End: She stops directly before the wooden box, flashlight beam illuminating its aged surface. No wardrobe change."
+          },
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "WOODEN_BOX",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_002",
+          "order": 2,
+          "start_time": 19.34,
+          "end_time": 34.774,
+          "duration": 15.434,
+          "source_segments": [
+            "003",
+            "004"
+          ],
+          "narration_summary": "Bí mật trong chiếc hộp ấy, liệu có làm thay đổi mãi mãi cách một gia đình nhìn nhận người thân yêu của mình? Chào mừng quý vị và các bạn đã quay trở lại với 'Sau Cánh Cửa'. Tôi là Minh, người sẽ đồng hành cùng quý vị trong những câu chuyện đầy chiêm nghiệm về cuộc sống.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 3,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "props": [
+            "PROP_WOODEN_BOX"
+          ],
+          "prop_refs_required": [
+            "PROP_WOODEN_BOX"
+          ],
+          "image_prompt": "Medium close-up of a 32-year-old Vietnamese woman (CHAR_MAI) in a rustic attic, thoughtful and hesitant expression, gazing intently down at an old wooden box in her hands, subtle warm side-lighting from attic dormer window, shallow depth of field, photorealistic Vietnamese documentary drama, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SUBTLE_REFRAME",
+            "speed": "SLOW",
+            "subject_anchor": "MAI_FACE",
+            "safe_crop_zone": "CENTER_RIGHT"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_003",
+          "order": 3,
+          "start_time": 34.774,
+          "end_time": 50.138,
+          "duration": 15.364,
+          "source_segments": [
+            "005",
+            "006"
+          ],
+          "narration_summary": "Trong tập phim hôm nay, chúng ta sẽ cùng Mai, một cô gái 32 tuổi, vén bức màn bí ẩn đằng sau chiếc hộp gỗ của người bà quá cố. Một di vật tưởng chừng bình thường, lại ẩn chứa trong đó cả một câu chuyện dài về tình thân, về những lựa chọn và cả những hy sinh thầm lặng.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "props": [
+            "PROP_WOODEN_BOX"
+          ],
+          "prop_refs_required": [
+            "PROP_WOODEN_BOX"
+          ],
+          "image_prompt": "Cinematic establishing shot of an antique weathered wooden box (PROP_WOODEN_BOX) resting on a dark timber table in a quiet highland Vietnamese room, soft golden light catching the faded brass latch and wood grain, tranquil documentary realism, 35mm film.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "WOODEN_BOX",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_004",
+          "order": 4,
+          "start_time": 50.138,
+          "end_time": 65.293,
+          "duration": 15.155,
+          "source_segments": [
+            "007",
+            "008"
+          ],
+          "narration_summary": "Mai là một người trẻ thành đạt, đang sống một cuộc sống ổn định tại thành phố, với sự nghiệp vững vàng và một gia đình êm ấm. Bà cố Hảo, người bà mà Mai yêu quý, đã ra đi cách đây vài năm, để lại trong lòng cháu gái những kỷ niệm đẹp đẽ và sự tiếc nuối khôn nguôi.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 3,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_NHA_MAI_HCM",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "A 32-year-old Vietnamese woman (CHAR_MAI) in smart casual linen shirt working thoughtfully at a wooden desk in her apartment in Ho Chi Minh City, evening urban skyline softly visible outside window, warm ambient interior light, 35mm cinematic documentary.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "PAN_RIGHT",
+            "speed": "SLOW",
+            "subject_anchor": "MAI_FIGURE",
+            "safe_crop_zone": "CENTER_LEFT"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_005",
+          "order": 5,
+          "start_time": 65.293,
+          "end_time": 79.734,
+          "duration": 14.441,
+          "source_segments": [
+            "009",
+            "010"
+          ],
+          "narration_summary": "Cuộc sống của Mai trôi qua êm đềm, như dòng sông hiền hòa, ít có sóng gió. Cô luôn nghĩ mình đã hiểu rõ về những người thân yêu. Cho đến một ngày, khi dọn dẹp căn nhà cũ của bà, Mai tình cờ tìm thấy một chiếc hộp gỗ cũ kỹ trên gác xép.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "A traditional Vietnamese wooden family altar in a provincial home, framed black and white portrait of an 82-year-old elderly Vietnamese grandmother (CHAR_BA_HAO_ELDER) with silver hair and kind smile, bronze incense burner with thin curl of smoke, soft reverent daylight, warm cinematic tones, 35mm documentary photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "STATIC_INTENTIONAL",
+            "speed": "NORMAL",
+            "subject_anchor": "ALTAR_PORTRAIT",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_006",
+          "order": 6,
+          "start_time": 79.734,
+          "end_time": 92.043,
+          "duration": 12.309,
+          "source_segments": [
+            "011",
+            "012"
+          ],
+          "narration_summary": "Chiếc hộp không có khóa, lớp sơn đã bạc màu theo năm tháng, nhưng nó lại mang một sức hút kỳ lạ, thôi thúc Mai mở ra. Bên trong, không phải là những món đồ trang sức hay kỷ vật quen thuộc, mà là những thứ hoàn toàn xa lạ với Mai.",
+          "visual_mode": "VIDEO_RECOMMENDED",
+          "video_recommended": true,
+          "video_value_score": 7,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "props": [
+            "PROP_WOODEN_BOX"
+          ],
+          "prop_refs_required": [
+            "PROP_WOODEN_BOX"
+          ],
+          "image_prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_MAI) in a dusty attic, her hands resting on the opened lid of an antique wooden box (PROP_WOODEN_BOX), looking inside with curiosity and wonder, soft diagonal sunbeam illuminating the wooden box interior, 35mm lens.",
+          "video_prompt": {
+            "start_state": "A 32-year-old Vietnamese woman (CHAR_MAI) kneels beside the weathered wooden box on the attic floor.",
+            "action": "Her hands slowly unhook the small brass latch and gently lift the wooden lid open, revealing interior contents.",
+            "camera": "Eye-level medium close-up steadily zooming slightly in on her hands and the opening lid.",
+            "end_state": "The lid rests open; she pauses, her expression turning to awe. No identity change, consistent attic lighting.",
+            "full_prompt": "Start: A 32-year-old Vietnamese woman (CHAR_MAI) kneels beside the weathered wooden box on the attic floor. Action: Her hands slowly unhook the small brass latch and gently lift the wooden lid open, revealing interior contents. Camera: Eye-level medium close-up steadily zooming slightly in on her hands and the opening lid. End: The lid rests open; she pauses, her expression turning to awe. No identity change, consistent attic lighting."
+          },
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "BOX_AND_HANDS",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_007",
+          "order": 7,
+          "start_time": 92.043,
+          "end_time": 104.35,
+          "duration": 12.307,
+          "source_segments": [
+            "013",
+            "014"
+          ],
+          "narration_summary": "Những giấy tờ tài chính, sổ tiết kiệm đã đáo hạn, giấy tờ chuyển nhượng quyền sử dụng đất, và một bức ảnh ố vàng. Bức ảnh chụp bà cố Hảo khi còn trẻ, bên cạnh là một người phụ nữ lạ lẫm mà Mai chưa từng thấy bao giờ.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "props": [
+            "PROP_WOODEN_BOX",
+            "PROP_PASSBOOK_1994",
+            "PROP_LAND_DEED_1992",
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "prop_refs_required": [
+            "PROP_WOODEN_BOX",
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "image_prompt": "High-angle top-down macro shot of the open antique wooden box interior, showing neatly stacked yellowed vintage Vietnamese financial documents, a red-covered 1994 bank passbook, an official folded land deed, and the edge of a sepia photograph, clean documentary surface, 35mm lens.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "BOX_CONTENTS",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_008",
+          "order": 8,
+          "start_time": 104.35,
+          "end_time": 117.418,
+          "duration": 13.068,
+          "source_segments": [
+            "015",
+            "016"
+          ],
+          "narration_summary": "Một cảm giác bối rối xen lẫn tò mò bắt đầu len lỏi trong tâm trí Mai. Bà của mình có một cuộc sống bí mật nào đó sao? Quý vị đã bao giờ tìm thấy một vật bất ly thân của người thân yêu mà khiến mình phải đặt dấu hỏi lớn về họ chưa?",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 3,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "props": [
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "prop_refs_required": [
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "image_prompt": "Close-up of a 32-year-old Vietnamese woman (CHAR_MAI) holding a yellowed vintage photograph (PROP_VINTAGE_PHOTO_BAO_THOA) showing two young smiling Vietnamese women in 1980s work shirts, Mai's eyes filled with perplexity and curiosity, soft warm attic daylight, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "EVIDENCE_INSPECTION",
+            "speed": "SLOW",
+            "subject_anchor": "PHOTO_SURFACE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_009",
+          "order": 9,
+          "start_time": 117.418,
+          "end_time": 135.814,
+          "duration": 18.396,
+          "source_segments": [
+            "017",
+            "018"
+          ],
+          "narration_summary": "Đó là những khoảnh khắc, khi ranh giới giữa sự thấu hiểu và những bí ẩn chưa lời giải bỗng trở nên mong manh đến lạ thường. Mai cẩn thận xem xét từng giấy tờ. Sổ tiết kiệm mở năm 1994, với số tiền không nhỏ vào thời điểm đó. Giấy tờ đất đai ở Bảo Lộc, ký năm 1992.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 3,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_NHA_MAI_HCM",
+          "props": [
+            "PROP_PASSBOOK_1994",
+            "PROP_LAND_DEED_1992"
+          ],
+          "prop_refs_required": [],
+          "image_prompt": "Over-the-shoulder medium shot of a 32-year-old Vietnamese woman (CHAR_MAI) at a wooden desk at night, carefully examining a yellowed 1992 Vietnamese land transfer document under a focused warm desk lamp, red seal visible, quiet investigative atmosphere, 35mm documentary realism.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "DOCUMENT_SURFACE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_010",
+          "order": 10,
+          "start_time": 135.814,
+          "end_time": 149.96,
+          "duration": 14.146,
+          "source_segments": [
+            "019",
+            "020"
+          ],
+          "narration_summary": "Những tài sản này, bà cố của cô đã tích lũy từ bao giờ, và với mục đích gì? Tại sao lại giấu kín đến vậy? Trong chiếc hộp còn có một tờ giấy viết tay, với những con số và ký hiệu khó hiểu, kèm theo địa chỉ một viện dưỡng lão.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_MAI_HCM",
+          "props": [
+            "PROP_PASSBOOK_1994"
+          ],
+          "prop_refs_required": [],
+          "image_prompt": "Macro photography of an authentic 1994 Vietnamese bank savings passbook (PROP_PASSBOOK_1994), textured red cardstock cover slightly faded, clean aged paper page open, clear official circular red stamp, warm directional light, 35mm lens.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "EVIDENCE_INSPECTION",
+            "speed": "SLOW",
+            "subject_anchor": "PASSBOOK_DETAILS",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_011",
+          "order": 11,
+          "start_time": 149.96,
+          "end_time": 164.27,
+          "duration": 14.31,
+          "source_segments": [
+            "021",
+            "022"
+          ],
+          "narration_summary": "Một viện dưỡng lão ở Đà Lạt, nhưng dòng chữ có vẻ mờ nhạt, có thể là một địa điểm nào đó ở Lâm Đồng. Bức ảnh người phụ nữ lạ kia, bà là ai? Mối quan hệ của bà với bà cố là gì? Một người tình bí mật, hay một người bạn cũ đã mất liên lạc?",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_MAI_HCM",
+          "props": [
+            "PROP_HANDWRITTEN_NOTE"
+          ],
+          "prop_refs_required": [],
+          "image_prompt": "Macro shot of a folded piece of vintage Vietnamese lined notebook paper with faded blue ballpoint pen handwriting (PROP_HANDWRITTEN_NOTE), aged paper with soft yellow patina, resting on dark polished wood, soft warm desk lamp illumination, sharp focus, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "HANDWRITING",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_012",
+          "order": 12,
+          "start_time": 164.27,
+          "end_time": 177.827,
+          "duration": 13.557,
+          "source_segments": [
+            "023",
+            "024"
+          ],
+          "narration_summary": "Mai bắt đầu cảm thấy có điều gì đó không ổn. Bà của cô, người phụ nữ hiền hậu, cả đời vun vén cho gia đình, sao lại có những bí mật này? Liệu có một gia đình thứ hai, một mối tình dang dở nào đó mà bà đã chôn giấu suốt bao năm qua?",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 4,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_NHA_MAI_HCM",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_MAI) standing in her dimly lit apartment living room, arms crossed, troubled introspective gaze toward the study table, city night lights blurred in the background window, cinematic 35mm documentary realism.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "PAN_LEFT",
+            "speed": "SLOW",
+            "subject_anchor": "MAI_FIGURE",
+            "safe_crop_zone": "CENTER_RIGHT"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_013",
+          "order": 13,
+          "start_time": 177.827,
+          "end_time": 188.855,
+          "duration": 11.028,
+          "source_segments": [
+            "025",
+            "026"
+          ],
+          "narration_summary": "Những câu hỏi cứ xoáy sâu vào tâm trí Mai, khiến cô không thể nào yên lòng. Trong gia đình mình, có ai từng nhắc đến người phụ nữ trong ảnh hay mối quan hệ đặc biệt nào của bà cố không?",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_NHA_MAI_HCM",
+          "props": [
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "prop_refs_required": [
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "image_prompt": "Intimate close-up of a 32-year-old Vietnamese woman (CHAR_MAI) staring at the vintage photo under the harsh lamp, her reflection faintly visible on the glass desk surface, deep suspicion and confusion etched on her face, 35mm film.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SUBTLE_REFRAME",
+            "speed": "SLOW",
+            "subject_anchor": "MAI_FACE",
+            "safe_crop_zone": "CENTER_LEFT"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_014",
+          "order": 14,
+          "start_time": 188.855,
+          "end_time": 200.609,
+          "duration": 11.754,
+          "source_segments": [
+            "027",
+            "028"
+          ],
+          "narration_summary": "Đôi khi, chính những người thân cận nhất lại là người nắm giữ chìa khóa cho những bí ẩn tưởng chừng không thể giải mã. Mai quyết định sẽ tìm hiểu ngọn ngành, dù biết rằng sự thật có thể không dễ dàng chấp nhận.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 4,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_NHA_MAI_HCM",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "A 32-year-old Vietnamese woman (CHAR_MAI) in a dusty-rose knit cardigan holding a travel bag and folder, standing by the apartment doorway in morning daylight, resolute and focused expression, modern Vietnamese domestic environment, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "PAN_RIGHT",
+            "speed": "SLOW",
+            "subject_anchor": "MAI_FIGURE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_015",
+          "order": 15,
+          "start_time": 200.609,
+          "end_time": 213.619,
+          "duration": 13.01,
+          "source_segments": [
+            "029",
+            "030"
+          ],
+          "narration_summary": "Giả thuyết về một mối tình bí mật bắt đầu hình thành rõ nét trong đầu Mai. Có lẽ nào bà đã có một người đàn ông khác mà gia đình không hề hay biết? Hay là một câu chuyện tình cảm phức tạp, có thể liên quan đến người phụ nữ trong bức ảnh kia?",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_NHA_MAI_HCM",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Atmospheric cinematic shot of a 32-year-old Vietnamese woman (CHAR_MAI) sitting in contemplative silence beside a sunny window, warm morning dust motes, silhouette framed against sheer curtains, realistic emotional depth, muted colors, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PULL_OUT",
+            "speed": "SLOW",
+            "subject_anchor": "MAI_SILHOUETTE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_016",
+          "order": 16,
+          "start_time": 213.619,
+          "end_time": 225.921,
+          "duration": 12.302,
+          "source_segments": [
+            "031",
+            "032"
+          ],
+          "narration_summary": "Những giấy tờ tài chính kia, có thể là bà đã âm thầm chu cấp cho ai đó, hoặc chuẩn bị cho một tương lai mà bà không chia sẻ với ai. Sự hoài nghi càng lớn, Mai càng cảm thấy xa lạ với hình ảnh người bà mà cô từng biết.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 3,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_NHA_MAI_HCM",
+          "props": [
+            "PROP_PASSBOOK_1994"
+          ],
+          "prop_refs_required": [],
+          "image_prompt": "Close-up of a 32-year-old Vietnamese woman (CHAR_MAI), hand pressed gently against her forehead in deep thought, the 1994 passbook lying on the table before her, subtle natural light, raw emotional vulnerability, 35mm lens.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "STATIC_INTENTIONAL",
+            "speed": "NORMAL",
+            "subject_anchor": "MAI_FACE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_017",
+          "order": 17,
+          "start_time": 225.921,
+          "end_time": 241.321,
+          "duration": 15.4,
+          "source_segments": [
+            "033",
+            "034"
+          ],
+          "narration_summary": "Niềm tin về một người bà hoàn hảo, một cuộc sống không chút tì vết, giờ đây đang lung lay dữ dội trước những bằng chứng hữu hình. Cô bắt đầu lục tìm trong ký ức, cố gắng nhớ lại những câu chuyện bà từng kể, những lời bà từng nói, nhưng tất cả dường như không có manh mối nào.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 3,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_NHA_MAI_HCM",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_MAI) holding a vintage family photo album on a wooden shelf, warm natural afternoon light streaming into the room, dust specks in air, authentic Vietnamese living space, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "PAN_LEFT",
+            "speed": "SLOW",
+            "subject_anchor": "ALBUM_PAGES",
+            "safe_crop_zone": "CENTER_RIGHT"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_018",
+          "order": 18,
+          "start_time": 241.321,
+          "end_time": 253.798,
+          "duration": 12.477,
+          "source_segments": [
+            "035",
+            "036"
+          ],
+          "narration_summary": "Liệu bà cố có một bí mật động trời nào đó, một quá khứ mà bà đã cố gắng chôn vùi suốt đời? Những con số trên tờ giấy kia có ý nghĩa gì? Một tài khoản ngân hàng, một khoản nợ, hay một lời nhắn gửi nào đó?",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_MAI_HCM",
+          "props": [
+            "PROP_HANDWRITTEN_NOTE"
+          ],
+          "prop_refs_required": [],
+          "image_prompt": "Still life composition of the handwritten note (PROP_HANDWRITTEN_NOTE) resting beside a ceramic teacup on dark polished Vietnamese mahogany wood, soft window lighting creating long gentle shadows, mood of quiet mystery, 35mm documentary realism.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "NOTE_PAPER",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_019",
+          "order": 19,
+          "start_time": 253.798,
+          "end_time": 266.343,
+          "duration": 12.545,
+          "source_segments": [
+            "037",
+            "038"
+          ],
+          "narration_summary": "Mai cảm thấy mình đang đứng trước một mê cung ký ức, nơi mà mọi lối đi đều dẫn đến sự bế tắc. Không thể giữ im lặng thêm, Mai quyết định tìm gặp chú Minh, anh trai của bố cô, người có thể biết điều gì đó về quá khứ của bà cố.",
+          "visual_mode": "VIDEO_RECOMMENDED",
+          "video_recommended": true,
+          "video_value_score": 8,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Exterior shot of a 32-year-old Vietnamese woman (CHAR_MAI) walking up to the wooden entrance door of a provincial single-story home in Bảo Lộc, lush highland potted plants and ferns, gentle morning sunlight through tree branches, cinematic realism, 35mm photography.",
+          "video_prompt": {
+            "start_state": "A 32-year-old Vietnamese woman (CHAR_MAI) carrying her shoulder bag walks through a modest wrought-iron gate.",
+            "action": "She steps along a brick path lined with potted highland flowers, stepping up to the wooden front door and knocking gently.",
+            "camera": "Wide tracking shot moving smoothly along with her footsteps, capturing the peaceful garden and rustic house exterior.",
+            "end_state": "The wooden door begins to open from inside; she smiles politely. Soft highland morning daylight.",
+            "full_prompt": "Start: A 32-year-old Vietnamese woman (CHAR_MAI) carrying her shoulder bag walks through a modest wrought-iron gate. Action: She steps along a brick path lined with potted highland flowers, stepping up to the wooden front door and knocking gently. Camera: Wide tracking shot moving smoothly along with her footsteps, capturing the peaceful garden and rustic house exterior. End: The wooden door begins to open from inside; she smiles politely. Soft highland morning daylight."
+          },
+          "image_motion": {
+            "type": "PAN_RIGHT",
+            "speed": "SLOW",
+            "subject_anchor": "MAI_FIGURE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_020",
+          "order": 20,
+          "start_time": 266.343,
+          "end_time": 277.694,
+          "duration": 11.351,
+          "source_segments": [
+            "039",
+            "040"
+          ],
+          "narration_summary": "Chú Minh, ở tuổi ngoài bảy mươi, có mái tóc bạc trắng và ánh mắt hiền từ, ban đầu tỏ ra bối rối khi nghe Mai hỏi về chiếc hộp. Nhưng khi Mai đưa bức ảnh ra, đôi mắt chú chợt sáng lên một tia nhận biết.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 6,
+          "visible_characters": [
+            "CHAR_MAI",
+            "CHAR_CHU_MINH"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI",
+            "CHAR_CHU_MINH"
+          ],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Medium two-shot of a 58-year-old Vietnamese man (CHAR_CHU_MINH) pouring green tea for a 32-year-old Vietnamese woman (CHAR_MAI) at a traditional carved wooden table in a provincial living room, porcelain tea set, ancestor altar in background, warm daylight, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SUBTLE_REFRAME",
+            "speed": "SLOW",
+            "subject_anchor": "TEA_TABLE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_021",
+          "order": 21,
+          "start_time": 277.694,
+          "end_time": 291.902,
+          "duration": 14.208,
+          "source_segments": [
+            "041",
+            "042"
+          ],
+          "narration_summary": "'À, đây là bà Thoa,' chú Minh chậm rãi nói, 'bạn thân của bà Hảo từ hồi còn trẻ. Hai người chơi thân lắm.' Chú Minh nhớ mang máng bà Thoa sống ở Lâm Đồng, nhưng sau một tai nạn lao động tại xưởng dệt, bà bị tàn tật và hai người mất liên lạc.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 3,
+          "visible_characters": [
+            "CHAR_CHU_MINH"
+          ],
+          "character_refs_required": [
+            "CHAR_CHU_MINH"
+          ],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "prop_refs_required": [
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "image_prompt": "Close-up of a 58-year-old Vietnamese man (CHAR_CHU_MINH) wearing reading glasses, holding the yellowed vintage photograph (PROP_VINTAGE_PHOTO_BAO_THOA), eyes wide with sudden recognition and nostalgia, warm side daylight, realistic skin texture, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "MINH_FACE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_022",
+          "order": 22,
+          "start_time": 291.902,
+          "end_time": 302.938,
+          "duration": 11.036,
+          "source_segments": [
+            "043",
+            "044"
+          ],
+          "narration_summary": "Thông tin này như một tia sáng lóe lên, hé mở một phần của bức tranh bí ẩn mà Mai đang cố gắng ghép lại. Người phụ nữ lạ không phải là tình địch hay người yêu bí mật, mà là một người bạn tri kỷ của bà cố.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [
+            "CHAR_CHU_MINH"
+          ],
+          "character_refs_required": [
+            "CHAR_CHU_MINH"
+          ],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Medium shot of a 58-year-old Vietnamese man (CHAR_CHU_MINH) speaking with calm reverence and deep emotion, looking slightly past the camera as he recalls past memories, seated in his wooden living room, gentle natural light, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "PAN_LEFT",
+            "speed": "SLOW",
+            "subject_anchor": "MINH_FIGURE",
+            "safe_crop_zone": "CENTER_LEFT"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_023",
+          "order": 23,
+          "start_time": 302.938,
+          "end_time": 322.537,
+          "duration": 19.599,
+          "source_segments": [
+            "045",
+            "046"
+          ],
+          "narration_summary": "Nhưng mục đích thực sự của số tài sản kia, và mối liên hệ với viện dưỡng lão kia, vẫn còn là những câu hỏi lớn chờ đợi lời giải đáp. Bức ảnh chụp chung với người phụ nữ lạ mặt kia, giờ đây, đã mở ra một hướng suy đoán mới, có vẻ như không hề liên quan đến những mâu thuẫn tình cảm hay tranh giành tài sản như ban đầu chúng ta từng nghĩ.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Medium close-up of a 32-year-old Vietnamese woman (CHAR_MAI) listening intently, eyes reflecting relief mixed with deeper curiosity, holding a steaming ceramic teacup, warm ambient lighting, 35mm cinematic documentary.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "STATIC_INTENTIONAL",
+            "speed": "NORMAL",
+            "subject_anchor": "MAI_FACE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_024",
+          "order": 24,
+          "start_time": 322.537,
+          "end_time": 343.802,
+          "duration": 21.265,
+          "source_segments": [
+            "047",
+            "048"
+          ],
+          "narration_summary": "Những tờ giấy cũ sờn màu, được xếp ngay ngắn trong chiếc hộp gỗ, giờ đây lại ẩn chứa nhiều điều hơn vẻ ngoài mộc mạc của chúng. Chúng như những mảnh ghép hé lộ một phần sự thật. Một trong số đó là giấy biên nhận tiền gửi, ghi rõ tên bà Hảo đứng tên, nhưng số tiền lại được đóng dấu vào một tài khoản đã được mở từ rất lâu, thời điểm mà gia đình Mai vẫn chưa hình dung ra.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 5,
+          "visible_characters": [
+            "CHAR_MAI",
+            "CHAR_CHU_MINH"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI",
+            "CHAR_CHU_MINH"
+          ],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [
+            "PROP_PASSBOOK_1994",
+            "PROP_LAND_DEED_1992"
+          ],
+          "prop_refs_required": [],
+          "image_prompt": "Medium two-shot of a 32-year-old Vietnamese woman (CHAR_MAI) and a 58-year-old man (CHAR_CHU_MINH) studying vintage papers laid out on a dark mahogany table, red stamps and aged documents catching the soft daylight, authentic Vietnamese family scene, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "TABLE_DOCUMENTS",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_025",
+          "order": 25,
+          "start_time": 343.802,
+          "end_time": 362.144,
+          "duration": 18.342,
+          "source_segments": [
+            "049",
+            "050"
+          ],
+          "narration_summary": "Những con số ban đầu có vẻ nhỏ bé, nhưng nếu nhìn vào mốc thời gian và giá trị đồng tiền lúc bấy giờ, chúng ta sẽ thấy một sự đầu tư bền bỉ, một kế hoạch dài hơi được vun đắp. Và rồi, một mảnh giấy khác, có vẻ như là bản sao của một giấy tờ tùy thân cũ kỹ, với thông tin về một người phụ nữ tên là Thoa. Tên này quen thuộc đến lạ.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [
+            "PROP_PASSBOOK_1994"
+          ],
+          "prop_refs_required": [],
+          "image_prompt": "Macro shot of an aged paper savings slip and bank receipt from the early 1990s, clean typed Vietnamese lettering, official blue ink stamps, resting on dark timber surface, soft diffused lighting, 35mm lens.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "EVIDENCE_INSPECTION",
+            "speed": "SLOW",
+            "subject_anchor": "RECEIPT_SURFACE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_026",
+          "order": 26,
+          "start_time": 362.144,
+          "end_time": 379.796,
+          "duration": 17.652,
+          "source_segments": [
+            "051",
+            "052"
+          ],
+          "narration_summary": "Cùng với đó là những bức thư tay, được viết bằng thứ mực đã nhòe đi theo năm tháng. Lời lẽ chân thành, chia sẻ những buồn vui trong cuộc sống lao động vất vả. Những bức thư ấy không chỉ là tâm sự giữa hai người bạn, mà còn hé lộ về một hoàn cảnh khó khăn chung, về những ước mơ giản dị và cả những dự định lớn lao hơn.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Macro photograph of handwritten personal letters written in faded violet ink on yellowed thin paper, delicate Vietnamese cursive script, stacked neatly with soft creases, soft natural window light, historical authenticity, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "LETTERS_SURFACE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_027",
+          "order": 27,
+          "start_time": 379.796,
+          "end_time": 397.848,
+          "duration": 18.052,
+          "source_segments": [
+            "053",
+            "054"
+          ],
+          "narration_summary": "Lời kể của chú Minh về bà Thoa, người bạn thân của bà Hảo, giờ đây trở nên rõ nét hơn bao giờ hết. Mối liên hệ giữa họ không chỉ là bạn bè thông thường. Tất cả những manh mối này, khi được đặt cạnh nhau, đã bắt đầu vẽ nên một bức tranh hoàn chỉnh hơn, về một tình bạn sâu sắc và một mục đích cao đẹp hơn là sự ích kỷ.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [
+            "CHAR_CHU_MINH"
+          ],
+          "character_refs_required": [
+            "CHAR_CHU_MINH"
+          ],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Medium shot of a 58-year-old Vietnamese man (CHAR_CHU_MINH) looking warmly toward Mai, eyes glistening with quiet admiration, his hand resting gently on the wooden armrest, soft indoor light, cinematic documentary.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "PAN_RIGHT",
+            "speed": "SLOW",
+            "subject_anchor": "MINH_FACE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_028",
+          "order": 28,
+          "start_time": 397.848,
+          "end_time": 417.152,
+          "duration": 19.304,
+          "source_segments": [
+            "055",
+            "056"
+          ],
+          "narration_summary": "Những giả thuyết ban đầu về sự giấu giếm vì mục đích cá nhân dần tan biến, nhường chỗ cho một sự hoài nghi đầy tôn trọng về những gì đã thực sự diễn ra. Sự thật đằng sau bức ảnh và những giấy tờ cũ dần được hé lộ: người phụ nữ trong ảnh chính là bà Thoa, người bạn thân tri kỷ của bà Hảo từ những năm tháng tuổi trẻ.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Close-up of a 32-year-old Vietnamese woman (CHAR_MAI), a soft peaceful smile breaking through her previous anxiety, eyes shining with understanding and pride, warm natural light framing her face, 35mm lens.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "STATIC_INTENTIONAL",
+            "speed": "NORMAL",
+            "subject_anchor": "MAI_FACE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_029",
+          "order": 29,
+          "start_time": 417.152,
+          "end_time": 437.321,
+          "duration": 20.169,
+          "source_segments": [
+            "057",
+            "058"
+          ],
+          "narration_summary": "Họ cùng là công nhân xưởng dệt, cùng chia sẻ những tháng ngày gian khó, và cùng nhau gom góp từng đồng, từ những khoản thu nhập thêm ít ỏi, để tạo nên một quỹ nhỏ. Quỹ đó không phải để riêng cho ai, mà là một lời hứa, một kế hoạch chung tay giúp đỡ những đồng đội cũ, những hoàn cảnh khó khăn sau những năm tháng chiến tranh khốc liệt.",
+          "visual_mode": "VIDEO_RECOMMENDED",
+          "video_recommended": true,
+          "video_value_score": 9,
+          "visible_characters": [
+            "CHAR_BA_HAO_YOUNG",
+            "CHAR_BA_THOA_YOUNG"
+          ],
+          "character_refs_required": [
+            "CHAR_BA_HAO_YOUNG",
+            "CHAR_BA_THOA_YOUNG"
+          ],
+          "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Archival documentary scene from the 1980s: Two young Vietnamese women (CHAR_BA_HAO_YOUNG and CHAR_BA_THOA_YOUNG) in faded blue factory workwear working together at a textile weaving loom, cotton fibers in the air, warm industrial sunlight, subtle film grain, realistic working-class dignity, 35mm photography.",
+          "video_prompt": {
+            "start_state": "A 32-year-old Vietnamese woman (CHAR_BA_HAO_YOUNG) and a 28-year-old woman (CHAR_BA_THOA_YOUNG) stand side-by-side in a 1980s textile factory.",
+            "action": "Both women skillfully operate a vintage mechanical weaving loom, exchanging a warm supportive smile amidst rhythmic loom motion.",
+            "camera": "Medium lateral dolly tracking past spinning yarn spools, capturing their earnest, hardworking expressions.",
+            "end_state": "They pause at shift end, wiping their brows and sharing a humble tin water canteen. Muted 1980s documentary tones, film grain.",
+            "full_prompt": "Start: A 32-year-old Vietnamese woman (CHAR_BA_HAO_YOUNG) and a 28-year-old woman (CHAR_BA_THOA_YOUNG) stand side-by-side in a 1980s textile factory. Action: Both women skillfully operate a vintage mechanical weaving loom, exchanging a warm supportive smile amidst rhythmic loom motion. Camera: Medium lateral dolly tracking past spinning yarn spools, capturing their earnest, hardworking expressions. End: They pause at shift end, wiping their brows and sharing a humble tin water canteen. Muted 1980s documentary tones, film grain."
+          },
+          "image_motion": {
+            "type": "PAN_LEFT",
+            "speed": "SLOW",
+            "subject_anchor": "WORKERS_FIGURES",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_030",
+          "order": 30,
+          "start_time": 437.321,
+          "end_time": 460.248,
+          "duration": 22.927,
+          "source_segments": [
+            "059",
+            "060"
+          ],
+          "narration_summary": "Bà Hảo đứng tên tài sản, không phải vì muốn chiếm đoạt, mà là bởi bà Thoa đã gặp biến cố, mất đi giấy tờ tùy thân, khiến việc đứng tên trở nên bất khả thi. Mảnh đất 650m2 ở Bảo Lộc, mua năm 1992, và sổ tiết kiệm 15 triệu đồng mở năm 1994, không phải là tài sản cá nhân bà Hảo cất giấu cho riêng mình hay gia đình.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [
+            "PROP_LAND_DEED_1992"
+          ],
+          "prop_refs_required": [],
+          "image_prompt": "Macro shot of an official 1992 Vietnamese land transfer document (PROP_LAND_DEED_1992), typed Vietnamese administrative text, official round red seal of Bảo Lộc town authorities, aged folded paper on dark wood, clean documentary focus, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "EVIDENCE_INSPECTION",
+            "speed": "SLOW",
+            "subject_anchor": "DEED_SEAL",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_031",
+          "order": 31,
+          "start_time": 460.248,
+          "end_time": 478.553,
+          "duration": 18.305,
+          "source_segments": [
+            "061",
+            "062"
+          ],
+          "narration_summary": "Đó là cả một gia tài chung, là kết quả của sự tần tảo, chung sức của hai người phụ nữ lao động nghèo, được tích lũy suốt gần ba mươi năm qua. Đây là một giao ước danh dự giữa hai người bạn, một lời hứa thiêng liêng mà bà Hảo đã âm thầm gìn giữ, một gánh nặng trách nhiệm và tình yêu thương.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [
+            "PROP_VINTAGE_PHOTO_BAO_THOA",
+            "PROP_PASSBOOK_1994",
+            "PROP_LAND_DEED_1992"
+          ],
+          "prop_refs_required": [
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "image_prompt": "Artistic documentary composition of the vintage sepia photograph of Vietnamese coworkers Bà Hảo and Bà Thoa (PROP_VINTAGE_PHOTO_BAO_THOA) resting harmoniously beside the 1994 passbook and 1992 land deed on a polished dark timber surface, soft sacred morning sunlight, 35mm film.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "PHOTO_AND_DOCUMENTS",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_032",
+          "order": 32,
+          "start_time": 478.553,
+          "end_time": 498.168,
+          "duration": 19.615,
+          "source_segments": [
+            "063",
+            "064"
+          ],
+          "narration_summary": "Bà đã giữ bí mật này không phải để lừa dối, mà là để bảo vệ một di nguyện, một ước mơ chung mà cả hai bà đã ấp ủ từ rất lâu rồi. Một bí mật không phải lỗi lầm, mà là một câu chuyện dài về tình bạn, sự hy sinh và một tấm lòng nhân ái cao cả, chờ đợi thời điểm để được thấu hiểu.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Black-and-white archival photograph from 1985 of two young Vietnamese working women (young Bà Hảo and young Bà Thoa) sitting on a wooden bench, sharing a simple meal from an enamel tiffin carrier, genuine smiles, soft vintage grain, timeless dignity, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PULL_OUT",
+            "speed": "SLOW",
+            "subject_anchor": "TWO_FRIENDS",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_033",
+          "order": 33,
+          "start_time": 498.168,
+          "end_time": 520.468,
+          "duration": 22.3,
+          "source_segments": [
+            "065",
+            "066"
+          ],
+          "narration_summary": "Giao ước mà bà Hảo và bà Thoa cùng gìn giữ suốt bao năm, chính là cùng nhau tích cóp tài sản để giúp đỡ những mảnh đời cơ nhỡ sau biến cố chiến tranh, một lời hứa danh dự giữa hai người phụ nữ lao động nghèo. Bà Hảo đã âm thầm thực hiện vai trò người giữ và quản lý quỹ này suốt bao năm, với tất cả sự cẩn trọng và trách nhiệm của một người giữ lời.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [
+            "PROP_WOODEN_BOX"
+          ],
+          "prop_refs_required": [
+            "PROP_WOODEN_BOX"
+          ],
+          "image_prompt": "Vintage memory portrait of an 80-year-old Vietnamese grandmother (CHAR_BA_HAO_ELDER) seated in soft window light, her wrinkled weathered hands gently resting on the closed wooden box on her lap, a serene and resolute gaze, photorealistic documentary realism, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "STATIC_INTENTIONAL",
+            "speed": "NORMAL",
+            "subject_anchor": "BA_HAO_FIGURE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_034",
+          "order": 34,
+          "start_time": 520.468,
+          "end_time": 538.092,
+          "duration": 17.624,
+          "source_segments": [
+            "067",
+            "068"
+          ],
+          "narration_summary": "Chính tình bạn cao đẹp và sự hy sinh thầm lặng này đã khiến Mai xúc động. Cô nhận ra bí mật của bà cố không phải là gánh nặng tội lỗi, mà là tình yêu thương. Mai nhìn lại những gì đã xảy ra, không còn sự trách móc hay nghi ngờ, mà thay vào đó là lòng tự hào về người bà cố của mình và người bạn tri kỷ của bà.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 3,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Cinematic close-up of a 32-year-old Vietnamese woman (CHAR_MAI) looking through a rain-streaked window in Lâm Đồng, soft tear on her cheek, expression of profound emotional pride and reverence, muted highland rainy daylight, 35mm lens.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SUBTLE_REFRAME",
+            "speed": "SLOW",
+            "subject_anchor": "MAI_FACE",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_035",
+          "order": 35,
+          "start_time": 538.092,
+          "end_time": 555.06,
+          "duration": 16.968,
+          "source_segments": [
+            "069",
+            "070"
+          ],
+          "narration_summary": "Gia đình Mai, sau khi hiểu rõ câu chuyện, cũng cùng chung cảm xúc ấy. Họ cùng nhau nhìn về phía trước, với một quyết tâm mới, một định hướng mới cho tương lai. Họ quyết định sẽ cùng nhau hoàn thành di nguyện dang dở của bà cố và bà Thoa, biến số tài sản này thành một trung tâm bảo trợ trẻ em ý nghĩa.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 5,
+          "visible_characters": [
+            "CHAR_MAI",
+            "CHAR_CHU_MINH"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI",
+            "CHAR_CHU_MINH"
+          ],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Medium two-shot of a 58-year-old Vietnamese man (CHAR_CHU_MINH) placing his reassuring hand over the hand of a 32-year-old woman (CHAR_MAI) at a wooden dining table, expressions of deep solidarity and family agreement, warm natural lighting, 35mm documentary.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "CLASPED_HANDS",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_036",
+          "order": 36,
+          "start_time": 555.06,
+          "end_time": 572.039,
+          "duration": 16.979,
+          "source_segments": [
+            "071",
+            "072"
+          ],
+          "narration_summary": "Bí mật của bà cố, cuối cùng, đã không còn là gánh nặng, mà trở thành một di sản tinh thần quý báu, một lời nhắc nhở về tình yêu thương và sự sẻ chia. Câu chuyện của bà Hảo và bà Thoa là minh chứng cho thấy, đôi khi, những điều chúng ta cho là bí mật lại ẩn chứa những giá trị nhân văn sâu sắc.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [
+            "PROP_WOODEN_BOX"
+          ],
+          "prop_refs_required": [
+            "PROP_WOODEN_BOX"
+          ],
+          "image_prompt": "Still life of the open wooden box (PROP_WOODEN_BOX) resting on a polished Vietnamese timber sideboard beside a vase of fresh yellow chrysanthemums, gentle sunshine illuminating the warm wood grain, atmosphere of peace and fulfillment, 35mm lens.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "PAN_LEFT",
+            "speed": "SLOW",
+            "subject_anchor": "BOX_AND_FLOWERS",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_037",
+          "order": 37,
+          "start_time": 572.039,
+          "end_time": 588.9,
+          "duration": 16.861,
+          "source_segments": [
+            "073",
+            "074"
+          ],
+          "narration_summary": "Sự chân thành và tình yêu thương có thể vượt qua mọi rào cản, và những lời hứa, dù được giữ kín bao lâu, vẫn luôn chờ đợi thời điểm để được thực hiện. Chúng ta ai cũng có những câu chuyện riêng, những gánh nặng thầm lặng mà không phải ai cũng hiểu. Điều quan trọng là cách chúng ta đối diện và gìn giữ chúng.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_CHU_MINH",
+          "props": [
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "prop_refs_required": [
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "image_prompt": "Artistic close-up of weathered aged Vietnamese hands holding the 1980s photograph of two friends, sunlight filtering across wrinkled skin, symbolizing enduring loyalty and moral responsibility, documentary realism, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "STATIC_INTENTIONAL",
+            "speed": "NORMAL",
+            "subject_anchor": "HANDS_AND_PHOTO",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_038",
+          "order": 38,
+          "start_time": 588.9,
+          "end_time": 606.445,
+          "duration": 17.545,
+          "source_segments": [
+            "075",
+            "076"
+          ],
+          "narration_summary": "Mai và gia đình giờ đây đã tìm thấy mục đích thực sự của khối tài sản này, và quan trọng hơn, họ tìm thấy sự đồng điệu trong trái tim mình với di nguyện của bà cố. Họ quyết định hành động, bắt tay vào việc biến ước mơ của hai người phụ nữ năm xưa thành hiện thực. Bước đầu tiên là tìm gặp bà Thoa.",
+          "visual_mode": "VIDEO_RECOMMENDED",
+          "video_recommended": true,
+          "video_value_score": 7,
+          "visible_characters": [
+            "CHAR_MAI"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI"
+          ],
+          "location_id": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Cinematic landscape of a peaceful colonial-style rest home in Lâm Đồng nestled among pine-covered hills, a 32-year-old Vietnamese woman (CHAR_MAI) in a warm cardigan walking up the front stone pathway, soft morning highland mist, documentary realism, 35mm photography.",
+          "video_prompt": {
+            "start_state": "A passenger car drives along a scenic winding mountain road in Lâm Đồng surrounded by towering pine trees and soft morning mist.",
+            "action": "The car turns into the stone driveway of a peaceful French-colonial style rest home facility. Mai steps out carrying her folder.",
+            "camera": "Wide cinematic landscape pan from the misty highland valley following the car to the facility gates.",
+            "end_state": "Mai walks up the stone steps toward the glass sunroom doors. Highland morning sunlight breaking through mist.",
+            "full_prompt": "Start: A passenger car drives along a scenic winding mountain road in Lâm Đồng surrounded by towering pine trees and soft morning mist. Action: The car turns into the stone driveway of a peaceful French-colonial style rest home facility. Mai steps out carrying her folder. Camera: Wide cinematic landscape pan from the misty highland valley following the car to the facility gates. End: Mai walks up the stone steps toward the glass sunroom doors. Highland morning sunlight breaking through mist."
+          },
+          "image_motion": {
+            "type": "PAN_RIGHT",
+            "speed": "SLOW",
+            "subject_anchor": "BUILDING_AND_MAI",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_039",
+          "order": 39,
+          "start_time": 606.445,
+          "end_time": 624.122,
+          "duration": 17.677,
+          "source_segments": [
+            "077",
+            "078"
+          ],
+          "narration_summary": "Tại viện dưỡng lão ở Lâm Đồng, bà Thoa đã rưng rưng chia sẻ trọn vẹn tâm nguyện cuối cùng: dùng mảnh đất và số tiền tiết kiệm để xây dựng một mái ấm tình thương cho trẻ mồ côi. Bà Thoa lắng nghe Mai kể, có lẽ bà đã chờ đợi giây phút này rất lâu, giây phút mà tình bạn của bà và bà Hảo được thấu hiểu và tiếp nối.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 5,
+          "visible_characters": [
+            "CHAR_MAI",
+            "CHAR_BA_THOA_ELDER"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI",
+            "CHAR_BA_THOA_ELDER"
+          ],
+          "location_id": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+          "props": [
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "prop_refs_required": [
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "image_prompt": "Medium shot inside a bright sunroom in Lâm Đồng: An 80-year-old Vietnamese woman in a wheelchair (CHAR_BA_THOA_ELDER) holding the vintage photograph, tears glistening in her gentle eyes, as a 32-year-old woman (CHAR_MAI) kneels gently beside her holding her hand, morning light, emotional truth, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "TWO_WOMEN",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_040",
+          "order": 40,
+          "start_time": 624.122,
+          "end_time": 642.856,
+          "duration": 18.734,
+          "source_segments": [
+            "079",
+            "080"
+          ],
+          "narration_summary": "Sự gặp gỡ này không chỉ là sự kết nối giữa hai thế hệ, mà còn là sự xác nhận cho một tình bạn vĩnh cửu, vượt qua cả thời gian và những biến cố cuộc đời. Câu chuyện của bà Hảo và bà Thoa nhắc nhở chúng ta về giá trị của lòng nhân ái, về những gì có thể làm được khi con người ta cùng chung tay vì một mục đích tốt đẹp.",
+          "visual_mode": "VIDEO_RECOMMENDED",
+          "video_recommended": true,
+          "video_value_score": 10,
+          "visible_characters": [
+            "CHAR_MAI",
+            "CHAR_BA_THOA_ELDER"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI",
+            "CHAR_BA_THOA_ELDER"
+          ],
+          "location_id": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_MAI) gently wheeling an 80-year-old woman in a wheelchair (CHAR_BA_THOA_ELDER) along a brick garden path lined with hydrangeas and tall pine trees in Lâm Đồng, golden morning sunshine, tranquil warmth, 35mm.",
+          "video_prompt": {
+            "start_state": "Mai (32, female) stands behind Bà Thoa's (80, female) manual wheelchair in the facility's courtyard garden.",
+            "action": "Mai slowly pushes the wheelchair along the paved brick path under tall pine trees, Bà Thoa looking up and smiling warmly.",
+            "camera": "Lateral tracking shot moving alongside them, capturing gentle conversation and sun dappling through pine needles.",
+            "end_state": "They pause by a flowering hydrangeas bed, bathed in warm golden highland sunlight. Consistent attire.",
+            "full_prompt": "Start: Mai (32, female) stands behind Bà Thoa's (80, female) manual wheelchair in the facility's courtyard garden. Action: Mai slowly pushes the wheelchair along the paved brick path under tall pine trees, Bà Thoa looking up and smiling warmly. Camera: Lateral tracking shot moving alongside them, capturing gentle conversation and sun dappling through pine needles. End: They pause by a flowering hydrangeas bed, bathed in warm golden highland sunlight. Consistent attire."
+          },
+          "image_motion": {
+            "type": "PAN_RIGHT",
+            "speed": "SLOW",
+            "subject_anchor": "WHEELCHAIR_WALK",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_041",
+          "order": 41,
+          "start_time": 642.856,
+          "end_time": 660.151,
+          "duration": 17.295,
+          "source_segments": [
+            "081",
+            "082"
+          ],
+          "narration_summary": "Đôi khi, những bí mật đằng sau cánh cửa cuộc đời không phải là điều đáng sợ, mà là những bài học quý giá về tình người, về sự sẻ chia và sức mạnh của những lời hứa. Liệu chúng ta có đủ bao dung và thấu hiểu để nhìn nhận những bí mật đó bằng một trái tim rộng mở, như cách Mai đã làm với câu chuyện của bà cố mình?",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 5,
+          "visible_characters": [
+            "CHAR_MAI",
+            "CHAR_BA_THOA_ELDER"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI",
+            "CHAR_BA_THOA_ELDER"
+          ],
+          "location_id": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Close-up of young smooth Vietnamese hands (CHAR_MAI) clasped gently around elderly, wrinkled, weathered Vietnamese hands (CHAR_BA_THOA_ELDER), warm natural highland sunlight, symbol of generational promise and continuity, 35mm macro lens.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "STATIC_INTENTIONAL",
+            "speed": "NORMAL",
+            "subject_anchor": "HANDS_CLASPED",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_042",
+          "order": 42,
+          "start_time": 660.151,
+          "end_time": 677.903,
+          "duration": 17.752,
+          "source_segments": [
+            "083",
+            "084"
+          ],
+          "narration_summary": "Cuộc sống luôn ẩn chứa những điều bất ngờ, những câu chuyện mà ta không thể đoán trước. Điều quan trọng là chúng ta học cách đón nhận và trân trọng chúng. Bí mật chiếc hộp gỗ khép lại, nhưng di nguyện xây dựng mái ấm cho trẻ mồ côi của bà Hảo và bà Thoa đã được con cháu tiếp nối bằng tất cả lòng biết ơn và sự kính trọng.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_KHU_DAT_BAO_LOC",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Cinematic landscape of rolling Vietnamese tea plantations and distant mountains in Bảo Lộc under early morning golden hour, thin layers of mist hovering above vibrant green rows of tea bushes, tranquil cinematic documentary beauty, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "PAN_LEFT",
+            "speed": "SLOW",
+            "subject_anchor": "TEA_HILLS",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_043",
+          "order": 43,
+          "start_time": 677.903,
+          "end_time": 695.984,
+          "duration": 18.081,
+          "source_segments": [
+            "085",
+            "086"
+          ],
+          "narration_summary": "Những bí mật, khi được hé lộ đúng thời điểm, không chỉ giải tỏa uẩn khúc mà còn là động lực để chúng ta tiếp nối những giá trị tốt đẹp của thế hệ đi trước. Bí mật chiếc hộp gỗ khép lại, nhưng di nguyện xây dựng mái ấm cho trẻ mồ côi của bà Hảo và bà Thoa đã được con cháu tiếp nối bằng tất cả lòng biết ơn và sự kính trọng.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_KHU_DAT_BAO_LOC",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Macro shot of architectural blueprints and sketches for a modest community children's shelter, titled in clean Vietnamese text, resting on a rustic wooden table with a view of green hills in the soft background, bright hopeful daylight, 35mm photography.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PUSH_IN",
+            "speed": "SLOW",
+            "subject_anchor": "BLUEPRINT_DETAILS",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_044",
+          "order": 44,
+          "start_time": 695.984,
+          "end_time": 713.607,
+          "duration": 17.623,
+          "source_segments": [
+            "087",
+            "088"
+          ],
+          "narration_summary": "Hãy luôn mở lòng để thấu hiểu, để sẻ chia, và để những câu chuyện đằng sau cánh cửa kia có thể truyền cảm hứng cho cuộc sống của chính chúng ta. Và thế là, câu chuyện về chiếc hộp gỗ của người bà quá cố đã khép lại, nhưng dư âm của tình bạn, của lòng nhân ái thì vẫn còn vang vọng mãi.",
+          "visual_mode": "VIDEO_RECOMMENDED",
+          "video_recommended": true,
+          "video_value_score": 9,
+          "visible_characters": [
+            "CHAR_MAI",
+            "CHAR_CHU_MINH"
+          ],
+          "character_refs_required": [
+            "CHAR_MAI",
+            "CHAR_CHU_MINH"
+          ],
+          "location_id": "LOC_KHU_DAT_BAO_LOC",
+          "props": [],
+          "prop_refs_required": [],
+          "image_prompt": "Wide cinematic shot of a 32-year-old Vietnamese woman (CHAR_MAI) and a 58-year-old man (CHAR_CHU_MINH) walking together on a green hillside in Bảo Lộc overlooking tea valleys, warm morning sun flare, blue sky, feeling of hope, closure and new beginning, 35mm photography.",
+          "video_prompt": {
+            "start_state": "Mai (32, female) and Chú Minh (58, male) stand side by side on the hillside boundary of the 650m2 garden plot in Bảo Lộc.",
+            "action": "They walk slowly together across the green grass toward the edge of the hill, Chú Minh pointing toward the distant sunlit mountain valley.",
+            "camera": "Wide tracking shot moving slowly backwards ahead of them, framing their hopeful strides against the vast blue sky.",
+            "end_state": "They stop side-by-side looking at the sunrise over the valley, smiling with deep peace. Crisp morning sunlight.",
+            "full_prompt": "Start: Mai (32, female) and Chú Minh (58, male) stand side by side on the hillside boundary of the 650m2 garden plot in Bảo Lộc. Action: They walk slowly together across the green grass toward the edge of the hill, Chú Minh pointing toward the distant sunlit mountain valley. Camera: Wide tracking shot moving slowly backwards ahead of them, framing their hopeful strides against the vast blue sky. End: They stop side-by-side looking at the sunrise over the valley, smiling with deep peace. Crisp morning sunlight."
+          },
+          "image_motion": {
+            "type": "PAN_RIGHT",
+            "speed": "SLOW",
+            "subject_anchor": "TWO_FIGURES",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        },
+        {
+          "scene_id": "SC_045",
+          "order": 45,
+          "start_time": 713.607,
+          "end_time": 730.627,
+          "duration": 17.02,
+          "source_segments": [
+            "089",
+            "090"
+          ],
+          "narration_summary": "Gia đình Mai cùng bà Thoa đã chính thức bắt tay vào việc xây dựng trung tâm bảo trợ trẻ em, biến di nguyện thành hiện thực, nối dài tình yêu thương của hai người phụ nữ. Cảm ơn quý vị đã đồng hành cùng chúng tôi trong tập phim này. Hẹn gặp lại trong những câu chuyện ý nghĩa tiếp theo của 'Sau Cánh Cửa'.",
+          "visual_mode": "IMAGE_ONLY",
+          "video_recommended": false,
+          "video_value_score": 2,
+          "visible_characters": [],
+          "character_refs_required": [],
+          "location_id": "LOC_NHA_MAI_HCM",
+          "props": [
+            "PROP_WOODEN_BOX",
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "prop_refs_required": [
+            "PROP_WOODEN_BOX",
+            "PROP_VINTAGE_PHOTO_BAO_THOA"
+          ],
+          "image_prompt": "Closing still of a modern Vietnamese wooden credenza: Beside the historic open wooden box (PROP_WOODEN_BOX) sits a freshly framed photograph of Mai gently embracing elderly Bà Thoa, warm domestic twilight lighting, golden Sau Cánh Cửa documentary warmth, 35mm lens.",
+          "video_prompt": null,
+          "image_motion": {
+            "type": "SLOW_PULL_OUT",
+            "speed": "SLOW",
+            "subject_anchor": "FRAMED_PHOTO",
+            "safe_crop_zone": "CENTER"
+          },
+          "generation_dependencies_satisfied": false,
+          "image_status": "NOT_GENERATED",
+          "image_media_id": null,
+          "video_status": "NOT_GENERATED",
+          "video_media_id": null
+        }
+      ]
+    }
+  ]
+}
