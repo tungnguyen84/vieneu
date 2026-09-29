@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root {
+  --color-background: #0B0F17;
+  --color-surface: #111827;
+  --color-card: #161F36;
+  --color-card-hover: #1E293B;
+  --color-border: #28354D;
+  --color-border-subtle: #1E293B;
+  --color-foreground: #F8FAFC;
+  --color-foreground-muted: #94A3B8;
+  --color-foreground-subtle: #64748B;
+  --color-brand: #E11D48;
+  --color-action: #2563EB;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-video: #8B5CF6;
+  --color-image: #06B6D4;
+
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  overflow: hidden;
+  user-select: none;
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbars for high-density desktop editing */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0B0F17;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #28354D;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3B82F6;
+}
+
+/* Monospace class for timecodes, hashes, IDs */
+.font-mono-code {
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}
