@@ -1,0 +1,75 @@
+{
+  "repository": "https://github.com/tungnguyen84/vieneu",
+  "branch": "main",
+  "baseline_commit": "f59d138",
+  "status": "AWAITING_USER_VISUAL_PLAN_REVIEW",
+  "episodes": {
+    "EP003": {
+      "title": "Chiếc Hộp Gỗ Của Người Bà Quá Cố",
+      "audio_duration_sec": 730.627,
+      "total_scenes": 45,
+      "image_only_count": 30,
+      "video_recommended_count": 15,
+      "video_percentage": 33.33,
+      "primary_characters": [
+        "Mai"
+      ],
+      "secondary_characters": [
+        "Bà Hảo (Elder)",
+        "Bà Hảo (Young 1970s-1990s)",
+        "Bà Thoa (Elder)",
+        "Bà Thoa (Young 1970s-1990s)",
+        "Chú Minh"
+      ],
+      "character_references_required": 1,
+      "locations_count": 5,
+      "props_count": 5,
+      "overlay_scenes_count": 5,
+      "reveal_1_scene": "SC_031",
+      "reveal_1_visual_mode": "IMAGE_ONLY",
+      "reveal_2_scene": "SC_039",
+      "reveal_2_visual_mode": "IMAGE_ONLY",
+      "visual_spoiler_guard": "PASS",
+      "character_continuity": "PASS",
+      "location_continuity": "PASS",
+      "prop_continuity": "PASS",
+      "timeline_coverage": "PASS",
+      "prompt_qc": "PASS",
+      "flow_package_dir": "production_pilot_03_visual\\EP003\\flow_package",
+      "status": "AWAITING_USER_VISUAL_PLAN_REVIEW"
+    },
+    "EP011": {
+      "title": "Bức Ảnh Lạ Trong Điện Thoại Cũ",
+      "audio_duration_sec": 743.721,
+      "total_scenes": 45,
+      "image_only_count": 30,
+      "video_recommended_count": 15,
+      "video_percentage": 33.33,
+      "primary_characters": [
+        "Linh",
+        "Nam (Present)"
+      ],
+      "secondary_characters": [
+        "Nam (Young 2012)",
+        "Thảo (2012)",
+        "Bé An (Present)"
+      ],
+      "character_references_required": 2,
+      "locations_count": 5,
+      "props_count": 5,
+      "overlay_scenes_count": 6,
+      "reveal_1_scene": "SC_031",
+      "reveal_1_visual_mode": "IMAGE_ONLY",
+      "reveal_2_scene": "SC_039",
+      "reveal_2_visual_mode": "IMAGE_ONLY",
+      "visual_spoiler_guard": "PASS",
+      "character_continuity": "PASS",
+      "location_continuity": "PASS",
+      "prop_continuity": "PASS",
+      "timeline_coverage": "PASS",
+      "prompt_qc": "PASS",
+      "flow_package_dir": "production_pilot_03_visual\\EP011\\flow_package",
+      "status": "AWAITING_USER_VISUAL_PLAN_REVIEW"
+    }
+  }
+}

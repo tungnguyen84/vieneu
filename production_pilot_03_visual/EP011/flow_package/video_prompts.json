@@ -1,0 +1,152 @@
+{
+  "SC_001": {
+    "source_image_id": "SC_001.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P1",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_LINH) in casual home clothes sits at a dusty storage desk holding an old grey feature phone. Action: Her hands plug the thin cylindrical charging pin into the base of the phone; after a two-second pause, the LCD screen suddenly flickers on. Camera: Macro close-up on her hands and the phone screen as the pale blue backlight illuminates her fingers. End: Linh raises the phone toward her eyes with startled curiosity. Domestic storage room lighting.",
+    "recommendation_reason": "Hook hành động: Linh cắm sạc cho chiếc điện thoại Nokia cũ, màn hình nhấp nháy sáng bừng sau hơn mười năm."
+  },
+  "SC_002": null,
+  "SC_003": null,
+  "SC_004": null,
+  "SC_005": null,
+  "SC_006": {
+    "source_image_id": "SC_006.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: A 35-year-old Vietnamese man (CHAR_NAM_PRESENT) enters the apartment doorway carrying a dark engineering work bag. Action: He sets down his bag, unzips his dark charcoal work jacket, and hangs it neatly on the wooden wall peg, letting out a weary breath. Camera: Medium tracking shot from living room entrance following him inside, capturing his tired but gentle expression. End: He turns around toward the living room, offering a soft affectionate smile. Warm evening apartment lighting.",
+    "recommendation_reason": "Hành động trở về: Nam đi làm về, bước qua cửa căn hộ, tháo áo khoác bảo hộ với vẻ mệt mỏi nhưng luôn chu đáo."
+  },
+  "SC_007": null,
+  "SC_008": {
+    "source_image_id": "SC_008.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P1",
+    "prompt": "Start: Close macro view of Linh's hand holding the vintage grey Nokia phone. Action: Her thumb slowly presses the central navigation key; the low-resolution color screen scrolls through photo filenames until an image opens. Camera: Macro focus on the screen as the 2012 hospital image loads pixel by pixel under her thumb. End: The photo is fully displayed, her thumb freezing in place as her hand slightly trembles. Warm desk lamplight.",
+    "recommendation_reason": "Hành động tương tác thiết bị: Ngón tay Linh bấm phím điều hướng trên chiếc điện thoại Nokia cũ, màn hình chuyển sang bức ảnh lạ."
+  },
+  "SC_009": null,
+  "SC_010": null,
+  "SC_011": null,
+  "SC_012": {
+    "source_image_id": "SC_012.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: Nam (35, male) sits at the dining table with a laptop, the room lit only by the screen and a dining pendant lamp. Action: His phone buzzes silently on the wood; he checks the caller ID with a fleeting look of tension and promptly flips the phone face down. Camera: Slow pan from Linh's shadowed face watching in silence from the hallway doorway over to Nam's tense back. End: Nam takes a deep breath and types on his keyboard. Intimate low-key evening domestic lighting.",
+    "recommendation_reason": "Tình huống căng thẳng gia đình: Nam ngồi làm việc ở bàn ăn, điện thoại rung lên trong đêm, Linh kín đáo quan sát từ cửa phòng."
+  },
+  "SC_013": null,
+  "SC_014": {
+    "source_image_id": "SC_014.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_LINH) stands in front of the vintage desk in the storage room. Action: She slowly slides the wooden desk drawer all the way open, carefully moving aside old certificates and student notebooks. Camera: Overhead medium close-up tracking into the opening drawer. End: Her hand discovers a small red velvet drawstring pouch tucked in the back corner. Consistent warm storage lighting.",
+    "recommendation_reason": "Hành động điều tra: Linh quay lại kho đồ cũ, kéo ngăn kéo bàn gỗ tìm kiếm thêm vật chứng của Nam."
+  },
+  "SC_015": {
+    "source_image_id": "SC_015.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P1",
+    "prompt": "Start: Linh's hands gently hold the small red velvet pouch over the wooden desk. Action: Her fingers loosen the drawstring and tip the pouch, letting a small polished silver baby bracelet slide into her palm. Camera: Extreme close-up on her palm as the silver bracelet catches the warm lamplight, turning it to inspect the engraving. End: She lifts the bracelet close to her eyes, reading the engraved letters. Soft warm lamp illumination.",
+    "recommendation_reason": "Hành động mở kỷ vật: Linh nhẹ nhàng kéo dây túi nhung và nhấc chiếc vòng bạc trẻ em ra ánh sáng."
+  },
+  "SC_016": null,
+  "SC_017": null,
+  "SC_018": {
+    "source_image_id": "SC_018.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_LINH) sits with head in hands at the dining table, tears falling. Action: She raises her head, wipes the tear from her cheek with her sleeve, takes a deep breath, and stands up with resolute posture. Camera: Close-up slowly zooming out to medium shot, capturing the shift from despair to determination. End: She packs her notebook and travel bag. Soft natural daylight.",
+    "recommendation_reason": "Chuyển biến tâm lý: Linh lau giọt nước mắt lăn trên má, đứng dậy quyết tâm đi tìm chân tướng sự thật trước khi đối chất."
+  },
+  "SC_019": {
+    "source_image_id": "SC_019.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: An intercity passenger coach pulls up to a bus stop near Nam Định provincial hospital. Action: Linh (32, female) in an olive trench coat steps down from the bus carrying her shoulder bag, walking purposefully down the street toward the hospital gate. Camera: Medium tracking shot following her stride past provincial shops and motorbikes. End: She pauses before the hospital entrance sign, taking a steadying breath. Overcast daylight.",
+    "recommendation_reason": "Hành trình thực địa: Linh đi xe khách về Nam Định, bước xuống xe và đi bộ về phía bệnh viện tỉnh trong sương sớm."
+  },
+  "SC_020": {
+    "source_image_id": "SC_020.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P1",
+    "prompt": "Start: Linh (32, female) walks down the echoing mint-green corridor of the provincial hospital. Action: She walks past consultation room doors, approaches the nurses' administrative counter, and takes out the phone from her bag. Camera: Steady forward tracking shot leading her down the corridor, capturing the authentic provincial hospital environment. End: She stops before a senior nurse at the counter, politely greeting her. Cool fluorescent overhead hospital lighting.",
+    "recommendation_reason": "Hành động điều tra hiện trường: Linh bước đi dọc hành lang bệnh viện tỉnh, tiến lại quầy lưu trữ hồ sơ y tế."
+  },
+  "SC_021": null,
+  "SC_022": null,
+  "SC_023": {
+    "source_image_id": "SC_023.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: Linh (32, female) walks down a quiet narrow village lane lined with weathered brick walls in suburban Nam Định. Action: She reaches a small rusted iron gate, pushes it open with a soft metallic creak, and steps into the quiet overgrown courtyard. Camera: Low tracking shot moving forward with her, showing the mossy bricks and rustic single-story house facade. End: She walks up to the wooden front door, pausing respectfully before turning the latch. Soft misty daylight.",
+    "recommendation_reason": "Hành động tiếp cận: Linh đi bộ dọc con ngõ gạch đỏ ngoại ô Nam Định, đẩy cánh cổng sắt nhỏ bước vào sân nhà Thảo."
+  },
+  "SC_024": {
+    "source_image_id": "SC_024.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P1",
+    "prompt": "Start: Linh (32, female) steps quietly into a dimly lit rural bedroom where dust motes float in shafts of sunlight. Action: She approaches the wooden writing desk, gently lifts the lid of a tin keepsake box, and reveals stacked old letters and documents. Camera: Medium shot panning down from her respectful face to her hands lifting the box lid. End: Her fingers carefully touch an official notarized legal paper inside. Warm diffused window light.",
+    "recommendation_reason": "Hành động khám phá mấu chốt: Linh bước vào căn phòng nhỏ im lìm, mở chiếc hộp kỷ vật trên bàn gỗ chứa đầy giấy tờ quan trọng."
+  },
+  "SC_025": null,
+  "SC_026": null,
+  "SC_027": null,
+  "SC_028": null,
+  "SC_029": null,
+  "SC_030": {
+    "source_image_id": "SC_030.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P1",
+    "prompt": "Start: Young Nam (23, male) sits alone on a cold wooden bench in a dimly lit hospital corridor at night. Action: He buries his face in his hands, trembling with silent grief, then slowly looks up with tear-streaked eyes, clenching his fists in resolve. Camera: Low dolly shot moving slowly toward him as hospital staff walk past in the distant background. End: He stands up slowly, walking toward the nursery glass window. Cool fluorescent hospital lighting.",
+    "recommendation_reason": "Tái hiện quá khứ 2013: Nam trẻ tuổi ngồi ôm đầu tuyệt vọng ngoài hành lang phòng cấp cứu khi Thảo qua đời, tự hứa sẽ lo cho đứa bé."
+  },
+  "SC_031": null,
+  "SC_032": null,
+  "SC_033": null,
+  "SC_034": null,
+  "SC_035": null,
+  "SC_036": null,
+  "SC_037": null,
+  "SC_038": {
+    "source_image_id": "SC_038.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P1",
+    "prompt": "Start: Nam (35, male) enters the apartment carrying his work bag, stopping dead in his tracks. Action: Linh (32, female) stands up slowly from the dining table where the old phone and silver bracelet rest; she looks at him with moist, earnest eyes. Camera: Medium two-shot steadily pushing in toward Nam as his bag slips from his hand and his face turns pale. End: Nam takes a trembling step forward, his voice choked. Intimate warm evening domestic lighting.",
+    "recommendation_reason": "Khoảnh khắc đối đầu cao trào: Nam bước vào nhà, thấy Linh đang đứng đợi bên bàn cùng chiếc điện thoại và vòng bạc."
+  },
+  "SC_039": null,
+  "SC_040": {
+    "source_image_id": "SC_040.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: Nam and Linh sit opposite each other across the wooden dining table, tearful and silent. Action: Linh reaches both hands across the table, firmly grasping Nam's trembling hands; Nam looks up into her eyes, breaking into a tearful, relieved nod. Camera: Close-up on their clasped hands with wedding rings, slowly tilting up to their connected gazes. End: Nam brings her hands to his forehead in deep gratitude. Soft warm indoor lamplight.",
+    "recommendation_reason": "Hành động hàn gắn: Linh ngồi xuống đối diện Nam, nắm chặt đôi bàn tay chai sần của chồng qua bàn ăn."
+  },
+  "SC_041": null,
+  "SC_042": null,
+  "SC_043": null,
+  "SC_044": {
+    "source_image_id": "SC_044.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P1",
+    "prompt": "Start: Linh (32, female), Nam (35, male), and 11-year-old An walk side by side along an urban park pathway beside a lake. Action: An skips cheerfully between them holding both their hands; Nam looks down at An with a joyful smile, while Linh exchanges a loving look with Nam. Camera: Wide tracking shot moving backwards ahead of the three, framing them against shimmering lake water and golden trees. End: They continue walking into the soft golden sunset. Warm, tranquil golden hour lighting.",
+    "recommendation_reason": "Hành động kết thúc ấm áp: Ba người (Linh, Nam, và bé An) cùng nhau đi dạo trong công viên dưới ánh nắng chiều dịu dàng."
+  },
+  "SC_045": null
+}

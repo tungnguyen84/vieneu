@@ -1,0 +1,50 @@
+{
+  "overall_status": "PASS",
+  "timeline_qc": {
+    "pass": true,
+    "first_scene_start": 0.0,
+    "last_scene_end": 730.627,
+    "audio_duration_sec": 730.627,
+    "diff_sec": 0.0001,
+    "gaps": 0,
+    "overlaps": 0
+  },
+  "segment_coverage_qc": {
+    "pass": true,
+    "total_segments_expected": 90,
+    "total_segments_mapped": 90,
+    "missing_or_duplicate": 0
+  },
+  "hybrid_balance_qc": {
+    "pass": true,
+    "total_scenes": 45,
+    "image_only_count": 30,
+    "video_recommended_count": 15,
+    "video_ratio_pct": 33.33,
+    "hard_cap_pct": 40.0
+  },
+  "visual_spoiler_guard": {
+    "pass": true,
+    "reveal_1_scene": "SC_031",
+    "reveal_1_mode": "IMAGE_ONLY",
+    "reveal_2_scene": "SC_039",
+    "reveal_2_mode": "IMAGE_ONLY",
+    "notes": []
+  },
+  "prompt_qc": {
+    "pass": true,
+    "errors": []
+  },
+  "character_continuity": {
+    "pass": true
+  },
+  "location_continuity": {
+    "pass": true
+  },
+  "prop_continuity": {
+    "pass": true
+  },
+  "overlay_qc": {
+    "pass": true
+  }
+}

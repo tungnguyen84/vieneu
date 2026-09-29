@@ -1,0 +1,152 @@
+{
+  "SC_001": {
+    "source_image_id": "SC_001.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P1",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_MAI) in work clothes enters a dusty rustic attic holding a small flashlight. Action: She carefully steps across wooden floorboards toward a dusty corner where an old wooden box rests on a timber chest. Camera: Slow cinematic push-in from behind her shoulder following her steady footsteps. End: She stops directly before the wooden box, flashlight beam illuminating its aged surface. No wardrobe change.",
+    "recommendation_reason": "Hook hành động: Nhân vật bước vào gác xép bụi bặm, trèo thang gỗ và tiếp cận hiện trường bí mật."
+  },
+  "SC_002": null,
+  "SC_003": null,
+  "SC_004": null,
+  "SC_005": null,
+  "SC_006": {
+    "source_image_id": "SC_006.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P1",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_MAI) kneels beside the weathered wooden box on the attic floor. Action: Her hands slowly unhook the small brass latch and gently lift the wooden lid open, revealing interior contents. Camera: Eye-level medium close-up steadily zooming slightly in on her hands and the opening lid. End: The lid rests open; she pauses, her expression turning to awe. No identity change, consistent attic lighting.",
+    "recommendation_reason": "Hành động vật lý quan trọng: Đôi tay nhân vật nhẹ nhàng lau bụi và nâng nắp chiếc hộp gỗ hé mở bí mật."
+  },
+  "SC_007": null,
+  "SC_008": null,
+  "SC_009": {
+    "source_image_id": "SC_009.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_MAI) seated at her apartment desk under a warm task lamp. Action: She gently unfolds the yellowed official 1992 land transfer deed, smoothing the creases with her fingertips. Camera: Close macro pan following her fingers as they reveal the vintage red stamp and handwritten ink details. End: Document laid flat on desk, her hands resting at the sides. Consistent warm night interior lighting.",
+    "recommendation_reason": "Hành động điều tra: Mai cẩn thận lật giở và trải từng tờ giấy chứng nhận nhà đất 1992 dưới ánh đèn bàn."
+  },
+  "SC_010": null,
+  "SC_011": null,
+  "SC_012": {
+    "source_image_id": "SC_012.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_MAI) stands near her apartment window looking out at the dark night sky. Action: She turns around, pacing slowly across the wooden floor with folded arms, stopping to look back at the desk documents. Camera: Medium tracking shot following her subtle movement, capturing conflicted facial expression. End: She pauses beside the desk, looking down with furrowed brow. Consistent night apartment lighting.",
+    "recommendation_reason": "Chuyển động nội tâm căng thẳng: Mai đứng dậy đi lại trong phòng, quay đầu nhìn lại bàn làm việc đầy băn khoăn."
+  },
+  "SC_013": null,
+  "SC_014": {
+    "source_image_id": "SC_014.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_MAI) places the documents inside a protective leather folder. Action: She puts the folder into her canvas travel tote, picks up her knit cardigan from the chair, and walks toward the front door. Camera: Steady medium shot tracking her movement across the living room toward the door. End: Hand turning the doorknob, stepping forward with determined expression. No wardrobe change.",
+    "recommendation_reason": "Hành động quyết tâm: Mai lấy áo khoác và túi xách, quyết định lên đường tìm Chú Minh để làm rõ chân tướng."
+  },
+  "SC_015": null,
+  "SC_016": null,
+  "SC_017": {
+    "source_image_id": "SC_017.png",
+    "model": "omni_flash",
+    "motion_value": "MEDIUM",
+    "video_priority": "P2",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_MAI) stands in front of a wooden bookshelf in the living room. Action: She pulls down an old fabric-covered family photo album, opens it carefully, and turns the heavy parchment pages. Camera: Medium close-up slowly tilting down from her face to her hands turning the album pages. End: Her fingers pause on an empty photo sleeve; she shakes her head gently. Consistent soft daylight.",
+    "recommendation_reason": "Hành động tìm kiếm: Mai tìm trên giá sách cuốn an-bum ảnh cũ của gia đình để đối chiếu ký ức."
+  },
+  "SC_018": null,
+  "SC_019": {
+    "source_image_id": "SC_019.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_MAI) carrying her shoulder bag walks through a modest wrought-iron gate. Action: She steps along a brick path lined with potted highland flowers, stepping up to the wooden front door and knocking gently. Camera: Wide tracking shot moving smoothly along with her footsteps, capturing the peaceful garden and rustic house exterior. End: The wooden door begins to open from inside; she smiles politely. Soft highland morning daylight.",
+    "recommendation_reason": "Hành động di chuyển ngoại cảnh: Mai bước qua cổng ngõ cây xanh vào sân nhà Chú Minh ở Bảo Lộc."
+  },
+  "SC_020": {
+    "source_image_id": "SC_020.png",
+    "model": "omni_flash",
+    "motion_value": "MEDIUM",
+    "video_priority": "P2",
+    "prompt": "Start: A 58-year-old Vietnamese man (CHAR_CHU_MINH) with salt-and-pepper hair sits at a carved mahogany tea table opposite Mai. Action: He lifts a white porcelain teapot, pours steaming green tea into a small ceramic cup, and sets it down before looking up attentively. Camera: Medium two-shot, slowly zooming in toward Chú Minh's face as he observes Mai. End: Chú Minh leans back in his armchair, listening with gentle curiosity. Soft indoor natural light.",
+    "recommendation_reason": "Tương tác nhân vật chân thực: Chú Minh rót trà nóng tiếp cháu gái và lắng nghe câu hỏi."
+  },
+  "SC_021": null,
+  "SC_022": null,
+  "SC_023": null,
+  "SC_024": {
+    "source_image_id": "SC_024.png",
+    "model": "omni_flash",
+    "motion_value": "MEDIUM",
+    "video_priority": "P2",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_MAI) takes out the 1994 passbook and 1992 land deed from her leather folder. Action: She slides both documents across the mahogany table toward Chú Minh. Chú Minh leans forward, putting on his glasses to inspect them. Camera: Slow over-the-shoulder push-in from Mai toward Chú Minh's hands receiving the documents. End: Chú Minh holds the land deed under the light, eyes widening. Consistent warm interior lighting.",
+    "recommendation_reason": "Hành động đối chiếu: Mai trải sổ tiết kiệm và giấy chứng nhận quyền sử dụng đất lên bàn gỗ trước mặt Chú Minh."
+  },
+  "SC_025": null,
+  "SC_026": null,
+  "SC_027": null,
+  "SC_028": null,
+  "SC_029": {
+    "source_image_id": "SC_029.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P1",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_BA_HAO_YOUNG) and a 28-year-old woman (CHAR_BA_THOA_YOUNG) stand side-by-side in a 1980s textile factory. Action: Both women skillfully operate a vintage mechanical weaving loom, exchanging a warm supportive smile amidst rhythmic loom motion. Camera: Medium lateral dolly tracking past spinning yarn spools, capturing their earnest, hardworking expressions. End: They pause at shift end, wiping their brows and sharing a humble tin water canteen. Muted 1980s documentary tones, film grain.",
+    "recommendation_reason": "Tái hiện quá khứ lao động: Hai nữ công nhân trẻ đứng bên máy dệt vải năm 1980s, cùng chia sẻ nhọc nhằn và gom góp từng đồng."
+  },
+  "SC_030": null,
+  "SC_031": null,
+  "SC_032": null,
+  "SC_033": null,
+  "SC_034": {
+    "source_image_id": "SC_034.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: A 32-year-old Vietnamese woman (CHAR_MAI) stands beside a French colonial window in Chú Minh's house. Action: Raindrops trickle down the glass pane outside; she reaches up, gently touching the cool glass as a single tear rolls down her cheek. Camera: Close-up slowly reframing from the rain streaks on the window to her emotional, proud expression. End: She wipes her cheek, a warm smile of gratitude emerging. Soft highland overcast lighting.",
+    "recommendation_reason": "Khoảnh khắc xúc động sâu sắc: Mai nhìn ra cửa sổ trời mưa bay, đôi mắt ngấn lệ tự hào về người bà."
+  },
+  "SC_035": {
+    "source_image_id": "SC_035.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: Chú Minh (58, male) and Mai (32, female) sit facing each other across the wooden tea table. Action: Chú Minh leans forward with a firm nod, placing his weathered hand over Mai's hand in mutual agreement. Camera: Medium shot slowly pushing in on their clasped hands, then tilting up to their resolute, unified faces. End: Mai nods firmly back, their shared determination clear. Consistent warm indoor provincial lighting.",
+    "recommendation_reason": "Hành động quyết tâm gia đình: Chú Minh đặt tay lên tay Mai, đồng thuận thực hiện di nguyện của bà cố."
+  },
+  "SC_036": null,
+  "SC_037": null,
+  "SC_038": {
+    "source_image_id": "SC_038.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: A passenger car drives along a scenic winding mountain road in Lâm Đồng surrounded by towering pine trees and soft morning mist. Action: The car turns into the stone driveway of a peaceful French-colonial style rest home facility. Mai steps out carrying her folder. Camera: Wide cinematic landscape pan from the misty highland valley following the car to the facility gates. End: Mai walks up the stone steps toward the glass sunroom doors. Highland morning sunlight breaking through mist.",
+    "recommendation_reason": "Hành trình thực địa: Mai đi xe dọc theo con đường đèo uốn lượn mù sương ở Lâm Đồng hướng về viện dưỡng lão."
+  },
+  "SC_039": null,
+  "SC_040": {
+    "source_image_id": "SC_040.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P2",
+    "prompt": "Start: Mai (32, female) stands behind Bà Thoa's (80, female) manual wheelchair in the facility's courtyard garden. Action: Mai slowly pushes the wheelchair along the paved brick path under tall pine trees, Bà Thoa looking up and smiling warmly. Camera: Lateral tracking shot moving alongside them, capturing gentle conversation and sun dappling through pine needles. End: They pause by a flowering hydrangeas bed, bathed in warm golden highland sunlight. Consistent attire.",
+    "recommendation_reason": "Hành động kết nối thế hệ: Mai đẩy xe lăn cho bà Thoa dạo bước trong sân vườn đầy nắng thông xanh."
+  },
+  "SC_041": null,
+  "SC_042": null,
+  "SC_043": null,
+  "SC_044": {
+    "source_image_id": "SC_044.png",
+    "model": "omni_flash",
+    "motion_value": "HIGH",
+    "video_priority": "P1",
+    "prompt": "Start: Mai (32, female) and Chú Minh (58, male) stand side by side on the hillside boundary of the 650m2 garden plot in Bảo Lộc. Action: They walk slowly together across the green grass toward the edge of the hill, Chú Minh pointing toward the distant sunlit mountain valley. Camera: Wide tracking shot moving slowly backwards ahead of them, framing their hopeful strides against the vast blue sky. End: They stop side-by-side looking at the sunrise over the valley, smiling with deep peace. Crisp morning sunlight.",
+    "recommendation_reason": "Hành động kết thúc giàu ý nghĩa: Mai, Chú Minh và các thành viên gia đình cùng bước đi trên mảnh đất đồi chè, hướng về tương lai."
+  },
+  "SC_045": null
+}

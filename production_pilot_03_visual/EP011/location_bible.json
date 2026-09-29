@@ -1,0 +1,67 @@
+[
+  {
+    "location_id": "LOC_KHO_DO_CU",
+    "name": "Góc kho chứa đồ cũ / phòng làm việc nhỏ trong nhà Nam & Linh",
+    "city_region": "Hà Nội",
+    "type": "INTERIOR",
+    "architecture": "Compact domestic storage area / small utility room in an urban Vietnamese apartment, metal utility shelves, cardboard storage boxes labeled with marker, old computer tower, vintage wooden desk under warm bulb.",
+    "era": "Present (2024)",
+    "key_furniture": "Storage shelving, cardboard boxes, vintage small desk, desk lamp with warm tungsten bulb.",
+    "lighting": "Warm tungsten domestic lamp casting deep cozy shadows, subtle dust particles in air.",
+    "color_material_characteristics": "Warm neutral browns, aged paper cardboard, dusty surfaces.",
+    "story_function": "Where Linh finds the old Nokia phone and starts charging it.",
+    "reference_prompt": "Interior shot of a cozy storage nook in a Vietnamese urban apartment, cardboard archive boxes on wooden shelves, a small desk with a warm glowing lamp, quiet domestic realism, 35mm lens."
+  },
+  {
+    "location_id": "LOC_PHONG_KHACH_LINH_NAM",
+    "name": "Phòng khách căn hộ Linh và Nam",
+    "city_region": "Hà Nội",
+    "type": "INTERIOR",
+    "architecture": "Tastefully decorated modern Vietnamese apartment living room, minimalist wooden coffee table, grey fabric sofa, indoor potted monstera plant, dining table in background, framed wedding picture on credenza.",
+    "era": "Present (2024)",
+    "key_furniture": "Grey fabric sofa, low oak coffee table, wooden dining table with chairs, credenza with photo frames.",
+    "lighting": "Soft natural daylight through sheer white curtains, changing to intimate warm lamps at night.",
+    "color_material_characteristics": "Warm beige, muted grey, natural light wood grain.",
+    "story_function": "Central domestic setting for marital intimacy, doubt, confrontation, and reconciliation.",
+    "reference_prompt": "Interior of a tastefully furnished contemporary Vietnamese apartment living room, soft grey sofa, oak coffee table, potted green houseplant, sheer curtains diffusing afternoon daylight, authentic modern domestic life, 35mm photography."
+  },
+  {
+    "location_id": "LOC_BENH_VIEN_NAM_DINH_2012",
+    "name": "Bệnh viện đa khoa tỉnh Nam Định",
+    "city_region": "Nam Định",
+    "type": "INTERIOR",
+    "architecture": "Provincial Vietnamese state hospital corridor and records desk, mint-green painted lower half walls, worn terrazzo flooring, battered wooden office desks with paper medical binders, modest ceiling fluorescent tubes.",
+    "era": "2012-2013 and Present (2024)",
+    "key_furniture": "Nurses' administrative desk, wooden bench outside consultation rooms, file cabinets.",
+    "lighting": "Cool diffused fluorescent overhead lighting mixed with daylight from end-of-hallway windows.",
+    "color_material_characteristics": "Pale mint green, weathered cream, faded linoleum/terrazzo.",
+    "story_function": "Where the 2012 photo was taken, and where Linh investigates the 2013 maternity records.",
+    "reference_prompt": "Interior hallway of a provincial Vietnamese public hospital, pale green painted walls, terrazzo floor, wooden consultation doors, cool fluorescent light mixed with distant window daylight, realistic documentary texture, 35mm lens."
+  },
+  {
+    "location_id": "LOC_NHA_CU_THAO_NGOAI_O",
+    "name": "Căn nhà cấp 4 cũ của Thảo ở ngoại ô Nam Định",
+    "city_region": "Ngoại ô Nam Định",
+    "type": "INTERIOR/EXTERIOR",
+    "architecture": "Modest rural Vietnamese single-story brick house (nhà cấp 4), weathered red brick walls, corrugated fiber cement roof, simple wooden door, small gravel courtyard with banana trees and bougainvillea.",
+    "era": "Present (2024)",
+    "key_furniture": "Old wooden writing table, rustic wooden wardrobe, keepsake tin box.",
+    "lighting": "Gentle natural daylight filtering through wooden slatted window shutters, quiet nostalgic dust.",
+    "color_material_characteristics": "Earthy clay brick, weathered wood, rural northern Vietnamese silence.",
+    "story_function": "Where Linh finds Thảo's keepsake box containing the 2013 adoption papers and letters.",
+    "reference_prompt": "Interior of a quiet rural single-story Vietnamese home in suburban Nam Định, weathered wooden table under a shuttered window, soft shafts of daylight, rustic quietness, 35mm documentary realism."
+  },
+  {
+    "location_id": "LOC_CONG_VIEN_CHIEU",
+    "name": "Công viên thành phố buổi chiều muộn",
+    "city_region": "Hà Nội",
+    "type": "EXTERIOR",
+    "architecture": "Spacious urban park in Hanoi, paved lakeside walking path, mature leafy shade trees with golden afternoon sun, green grassy lawns, wooden park benches.",
+    "era": "Present (2024)",
+    "key_furniture": "Park benches, iron lamp posts along paved path.",
+    "lighting": "Golden hour late-afternoon sunshine casting long warm shadows, luminous sky.",
+    "color_material_characteristics": "Golden amber, lush park greens, shimmering lake water.",
+    "story_function": "Ending scene: Linh, Nam, and 11-year-old An walking happily together as an expanded family.",
+    "reference_prompt": "Wide cinematic shot of an urban park path by a lake in Hanoi during late afternoon golden hour, amber sunlight through tree branches, tranquil public park ambiance, feeling of familial warmth and peace, 35mm photography."
+  }
+]

@@ -1,0 +1,83 @@
+[
+  {
+    "scene_id": "SC_009",
+    "start_time": 134.598,
+    "end_time": 150.025,
+    "duration": 15.427,
+    "overlay_type": "PHONE_SCREEN",
+    "overlay_text": "HÌNH ẢNH: 12/08/2012 - 14:25\nĐịa điểm: Khoa Sản - Bệnh viện Đa khoa Tỉnh Nam Định\nChi tiết: Nam bế bé sơ sinh bên cạnh sản phụ trẻ",
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_OLD_PHONE_01",
+      "PROP_HOSPITAL_PHOTO_2012"
+    ]
+  },
+  {
+    "scene_id": "SC_011",
+    "start_time": 166.75,
+    "end_time": 185.727,
+    "duration": 18.977,
+    "overlay_type": "PHONE_SCREEN",
+    "overlay_text": "NHẬT KÝ CUỘC GỌI: 'CÔNG VIỆC'\n23:45 - Cuộc gọi đi (12 phút)\nThứ Bảy, 22:15 - Cuộc gọi nhỡ (3 lần)\nGhi chú: Tần suất liên tục vào ban đêm & cuối tuần",
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_OLD_PHONE_01"
+    ]
+  },
+  {
+    "scene_id": "SC_016",
+    "start_time": 248.015,
+    "end_time": 268.789,
+    "duration": 20.774,
+    "overlay_type": "DOCUMENT",
+    "overlay_text": "KỶ VẬT KHẮC TÊN:\n'An - 15/08/2013'\nVòng tay bạc trẻ em sơ sinh\nĐối chiếu: Trùng khớp mốc thời gian sau bức ảnh bệnh viện",
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_SILVER_BRACELET",
+      "PROP_OLD_PHONE_01"
+    ]
+  },
+  {
+    "scene_id": "SC_025",
+    "start_time": 402.728,
+    "end_time": 419.705,
+    "duration": 16.977,
+    "overlay_type": "DOCUMENT",
+    "overlay_text": "BIÊN BẢN BẢO LÃNH VIỆN PHÍ & HỒ SƠ CON NUÔI (2013)\nNgười đại diện bảo lãnh: Nguyễn Hoài Nam\nNội dung: Cam kết hỗ trợ chi phí và tìm gia đình nhận nuôi hợp pháp",
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_ADOPTION_RECORD_2013"
+    ]
+  },
+  {
+    "scene_id": "SC_031",
+    "start_time": 496.247,
+    "end_time": 510.462,
+    "duration": 14.215,
+    "overlay_type": "DOCUMENT",
+    "overlay_text": "BƯỚC NGOẶT 1 (XÁC MINH SỰ THẬT):\nNgười trong ảnh: Thảo (Em họ mồ côi của Nam, mất năm 2013)\nNam đứng ra làm người bảo lãnh pháp lý cho gia đình hiếm muộn nhận nuôi bé An",
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_ADOPTION_RECORD_2013",
+      "PROP_SILVER_BRACELET"
+    ]
+  },
+  {
+    "scene_id": "SC_034",
+    "start_time": 547.508,
+    "end_time": 560.682,
+    "duration": 13.174,
+    "overlay_type": "TRANSACTION",
+    "overlay_text": "SAO KÊ HỖ TRỢ NUÔI DƯỠNG (2013 - 2024)\nKhoản trích: Thu nhập từ các ca làm thêm kỹ thuật ban đêm\nMục đích: Chi phí học tập & sinh hoạt cho bé An qua gia đình nhận nuôi",
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_BANK_TRANSFER_NOTES"
+    ]
+  }
+]

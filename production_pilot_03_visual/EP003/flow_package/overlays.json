@@ -1,0 +1,65 @@
+[
+  {
+    "scene_id": "SC_010",
+    "start_time": 135.814,
+    "end_time": 149.96,
+    "duration": 14.146,
+    "overlay_type": "DOCUMENT",
+    "overlay_text": "SỔ TIẾT KIỆM KỲ HẠN DÀI (1994)\nChủ sở hữu: Nguyễn Thị Hảo\nSố tiền gốc: 15.000.000 VNĐ",
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_PASSBOOK_1994"
+    ]
+  },
+  {
+    "scene_id": "SC_011",
+    "start_time": 149.96,
+    "end_time": 164.27,
+    "duration": 14.31,
+    "overlay_type": "DOCUMENT",
+    "overlay_text": "GHI CHÉP TÍCH LŨY QUỸ CHUNG (1985-1994)\nĐịa chỉ liên hệ: Cơ sở chăm sóc người cao tuổi, Bảo Lộc - Lâm Đồng",
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_HANDWRITTEN_NOTE"
+    ]
+  },
+  {
+    "scene_id": "SC_025",
+    "start_time": 343.802,
+    "end_time": 362.144,
+    "duration": 18.342,
+    "overlay_type": "DOCUMENT",
+    "overlay_text": "BIÊN NHẬN TIỀN GỬI ĐỊNH KỲ (1994)\nTài khoản tích lũy tương trợ | Người đại diện: Nguyễn Thị Hảo",
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_PASSBOOK_1994"
+    ]
+  },
+  {
+    "scene_id": "SC_030",
+    "start_time": 437.321,
+    "end_time": 460.248,
+    "duration": 22.927,
+    "overlay_type": "DOCUMENT",
+    "overlay_text": "GIẤY CHUYỂN NHƯỢNG QUYỀN SỬ DỤNG ĐẤT (1992)\nThửa đất: 650m2 đất vườn tại Bảo Lộc, Lâm Đồng\nĐại diện đứng tên: Nguyễn Thị Hảo",
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": [
+      "PROP_LAND_DEED_1992"
+    ]
+  },
+  {
+    "scene_id": "SC_043",
+    "start_time": 677.903,
+    "end_time": 695.984,
+    "duration": 18.081,
+    "overlay_type": "DOCUMENT",
+    "overlay_text": "DỰ ÁN MÁI ẤM TÌNH THƯƠNG (TIẾP NỐI DI NGUYỆN)\nĐịa điểm: Thửa đất 650m2, Bảo Lộc - Lâm Đồng\nĐơn vị phối hợp: Gia đình & Đại diện cộng đồng",
+    "overlay_position": "LOWER_THIRD",
+    "font_style": "CLEAN_SERIF_DOCUMENTARY",
+    "associated_props": []
+  }
+]

@@ -1,0 +1,3 @@
+episode_id,title,audio_duration_sec,total_scenes,image_only,video_recommended,video_ratio_pct,overlay_scenes,qc_status,flow_package
+EP003,Chiếc Hộp Gỗ Của Người Bà Quá Cố,730.627,45,30,15,33.33,5,PASS,production_pilot_03_visual\EP003\flow_package
+EP011,Bức Ảnh Lạ Trong Điện Thoại Cũ,743.721,45,30,15,33.33,6,PASS,production_pilot_03_visual\EP011\flow_package

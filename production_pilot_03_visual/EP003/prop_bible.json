@@ -1,0 +1,42 @@
+[
+  {
+    "prop_id": "PROP_WOODEN_BOX",
+    "name": "Chiếc hộp gỗ sờn cũ",
+    "dimensions": "32cm x 22cm x 14cm",
+    "material": "Aged Vietnamese jackfruit wood (gỗ mít) with natural grain, unvarnished weathered patina.",
+    "hardware": "Small darkened brass hinges, brass clasp latch without a padlock.",
+    "condition": "Layer of fine attic dust on lid, faint scuffs, corners smoothed by years of gentle handling.",
+    "contents": "Yellowed passbook, official land transfer deed, handwritten note, black-and-white vintage photograph.",
+    "continuity_notes": "Must retain exact rectangular proportions, distinct grain pattern, and brass hardware in all scenes."
+  },
+  {
+    "prop_id": "PROP_VINTAGE_PHOTO_BAO_THOA",
+    "name": "Bức ảnh ố vàng chụp Bà Hảo và Bà Thoa thời trẻ",
+    "format": "Original 10cm x 15cm photographic print with slightly scalloped vintage borders.",
+    "visual_content": "Two young Vietnamese women (young Bà Hảo and young Bà Thoa) in early 1980s cotton work clothes standing side-by-side in front of a textile mill gate, gentle genuine smiles.",
+    "condition": "Sepia patina, subtle silver mirroring at edges, light crease on upper right corner, no tears.",
+    "continuity_notes": "Consistent appearance whenever inspected; mystery clue in first half, emotional treasure in second half."
+  },
+  {
+    "prop_id": "PROP_PASSBOOK_1994",
+    "name": "Sổ tiết kiệm kỳ hạn dài năm 1994",
+    "format": "1994 Vietnamese state commercial bank savings book, textured red cardstock cover.",
+    "visual_content": "Official bank insignia, printed fields with handwritten blue ink entries, red circular bank seal.",
+    "evidence_text": "Ngân hàng Nông nghiệp & Phát triển Nông thôn - Sổ Tiền Gửi Tiết Kiệm (1994) | Chủ sở hữu: Nguyễn Thị Hảo | Số tiền: 15.000.000 VNĐ",
+    "continuity_notes": "Clean paper surface in image prompt, exact legal text rendered via overlay."
+  },
+  {
+    "prop_id": "PROP_LAND_DEED_1992",
+    "name": "Giấy chuyển nhượng quyền sử dụng đất vườn năm 1992",
+    "format": "Official folded bureaucratic document, yellowed legal paper with typed typewriter text and red administrative stamp.",
+    "evidence_text": "UBND Thị xã Bảo Lộc - Giấy Chứng Nhận Chuyển Nhượng Quyền Sử Dụng Đất (1992) | Thửa đất: 650m2 đất vườn | Đại diện đứng tên: Nguyễn Thị Hảo",
+    "continuity_notes": "Clean paper surface in image prompt, exact legal text rendered via overlay."
+  },
+  {
+    "prop_id": "PROP_HANDWRITTEN_NOTE",
+    "name": "Tờ giấy viết tay ghi số và địa chỉ viện dưỡng lão",
+    "format": "Folded piece of vintage lined notebook paper, faded blue ballpoint pen writing.",
+    "evidence_text": "Ghi chép quỹ chung 1985-1994 | Liên hệ: Cơ sở chăm sóc người cao tuổi, Bảo Lộc - Lâm Đồng",
+    "continuity_notes": "Used as key investigative bridge from family suspicion to Lâm Đồng journey."
+  }
+]
