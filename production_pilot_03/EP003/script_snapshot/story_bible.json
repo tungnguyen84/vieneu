@@ -1,0 +1,162 @@
+{
+  "episode_id": "EP003",
+  "title": "Chiếc Hộp Gỗ Của Người Bà Quá Cố",
+  "protagonist": {
+    "name": "Mai",
+    "char_id": "MAI",
+    "age": 32,
+    "role": "Nhân vật chính",
+    "description": "Mai là một nhân viên văn phòng tại thành phố Hồ Chí Minh, sống độc lập và khá bận rộn với công việc. Cô có mối quan hệ gần gũi với người bà quá cố, nhưng do khoảng cách địa lý và cuộc sống bận rộn, cô không có nhiều cơ hội tìm hiểu sâu về quá khứ của bà. Mai là người có lý trí, đôi khi hơi thiếu nhạy bén với những vấn đề tình cảm hoặc quá khứ phức tạp.",
+    "want": "Tìm hiểu sự thật về cuộc đời bà cố để hiểu rõ hơn về người mình yêu thương và có thể giải quyết những bí ẩn tài sản gia đình.",
+    "fear": "Sợ rằng những bí mật có thể làm tổn thương gia đình hoặc làm hoen ố hình ảnh tốt đẹp về bà cố trong mắt cô.",
+    "misbelief": "Ban đầu tin rằng bà cố có thể có một mối tình bí mật hoặc một gia đình thứ hai ở nơi xa do những tài sản không rõ nguồn gốc."
+  },
+  "supporting_characters": [
+    {
+      "name": "Bà Hảo",
+      "char_id": "BAO",
+      "role": "Bà cố",
+      "age": 85,
+      "description": "Bà Hảo là người phụ nữ tảo tần, hiền hậu, đã qua đời trước khi câu chuyện bắt đầu. Bà sống phần lớn cuộc đời ở quê nhà, làm công nhân tại một xưởng dệt nhỏ. Dù cuộc sống lam lũ, bà luôn giữ trong mình những bí mật của quá khứ.",
+      "want": "Thực hiện lời hứa với người bạn tri kỷ và xây dựng một mái ấm cho những mảnh đời bất hạnh.",
+      "fear": "Sợ rằng bí mật sẽ không bao giờ được hé lộ hoặc bị hiểu lầm.",
+      "reason_for_silence": "Giữ lời hứa với bà Thoa và giữ gìn sự bình yên cho gia đình, không muốn gây xáo trộn."
+    },
+    {
+      "name": "Bà Thoa",
+      "char_id": "BATOA",
+      "role": "Bạn thân của bà cố",
+      "age": 82,
+      "description": "Bà Thoa là người bạn tri kỷ của bà Hảo, từng cùng nhau trải qua nhiều biến cố. Bà sống neo đơn tại một viện dưỡng lão ở Lâm Đồng sau khi gặp tai nạn lao động khiến bà bị tàn tật. Bà là người giữ kín bí mật về quỹ tương trợ.",
+      "want": "Giữ gìn giao ước với bà Hảo và mong quỹ được sử dụng đúng mục đích.",
+      "fear": "Sợ rằng số tài sản sẽ bị chiếm đoạt hoặc gia đình bà Hảo không hiểu được ý nghĩa của nó.",
+      "reason_for_silence": "Mất giấy tờ tùy thân sau biến cố, sống trong hoàn cảnh khó khăn và tin tưởng bà Hảo sẽ giữ hộ."
+    },
+    {
+      "name": "Chú Minh",
+      "char_id": "CHUMINH",
+      "role": "Chú ruột của Mai",
+      "age": 55,
+      "description": "Chú Minh là anh trai của bố Mai, là người lớn tuổi nhất trong gia đình còn nhớ nhiều về quá khứ. Chú có tính cách hơi bảo thủ nhưng thương yêu gia đình. Chú từng biết bà Hảo có một người bạn thân mất liên lạc.",
+      "want": "Giữ gìn sự yên ổn cho gia đình và tôn trọng quá khứ của bà.",
+      "fear": "Sợ rằng việc đào bới quá khứ sẽ gây ra những rạn nứt hoặc mâu thuẫn không đáng có.",
+      "reason_for_silence": "Không có thông tin chi tiết, chỉ nhớ mang máng về một người bạn cũ của bà Hảo và không nghĩ rằng nó quan trọng."
+    }
+  ],
+  "relationships": [
+    {
+      "char_a": "MAI",
+      "char_b": "BAO",
+      "relationship": "Cháu gái và bà cố"
+    },
+    {
+      "char_a": "BAO",
+      "char_b": "BATOA",
+      "relationship": "Bạn thân tri kỷ"
+    },
+    {
+      "char_a": "MAI",
+      "char_b": "CHUMINH",
+      "relationship": "Cháu gái và chú ruột"
+    }
+  ],
+  "timeline": [
+    "Những năm 1970s-1980s: Bà Hảo và bà Thoa cùng làm việc, tích góp tiền từ thu nhập thêm để lập quỹ tương trợ.",
+    "1992: Bà Hảo và bà Thoa cùng nhau mua mảnh đất vườn 650m2 tại Bảo Lộc, Lâm Đồng, giấy tờ ghi tên bà Hảo do bà Thoa mất giấy tờ tùy thân.",
+    "1994: Mở sổ tiết kiệm kỳ hạn dài 15 triệu đồng (giá trị tương đương thời bấy giờ) dưới tên bà Hảo.",
+    "Những năm sau đó: Bà Thoa gặp tai nạn lao động, tàn tật và sống neo đơn. Bà Hảo giữ gìn tài sản và bí mật theo giao ước.",
+    "Hiện tại (2024): Bà Hảo qua đời, Mai dọn dẹp căn gác xép và phát hiện chiếc hộp gỗ.",
+    "Hiện tại (2024): Mai bắt đầu hành trình tìm hiểu sự thật."
+  ],
+  "locations": [
+    "Căn gác xép nhà bà cố (hiện tại)",
+    "Nhà Mai tại TP. Hồ Chí Minh",
+    "Phòng làm việc của Mai",
+    "Hợp tác xã cũ (nay là địa điểm khác) tại Bảo Lộc, Lâm Đồng",
+    "Viện dưỡng lão tại Lâm Đồng"
+  ],
+  "money_facts": [],
+  "critical_facts": [
+    {
+      "fact_id": "FACT_001",
+      "field": "timeline_years",
+      "value": "Khoảng 30 năm",
+      "description": "Thời gian từ khi lập quỹ đến khi Mai phát hiện, bao gồm cả việc bà Hảo giữ tài sản.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_002",
+      "field": "relationship_nature",
+      "value": "Cháu gái (Mai) và bà cố (Bà Hảo); Bạn thân tri kỷ (Bà Hảo và Bà Thoa)",
+      "description": "Mối quan hệ chính xác giữa các nhân vật liên quan đến bí mật.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_003",
+      "field": "evidence_origin",
+      "value": "Chiếc hộp gỗ cũ kỹ trên gác xép nhà bà cố.",
+      "description": "Nguồn gốc của vật chứng chính dẫn đến bí mật.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_004",
+      "field": "reveal_1_truth",
+      "value": "Người phụ nữ trong ảnh là Bà Thoa, bạn thân của Bà Hảo, cả hai cùng tích góp tài sản để giúp đỡ người khác sau chiến tranh. Bà Hảo đứng tên tài sản hộ Bà Thoa do Bà Thoa mất giấy tờ tùy thân.",
+      "description": "Nội dung cốt lõi của Bước ngoặt 1, làm rõ mối quan hệ và mục đích ban đầu.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_005",
+      "field": "reveal_2_truth",
+      "value": "Tài sản là quỹ chung của Bà Hảo và Bà Thoa, với mục đích cuối cùng là xây nhà tình thương cho trẻ mồ côi. Bà Hảo giữ kín để thực hiện lời hứa và di nguyện của hai người.",
+      "description": "Nội dung gốc rễ của Bước ngoặt 2, hé lộ mục đích nhân văn của số tài sản.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_006",
+      "field": "property_details",
+      "value": "Một mảnh đất vườn 650m2 tại Bảo Lộc, Lâm Đồng (mua năm 1992) và một sổ tiết kiệm kỳ hạn dài (mở năm 1994, trị giá gốc 15 triệu đồng thời giá bấy giờ).",
+      "description": "Thông tin chi tiết về tài sản được tìm thấy.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_007",
+      "field": "location_of_friend",
+      "value": "Viện dưỡng lão tại Lâm Đồng.",
+      "description": "Địa điểm hiện tại của bạn thân bà cố.",
+      "status": "LOCKED"
+    }
+  ],
+  "secret": "Bà cố Hảo đã cùng bạn thân là bà Thoa tích lũy một khoản tiền và sở hữu một mảnh đất ở Bảo Lộc, Lâm Đồng, với mục đích bí mật là xây dựng một trung tâm bảo trợ trẻ em.",
+  "false_lead": "Mai ban đầu nghi ngờ bà cố có một mối tình bí mật hoặc một gia đình thứ hai vì sự tồn tại của tài sản và bức ảnh người phụ nữ lạ.",
+  "clues": [
+    "Manh mối 1: Chiếc hộp gỗ chứa sổ tiết kiệm đã đáo hạn (mở năm 1994), giấy tờ chuyển nhượng quyền sử dụng đất vườn (ký năm 1992) ở Bảo Lộc, Lâm Đồng và một bức ảnh ố vàng chụp bà Hảo cùng một người phụ nữ lạ.",
+    "Manh mối 2: Một tờ giấy viết tay trong hộp ghi lại những con số (số tài khoản?) và ký hiệu khó hiểu, kèm theo địa chỉ một viện dưỡng lão ở Đà Lạt (sau đó được làm rõ là Lâm Đồng).",
+    "Manh mối 3: Chú Minh (anh trai bố Mai) nhớ mang máng bà Hảo từng có một người bạn thân tên Thoa, sống ở Lâm Đồng và đã mất liên lạc từ lâu. Chú cũng xác nhận bà Thoa bị tàn tật sau tai nạn lao động tại xưởng dệt."
+  ],
+  "reveal_1": "Người phụ nữ trong ảnh là bà Thoa, bạn thân tri kỷ của bà Hảo. Cả hai cùng là công nhân xưởng dệt, có hoàn cảnh khó khăn và cùng nhau tích cóp tiền từ những khoản thu nhập thêm để lập quỹ tương trợ, giúp đỡ những người đồng đội cũ hoặc những hoàn cảnh khó khăn khác sau chiến tranh. Bà Hảo đứng tên tài sản vì bà Thoa gặp biến cố mất giấy tờ tùy thân.",
+  "reveal_2": "Số tiền trong sổ tiết kiệm và mảnh đất không phải là tài sản cá nhân bà Hảo giấu gia đình để hưởng thụ, mà là quỹ chung của bà Hảo và bà Thoa. Đây là giao ước danh dự giữa hai người phụ nữ lao động nghèo, với mong muốn cuối cùng là dùng số tiền này để xây một mái ấm nhỏ cho trẻ em mồ côi, một di nguyện mà họ ấp ủ từ lâu. Bà Hảo đã âm thầm thực hiện vai trò người giữ và quản lý quỹ.",
+  "emotional_payoff": "Mai xúc động và tự hào về sự hy sinh thầm lặng, tình bạn cao đẹp và tấm lòng nhân ái của bà cố. Cô nhận ra bí mật của bà không phải là lỗi lầm mà là một gánh nặng của trách nhiệm và tình yêu thương. Gia đình Mai, sau khi hiểu rõ câu chuyện, cùng nhau quyết định hoàn thành di nguyện của bà cố và bà Thoa, biến số tài sản thành một trung tâm bảo trợ trẻ em ý nghĩa.",
+  "reflection_theme": "Những bí mật đôi khi không phải là lỗi lầm, mà là gánh nặng của trách nhiệm và tình yêu thương vô bờ bến, chờ đợi thời điểm thích hợp để được hé lộ và tiếp nối, mang lại giá trị nhân văn sâu sắc.",
+  "ending": "Mai và gia đình bắt tay vào việc biến di nguyện của bà cố và bà Thoa thành hiện thực. Họ tìm gặp bà Thoa tại viện dưỡng lão, chia sẻ câu chuyện và nhận được sự đồng thuận. Câu chuyện kết thúc với hình ảnh gia đình Mai cùng bà Thoa và đại diện chính quyền địa phương khởi công xây dựng trung tâm bảo trợ trẻ em, là sự nối tiếp ý nghĩa cho tình bạn và lòng nhân ái.",
+  "source_idea_id": "IDEA_003",
+  "time_period": "Hiện tại (2024) và các mốc quá khứ: 1992, 1994, khoảng thời gian sau chiến tranh (những năm 1970s-1980s).",
+  "mystery_question": "Chiếc hộp gỗ chứa đựng những giấy tờ gì? Tại sao bà cố lại giấu kỹ những tài sản này và người phụ nữ trong ảnh là ai?",
+  "narrative_skeleton": {
+    "trigger": "Mai dọn dẹp gác xép sau khi bà cố qua đời và phát hiện chiếc hộp gỗ bí ẩn.",
+    "initial_suspicion": "Mai nghi ngờ bà cố có bí mật tình cảm hoặc gia đình thứ hai do tài sản lạ và ảnh người phụ nữ không quen.",
+    "investigation_method": "Mai xem xét giấy tờ trong hộp, tìm kiếm thông tin về địa chỉ, hỏi han người thân (Chú Minh) để ghép nối các mảnh ghép.",
+    "evidence_chain": [
+      "Manh mối 1: Chiếc hộp chứa sổ tiết kiệm, giấy tờ đất và ảnh.",
+      "Manh mối 2: Tờ giấy ghi ký hiệu/địa chỉ viện dưỡng lão.",
+      "Manh mối 3: Chú Minh cung cấp thông tin về bạn thân bà Hảo tên Thoa ở Lâm Đồng."
+    ],
+    "reveal_mechanism": "Mai tìm đến địa chỉ trong giấy tờ, gặp gỡ đại diện viện dưỡng lão hoặc những người quen biết bà Thoa, qua đó xác minh bà Thoa chính là người trong ảnh và là bạn thân của bà Hảo. Thông tin về hoàn cảnh của bà Thoa và quá khứ làm việc chung hé lộ chân tướng ban đầu.",
+    "second_reveal_mechanism": "Sau khi biết bà Thoa còn sống và có liên quan mật thiết, Mai tiếp tục tìm hiểu sâu hơn về mục đích lập quỹ. Qua lời kể của bà Thoa (hoặc những giấy tờ cũ hơn mà bà Thoa lưu giữ) và sự suy luận của Mai, bí mật về di nguyện xây nhà tình thương được hé lộ.",
+    "emotional_resolution": "Mai thấu hiểu và xúc động trước tình bạn, sự hy sinh và lòng nhân ái của bà cố. Gia đình Mai cùng nhau quyết định thực hiện di nguyện, tìm đến bà Thoa để cùng chung tay xây dựng trung tâm bảo trợ trẻ em."
+  },
+  "status": "DRAFT",
+  "approved_by": null,
+  "approved_at": null,
+  "last_modified_at": 1790668452.9455068
+}

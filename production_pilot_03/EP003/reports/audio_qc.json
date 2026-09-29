@@ -1,0 +1,29 @@
+{
+  "episode_id": "EP003",
+  "title": "Chiếc Hộp Gỗ Của Người Bà Quá Cố",
+  "integrated_lufs": -15.15,
+  "true_peak_db": -0.97,
+  "lra": 2.1,
+  "duration_sec": 730.63,
+  "music_duration_sec": 231.0,
+  "dry_duration_sec": 499.6,
+  "music_coverage_percent": 31.6,
+  "dry_voice_percent": 68.4,
+  "reveal_1_is_dry": true,
+  "music_during_reveal_sec": 0.0,
+  "clipping_detected": false,
+  "unexpected_silence_count": 0,
+  "listening_checkpoints": {
+    "hook": "00:00 (0.05s) [Seg 001]",
+    "first_anomaly": "00:26 (26.40s) [Seg 004]",
+    "strong_clue": "02:04 (124.61s) [Seg 018]",
+    "midpoint": "05:03 (303.06s) [Seg 045]",
+    "reveal_1_lead_in": "07:27 (447.46s) [Seg 060]",
+    "reveal_1": "07:40 (460.55s) [Seg 061]",
+    "reveal_2": "09:58 (598.87s) [Seg 076]",
+    "emotional_payoff": "10:33 (633.44s) [Seg 080]",
+    "reflection": "11:08 (668.25s) [Seg 084]",
+    "ending": "11:44 (704.87s) [Seg 088]"
+  },
+  "overall_status": "PASS"
+}

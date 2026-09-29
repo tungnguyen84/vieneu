@@ -1,0 +1,29 @@
+{
+  "episode_id": "EP011",
+  "title": "Bức Ảnh Lạ Trong Điện Thoại Cũ",
+  "integrated_lufs": -15.17,
+  "true_peak_db": -0.95,
+  "lra": 2.1,
+  "duration_sec": 743.72,
+  "music_duration_sec": 234.0,
+  "dry_duration_sec": 509.7,
+  "music_coverage_percent": 31.5,
+  "dry_voice_percent": 68.5,
+  "reveal_1_is_dry": true,
+  "music_during_reveal_sec": 0.0,
+  "clipping_detected": false,
+  "unexpected_silence_count": 0,
+  "listening_checkpoints": {
+    "hook": "00:00 (0.05s) [Seg 001]",
+    "first_anomaly": "00:07 (7.15s) [Seg 002]",
+    "strong_clue": "02:22 (142.16s) [Seg 018]",
+    "midpoint": "06:09 (369.83s) [Seg 045]",
+    "reveal_1_lead_in": "08:09 (489.63s) [Seg 060]",
+    "reveal_1": "08:16 (496.55s) [Seg 061]",
+    "reveal_2": "10:11 (611.84s) [Seg 076]",
+    "emotional_payoff": "10:56 (656.44s) [Seg 080]",
+    "reflection": "11:33 (693.21s) [Seg 084]",
+    "ending": "12:03 (723.43s) [Seg 088]"
+  },
+  "overall_status": "PASS"
+}

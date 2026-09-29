@@ -1,0 +1,51 @@
+[
+  {
+    "fact_id": "FACT_001",
+    "field": "timeline_years",
+    "value": "Khoảng 30 năm",
+    "description": "Thời gian từ khi lập quỹ đến khi Mai phát hiện, bao gồm cả việc bà Hảo giữ tài sản.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_002",
+    "field": "relationship_nature",
+    "value": "Cháu gái (Mai) và bà cố (Bà Hảo); Bạn thân tri kỷ (Bà Hảo và Bà Thoa)",
+    "description": "Mối quan hệ chính xác giữa các nhân vật liên quan đến bí mật.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_003",
+    "field": "evidence_origin",
+    "value": "Chiếc hộp gỗ cũ kỹ trên gác xép nhà bà cố.",
+    "description": "Nguồn gốc của vật chứng chính dẫn đến bí mật.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_004",
+    "field": "reveal_1_truth",
+    "value": "Người phụ nữ trong ảnh là Bà Thoa, bạn thân của Bà Hảo, cả hai cùng tích góp tài sản để giúp đỡ người khác sau chiến tranh. Bà Hảo đứng tên tài sản hộ Bà Thoa do Bà Thoa mất giấy tờ tùy thân.",
+    "description": "Nội dung cốt lõi của Bước ngoặt 1, làm rõ mối quan hệ và mục đích ban đầu.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_005",
+    "field": "reveal_2_truth",
+    "value": "Tài sản là quỹ chung của Bà Hảo và Bà Thoa, với mục đích cuối cùng là xây nhà tình thương cho trẻ mồ côi. Bà Hảo giữ kín để thực hiện lời hứa và di nguyện của hai người.",
+    "description": "Nội dung gốc rễ của Bước ngoặt 2, hé lộ mục đích nhân văn của số tài sản.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_006",
+    "field": "property_details",
+    "value": "Một mảnh đất vườn 650m2 tại Bảo Lộc, Lâm Đồng (mua năm 1992) và một sổ tiết kiệm kỳ hạn dài (mở năm 1994, trị giá gốc 15 triệu đồng thời giá bấy giờ).",
+    "description": "Thông tin chi tiết về tài sản được tìm thấy.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_007",
+    "field": "location_of_friend",
+    "value": "Viện dưỡng lão tại Lâm Đồng.",
+    "description": "Địa điểm hiện tại của bạn thân bà cố.",
+    "status": "LOCKED"
+  }
+]

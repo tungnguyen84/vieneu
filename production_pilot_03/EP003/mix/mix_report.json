@@ -1,0 +1,37 @@
+{
+  "project_slug": "EP003",
+  "timestamp": 1790688314.51081,
+  "created_at_str": "2026-09-29 20:25:14",
+  "total_episode_sec": 730.6,
+  "total_episode_fmt": "12:10",
+  "music_duration_sec": 231.0,
+  "music_duration_fmt": "03:51",
+  "dry_duration_sec": 499.6,
+  "dry_duration_fmt": "08:19",
+  "music_coverage_pct": 31.6,
+  "target_recommendation": "30% – 38%",
+  "is_high_coverage": false,
+  "warning_message": "",
+  "ducking_enabled": false,
+  "ducking_db": 0.0,
+  "master_integrated_lufs": -15.15,
+  "master_true_peak_db": -0.97,
+  "master_lra": 2.1,
+  "target_lufs": -14.0,
+  "target_true_peak_db": -1.0,
+  "outputs": {
+    "voice_master_wav": "D:\\App\\VieNeuTTS\\production_pilot_03\\EP003\\audio\\narration_dry.wav",
+    "music_mix_wav": "D:\\App\\VieNeuTTS\\production_pilot_03\\EP003\\master\\music_mix.wav",
+    "final_mix_pre_master_wav": "D:\\App\\VieNeuTTS\\production_pilot_03\\EP003\\master\\final_mix_pre_master.wav",
+    "final_mix_wav": "D:\\App\\VieNeuTTS\\production_pilot_03\\EP003\\master\\final_mix.wav",
+    "final_mix_mp3": "D:\\App\\VieNeuTTS\\production_pilot_03\\EP003\\master\\final_mix.mp3",
+    "cue_sheet_json": "D:\\App\\VieNeuTTS\\production_pilot_03\\EP003\\mix\\cue_sheet.json"
+  },
+  "final_master_wav": "D:\\App\\VieNeuTTS\\production_pilot_03\\EP003\\master\\final_mix.wav",
+  "final_master_mp3": "D:\\App\\VieNeuTTS\\production_pilot_03\\EP003\\master\\final_mix.mp3",
+  "music_stem": "D:\\App\\VieNeuTTS\\production_pilot_03\\EP003\\master\\music_mix.wav",
+  "master_stats": {
+    "integrated_lufs": -15.15,
+    "true_peak_db": -0.97
+  }
+}

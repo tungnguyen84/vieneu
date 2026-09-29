@@ -1,0 +1,146 @@
+{
+  "idea_id": "IDEA_011",
+  "episode_id": "EP011",
+  "total_changes": 13,
+  "migration_record": null,
+  "changes": [
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[056] Profile: REVEAL",
+      "after": "[056] Profile: MYSTERY",
+      "segment_before": "[056] Profile: REVEAL",
+      "segment_after": "[056] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [056] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[057] Profile: REVEAL",
+      "after": "[057] Profile: MYSTERY",
+      "segment_before": "[057] Profile: REVEAL",
+      "segment_after": "[057] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [057] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[058] Profile: REVEAL",
+      "after": "[058] Profile: MYSTERY",
+      "segment_before": "[058] Profile: REVEAL",
+      "segment_after": "[058] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [058] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[059] Profile: REVEAL",
+      "after": "[059] Profile: MYSTERY",
+      "segment_before": "[059] Profile: REVEAL",
+      "segment_after": "[059] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [059] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[060] Profile: REVEAL",
+      "after": "[060] Profile: MYSTERY",
+      "segment_before": "[060] Profile: REVEAL",
+      "segment_after": "[060] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [060] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[068] Profile: REVEAL",
+      "after": "[068] Profile: NORMAL",
+      "segment_before": "[068] Profile: REVEAL",
+      "segment_after": "[068] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [068] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[069] Profile: REVEAL",
+      "after": "[069] Profile: NORMAL",
+      "segment_before": "[069] Profile: REVEAL",
+      "segment_after": "[069] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [069] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[070] Profile: REVEAL",
+      "after": "[070] Profile: NORMAL",
+      "segment_before": "[070] Profile: REVEAL",
+      "segment_after": "[070] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [070] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "episode_id": "EP011",
+      "segment_id": "076",
+      "rule_id": "EMOTIONAL_AMBIGUITY_POLISH",
+      "rule": "GENERIC_REFLECTION",
+      "before": "Linh không trách móc. Cô chỉ dịu dàng nói: 'Em hiểu rồi. Anh đã làm rất tốt.' Lời nói của cô như gỡ đi gánh nặng bao năm cho Nam.",
+      "after": "Linh khẽ thở phào khi mối hoài nghi lớn nhất được trút bỏ, nhưng trong lòng cô vẫn còn nguyên cảm giác hụt hẫng vì suốt mười năm qua, Nam đã không chọn cách sẻ chia cùng vợ.",
+      "reason": "Điều chỉnh kết cục phân đoạn [076]: giữ lại sự tổn thương thực tế và quá trình hàn gắn kiên nhẫn thay vì tha thứ cổ tích tức thì.",
+      "story_fact_changed": false
+    },
+    {
+      "episode_id": "EP011",
+      "segment_id": "078",
+      "rule_id": "EMOTIONAL_AMBIGUITY_POLISH",
+      "rule": "GENERIC_REFLECTION",
+      "before": "Linh nắm lấy tay Nam, siết chặt. 'Chúng ta sẽ cùng nhau chăm sóc An. Con bé sẽ có cả tình thương của em.'",
+      "after": "Linh nhìn Nam, ánh mắt đan xen giữa xót xa và trách giận: 'Em thương bé An và hiểu lời hứa của anh, nhưng sự giấu giếm suốt mười năm ấy đã làm tổn thương niềm tin giữa hai đứa mình. Chúng ta sẽ cần thời gian để hàn gắn lại.'",
+      "reason": "Điều chỉnh kết cục phân đoạn [078]: giữ lại sự tổn thương thực tế và quá trình hàn gắn kiên nhẫn thay vì tha thứ cổ tích tức thì.",
+      "story_fact_changed": false
+    },
+    {
+      "episode_id": "EP011",
+      "segment_id": "081",
+      "rule_id": "EMOTIONAL_AMBIGUITY_POLISH",
+      "rule": "GENERIC_REFLECTION",
+      "before": "Sự thấu hiểu và chấp nhận, đó là liều thuốc hàn gắn mọi vết thương lòng. Nó giúp chúng ta xây dựng lại niềm tin và củng cố sợi dây gắn kết.",
+      "after": "Sự thấu hiểu mở ra cơ hội để hàn gắn, nhưng vết rạn niềm tin sau mười năm giấu giếm không thể biến mất chỉ sau một đêm. Hôn nhân đòi hỏi sự tha thứ phải đi đôi với sự minh bạch từ nay về sau.",
+      "reason": "Điều chỉnh kết cục phân đoạn [081]: giữ lại sự tổn thương thực tế và quá trình hàn gắn kiên nhẫn thay vì tha thứ cổ tích tức thì.",
+      "story_fact_changed": false
+    },
+    {
+      "episode_id": "EP011",
+      "segment_id": "085",
+      "rule_id": "EMOTIONAL_AMBIGUITY_POLISH",
+      "rule": "GENERIC_REFLECTION",
+      "before": "Linh đã chọn cách mở lòng, đón nhận và yêu thương. Cô đã chọn cách cùng Nam viết tiếp câu chuyện của gia đình mình, một câu chuyện đầy ý nghĩa.",
+      "after": "Họ không vẽ nên một kết cục hoàn hảo ngay lập tức, mà chọn cách đối diện thẳng thắn, cùng nhau gánh vác trách nhiệm với bé An và kiên nhẫn xây dựng lại lòng tin từng ngày.",
+      "reason": "Điều chỉnh kết cục phân đoạn [085]: giữ lại sự tổn thương thực tế và quá trình hàn gắn kiên nhẫn thay vì tha thứ cổ tích tức thì.",
+      "story_fact_changed": false
+    },
+    {
+      "episode_id": "EP011",
+      "segment_id": "086",
+      "rule_id": "EMOTIONAL_AMBIGUITY_POLISH",
+      "rule": "GENERIC_REFLECTION",
+      "before": "Họ đã cùng nhau tìm thấy một điểm tựa vững chắc, nơi tình yêu thương và sự bao dung là nền tảng. Một gia đình lớn hơn, trọn vẹn hơn.",
+      "after": "Họ đã cùng nhau tìm thấy một điểm tựa thực tế hơn, nơi tình yêu thương phải song hành cùng trách nhiệm và sự chân thành tuyệt đối.",
+      "reason": "Điều chỉnh kết cục phân đoạn [086]: giữ lại sự tổn thương thực tế và quá trình hàn gắn kiên nhẫn thay vì tha thứ cổ tích tức thì.",
+      "story_fact_changed": false
+    }
+  ]
+}
