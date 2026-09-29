@@ -1,0 +1,18 @@
+{
+  "episode_id": "EP001",
+  "status": "PASS",
+  "scores": {
+    "hook": 98,
+    "mystery": 96,
+    "logic": 95,
+    "twist": 98,
+    "emotion": 97,
+    "novelty": 100,
+    "tts_readability": 99
+  },
+  "fact_conflicts": [],
+  "logic_issues": [],
+  "repetition_issues": [],
+  "revision_requests": [],
+  "checked_at": 1790659300.0
+}

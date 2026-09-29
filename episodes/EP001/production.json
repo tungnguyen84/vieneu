@@ -1,0 +1,8 @@
+{
+  "episode_id": "EP001",
+  "status": "PRODUCTION_READY",
+  "project_slug": "sau_canh_cua_ep01_v9_3_manual_visual",
+  "project_dir": "projects/sau_canh_cua_ep01_v9_3_manual_visual",
+  "audio_master_path": "projects/sau_canh_cua_ep01_v9_3_manual_visual/master/final_mix.wav",
+  "visual_manifest_path": "projects/sau_canh_cua_ep01_v9_3_manual_visual/visual_manifest_v9_3.json"
+}

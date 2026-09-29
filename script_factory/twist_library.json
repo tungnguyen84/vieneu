@@ -1,0 +1,25 @@
+{
+  "categories": [
+    "IDENTITY",
+    "MOTIVE",
+    "TIMELINE",
+    "RELATIONSHIP",
+    "MONEY",
+    "FAMILY_HISTORY",
+    "FALSE_ASSUMPTION",
+    "SACRIFICE",
+    "DECEPTION",
+    "DOCUMENT",
+    "DIGITAL",
+    "MEMORY"
+  ],
+  "registered_twists": [
+    {
+      "episode_id": "EP001",
+      "twist_category": "IDENTITY",
+      "twist_signature": "DECEASED_FATHER_IMPERSONATED_BY_UNCLE_FOR_MONEY",
+      "similarity_group": "IMPERSONATION_FOR_FINANCIAL_SUPPORT",
+      "description": "The husband discovers Lan sending 5M/month to a secret phone number calling her 'daughter'. Investigation reveals her father died 14 years ago, and her biological maternal uncle was impersonating the father's voice to receive monthly support while exploiting her grief."
+    }
+  ]
+}

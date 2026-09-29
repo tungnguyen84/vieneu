@@ -1,0 +1,100 @@
+{
+  "episode_id": "EP001",
+  "title": "7 năm giấu chồng chuyển tiền cho một người đàn ông",
+  "protagonist": {
+    "name": "Hùng",
+    "char_id": "HUNG",
+    "role": "Husband / Investigator",
+    "age": 34,
+    "description": "Chồng của Lan, người đàn ông điềm đạm, yêu thương vợ và muốn tìm hiểu sự thật một cách cẩn trọng thay vì làm ầm ĩ."
+  },
+  "supporting_characters": [
+    {
+      "name": "Lan",
+      "char_id": "LAN_ADULT",
+      "role": "Wife / Secret Keeper",
+      "age": 32,
+      "description": "Vợ Hùng, mồ côi cha từ nhỏ, mang nỗi khao khát tình phụ tử sâu sắc đến mức tự lừa dối bản thân suốt 7 năm."
+    },
+    {
+      "name": "Ông Thắng",
+      "char_id": "UNCLE",
+      "role": "Maternal Uncle / Impersonator",
+      "age": 56,
+      "description": "Em ruột của mẹ Lan, người cậu ruột khắc khổ sống ở xóm lao động cũ, giả giọng người cha đã khuất để xin tiền hàng tháng."
+    }
+  ],
+  "relationships": [
+    {
+      "char_a": "HUNG",
+      "char_b": "LAN_ADULT",
+      "relationship": "Vợ chồng kết hôn 7 năm, có nguyên tắc minh bạch tài chính."
+    },
+    {
+      "char_a": "LAN_ADULT",
+      "char_b": "UNCLE",
+      "relationship": "Cháu gái và Cậu ruột (nhưng Lan tin đó là người cha thất lạc suốt 7 năm)."
+    }
+  ],
+  "timeline": [
+    "14 năm trước: Bố Lan qua đời (có giấy trích lục khai tử lưu trữ).",
+    "7 năm trước: Lan và Hùng kết hôn; cũng là lúc người cậu bắt đầu gọi điện giả danh người cha và xin tiền hỗ trợ.",
+    "Hiện tại: Hùng phát hiện điện thoại cũ trong ngăn kéo bàn làm việc phòng ngủ, lần theo manh mối quán cà phê, xóm cũ và văn phòng lưu trữ."
+  ],
+  "locations": [
+    "LAN_HOME",
+    "LAN_BEDROOM",
+    "CAFE",
+    "STREET",
+    "OLD_NEIGHBORHOOD",
+    "UNCLE_HOME",
+    "CEMETERY",
+    "ARCHIVE_OFFICE"
+  ],
+  "critical_facts": [
+    {
+      "fact_id": "FACT_TIME_MARRIAGE",
+      "field": "married_years",
+      "value": "7",
+      "description": "Thời gian kết hôn và thời gian gửi tiền bí mật là 7 năm.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_TIME_DEATH",
+      "field": "death_years_ago",
+      "value": "14",
+      "description": "Bố ruột Lan đã thật sự qua đời 14 năm trước.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_MONEY_TRANSFER",
+      "field": "monthly_transfer",
+      "value": "5.000.000 VND",
+      "description": "Số tiền Lan chuyển đều đặn mỗi tháng là 5.000.000 VND.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_IDENTITY_UNCLE",
+      "field": "impersonator_identity",
+      "value": "Cậu ruột (ông Thắng - em mẹ Lan)",
+      "description": "Người nhận tiền và giả giọng cha là cậu ruột của Lan.",
+      "status": "LOCKED"
+    }
+  ],
+  "secret": "Lan bí mật chuyển 5 triệu mỗi tháng cho một số điện thoại xưng là 'bố' vì tin rằng bố mình vẫn còn sống.",
+  "false_lead": "Hùng ban đầu nghi ngờ vợ có người yêu cũ hoặc mối quan hệ ngoài luồng bất chính.",
+  "clues": [
+    "Chiếc điện thoại cũ giấu dưới đáy ngăn kéo bàn làm việc phòng ngủ.",
+    "Hàng trăm tin nhắn SMS xưng hô 'bố - con' và giao dịch định kỳ 5 triệu đồng.",
+    "Bia mộ tại nghĩa trang ghi ngày mất từ rất lâu trước thời điểm Lan nói.",
+    "Tờ trích lục khai tử tại cơ quan lưu trữ tư pháp xác nhận ngày mất chính xác 14 năm trước."
+  ],
+  "reveal_1": "Bố Lan không phải mất 7 năm trước như lời kể của người gọi, mà đã qua đời từ 14 năm trước.",
+  "reveal_2": "Người gọi điện thoại xưng là bố suốt 7 năm qua chính là ông Thắng — cậu ruột của Lan.",
+  "emotional_payoff": "Hùng không tra hỏi số tiền bị mất, mà ôm lấy người vợ đang vỡ òa, cùng cô đối diện với sự thật cay đắng.",
+  "reflection_theme": "Nỗi khao khát được yêu thương và sự cô đơn có thể khiến con người tự nguyện tin vào một lời nói dối hoàn hảo suốt nhiều năm.",
+  "ending": "Lời nhắc nhở khán giả về sự sẻ chia và lắng nghe những khoảng trống giấu kín đằng sau cánh cửa gia đình.",
+  "status": "APPROVED",
+  "approved_by": "USER",
+  "approved_at": 1790659300.0
+}

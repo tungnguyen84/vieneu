@@ -1,0 +1,123 @@
+{
+  "formula_version": "1.0",
+  "series": "Sau Cánh Cửa",
+  "golden_reference": "Episode 01 V9.3",
+  "acts": [
+    {
+      "act_number": 1,
+      "act_name": "HOOK",
+      "target_pct_range": [0, 8],
+      "purpose": "Create an irresistible curiosity gap within the first 15–35 seconds. Establish the anomalous premise without revealing the core twist.",
+      "allowed_delivery_profiles": ["HOOK", "NORMAL"],
+      "audience_interaction_allowed": false
+    },
+    {
+      "act_number": 2,
+      "act_name": "SETUP",
+      "target_pct_range": [8, 20],
+      "purpose": "Introduce protagonist, marital or domestic baseline, emotional stakes, and normal life before the anomaly was discovered.",
+      "allowed_delivery_profiles": ["NORMAL", "COMMENT"],
+      "audience_interaction_allowed": true
+    },
+    {
+      "act_number": 3,
+      "act_name": "MYSTERY / FIRST ANOMALY",
+      "target_pct_range": [20, 35],
+      "purpose": "First concrete strange evidence uncovered (hidden item, message, transfer, contradictory statement). Initial suspicion forms.",
+      "allowed_delivery_profiles": ["NORMAL", "MYSTERY"],
+      "audience_interaction_allowed": true
+    },
+    {
+      "act_number": 4,
+      "act_name": "ESCALATION",
+      "target_pct_range": [35, 50],
+      "purpose": "Protagonist tries to reconcile the anomaly. Plausible false lead or initial misleading theory appears. Discomfort heightens.",
+      "allowed_delivery_profiles": ["NORMAL", "MYSTERY", "COMMENT"],
+      "audience_interaction_allowed": true
+    },
+    {
+      "act_number": 5,
+      "act_name": "INVESTIGATION / EVIDENCE",
+      "target_pct_range": [50, 65],
+      "purpose": "Active search for the truth: visiting physical locations, checking documents, observing people, gathering irrefutable proof.",
+      "allowed_delivery_profiles": ["NORMAL", "MYSTERY"],
+      "audience_interaction_allowed": true
+    },
+    {
+      "act_number": 6,
+      "act_name": "MAJOR REVEAL",
+      "target_pct_range": [65, 75],
+      "purpose": "The shocking truth shatters the false assumption. Must be marked with importance='critical' and delivery_profile='REVEAL'.",
+      "allowed_delivery_profiles": ["REVEAL"],
+      "audience_interaction_allowed": false,
+      "rules": [
+        "No audience address during major reveal block.",
+        "Evidence -> Pause -> Critical Fact -> Pause -> Consequence structure.",
+        "All REVEAL segments must be delivered dry (no overlapping background music)."
+      ]
+    },
+    {
+      "act_number": 7,
+      "act_name": "SECOND REVEAL / EXPLANATION",
+      "target_pct_range": [75, 85],
+      "purpose": "The underlying human motive is explained: why this happened, the tragedy, sacrifice, guilt, or long-standing family secret.",
+      "allowed_delivery_profiles": ["NORMAL", "REVEAL", "MYSTERY"],
+      "audience_interaction_allowed": false
+    },
+    {
+      "act_number": 8,
+      "act_name": "EMOTIONAL PAYOFF",
+      "target_pct_range": [85, 93],
+      "purpose": "Direct emotional encounter or confrontation between characters. Compassion, confession, tears, release of long-held burden.",
+      "allowed_delivery_profiles": ["NORMAL", "COMMENT"],
+      "audience_interaction_allowed": true
+    },
+    {
+      "act_number": 9,
+      "act_name": "REFLECTION + ENDING",
+      "target_pct_range": [93, 100],
+      "purpose": "Philosophical closing question to audience about trust, love, human vulnerability, and secrets. Warm, gentle exit.",
+      "allowed_delivery_profiles": ["COMMENT", "ENDING"],
+      "audience_interaction_allowed": true
+    }
+  ],
+  "hook_archetypes": [
+    "CONFESSION",
+    "OBJECT_DISCOVERY",
+    "MONEY_ANOMALY",
+    "PHONE_CALL",
+    "MESSAGE",
+    "DOCUMENT",
+    "MISSING_TIME",
+    "SECRET_ROUTINE",
+    "STRANGER",
+    "FAMILY_PHOTO",
+    "UNEXPECTED_VISITOR",
+    "IMPOSSIBLE_FACT"
+  ],
+  "diversity_categories": [
+    "Marriage secrets",
+    "Family secrets",
+    "Parent-child relationships",
+    "Sibling conflict",
+    "Friendship betrayal",
+    "Inheritance",
+    "Identity mystery",
+    "Old photographs",
+    "Hidden letters",
+    "Phone mysteries",
+    "Workplace secrets",
+    "Neighborhood mysteries",
+    "Missing memories",
+    "Past relationships",
+    "Adoption",
+    "Debt",
+    "Property",
+    "Family history",
+    "Unexplained objects",
+    "Digital secrets",
+    "Social deception",
+    "Long-hidden sacrifice",
+    "Misunderstanding with evidence"
+  ]
+}

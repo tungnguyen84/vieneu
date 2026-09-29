@@ -1,0 +1,179 @@
+"""Data Models for VieNeu Script Factory V1."""
+from __future__ import annotations
+
+import time
+from dataclasses import asdict, dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+
+class ApprovalStatus(str, Enum):
+    DRAFT = "DRAFT"
+    QC_RUNNING = "QC_RUNNING"
+    NEEDS_REVISION = "NEEDS_REVISION"
+    QC_PASS = "QC_PASS"
+    APPROVED = "APPROVED"
+    PRODUCTION_READY = "PRODUCTION_READY"
+    BLOCKED_DUPLICATE = "BLOCKED_DUPLICATE"
+    USER_REVIEW_REQUIRED = "USER_REVIEW_REQUIRED"
+    STORY_BIBLE_CHANGED = "STORY_BIBLE_CHANGED"
+
+
+class DeliveryProfile(str, Enum):
+    HOOK = "HOOK"
+    NORMAL = "NORMAL"
+    MYSTERY = "MYSTERY"
+    REVEAL = "REVEAL"
+    COMMENT = "COMMENT"
+    ENDING = "ENDING"
+
+
+@dataclass
+class LockedFact:
+    fact_id: str
+    field: str
+    value: str
+    description: str = ""
+    status: str = "LOCKED"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> LockedFact:
+        return cls(**data)
+
+
+@dataclass
+class IdeaItem:
+    idea_id: str
+    working_title: str
+    hook: str
+    protagonist: str
+    relationship: str
+    central_secret: str
+    mystery_question: str
+    false_lead: str
+    clue_1: str
+    clue_2: str
+    clue_3: str
+    reveal_1: str
+    reveal_2: str
+    emotional_payoff: str
+    reflection_theme: str
+    hook_archetype: str
+    twist_archetype: str
+    estimated_strength: Optional[float] = None
+    status: str = "DRAFT"
+    novelty_score: Optional[float] = None
+    created_at: float = field(default_factory=time.time)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> IdeaItem:
+        return cls(**data)
+
+
+@dataclass
+class StoryBible:
+    episode_id: str
+    title: str
+    protagonist: Dict[str, Any]
+    supporting_characters: List[Dict[str, Any]] = field(default_factory=list)
+    relationships: List[Dict[str, Any]] = field(default_factory=list)
+    timeline: List[str] = field(default_factory=list)
+    locations: List[str] = field(default_factory=list)
+    money_facts: List[Dict[str, Any]] = field(default_factory=list)
+    critical_facts: List[LockedFact] = field(default_factory=list)
+    secret: str = ""
+    false_lead: str = ""
+    clues: List[str] = field(default_factory=list)
+    reveal_1: str = ""
+    reveal_2: str = ""
+    emotional_payoff: str = ""
+    reflection_theme: str = ""
+    ending: str = ""
+    status: str = "DRAFT"
+    approved_by: Optional[str] = None
+    approved_at: Optional[float] = None
+    last_modified_at: float = field(default_factory=time.time)
+
+    def to_dict(self) -> Dict[str, Any]:
+        res = asdict(self)
+        res["critical_facts"] = [f.to_dict() if isinstance(f, LockedFact) else f for f in self.critical_facts]
+        return res
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> StoryBible:
+        facts = [LockedFact.from_dict(f) if isinstance(f, dict) else f for f in data.get("critical_facts", [])]
+        data_copy = dict(data)
+        data_copy["critical_facts"] = facts
+        return cls(**data_copy)
+
+
+@dataclass
+class ScriptSegment:
+    id: str
+    speaker: str = "MINH"
+    text: str = ""
+    delivery_profile: str = "NORMAL"
+    importance: str = "normal"
+    audience_address: bool = False
+    speed: float = 1.0
+    pause_before: float = 0.05
+    pause_after: float = 0.25
+    director_note: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> ScriptSegment:
+        return cls(**data)
+
+
+@dataclass
+class FullScript:
+    episode_id: str
+    title: str
+    host: Dict[str, Any]
+    segments: List[ScriptSegment] = field(default_factory=list)
+    total_segments: int = 0
+    total_words: int = 0
+    status: str = "DRAFT"
+    revision_round: int = 0
+    created_at: float = field(default_factory=time.time)
+    updated_at: float = field(default_factory=time.time)
+
+    def to_dict(self) -> Dict[str, Any]:
+        res = asdict(self)
+        res["segments"] = [s.to_dict() if isinstance(s, ScriptSegment) else s for s in self.segments]
+        return res
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> FullScript:
+        segs = [ScriptSegment.from_dict(s) if isinstance(s, dict) else s for s in data.get("segments", [])]
+        data_copy = dict(data)
+        data_copy["segments"] = segs
+        return cls(**data_copy)
+
+
+@dataclass
+class QCReport:
+    episode_id: str
+    status: str  # "PASS", "NEEDS_REVISION", "FAIL"
+    scores: Dict[str, float] = field(default_factory=dict)
+    fact_conflicts: List[Dict[str, Any]] = field(default_factory=list)
+    logic_issues: List[str] = field(default_factory=list)
+    repetition_issues: List[str] = field(default_factory=list)
+    revision_requests: List[str] = field(default_factory=list)
+    checked_at: float = field(default_factory=time.time)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> QCReport:
+        return cls(**data)

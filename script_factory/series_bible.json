@@ -1,0 +1,73 @@
+{
+  "series": "Sau Cánh Cửa",
+  "language": "vi-VN",
+  "format": "single_host_dynamic_documentary_storytelling",
+  "host": {
+    "id": "MINH",
+    "display_name": "Minh",
+    "voice": "Binh",
+    "default_speed": 1.0,
+    "gender": "male",
+    "accent": "Northern Vietnamese (Bắc Bộ)",
+    "persona": "Empathetic, restrained investigative documentary host. Calm, grounded, observant, never melodramatic or overacting."
+  },
+  "genre": [
+    "social mystery",
+    "family secret",
+    "relationship mystery",
+    "psychological storytelling",
+    "emotional human drama"
+  ],
+  "target_duration_minutes": {
+    "min": 10,
+    "max": 13
+  },
+  "target_words": {
+    "min": 2500,
+    "max": 3200
+  },
+  "target_segments": {
+    "min": 80,
+    "max": 100
+  },
+  "audience_interaction": {
+    "min": 3,
+    "max": 6
+  },
+  "style": {
+    "natural_vietnamese": true,
+    "restrained": true,
+    "cinematic": true,
+    "sensational_clickbait_language": false,
+    "overacting": false,
+    "vocabulary": "Modern, natural Vietnamese spoken language. Authentic domestic dialogue and introspective narration without archaic idioms or synthetic internet slang."
+  },
+  "delivery_profiles": {
+    "HOOK": {
+      "target_speed": 0.98,
+      "tone": "Confident, focused, intriguing key phrases without shouting or pitch-shifting."
+    },
+    "NORMAL": {
+      "target_speed": 1.01,
+      "tone": "Natural documentary storytelling cadence."
+    },
+    "MYSTERY": {
+      "target_speed": 0.96,
+      "tone": "Slightly slower, curious, restrained, tension-building."
+    },
+    "REVEAL": {
+      "target_speed": 0.92,
+      "tone": "Weighted, quiet, deliberate pauses before and after critical facts."
+    },
+    "COMMENT": {
+      "target_speed": 1.025,
+      "tone": "Conversational, direct reflection with audience."
+    },
+    "ENDING": {
+      "target_speed": 0.965,
+      "tone": "Warm, gentle, introspective lower energy with lingering resonance."
+    }
+  },
+  "audio_formula_reference": "V1",
+  "golden_reference_episode": "EP001"
+}
