@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import time
 import zipfile
@@ -21,16 +22,34 @@ EXPORTS_DIR = PILOT_03_VISUAL / "exports"
 
 def compute_next_action(statuses: Dict[str, StageStatus], ep_id: str) -> NextAction:
     """Calculates the single most important next action for the creator."""
-    if statuses.get(StageId.SCRIPT) != StageStatus.APPROVED:
+    if statuses.get(StageId.IDEA.value) not in [StageStatus.APPROVED, StageStatus.COMPLETE]:
+        return NextAction(
+            stage_id=StageId.IDEA,
+            title="Chọn ý tưởng hoặc nhập chủ đề",
+            description="Để AI đề xuất nhiều ý tưởng mới hoặc nhập chủ đề của bạn để bắt đầu.",
+            action_type="NAVIGATE",
+            button_label="TẠO Ý TƯỞNG",
+            target_route="/ideas"
+        )
+    if statuses.get(StageId.STORY.value) not in [StageStatus.APPROVED, StageStatus.COMPLETE]:
+        return NextAction(
+            stage_id=StageId.STORY,
+            title="Phát triển Story Bible",
+            description="Phát triển chủ đề thành cốt truyện hoàn chỉnh và khóa Fact Lock.",
+            action_type="GENERATE_STORY",
+            button_label="PHÁT TRIỂN CỐT TRUYỆN",
+            target_route="/story"
+        )
+    if statuses.get(StageId.SCRIPT.value) != StageStatus.APPROVED:
         return NextAction(
             stage_id=StageId.SCRIPT,
-            title="Duyệt kịch bản",
-            description="Kiểm tra thông số QC kịch bản và nhấn Duyệt để chuyển sang Audio.",
-            action_type="NAVIGATE",
-            button_label="MỞ KỊCH BẢN",
+            title="Tạo kịch bản hoàn chỉnh",
+            description="Cốt truyện đã duyệt. Tạo kịch bản 80-100 phân đoạn bằng Script Factory V1.3.1a.",
+            action_type="GENERATE_SCRIPT",
+            button_label="TẠO KỊCH BẢN",
             target_route="/script"
         )
-    if statuses.get(StageId.AUDIO) not in [StageStatus.COMPLETE, StageStatus.APPROVED]:
+    if statuses.get(StageId.AUDIO.value) not in [StageStatus.COMPLETE, StageStatus.APPROVED]:
         return NextAction(
             stage_id=StageId.AUDIO,
             title="Chuẩn bị Audio Narration",
@@ -281,3 +300,112 @@ class ProjectManager:
                         zf.write(f, arcname=f"audio/{f.name}")
 
         return out_zip
+
+    def get_next_available_episode_id(self) -> str:
+        """Finds max existing episode number and suggests next, e.g. EP012."""
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT episode_number FROM projects")
+            rows = cursor.fetchall()
+
+        nums = []
+        for r in rows:
+            ep = r["episode_number"]
+            m = re.search(r"(\d+)", ep)
+            if m:
+                nums.append(int(m.group(1)))
+
+        # Also check projects folder
+        if PROJECTS_DIR.exists():
+            for d in PROJECTS_DIR.iterdir():
+                if d.is_dir():
+                    m = re.search(r"(\d+)", d.name)
+                    if m:
+                        nums.append(int(m.group(1)))
+
+        next_num = max(nums) + 1 if nums else 1
+        return f"EP{next_num:03d}"
+
+    def create_project(
+        self,
+        episode_number: Optional[str] = None,
+        title: str = "",
+        series_id: str = "SAU_CANH_CUA",
+        topic: str = "",
+        start_mode: str = "user_topic",
+        creative_settings: Optional[Dict[str, Any]] = None,
+        episode_id: Optional[str] = None,
+        premise: Optional[str] = None,
+        target_duration: int = 1200,
+        category: str = "Gia đình / Bí ẩn"
+    ) -> ProjectMetadata:
+        """Creates a completely new project directory and registers in database."""
+        ep = episode_id or episode_number or self.get_next_available_episode_id()
+        ep_id = ep.strip().upper()
+        if not ep_id.startswith("EP"):
+            ep_id = f"EP{ep_id}"
+
+        final_topic = (premise if premise is not None else topic).strip()
+
+        # If project already exists in SQLite, clean it up so creation is idempotent
+        existing = self.get_project(ep_id)
+        if existing:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM projects WHERE project_id = ?", (ep_id,))
+                conn.commit()
+
+        # Create project directory structure
+        proj_dir = PROJECTS_DIR / ep_id
+        for subdir in ["story", "script", "audio", "visual", "flow", "assets", "timeline", "render", "reports"]:
+            (proj_dir / subdir).mkdir(parents=True, exist_ok=True)
+
+        now = time.time()
+        initial_statuses = {
+            StageId.IDEA.value: StageStatus.APPROVED.value if final_topic else StageStatus.IN_PROGRESS.value,
+            StageId.STORY.value: StageStatus.NOT_STARTED.value,
+            StageId.SCRIPT.value: StageStatus.NOT_STARTED.value,
+            StageId.AUDIO.value: StageStatus.NOT_STARTED.value,
+            StageId.VISUAL.value: StageStatus.NOT_STARTED.value,
+            StageId.FLOW.value: StageStatus.NOT_STARTED.value,
+            StageId.ASSETS.value: StageStatus.NOT_STARTED.value,
+            StageId.TIMELINE.value: StageStatus.NOT_STARTED.value,
+            StageId.RENDER.value: StageStatus.NOT_STARTED.value,
+            StageId.QC.value: StageStatus.NOT_STARTED.value,
+        }
+
+        # Save project.json
+        meta_content = {
+            "project_id": ep_id,
+            "title": title.strip() or f"Tập {ep_id}",
+            "series_id": series_id,
+            "episode_number": ep_id,
+            "topic": final_topic,
+            "category": category,
+            "target_duration": target_duration,
+            "start_mode": start_mode,
+            "creative_settings": creative_settings or {},
+            "stage_statuses": initial_statuses,
+            "created_at": now,
+            "updated_at": now,
+        }
+        with open(proj_dir / "project.json", "w", encoding="utf-8") as f:
+            json.dump(meta_content, f, ensure_ascii=False, indent=2)
+
+        # Insert into SQLite
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO projects (
+                    project_id, title, series_id, episode_number,
+                    duration_sec, scene_count, image_count, video_count,
+                    stage_statuses, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                ep_id, title.strip() or f"Tập {ep_id}", series_id, ep_id,
+                0.0, 45, 38, 7,
+                json.dumps(initial_statuses), now, now
+            ))
+            conn.commit()
+
+        return self.get_project(ep_id)  # type: ignore

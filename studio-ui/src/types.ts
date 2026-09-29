@@ -153,3 +153,43 @@ export interface FinalQCReport {
     required: string;
   }>;
 }
+
+export interface ProviderInfo {
+  configured: boolean;
+  has_key: boolean;
+  masked_key: string;
+  model: string;
+  available_models: string[];
+  base_url?: string;
+}
+
+export interface ProvidersStatus {
+  default_provider: string;
+  default_model: string;
+  has_connected_provider: boolean;
+  providers: Record<string, ProviderInfo>;
+}
+
+export interface IdeaItem {
+  idea_id: string;
+  title: string;
+  hook: string;
+  premise: string;
+  core_mystery: string;
+  possible_reveal: string;
+  emotional_angle: string;
+  novelty_score: number;
+  novelty_status: string;
+  is_duplicate: boolean;
+}
+
+export interface ScriptQCReport {
+  overall_status: 'PASS' | 'WARNING' | 'FAIL';
+  word_count?: number;
+  segment_count?: number;
+  estimated_duration_sec?: number;
+  leakage_violations?: string[];
+  spoilers_before_scene_31?: string[];
+  checks?: Record<string, any>;
+}
+

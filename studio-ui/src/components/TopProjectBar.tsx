@@ -1,5 +1,5 @@
 import React from 'react';
-import { Film, CheckCircle2, Archive, Settings, Code, FolderOpen } from 'lucide-react';
+import { Film, CheckCircle2, Archive, Settings, Code, FolderOpen, Plus } from 'lucide-react';
 import { ProjectMetadata } from '../types';
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
   onToggleAdvancedMode: () => void;
   onOpenSettings: () => void;
   onExportArchive: () => void;
+  onOpenNewEpisodeModal: () => void;
 }
 
 export const TopProjectBar: React.FC<Props> = ({
@@ -20,6 +21,7 @@ export const TopProjectBar: React.FC<Props> = ({
   onToggleAdvancedMode,
   onOpenSettings,
   onExportArchive,
+  onOpenNewEpisodeModal,
 }) => {
   return (
     <header className="h-12 border-b border-[#28354D] bg-[#111827] px-4 flex items-center justify-between select-none">
@@ -49,6 +51,16 @@ export const TopProjectBar: React.FC<Props> = ({
           ))}
         </select>
 
+        {/* New Episode Button */}
+        <button
+          onClick={onOpenNewEpisodeModal}
+          className="bg-[#E11D48] hover:bg-[#BE123C] text-white text-xs font-semibold px-2.5 py-1.5 rounded flex items-center space-x-1 shadow transition-colors cursor-pointer"
+          title="Tạo tập phim mới (New Episode Wizard)"
+        >
+          <Plus size={13} />
+          <span>+ Tạo tập mới</span>
+        </button>
+
         {/* Saved Badge */}
         <div className="flex items-center space-x-1 text-xs text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded border border-[#10B981]/20">
           <CheckCircle2 size={12} />
@@ -58,6 +70,7 @@ export const TopProjectBar: React.FC<Props> = ({
 
       {/* Quick Action Buttons */}
       <div className="flex items-center space-x-2">
+
         <button
           onClick={onExportArchive}
           className="flex items-center space-x-1.5 text-xs text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#161F36] px-2.5 py-1.5 rounded border border-transparent hover:border-[#28354D] transition-colors cursor-pointer"

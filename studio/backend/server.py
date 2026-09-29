@@ -1,6 +1,7 @@
 """FastAPI Application Server for Sau Cánh Cửa Studio."""
 from __future__ import annotations
 
+import json
 import os
 import shutil
 from pathlib import Path
@@ -22,10 +23,17 @@ from studio.backend.models import (
     StageStatus,
     StoryBibleSection,
 )
+from studio.backend.credentials import (
+    delete_provider_credentials,
+    get_public_providers_status,
+    save_provider_credentials,
+    test_provider_connection,
+)
 from studio.backend.project_manager import ProjectManager
 from studio.backend.services.asset_service import AssetService
 from studio.backend.services.audio_service import AudioService
 from studio.backend.services.flow_service import FlowService
+from studio.backend.services.generation_service import GenerationService
 from studio.backend.services.job_service import JobService
 from studio.backend.services.qc_service import QCService
 from studio.backend.services.render_service import RenderService
@@ -58,9 +66,84 @@ timeline_srv = TimelineService()
 render_srv = RenderService()
 qc_srv = QCService()
 job_srv = JobService()
+gen_srv = GenerationService()
+
+
+# ---------------- AI PROVIDER CREDENTIALS ----------------
+@app.get("/api/ai/providers")
+def get_providers_status():
+    return get_public_providers_status()
+
+
+class SaveProviderRequest(BaseModel):
+    provider: str
+    api_key: str
+    model: Optional[str] = None
+    base_url: Optional[str] = None
+
+
+@app.post("/api/ai/save")
+def save_provider(req: SaveProviderRequest):
+    return save_provider_credentials(
+        provider=req.provider,
+        api_key=req.api_key,
+        model=req.model,
+        base_url=req.base_url
+    )
+
+
+class DeleteProviderRequest(BaseModel):
+    provider: str
+
+
+@app.post("/api/ai/delete")
+def delete_provider(req: DeleteProviderRequest):
+    return delete_provider_credentials(req.provider)
+
+
+class TestProviderRequest(BaseModel):
+    provider: str
+    api_key: Optional[str] = None
+    model: Optional[str] = None
+    base_url: Optional[str] = None
+
+
+@app.post("/api/ai/test")
+def test_provider(req: TestProviderRequest):
+    return test_provider_connection(
+        provider=req.provider,
+        api_key=req.api_key,
+        model=req.model,
+        base_url=req.base_url
+    )
 
 
 # ---------------- PROJECT ENDPOINTS ----------------
+@app.get("/api/projects/next-id")
+def get_next_id():
+    return {"episode_id": pm.get_next_available_episode_id()}
+
+
+class CreateProjectRequest(BaseModel):
+    episode_id: Optional[str] = None
+    title: str
+    premise: Optional[str] = ""
+    target_duration: Optional[int] = 1200
+    category: Optional[str] = "Gia đình / Bí ẩn"
+
+
+@app.post("/api/projects/create", response_model=ProjectMetadata)
+def create_new_project(req: CreateProjectRequest):
+    ep_id = req.episode_id or pm.get_next_available_episode_id()
+    return pm.create_project(
+        episode_id=ep_id,
+        title=req.title,
+        premise=req.premise or "",
+        target_duration=req.target_duration or 1200,
+        category=req.category or "Gia đình / Bí ẩn"
+    )
+
+
 @app.get("/api/projects", response_model=List[ProjectMetadata])
 def list_projects():
     return pm.list_projects()
@@ -90,10 +173,80 @@ def export_archive(project_id: str, full: bool = False):
     return {"archive_path": str(zip_path.relative_to(BASE_DIR)), "file_name": zip_path.name}
 
 
+# ---------------- IDEAS ENDPOINTS ----------------
+class GenerateIdeasRequest(BaseModel):
+    direction: Optional[str] = ""
+    count: Optional[int] = 5
+
+
+@app.post("/api/projects/{project_id}/ideas/generate")
+def generate_project_ideas(project_id: str, req: GenerateIdeasRequest):
+    try:
+        ideas = gen_srv.generate_ideas(project_id, count=req.count or 5, direction=req.direction or "")
+        return {"ideas": ideas}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class SelectIdeaRequest(BaseModel):
+    idea: Dict[str, Any]
+
+
+@app.post("/api/projects/{project_id}/ideas/select")
+def select_project_idea(project_id: str, req: SelectIdeaRequest):
+    p = pm.get_project(project_id)
+    if not p:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    selected = req.idea
+    premise = selected.get("premise") or selected.get("hook") or ""
+    title = selected.get("title")
+
+    proj_dir = BASE_DIR / "projects" / project_id
+    story_dir = proj_dir / "story"
+    story_dir.mkdir(parents=True, exist_ok=True)
+    with open(story_dir / "premise.txt", "w", encoding="utf-8") as f:
+        f.write(f"Tiêu đề: {title}\nÝ tưởng: {premise}\nBí ẩn: {selected.get('core_mystery', '')}\nLật mở: {selected.get('possible_reveal', '')}\n")
+
+    p_json = proj_dir / "project.json"
+    if p_json.exists():
+        with open(p_json, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if title:
+            data["title"] = title
+        data["topic"] = premise
+        with open(p_json, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+    return pm.update_stage_status(project_id, StageId.IDEA, StageStatus.APPROVED)
+
+
+
 # ---------------- SCRIPT & STORY ENDPOINTS ----------------
 @app.get("/api/projects/{project_id}/story", response_model=StoryBibleSection)
 def get_story(project_id: str):
     return script_srv.get_story_bible(project_id)
+
+
+class GenerateStoryRequest(BaseModel):
+    topic: Optional[str] = ""
+
+
+@app.post("/api/projects/{project_id}/story/generate")
+def generate_project_story(project_id: str, req: GenerateStoryRequest):
+    try:
+        res = gen_srv.generate_story_bible(project_id, topic=req.topic or "")
+        pm.update_stage_status(project_id, StageId.STORY, StageStatus.NEEDS_REVIEW)
+        return res
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/projects/{project_id}/story/approve")
+def approve_project_story(project_id: str):
+    return pm.update_stage_status(project_id, StageId.STORY, StageStatus.APPROVED)
 
 
 @app.get("/api/projects/{project_id}/script", response_model=List[ScriptSegment])
@@ -106,6 +259,70 @@ def get_script_full(project_id: str):
     return {"text": script_srv.get_full_script_text(project_id)}
 
 
+class GenerateScriptRequest(BaseModel):
+    force: Optional[bool] = False
+
+
+@app.post("/api/projects/{project_id}/script/generate")
+def generate_project_script(project_id: str, req: GenerateScriptRequest):
+    try:
+        p = pm.get_project(project_id)
+        if not p:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        story_status = p.stage_statuses.get(StageId.STORY.value) or p.stage_statuses.get("02_story")
+        if not req.force and story_status != StageStatus.APPROVED:
+            bible_path = BASE_DIR / "projects" / project_id / "story" / "story_bible.json"
+            if not bible_path.exists():
+                raise HTTPException(status_code=400, detail="Story Bible chưa được duyệt hoặc chưa tồn tại. Vui lòng duyệt Story Bible trước khi tạo kịch bản!")
+
+        res = gen_srv.generate_full_script(project_id)
+        pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.NEEDS_REVIEW)
+        return res
+    except HTTPException:
+        raise
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/projects/{project_id}/script/repair")
+def repair_project_script(project_id: str):
+    try:
+        res = gen_srv.auto_repair_script(project_id)
+        return res
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.post("/api/projects/{project_id}/script/approve")
+def approve_project_script(project_id: str):
+    return pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.APPROVED)
+
+
+@app.get("/api/projects/{project_id}/script/qc")
+def get_script_qc_report(project_id: str):
+    report = script_srv.get_script_qc(project_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="QC report not found")
+    return report
+
+
+class ImportScriptTextRequest(BaseModel):
+    text: str
+
+
+@app.post("/api/projects/{project_id}/script/import-text")
+def import_script_text(project_id: str, req: ImportScriptTextRequest):
+    segs = script_srv.import_script_text(project_id, req.text)
+    pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.NEEDS_REVIEW)
+    return {"segments": segs, "count": len(segs)}
+
+
 class UpdateSegmentRequest(BaseModel):
     segment_id: str
     text: str
@@ -114,6 +331,7 @@ class UpdateSegmentRequest(BaseModel):
 @app.post("/api/projects/{project_id}/script/segment", response_model=ScriptSegment)
 def update_script_segment(project_id: str, req: UpdateSegmentRequest):
     return script_srv.update_segment(project_id, req.segment_id, req.text)
+
 
 
 # ---------------- AUDIO ENDPOINTS ----------------

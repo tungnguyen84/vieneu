@@ -175,10 +175,14 @@ class StoryBible:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> StoryBible:
+        import dataclasses
+        valid_keys = {f.name for f in dataclasses.fields(cls)}
         facts = [LockedFact.from_dict(f) if isinstance(f, dict) else f for f in data.get("critical_facts", [])]
-        data_copy = dict(data)
-        data_copy["critical_facts"] = facts
-        return cls(**data_copy)
+        filtered = {k: v for k, v in data.items() if k in valid_keys}
+        filtered["critical_facts"] = facts
+        if not filtered.get("secret") and data.get("premise"):
+            filtered["secret"] = data.get("premise", "")
+        return cls(**filtered)
 
 
 @dataclass
@@ -199,7 +203,10 @@ class ScriptSegment:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> ScriptSegment:
-        return cls(**data)
+        import dataclasses
+        valid_keys = {f.name for f in dataclasses.fields(cls)}
+        filtered = {k: v for k, v in data.items() if k in valid_keys}
+        return cls(**filtered)
 
 
 @dataclass
@@ -222,10 +229,13 @@ class FullScript:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> FullScript:
+        import dataclasses
+        valid_keys = {f.name for f in dataclasses.fields(cls)}
         segs = [ScriptSegment.from_dict(s) if isinstance(s, dict) else s for s in data.get("segments", [])]
-        data_copy = dict(data)
-        data_copy["segments"] = segs
-        return cls(**data_copy)
+        filtered = {k: v for k, v in data.items() if k in valid_keys}
+        filtered["segments"] = segs
+        return cls(**filtered)
+
 
 
 @dataclass

@@ -22,6 +22,7 @@ import { RenderView } from './views/RenderView';
 import { QCView } from './views/QCView';
 import { SettingsView } from './views/SettingsView';
 import { LibraryView } from './views/LibraryView';
+import { NewEpisodeModal } from './components/NewEpisodeModal';
 
 export const App: React.FC = () => {
   const [projects, setProjects] = useState<ProjectMetadata[]>([]);
@@ -30,6 +31,8 @@ export const App: React.FC = () => {
   const [selectedScene, setSelectedScene] = useState<SceneItem | null>(null);
   const [selectedSegment, setSelectedSegment] = useState<ScriptSegment | null>(null);
   const [advancedMode, setAdvancedMode] = useState<boolean>(false);
+  const [isNewEpisodeModalOpen, setIsNewEpisodeModalOpen] = useState<boolean>(false);
+
 
   const fetchProjects = (selectedId?: string) => {
     fetch('/api/projects')
@@ -135,6 +138,7 @@ export const App: React.FC = () => {
         onToggleAdvancedMode={() => setAdvancedMode(!advancedMode)}
         onOpenSettings={() => setActiveTab('settings')}
         onExportArchive={handleExportArchive}
+        onOpenNewEpisodeModal={() => setIsNewEpisodeModalOpen(true)}
       />
 
       {/* 2. Compact Pipeline Header */}
@@ -156,8 +160,10 @@ export const App: React.FC = () => {
               project={currentProject}
               onNavigate={(tab) => setActiveTab(tab)}
               onExecuteNextAction={handleExecuteNextAction}
+              onOpenNewEpisodeModal={() => setIsNewEpisodeModalOpen(true)}
             />
           )}
+
 
           {activeTab === 'ideas' && currentProject && (
             <IdeasView projectId={currentProject.project_id} />
@@ -255,8 +261,19 @@ export const App: React.FC = () => {
         advancedMode={advancedMode}
         onOpenJobCenter={() => setActiveTab('render')}
       />
+
+      {/* 5. New Episode Wizard Modal */}
+      <NewEpisodeModal
+        isOpen={isNewEpisodeModalOpen}
+        onClose={() => setIsNewEpisodeModalOpen(false)}
+        onSuccess={(newId, targetTab) => {
+          fetchProjects(newId);
+          setActiveTab(targetTab);
+        }}
+      />
     </div>
   );
 };
 
 export default App;
+

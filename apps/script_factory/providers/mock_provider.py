@@ -316,9 +316,8 @@ class MockScriptAIProvider(ScriptAIProvider):
         # Targeted fix only for requested segments
         script.revision_round += 1
         for conflict in qc_report.fact_conflicts:
-            # Inject locked fact into a normal segment
-            val = conflict["expected"]
-            if script.segments:
+            val = conflict.get("expected") or conflict.get("value") or str(conflict) if isinstance(conflict, dict) else str(conflict)
+            if script.segments and val:
                 script.segments[2].text += f" Con số và dữ kiện chính xác được xác nhận là {val}."
 
         for log_iss in qc_report.logic_issues:

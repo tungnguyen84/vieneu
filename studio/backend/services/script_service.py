@@ -12,6 +12,9 @@ PILOT_02_SCRIPTS = BASE_DIR / "pilot_02_v1_3_1a"
 PILOT_03_AUDIO = BASE_DIR / "production_pilot_03"
 
 
+PROJECTS_DIR = BASE_DIR / "projects"
+
+
 class ScriptService:
     def __init__(self):
         pass
@@ -25,41 +28,61 @@ class ScriptService:
         return mapping.get(project_id, project_id)
 
     def get_story_bible(self, project_id: str) -> StoryBibleSection:
-        idea_id = self.get_idea_id(project_id)
-        bible_path = PILOT_02_SCRIPTS / idea_id / "story_bible.json"
+        # Check newly created project directory first
+        bible_path = PROJECTS_DIR / project_id / "story" / "story_bible.json"
+        if not bible_path.exists():
+            idea_id = self.get_idea_id(project_id)
+            bible_path = PILOT_02_SCRIPTS / idea_id / "story_bible.json"
+
         if not bible_path.exists():
             return StoryBibleSection(
                 premise="Câu chuyện chưa có Story Bible chi tiết.",
-                mystery_core="Đang cập nhật..."
+                mystery_core="Đang chờ phát triển cốt truyện..."
             )
 
         with open(bible_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         chars = data.get("characters", [])
+        if not chars:
+            all_chars = []
+            if data.get("protagonist"):
+                all_chars.append(data["protagonist"])
+            all_chars.extend(data.get("supporting_characters", []))
+            chars = all_chars
         char_summary = ", ".join([f"{c.get('name')} ({c.get('role', 'Nhân vật')})" for c in chars])
+
+        premise_val = data.get("premise", "") or data.get("secret", "") or data.get("false_lead", "")
+        if not premise_val and isinstance(data.get("protagonist"), dict):
+            premise_val = data["protagonist"].get("description", "")
 
         fact_locks = data.get("fact_lock", {}).get("locked_facts", [])
         if not fact_locks and isinstance(data.get("fact_lock"), list):
             fact_locks = data.get("fact_lock")
+        if not fact_locks and data.get("critical_facts"):
+            fact_locks = [f.get("value") or f.get("description") for f in data.get("critical_facts", [])]
 
         return StoryBibleSection(
-            premise=data.get("premise", ""),
+            premise=premise_val,
             characters_summary=char_summary,
             relationships=str(data.get("relationships", "")),
             timeline_summary=str(data.get("timeline_structure", "") or data.get("timeline", "")),
-            mystery_core=data.get("core_mystery", "") or data.get("mystery", ""),
+            mystery_core=data.get("core_mystery", "") or data.get("mystery", "") or data.get("secret", ""),
             reveal_1=data.get("reveal_1", "") or data.get("twist_1", ""),
             reveal_2=data.get("reveal_2", "") or data.get("twist_2", ""),
             emotional_payoff=data.get("emotional_payoff", ""),
             fact_lock_items=[str(f) for f in fact_locks]
         )
 
+
     def get_script_segments(self, project_id: str) -> List[ScriptSegment]:
-        idea_id = self.get_idea_id(project_id)
-        # Try production pilot 03 snapshot first, then pilot 02
-        script_path = PILOT_03_AUDIO / project_id / "script_snapshot" / "full_script.json"
+        # Check newly created project directory first
+        script_path = PROJECTS_DIR / project_id / "script" / "full_script.json"
         if not script_path.exists():
+            # Try production pilot 03 snapshot first, then pilot 02
+            script_path = PILOT_03_AUDIO / project_id / "script_snapshot" / "full_script.json"
+        if not script_path.exists():
+            idea_id = self.get_idea_id(project_id)
             script_path = PILOT_02_SCRIPTS / idea_id / "full_script.json"
 
         if not script_path.exists():
@@ -98,9 +121,14 @@ class ScriptService:
 
     def update_segment(self, project_id: str, segment_id: str, new_text: str) -> ScriptSegment:
         idea_id = self.get_idea_id(project_id)
-        script_path = PILOT_03_AUDIO / project_id / "script_snapshot" / "full_script.json"
+        script_path = PROJECTS_DIR / project_id / "script" / "full_script.json"
+        if not script_path.exists():
+            script_path = PILOT_03_AUDIO / project_id / "script_snapshot" / "full_script.json"
         if not script_path.exists():
             script_path = PILOT_02_SCRIPTS / idea_id / "full_script.json"
+
+        if not script_path.exists():
+            raise FileNotFoundError(f"No script file found for project {project_id}")
 
         with open(script_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -124,3 +152,60 @@ class ScriptService:
             text=new_text,
             story_function=target.get("story_function", "DEVELOPMENT") if target else "DEVELOPMENT"
         )
+
+    def get_script_qc(self, project_id: str) -> Optional[Dict[str, Any]]:
+        qc_path = PROJECTS_DIR / project_id / "script" / "qc_report.json"
+        if not qc_path.exists():
+            idea_id = self.get_idea_id(project_id)
+            qc_path = PILOT_02_SCRIPTS / idea_id / "qc_report.json"
+
+        if qc_path.exists():
+            with open(qc_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        return None
+
+    def import_script_text(self, project_id: str, text: str) -> List[ScriptSegment]:
+        """Imports raw script text, chunks into segments, and saves full_script.json."""
+        proj_dir = PROJECTS_DIR / project_id
+        script_dir = proj_dir / "script"
+        script_dir.mkdir(parents=True, exist_ok=True)
+
+        lines = [line.strip() for line in text.split("\n") if line.strip()]
+        segments = []
+        for i, line in enumerate(lines):
+            sid = f"SEG_{i+1:03d}"
+            # Delivery profile assignment heuristic
+            lower = line.lower()
+            if "sự thật" in lower or "bất ngờ" in lower or "hóa ra" in lower:
+                profile = "REVEAL"
+            elif i == 0:
+                profile = "HOOK"
+            elif i == len(lines) - 1:
+                profile = "ENDING"
+            elif i < 3:
+                profile = "HOOK"
+            elif i > len(lines) - 4:
+                profile = "ENDING"
+            else:
+                profile = "NORMAL"
+
+            segments.append({
+                "segment_id": sid,
+                "speaker": "NARRATOR",
+                "delivery_profile": profile,
+                "text": line,
+                "story_function": "DEVELOPMENT"
+            })
+
+        data = {
+            "episode_id": project_id,
+            "word_count": sum(len(s["text"].split()) for s in segments),
+            "estimated_duration_sec": sum(len(s["text"].split()) / 2.7 for s in segments),
+            "segments": segments
+        }
+
+        with open(script_dir / "full_script.json", "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+        return self.get_script_segments(project_id)
+
