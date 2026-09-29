@@ -1,0 +1,84 @@
+{
+  "idea_id": "IDEA_003",
+  "episode_id": "EP003",
+  "total_changes": 7,
+  "changes": [
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "GENERIC_REFLECTION",
+      "rule": "GENERIC_REFLECTION",
+      "before": "Tình bạn chân thành, sự hy sinh thầm lặng, và một trái tim nhân ái có sức mạnh phi thường, đủ để lan tỏa yêu thương và tạo nên những điều ý nghĩa.",
+      "after": "Bí mật chiếc hộp gỗ khép lại, nhưng di nguyện xây dựng mái ấm cho trẻ mồ côi của bà Hảo và bà Thoa đã được con cháu tiếp nối bằng tất cả lòng biết ơn và sự kính trọng.",
+      "segment_before": "Tình bạn chân thành, sự hy sinh thầm lặng, và một trái tim nhân ái có sức mạnh phi thường, đủ để lan tỏa yêu thương và tạo nên những điều ý nghĩa.",
+      "segment_after": "Bí mật chiếc hộp gỗ khép lại, nhưng di nguyện xây dựng mái ấm cho trẻ mồ côi của bà Hảo và bà Thoa đã được con cháu tiếp nối bằng tất cả lòng biết ơn và sự kính trọng.",
+      "reason": "Gắn kết lời đúc kết trực tiếp với di nguyện mái ấm của bà Hảo và bà Thoa.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "GENERIC_REFLECTION",
+      "rule": "GENERIC_REFLECTION",
+      "before": "Ranh giới giữa sự thật và bí mật đôi khi rất mong manh, nhưng tình yêu thương và lòng nhân ái luôn là sợi dây kết nối, giúp chúng ta vượt qua mọi thử thách.",
+      "after": "Bí mật chiếc hộp gỗ khép lại, nhưng di nguyện xây dựng mái ấm cho trẻ mồ côi của bà Hảo và bà Thoa đã được con cháu tiếp nối bằng tất cả lòng biết ơn và sự kính trọng.",
+      "segment_before": "Ranh giới giữa sự thật và bí mật đôi khi rất mong manh, nhưng tình yêu thương và lòng nhân ái luôn là sợi dây kết nối, giúp chúng ta vượt qua mọi thử thách.",
+      "segment_after": "Bí mật chiếc hộp gỗ khép lại, nhưng di nguyện xây dựng mái ấm cho trẻ mồ côi của bà Hảo và bà Thoa đã được con cháu tiếp nối bằng tất cả lòng biết ơn và sự kính trọng.",
+      "reason": "Gắn kết lời đúc kết trực tiếp với di nguyện mái ấm của bà Hảo và bà Thoa.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[056] Profile: REVEAL",
+      "after": "[056] Profile: MYSTERY",
+      "segment_before": "[056] Profile: REVEAL",
+      "segment_after": "[056] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [056] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[057] Profile: REVEAL",
+      "after": "[057] Profile: MYSTERY",
+      "segment_before": "[057] Profile: REVEAL",
+      "segment_after": "[057] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [057] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[058] Profile: REVEAL",
+      "after": "[058] Profile: MYSTERY",
+      "segment_before": "[058] Profile: REVEAL",
+      "segment_after": "[058] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [058] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[059] Profile: REVEAL",
+      "after": "[059] Profile: MYSTERY",
+      "segment_before": "[059] Profile: REVEAL",
+      "segment_after": "[059] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [059] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[060] Profile: REVEAL",
+      "after": "[060] Profile: MYSTERY",
+      "segment_before": "[060] Profile: REVEAL",
+      "segment_after": "[060] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [060] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    }
+  ]
+}

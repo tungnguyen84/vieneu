@@ -99,10 +99,16 @@ class DynamicStillPlanner:
             self.motion_history.append(preferred)
             return preferred
 
+        # Shot Pattern Selection (Deterministic & Story-Aware)
+        sc_num = 1
+        num_match = re.search(r"\d+", scene_id)
+        if num_match:
+            sc_num = int(num_match.group(0))
+
         # DURATION RULES
         if dur <= 7.0:
             # Rule 1: <= 7s -> 1 continuous motion, no static end
-            pref = "SLOW_PUSH_IN" if story_function in ["MYSTERY", "HOOK"] else "PAN_RIGHT"
+            pref = "SLOW_PUSH_IN" if story_function in ["MYSTERY", "HOOK"] else ("PAN_RIGHT" if sc_num % 2 == 0 else "SLOW_PULL_OUT")
             m = pick_motion(pref, 0)
             shots.append(VirtualShot(
                 shot_index=1,
@@ -119,66 +125,97 @@ class DynamicStillPlanner:
             ))
 
         elif dur <= 12.0:
-            # Rule 2: 7 < dur <= 12s -> 2 motion phases
+            # Rule 2: 7 < dur <= 12s -> 2 motion phases with pattern diversity
             d1 = round(dur * 0.52, 2)
             d2 = round(dur - d1, 2)
-            m1 = pick_motion("SLOW_PUSH_IN", 0)
-            m2 = pick_motion("PAN_LEFT", 1)
+            
+            # Diverse 2-shot patterns: WIDE -> MEDIUM, MEDIUM -> DETAIL, or WIDE -> DETAIL
+            pattern_idx = sc_num % 3
+            if pattern_idx == 0:
+                c1, c2 = "WIDE", "MEDIUM"
+                m1 = pick_motion("SLOW_PUSH_IN", 0)
+                m2 = pick_motion("PAN_LEFT", 1)
+                z1_s, z1_e = 1.00, 1.04
+                z2_s, z2_e = 1.05, 1.08
+            elif pattern_idx == 1:
+                c1, c2 = "MEDIUM", "DETAIL"
+                m1 = pick_motion("PAN_RIGHT", 0)
+                m2 = pick_motion("SLOW_PULL_OUT", 1)
+                z1_s, z1_e = 1.05, 1.07
+                z2_s, z2_e = 1.09, 1.05
+            else:
+                c1, c2 = "WIDE", "DETAIL"
+                m1 = pick_motion("SLOW_PUSH_IN", 0)
+                m2 = pick_motion("PAN_RIGHT", 1)
+                z1_s, z1_e = 1.00, 1.03
+                z2_s, z2_e = 1.08, 1.10
 
             shots.append(VirtualShot(
                 shot_index=1,
                 start_sec=0.0,
                 end_sec=d1,
                 duration_sec=d1,
-                composition="WIDE",
+                composition=c1,
                 motion=m1,
-                zoom_start=1.00,
-                zoom_end=1.04,
+                zoom_start=z1_s,
+                zoom_end=z1_e,
             ))
             shots.append(VirtualShot(
                 shot_index=2,
                 start_sec=d1,
                 end_sec=dur,
                 duration_sec=d2,
-                composition="MEDIUM",
+                composition=c2,
                 motion=m2,
-                zoom_start=1.05,
-                zoom_end=1.08,
+                zoom_start=z2_s,
+                zoom_end=z2_e,
                 has_overlay=bool(ov_list),
                 overlay_text=ov_list[0] if ov_list else None,
                 is_intentional_static=intentional_static
             ))
 
         elif dur <= 18.0:
-            # Rule 3: 12 < dur <= 18s -> 3 motion phases
+            # Rule 3: 12 < dur <= 18s -> 3 motion phases with diverse patterns
             d1 = round(dur * 0.35, 2)
             d2 = round(dur * 0.35, 2)
             d3 = round(dur - d1 - d2, 2)
 
-            m1 = pick_motion("SLOW_PUSH_IN", 0)
-            m2 = pick_motion("PAN_RIGHT", 1)
-            m3 = pick_motion("SLOW_PULL_OUT", 2)
+            pattern_idx = sc_num % 3
+            if pattern_idx == 0:
+                # WIDE -> MEDIUM -> DETAIL
+                comps = ["WIDE", "MEDIUM", "DETAIL"]
+                motions = ["SLOW_PUSH_IN", "PAN_RIGHT", "SLOW_PULL_OUT"]
+                zooms = [(1.00, 1.04), (1.05, 1.08), (1.09, 1.05)]
+            elif pattern_idx == 1:
+                # MEDIUM -> DETAIL -> WIDE
+                comps = ["MEDIUM", "DETAIL", "WIDE"]
+                motions = ["PAN_LEFT", "SLOW_PULL_OUT", "SLOW_PUSH_IN"]
+                zooms = [(1.05, 1.08), (1.09, 1.06), (1.00, 1.04)]
+            else:
+                # WIDE -> DETAIL -> MEDIUM
+                comps = ["WIDE", "DETAIL", "MEDIUM"]
+                motions = ["SLOW_PUSH_IN", "PAN_LEFT", "SLOW_PULL_OUT"]
+                zooms = [(1.00, 1.03), (1.09, 1.07), (1.05, 1.02)]
 
             shots.append(VirtualShot(
                 shot_index=1,
                 start_sec=0.0,
                 end_sec=d1,
                 duration_sec=d1,
-                composition="WIDE",
-                motion=m1,
-                zoom_start=1.00,
-                zoom_end=1.04,
+                composition=comps[0],
+                motion=pick_motion(motions[0], 0),
+                zoom_start=zooms[0][0],
+                zoom_end=zooms[0][1],
             ))
-            # Shot 2 contains overlay if present (evidence insert)
             shots.append(VirtualShot(
                 shot_index=2,
                 start_sec=d1,
                 end_sec=d1 + d2,
                 duration_sec=d2,
-                composition="MEDIUM",
-                motion=m2,
-                zoom_start=1.06,
-                zoom_end=1.09,
+                composition=comps[1],
+                motion=pick_motion(motions[1], 1),
+                zoom_start=zooms[1][0],
+                zoom_end=zooms[1][1],
                 has_overlay=bool(ov_list),
                 overlay_text=ov_list[0] if ov_list else None,
             ))
@@ -187,19 +224,28 @@ class DynamicStillPlanner:
                 start_sec=d1 + d2,
                 end_sec=dur,
                 duration_sec=d3,
-                composition="DETAIL",
-                motion=m3,
-                zoom_start=1.09,
-                zoom_end=1.05,
+                composition=comps[2],
+                motion=pick_motion(motions[2], 2),
+                zoom_start=zooms[2][0],
+                zoom_end=zooms[2][1],
                 is_intentional_static=intentional_static
             ))
 
         else:
-            # Rule 4: dur > 18s -> 3 to 4 virtual shots (each 5-8s)
+            # Rule 4: dur > 18s -> 3 to 4 virtual shots (each 5-8s) with pattern diversity
             count = 4 if dur >= 22.0 else 3
             seg_len = round(dur / count, 2)
-            comps = ["WIDE", "MEDIUM", "DETAIL", "WIDE"]
-            motions = ["SLOW_PUSH_IN", "PAN_LEFT", "SLOW_PUSH_IN", "SLOW_PULL_OUT"]
+            
+            pattern_idx = sc_num % 3
+            if pattern_idx == 0:
+                comps = ["WIDE", "MEDIUM", "DETAIL", "WIDE"]
+                motions = ["SLOW_PUSH_IN", "PAN_LEFT", "SLOW_PUSH_IN", "SLOW_PULL_OUT"]
+            elif pattern_idx == 1:
+                comps = ["MEDIUM", "DETAIL", "WIDE", "MEDIUM"]
+                motions = ["PAN_RIGHT", "SLOW_PULL_OUT", "SLOW_PUSH_IN", "PAN_LEFT"]
+            else:
+                comps = ["WIDE", "DETAIL", "MEDIUM", "WIDE"]
+                motions = ["SLOW_PUSH_IN", "PAN_RIGHT", "SLOW_PULL_OUT", "SLOW_PUSH_IN"]
 
             acc = 0.0
             for idx in range(count):
@@ -227,9 +273,6 @@ class DynamicStillPlanner:
                 ))
                 acc += this_dur
 
-        # Pre-render static QC:
-        # Since every virtual shot has an active zoompan motion, predicted static hold is 0.0s
-        # unless intentional_static is True.
         pred_static = 1.5 if intentional_static else 0.0
         status = "PASS" if pred_static <= 2.0 else "NEEDS_DYNAMIC_STILL_REPLAN"
 
@@ -413,3 +456,56 @@ def inspect_real_static_holds(
             longest_hold = f_dur
 
     return longest_hold, freezes
+
+
+def inspect_static_holds_detailed(
+    mp4_path: Path | str,
+    accidental_threshold: float = 2.0,
+    intentional_threshold: float = 1.0,
+    ffmpeg_bin: str = "ffmpeg"
+) -> Tuple[float, float, List[Dict[str, Any]]]:
+    """
+    Inspects rendered MP4 using FFmpeg freezedetect at fine threshold.
+    Separates:
+    - longest_accidental_static_hold (> accidental_threshold, e.g. > 2.0s)
+    - longest_intentional_static_hold (deliberate visual rest between 1.0s and 2.0s)
+    """
+    p = Path(mp4_path)
+    if not p.exists():
+        return 0.0, 0.0, []
+
+    cmd = [
+        ffmpeg_bin,
+        "-i", str(p),
+        "-vf", f"freezedetect=n=-50dB:d={intentional_threshold:.1f}",
+        "-f", "null",
+        "-"
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    stderr = proc.stderr
+
+    freezes: List[Dict[str, Any]] = []
+    longest_accidental = 0.0
+    longest_intentional = 0.0
+
+    matches = re.finditer(r"freeze_start:\s*([0-9\.]+).*?freeze_duration:\s*([0-9\.]+)", stderr)
+    for m in matches:
+        f_start = float(m.group(1))
+        f_dur = float(m.group(2))
+        is_accidental = f_dur > accidental_threshold
+        entry = {
+            "start_sec": f_start,
+            "duration_sec": f_dur,
+            "type": "ACCIDENTAL" if is_accidental else "INTENTIONAL_REST",
+        }
+        freezes.append(entry)
+
+        if is_accidental:
+            if f_dur > longest_accidental:
+                longest_accidental = f_dur
+        else:
+            if f_dur > longest_intentional:
+                longest_intentional = f_dur
+
+    return longest_accidental, longest_intentional, freezes
+

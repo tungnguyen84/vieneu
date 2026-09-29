@@ -1,0 +1,77 @@
+{
+  "episode_id": "EP018",
+  "total_segments": 90,
+  "rules": [
+    {
+      "fact_id": "FACT_001",
+      "fact_type": "SETUP",
+      "field": "timeline_years",
+      "description": "Khoảng thời gian từ mốc trích lục địa bạ năm 1985 đến nay",
+      "target_value": "39 năm",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Khoảng"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_002",
+      "fact_type": "SETUP",
+      "field": "relationship_nature",
+      "description": "Mối quan hệ thực tế giữa người gửi tin nhắn (chú Út) và Hùng",
+      "target_value": "Chú cháu ruột",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Mối",
+        "Hùng Chú"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_003",
+      "fact_type": "SETUP",
+      "field": "evidence_origin",
+      "description": "Nguồn gốc xác thực của vật chứng chôn dưới gốc khế",
+      "target_value": "Hộp sắt bánh quy chứa nhật ký 1988 và trích lục địa bạ 1985",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Nguồn",
+        "Hộp"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_004",
+      "fact_type": "REVEAL_1",
+      "field": "reveal_1_truth",
+      "description": "Nội dung cốt lõi của Bước ngoặt 1",
+      "target_value": "Tin nhắn do chú Út gửi bằng SIM cũ của bà nội để đánh động Hùng",
+      "earliest_allowed_segment": 61,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 61,
+      "key_entities": [
+        "Tin",
+        "Hùng"
+      ],
+      "sensitivity_level": "CRITICAL"
+    },
+    {
+      "fact_id": "FACT_005",
+      "fact_type": "REVEAL_2",
+      "field": "reveal_2_truth",
+      "description": "Nội dung gốc rễ của Bước ngoặt 2",
+      "target_value": "Bí mật dưới gốc khế là giấy tờ pháp lý chứng minh đất thờ tự riêng",
+      "earliest_allowed_segment": 76,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 76,
+      "key_entities": [],
+      "sensitivity_level": "CRITICAL"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "audited_episodes": [
+    "IDEA_003",
+    "IDEA_005",
+    "IDEA_011",
+    "IDEA_018",
+    "IDEA_021"
+  ],
+  "mc_name_collision": "PASS",
+  "unmarked_first_person": "PASS",
+  "episode_code": "PASS",
+  "fake_continuation": "PASS",
+  "overlong_reveal": "PASS",
+  "generic_reflection": "PASS",
+  "melodrama": "PASS",
+  "legal_certainty": "PASS",
+  "story_bible_leakage": "PASS",
+  "spoiler_timing": "PASS",
+  "episode_comparisons": {
+    "opening_lines": {
+      "IDEA_003": "Trên gác xép cũ kỹ căn nhà ở Bảo Lộc, giữa lớp bụi thời gian",
+      "IDEA_005": "Đúng một giờ ba mươi phút sáng, tiếng chuông điện thoại xé t",
+      "IDEA_011": "Trong góc kho chứa đồ cũ, chiếc điện thoại Nokia thời sinh v",
+      "IDEA_018": "Trước cánh cổng niêm phong của căn nhà rường cổ, điện thoại ",
+      "IDEA_021": "Tình cờ mở chiếc máy tính bảng trong gian bếp quen thuộc, Ma"
+    },
+    "reveal_counts": {
+      "IDEA_003": 6,
+      "IDEA_005": 6,
+      "IDEA_011": 7,
+      "IDEA_018": 7,
+      "IDEA_021": 7
+    }
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "episode_id": "EP003",
+  "total_segments": 90,
+  "rules": [
+    {
+      "fact_id": "FACT_001",
+      "fact_type": "SETUP",
+      "field": "timeline_years",
+      "description": "Thời gian từ khi lập quỹ đến khi Mai phát hiện, bao gồm cả việc bà Hảo giữ tài sản.",
+      "target_value": "Khoảng 30 năm",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Mai",
+        "Hảo",
+        "Khoảng"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_002",
+      "fact_type": "SETUP",
+      "field": "relationship_nature",
+      "description": "Mối quan hệ chính xác giữa các nhân vật liên quan đến bí mật.",
+      "target_value": "Cháu gái (Mai) và bà cố (Bà Hảo); Bạn thân tri kỷ (Bà Hảo và Bà Thoa)",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Mối",
+        "Mai",
+        "Bà Hảo",
+        "Bà Thoa"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_003",
+      "fact_type": "SETUP",
+      "field": "evidence_origin",
+      "description": "Nguồn gốc của vật chứng chính dẫn đến bí mật.",
+      "target_value": "Chiếc hộp gỗ cũ kỹ trên gác xép nhà bà cố.",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Nguồn"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_004",
+      "fact_type": "REVEAL_1",
+      "field": "reveal_1_truth",
+      "description": "Nội dung cốt lõi của Bước ngoặt 1, làm rõ mối quan hệ và mục đích ban đầu.",
+      "target_value": "Người phụ nữ trong ảnh là Bà Thoa, bạn thân của Bà Hảo, cả hai cùng tích góp tài sản để giúp đỡ người khác sau chiến tranh. Bà Hảo đứng tên tài sản hộ Bà Thoa do Bà Thoa mất giấy tờ tùy thân.",
+      "earliest_allowed_segment": 61,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 61,
+      "key_entities": [
+        "Bà Thoa",
+        "Bà Hảo"
+      ],
+      "sensitivity_level": "CRITICAL"
+    },
+    {
+      "fact_id": "FACT_005",
+      "fact_type": "REVEAL_2",
+      "field": "reveal_2_truth",
+      "description": "Nội dung gốc rễ của Bước ngoặt 2, hé lộ mục đích nhân văn của số tài sản.",
+      "target_value": "Tài sản là quỹ chung của Bà Hảo và Bà Thoa, với mục đích cuối cùng là xây nhà tình thương cho trẻ mồ côi. Bà Hảo giữ kín để thực hiện lời hứa và di nguyện của hai người.",
+      "earliest_allowed_segment": 76,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 76,
+      "key_entities": [
+        "Tài",
+        "Bà Hảo",
+        "Bà Thoa",
+        "nhà tình thương",
+        "trẻ mồ côi",
+        "quỹ chung"
+      ],
+      "sensitivity_level": "CRITICAL"
+    },
+    {
+      "fact_id": "FACT_006",
+      "fact_type": "CLUE",
+      "field": "property_details",
+      "description": "Thông tin chi tiết về tài sản được tìm thấy.",
+      "target_value": "Một mảnh đất vườn 650m2 tại Bảo Lộc, Lâm Đồng (mua năm 1992) và một sổ tiết kiệm kỳ hạn dài (mở năm 1994, trị giá gốc 15 triệu đồng thời giá bấy giờ).",
+      "earliest_allowed_segment": 16,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 16,
+      "key_entities": [
+        "Thông",
+        "Bảo Lộc",
+        "Lâm Đồng",
+        "tiết kiệm",
+        "bảo lộc",
+        "lâm đồng"
+      ],
+      "sensitivity_level": "MEDIUM"
+    },
+    {
+      "fact_id": "FACT_007",
+      "fact_type": "INVESTIGATION",
+      "field": "location_of_friend",
+      "description": "Địa điểm hiện tại của bạn thân bà cố.",
+      "target_value": "Viện dưỡng lão tại Lâm Đồng.",
+      "earliest_allowed_segment": 20,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 20,
+      "key_entities": [
+        "Viện",
+        "Lâm Đồng",
+        "viện dưỡng lão",
+        "lâm đồng"
+      ],
+      "sensitivity_level": "MEDIUM"
+    }
+  ]
+}

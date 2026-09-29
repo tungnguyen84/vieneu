@@ -1,0 +1,205 @@
+{
+  "idea_id": "IDEA_021",
+  "episode_id": "EP021",
+  "total_changes": 18,
+  "changes": [
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "EPISODE_CODE_IN_NARRATION",
+      "rule": "EPISODE_CODE_IN_NARRATION",
+      "before": "Tôi là Minh. Hôm nay, chúng ta cùng bước vào câu chuyện mang mã số EP021 mang tên Tài khoản mạng xã hội giấu kín của mẹ.",
+      "after": "Tôi là Minh. Hôm nay, chúng ta cùng bước vào câu chuyện mang tên Tài khoản mạng xã hội giấu kín của mẹ.",
+      "segment_before": "Tôi là Minh. Hôm nay, chúng ta cùng bước vào câu chuyện mang mã số EP021 mang tên Tài khoản mạng xã hội giấu kín của mẹ.",
+      "segment_after": "Tôi là Minh. Hôm nay, chúng ta cùng bước vào câu chuyện mang tên Tài khoản mạng xã hội giấu kín của mẹ.",
+      "reason": "Xóa bỏ mã định danh database EP021 khỏi lời dẫn MC.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "FAKE_CONTINUATION_LANGUAGE",
+      "rule": "FAKE_CONTINUATION_LANGUAGE",
+      "before": "Sự thật phía sau những bức tranh ấy thực chất là gì, mời quý vị tiếp tục theo dõi phần tiếp theo của câu chuyện.",
+      "after": "Sự thật phía sau những bức tranh ấy thực chất là gì, cuộc tìm kiếm âm thầm của Mai bắt đầu chạm vào những góc khuất sâu kín nhất trong căn nhà.",
+      "segment_before": "Sự thật phía sau những bức tranh ấy thực chất là gì, mời quý vị tiếp tục theo dõi phần tiếp theo của câu chuyện.",
+      "segment_after": "Sự thật phía sau những bức tranh ấy thực chất là gì, cuộc tìm kiếm âm thầm của Mai bắt đầu chạm vào những góc khuất sâu kín nhất trong căn nhà.",
+      "reason": "Xóa lời câu dẫn YouTube phân mảnh, thay bằng câu chuyển tiếp liền mạch.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "MELODRAMA_DENSITY",
+      "rule": "MELODRAMA_DENSITY",
+      "before": "Và chính sự vô tâm kéo dài ấy đã vô tình đẩy bà Lan vào vị trí của một bóng ma vô hình, tồn tại chỉ để phục vụ cho nhu cầu của người khác.",
+      "after": "Và chính sự vô tâm kéo dài ấy đã vô tình đẩy bà Lan vào vị trí của một người phục vụ thầm lặng trong gia đình, tồn tại chỉ để phục vụ cho nhu cầu của người khác.",
+      "segment_before": "Và chính sự vô tâm kéo dài ấy đã vô tình đẩy bà Lan vào vị trí của một bóng ma vô hình, tồn tại chỉ để phục vụ cho nhu cầu của người khác.",
+      "segment_after": "Và chính sự vô tâm kéo dài ấy đã vô tình đẩy bà Lan vào vị trí của một người phục vụ thầm lặng trong gia đình, tồn tại chỉ để phục vụ cho nhu cầu của người khác.",
+      "reason": "Tiết chế ẩn dụ bi kịch hóa quá đà, hướng tới phong cách tài liệu đời thường điềm đạm.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "MELODRAMA_DENSITY",
+      "rule": "MELODRAMA_DENSITY",
+      "before": "Những toan tính cơm áo gạo tiền và sự khô khan trong cách biểu đạt tình cảm của ông Hưng đã biến hôn nhân thành một chiếc lồng kính ngột ngạt.",
+      "after": "Những toan tính cơm áo gạo tiền và sự khô khan trong cách biểu đạt tình cảm của ông Hưng đã biến hôn nhân thành một khoảng lặng kéo dài suốt nhiều năm.",
+      "segment_before": "Những toan tính cơm áo gạo tiền và sự khô khan trong cách biểu đạt tình cảm của ông Hưng đã biến hôn nhân thành một chiếc lồng kính ngột ngạt.",
+      "segment_after": "Những toan tính cơm áo gạo tiền và sự khô khan trong cách biểu đạt tình cảm của ông Hưng đã biến hôn nhân thành một khoảng lặng kéo dài suốt nhiều năm.",
+      "reason": "Tiết chế ẩn dụ bi kịch hóa quá đà, hướng tới phong cách tài liệu đời thường điềm đạm.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "MELODRAMA_DENSITY",
+      "rule": "MELODRAMA_DENSITY",
+      "before": "Cuộc đối thoại trực diện đầu tiên sau ba mươi năm bắt đầu bằng sự thật rỉ máu, trút bỏ hoàn toàn lớp vỏ bọc bình yên giả tạo bấy lâu.",
+      "after": "Cuộc đối thoại trực diện đầu tiên sau ba mươi năm bắt đầu bằng những lời bộc bạch thẳng thắn, giải tỏa sự im lặng bấy lâu.",
+      "segment_before": "Cuộc đối thoại trực diện đầu tiên sau ba mươi năm bắt đầu bằng sự thật rỉ máu, trút bỏ hoàn toàn lớp vỏ bọc bình yên giả tạo bấy lâu.",
+      "segment_after": "Cuộc đối thoại trực diện đầu tiên sau ba mươi năm bắt đầu bằng những lời bộc bạch thẳng thắn, giải tỏa sự im lặng bấy lâu.",
+      "reason": "Tiết chế ẩn dụ bi kịch hóa quá đà, hướng tới phong cách tài liệu đời thường điềm đạm.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "MELODRAMA_DENSITY",
+      "rule": "MELODRAMA_DENSITY",
+      "before": "Khoảnh khắc ấy, bức tường vô hình ngăn cách các thế hệ trong căn nhà nhỏ cuối cùng cũng có những vết nứt đầu tiên để ánh sáng len vào.",
+      "after": "Khoảnh khắc ấy, những khoảng cách giữa các thế hệ trong căn nhà nhỏ bắt đầu được thu hẹp bằng sự lắng nghe chân thành..",
+      "segment_before": "Khoảnh khắc ấy, bức tường vô hình ngăn cách các thế hệ trong căn nhà nhỏ cuối cùng cũng có những vết nứt đầu tiên để ánh sáng len vào.",
+      "segment_after": "Khoảnh khắc ấy, những khoảng cách giữa các thế hệ trong căn nhà nhỏ bắt đầu được thu hẹp bằng sự lắng nghe chân thành..",
+      "reason": "Tiết chế ẩn dụ bi kịch hóa quá đà, hướng tới phong cách tài liệu đời thường điềm đạm.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[056] Profile: REVEAL",
+      "after": "[056] Profile: MYSTERY",
+      "segment_before": "[056] Profile: REVEAL",
+      "segment_after": "[056] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [056] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[057] Profile: REVEAL",
+      "after": "[057] Profile: MYSTERY",
+      "segment_before": "[057] Profile: REVEAL",
+      "segment_after": "[057] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [057] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[058] Profile: REVEAL",
+      "after": "[058] Profile: MYSTERY",
+      "segment_before": "[058] Profile: REVEAL",
+      "segment_after": "[058] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [058] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[059] Profile: REVEAL",
+      "after": "[059] Profile: MYSTERY",
+      "segment_before": "[059] Profile: REVEAL",
+      "segment_after": "[059] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [059] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[060] Profile: REVEAL",
+      "after": "[060] Profile: MYSTERY",
+      "segment_before": "[060] Profile: REVEAL",
+      "segment_after": "[060] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [060] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[068] Profile: REVEAL",
+      "after": "[068] Profile: NORMAL",
+      "segment_before": "[068] Profile: REVEAL",
+      "segment_after": "[068] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [068] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[069] Profile: REVEAL",
+      "after": "[069] Profile: NORMAL",
+      "segment_before": "[069] Profile: REVEAL",
+      "segment_after": "[069] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [069] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[070] Profile: REVEAL",
+      "after": "[070] Profile: NORMAL",
+      "segment_before": "[070] Profile: REVEAL",
+      "segment_after": "[070] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [070] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[071] Profile: REVEAL",
+      "after": "[071] Profile: NORMAL",
+      "segment_before": "[071] Profile: REVEAL",
+      "segment_after": "[071] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [071] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[072] Profile: REVEAL",
+      "after": "[072] Profile: NORMAL",
+      "segment_before": "[072] Profile: REVEAL",
+      "segment_after": "[072] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [072] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[073] Profile: REVEAL",
+      "after": "[073] Profile: NORMAL",
+      "segment_before": "[073] Profile: REVEAL",
+      "segment_after": "[073] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [073] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[074] Profile: REVEAL",
+      "after": "[074] Profile: NORMAL",
+      "segment_before": "[074] Profile: REVEAL",
+      "segment_after": "[074] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [074] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    }
+  ]
+}

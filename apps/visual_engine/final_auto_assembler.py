@@ -37,6 +37,7 @@ from apps.visual_engine.dynamic_still_engine import (
     SceneVirtualPlan,
     VirtualShot,
     inspect_real_static_holds,
+    inspect_static_holds_detailed,
     render_dynamic_still_scene,
 )
 
@@ -1047,21 +1048,23 @@ def assemble_full_episode(
 
     qc_report = run_final_qc(out_p, audio_master_p, plan, ffmpeg_bin=ffmpeg_bin, ffprobe_bin=ffprobe_bin)
 
-    # Post-render static QC inspection
-    longest_freeze, freezes = inspect_real_static_holds(out_p, max_threshold=2.0, ffmpeg_bin=ffmpeg_bin)
-    qc_report["longest_accidental_static_hold_sec"] = longest_freeze
-    qc_report["static_hold_pass"] = (longest_freeze <= 2.0)
+    # Post-render static QC inspection (separate accidental vs intentional holds)
+    longest_acc, longest_int, freezes = inspect_static_holds_detailed(out_p, accidental_threshold=2.0, intentional_threshold=1.0, ffmpeg_bin=ffmpeg_bin)
+    qc_report["longest_accidental_static_hold_sec"] = longest_acc
+    qc_report["longest_intentional_static_hold_sec"] = longest_int
+    qc_report["static_hold_pass"] = (longest_acc <= 2.0)
 
     # Save Assembly Plan, Report, QC JSON, and dynamic_still_qc.json
     final_dir = out_p.parent
-    plan.save(final_dir / "assembly_plan_v9_3_1.json")
-    with open(final_dir / "final_qc_v9_3_1.json", "w", encoding="utf-8") as f:
+    plan.save(final_dir / "assembly_plan_v9_3_2.json")
+    with open(final_dir / "final_qc_v9_3_2.json", "w", encoding="utf-8") as f:
         json.dump(qc_report, f, indent=2, ensure_ascii=False)
 
     dynamic_still_qc = {
         "engine_version": "V9.3.2",
-        "global_longest_static_hold": longest_freeze,
-        "static_hold_pass": longest_freeze <= 2.0,
+        "global_longest_accidental_static_hold": longest_acc,
+        "global_longest_intentional_static_hold": longest_int,
+        "static_hold_pass": longest_acc <= 2.0,
         "scenes": scene_dynamic_qc_list,
         "freezes_detected": freezes,
         "checked_at": time.time(),
@@ -1079,11 +1082,13 @@ def assemble_full_episode(
         "video_scenes_used": plan.video_scene_count,
         "image_scenes_used": plan.image_scene_count,
         "total_scenes": total,
-        "longest_static_hold_sec": longest_freeze,
+        "longest_accidental_static_hold_sec": longest_acc,
+        "longest_intentional_static_hold_sec": longest_int,
+        "longest_static_hold_sec": longest_acc,
         "dynamic_still_engine": "V9.3.2",
         "completed_at": time.time(),
     }
-    with open(final_dir / "assembly_report_v9_3_1.json", "w", encoding="utf-8") as f:
+    with open(final_dir / "assembly_report_v9_3_2.json", "w", encoding="utf-8") as f:
         json.dump(report_summary, f, indent=2, ensure_ascii=False)
 
     logger.info(f"[FinalAutoAssembler] Assembly complete: {out_p} ({out_p.stat().st_size:,} bytes)")

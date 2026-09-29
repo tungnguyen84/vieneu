@@ -1,0 +1,16 @@
+{
+  "assembly_status": "SUCCESS",
+  "output_file": "D:\\App\\VieNeuTTS\\final\\EP001_Sau_Canh_Cua_V9_3_2_FINAL.mp4",
+  "file_size_bytes": 173253230,
+  "duration_sec": 779.750396,
+  "audio_duration_sec": 779.750396,
+  "av_delta_sec": 0.0,
+  "video_scenes_used": 15,
+  "image_scenes_used": 30,
+  "total_scenes": 45,
+  "longest_accidental_static_hold_sec": 0.0,
+  "longest_intentional_static_hold_sec": 0.0,
+  "longest_static_hold_sec": 0.0,
+  "dynamic_still_engine": "V9.3.2",
+  "completed_at": 1790677066.5424592
+}

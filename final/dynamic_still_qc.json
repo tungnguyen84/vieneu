@@ -1,0 +1,666 @@
+{
+  "engine_version": "V9.3.2",
+  "global_longest_accidental_static_hold": 0.0,
+  "global_longest_intentional_static_hold": 0.0,
+  "static_hold_pass": true,
+  "scenes": [
+    {
+      "scene_id": "SC_001",
+      "duration": 27.39,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_002",
+      "duration": 17.69,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_LEFT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_003",
+      "duration": 26.64,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 4,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_LEFT",
+        "SLOW_PUSH_IN",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_004",
+      "duration": 13.19,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "PAN_LEFT",
+        "SLOW_PULL_OUT",
+        "SLOW_PUSH_IN"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_005",
+      "duration": 14.69,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_LEFT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_006",
+      "duration": 14.79,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_007",
+      "duration": 20.09,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "PAN_RIGHT",
+        "SLOW_PULL_OUT",
+        "SLOW_PUSH_IN"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_008",
+      "duration": 16.46,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_LEFT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_009",
+      "duration": 16.37,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_RIGHT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_010",
+      "duration": 14.94,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "PAN_LEFT",
+        "SLOW_PULL_OUT",
+        "SLOW_PUSH_IN"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_011",
+      "duration": 16.63,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_LEFT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_012",
+      "duration": 15.03,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_RIGHT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [
+        "Tin nhắn: Bố nhìn thấy con rồi, nhưng bố chưa đủ can đảm bước vào."
+      ],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_013",
+      "duration": 16.24,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_014",
+      "duration": 19.12,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_015",
+      "duration": 18.77,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_016",
+      "duration": 16.1,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "PAN_LEFT",
+        "SLOW_PULL_OUT",
+        "SLOW_PUSH_IN"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_017",
+      "duration": 16.13,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_LEFT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_018",
+      "duration": 15.38,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_RIGHT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_019",
+      "duration": 15.77,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [
+        "Giao dịch định kỳ: -5.000.000 VND"
+      ],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_020",
+      "duration": 17.23,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_021",
+      "duration": 16.52,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_RIGHT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_022",
+      "duration": 15.91,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "PAN_LEFT",
+        "SLOW_PULL_OUT",
+        "SLOW_PUSH_IN"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_023",
+      "duration": 16.27,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_LEFT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_024",
+      "duration": 16.93,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_025",
+      "duration": 16.46,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_026",
+      "duration": 17.14,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_027",
+      "duration": 16.51,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_RIGHT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_028",
+      "duration": 16.52,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_029",
+      "duration": 16.73,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_LEFT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [
+        "Trích lục khai tử: Ngày mất 14 năm trước"
+      ],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_030",
+      "duration": 17.04,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_RIGHT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [
+        "Trích lục khai tử: Ngày mất 14 năm trước"
+      ],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_031",
+      "duration": 16.14,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_032",
+      "duration": 16.63,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_LEFT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_033",
+      "duration": 16.67,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_RIGHT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_034",
+      "duration": 16.83,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "PAN_LEFT",
+        "SLOW_PULL_OUT",
+        "SLOW_PUSH_IN"
+      ],
+      "overlay_events": [
+        "Tin nhắn: Bố nhìn thấy con rồi, nhưng bố chưa đủ can đảm bước vào."
+      ],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_035",
+      "duration": 16.63,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_LEFT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_036",
+      "duration": 16.63,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_RIGHT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_037",
+      "duration": 16.63,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "PAN_LEFT",
+        "SLOW_PULL_OUT",
+        "SLOW_PUSH_IN"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_038",
+      "duration": 18.1,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_RIGHT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_039",
+      "duration": 18.1,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_LEFT",
+        "SLOW_PUSH_IN"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_040",
+      "duration": 19.2,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_041",
+      "duration": 14.2,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_042",
+      "duration": 13.8,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_RIGHT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_043",
+      "duration": 12.8,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "PAN_LEFT",
+        "SLOW_PULL_OUT",
+        "SLOW_PUSH_IN"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_044",
+      "duration": 15.6,
+      "source_type": "IMAGE",
+      "virtual_shot_count": 3,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "SLOW_PUSH_IN",
+        "PAN_LEFT",
+        "SLOW_PULL_OUT"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    },
+    {
+      "scene_id": "SC_045",
+      "duration": 37.11,
+      "source_type": "VIDEO",
+      "virtual_shot_count": 1,
+      "longest_static_hold": 0.0,
+      "intentional_static": false,
+      "motion_events": [
+        "STATIC"
+      ],
+      "overlay_events": [],
+      "status": "PASS"
+    }
+  ],
+  "freezes_detected": [],
+  "checked_at": 1790677066.5424592
+}

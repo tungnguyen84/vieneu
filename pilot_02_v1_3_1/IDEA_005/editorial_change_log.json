@@ -1,0 +1,282 @@
+{
+  "idea_id": "IDEA_005",
+  "episode_id": "EP005",
+  "total_changes": 25,
+  "changes": [
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "MC_NAME_COLLISION",
+      "rule": "MC_NAME_COLLISION",
+      "before": "Character name: Minh",
+      "after": "Character name: Tuấn",
+      "segment_before": "Character name: Minh",
+      "segment_after": "Character name: Tuấn",
+      "reason": "Đổi tên nhân vật em trai từ Minh sang Tuấn để tránh trùng tên với MC Minh của series.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "MC_NAME_COLLISION",
+      "rule": "MC_NAME_COLLISION",
+      "before": "Đầu dây bên kia, giọng Minh - người em trai thợ máy ở quê Hải Dương - lạc đi trong hoảng loạn tột cùng: 'Chị ơi... em không cố ý... nó vỡ rồi...'",
+      "after": "Đầu dây bên kia, giọng Tuấn - người em trai thợ máy ở quê Hải Dương - lạc đi trong hoảng loạn tột cùng: 'Chị ơi... em không cố ý... nó vỡ rồi...'",
+      "segment_before": "Đầu dây bên kia, giọng Minh - người em trai thợ máy ở quê Hải Dương - lạc đi trong hoảng loạn tột cùng: 'Chị ơi... em không cố ý... nó vỡ rồi...'",
+      "segment_after": "Đầu dây bên kia, giọng Tuấn - người em trai thợ máy ở quê Hải Dương - lạc đi trong hoảng loạn tột cùng: 'Chị ơi... em không cố ý... nó vỡ rồi...'",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Tôi và chị Lan là hai chị em ruột, dù đôi khi có những bất đồng, nhưng tình cảm gia đình luôn là sợi dây gắn kết bền chặt.",
+      "after": "Tuấn và chị Lan là hai chị em ruột, dù đôi khi có những bất đồng, nhưng tình cảm gia đình luôn là sợi dây gắn kết bền chặt.",
+      "segment_before": "Tôi và chị Lan là hai chị em ruột, dù đôi khi có những bất đồng, nhưng tình cảm gia đình luôn là sợi dây gắn kết bền chặt.",
+      "segment_after": "Tuấn và chị Lan là hai chị em ruột, dù đôi khi có những bất đồng, nhưng tình cảm gia đình luôn là sợi dây gắn kết bền chặt.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Công việc của tôi là làm vườn và kiêm thêm việc cơ khí nhỏ. Chính công việc này đã vô tình đưa tôi vào vòng xoáy của sự cố.",
+      "after": "Công việc của Tuấn là làm vườn và kiêm thêm việc cơ khí nhỏ. Chính công việc này đã vô tình đưa cậu vào vòng xoáy của sự cố.",
+      "segment_before": "Công việc của tôi là làm vườn và kiêm thêm việc cơ khí nhỏ. Chính công việc này đã vô tình đưa tôi vào vòng xoáy của sự cố.",
+      "segment_after": "Công việc của Tuấn là làm vườn và kiêm thêm việc cơ khí nhỏ. Chính công việc này đã vô tình đưa cậu vào vòng xoáy của sự cố.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Đó là số của tôi. Giọng nói đứt quãng, đầy sự hoảng loạn và hối lỗi: 'Chị.. em không cố ý.. nó vỡ rồi..'",
+      "after": "Đó là số của Tuấn. Giọng nói đứt quãng, đầy sự hoảng loạn và hối lỗi: 'Chị.. em không cố ý.. nó vỡ rồi..'",
+      "segment_before": "Đó là số của tôi. Giọng nói đứt quãng, đầy sự hoảng loạn và hối lỗi: 'Chị.. em không cố ý.. nó vỡ rồi..'",
+      "segment_after": "Đó là số của Tuấn. Giọng nói đứt quãng, đầy sự hoảng loạn và hối lỗi: 'Chị.. em không cố ý.. nó vỡ rồi..'",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Chị Lan bàng hoàng. Lời nói của tôi trong điện thoại không rõ ràng, chỉ mang theo một nỗi sợ hãi khó tả.",
+      "after": "Chị Lan bàng hoàng. Lời nói của Tuấn trong điện thoại không rõ ràng, chỉ mang theo một nỗi sợ hãi khó tả.",
+      "segment_before": "Chị Lan bàng hoàng. Lời nói của tôi trong điện thoại không rõ ràng, chỉ mang theo một nỗi sợ hãi khó tả.",
+      "segment_after": "Chị Lan bàng hoàng. Lời nói của Tuấn trong điện thoại không rõ ràng, chỉ mang theo một nỗi sợ hãi khó tả.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Chị Lan bắt đầu cảm thấy bất an. Lời nói của tôi đêm qua, cùng với những lo ngại của cụ Trâm, tạo thành một vòng tròn nghi vấn.",
+      "after": "Chị Lan bắt đầu cảm thấy bất an. Lời nói của Tuấn đêm qua, cùng với những lo ngại của cụ Trâm, tạo thành một vòng tròn nghi vấn.",
+      "segment_before": "Chị Lan bắt đầu cảm thấy bất an. Lời nói của tôi đêm qua, cùng với những lo ngại của cụ Trâm, tạo thành một vòng tròn nghi vấn.",
+      "segment_after": "Chị Lan bắt đầu cảm thấy bất an. Lời nói của Tuấn đêm qua, cùng với những lo ngại của cụ Trâm, tạo thành một vòng tròn nghi vấn.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Phải chăng đây là một chiêu trò mới của tôi, nhằm gây áp lực lên chị Lan trong cuộc tranh chấp đất đai, buộc chị phải nhượng bộ?",
+      "after": "Phải chăng đây là một chiêu trò mới của Tuấn, nhằm gây áp lực lên chị Lan trong cuộc tranh chấp đất đai, buộc chị phải nhượng bộ?",
+      "segment_before": "Phải chăng đây là một chiêu trò mới của tôi, nhằm gây áp lực lên chị Lan trong cuộc tranh chấp đất đai, buộc chị phải nhượng bộ?",
+      "segment_after": "Phải chăng đây là một chiêu trò mới của Tuấn, nhằm gây áp lực lên chị Lan trong cuộc tranh chấp đất đai, buộc chị phải nhượng bộ?",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Sự im lặng và những câu trả lời lảng tránh của tôi càng làm tăng thêm sự nghi ngờ trong lòng chị Lan.",
+      "after": "Sự im lặng và những câu trả lời lảng tránh của Tuấn càng làm tăng thêm sự nghi ngờ trong lòng chị Lan.",
+      "segment_before": "Sự im lặng và những câu trả lời lảng tránh của tôi càng làm tăng thêm sự nghi ngờ trong lòng chị Lan.",
+      "segment_after": "Sự im lặng và những câu trả lời lảng tránh của Tuấn càng làm tăng thêm sự nghi ngờ trong lòng chị Lan.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Tâm trạng của tôi lúc đó thực sự rối bời. Vừa sợ hãi hậu quả, vừa lo lắng cho chị, vừa cảm thấy tội lỗi.",
+      "after": "Tâm trạng của Tuấn lúc đó thực sự rối bời. Vừa sợ hãi hậu quả, vừa lo lắng cho chị, vừa dằn vặt vì mặc cảm mình luôn là đứa em kém cỏi.",
+      "segment_before": "Tâm trạng của tôi lúc đó thực sự rối bời. Vừa sợ hãi hậu quả, vừa lo lắng cho chị, vừa cảm thấy tội lỗi.",
+      "segment_after": "Tâm trạng của Tuấn lúc đó thực sự rối bời. Vừa sợ hãi hậu quả, vừa lo lắng cho chị, vừa dằn vặt vì mặc cảm mình luôn là đứa em kém cỏi.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Chị Lan nhận thấy rõ sự bất thường trong hành vi của tôi. Chị quyết định phải tìm hiểu sự thật cho bằng được.",
+      "after": "Chị Lan nhận thấy rõ sự bất thường trong hành vi của Tuấn. Chị quyết định phải tìm hiểu sự thật cho bằng được.",
+      "segment_before": "Chị Lan nhận thấy rõ sự bất thường trong hành vi của tôi. Chị quyết định phải tìm hiểu sự thật cho bằng được.",
+      "segment_after": "Chị Lan nhận thấy rõ sự bất thường trong hành vi của Tuấn. Chị quyết định phải tìm hiểu sự thật cho bằng được.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Chị Lan nhớ lại công việc làm vườn và cơ khí của tôi trên mảnh đất đó. Một tia sáng lóe lên trong đầu chị.",
+      "after": "Chị Lan nhớ lại công việc làm vườn và cơ khí của Tuấn trên mảnh đất đó. Một tia sáng lóe lên trong đầu chị.",
+      "segment_before": "Chị Lan nhớ lại công việc làm vườn và cơ khí của tôi trên mảnh đất đó. Một tia sáng lóe lên trong đầu chị.",
+      "segment_after": "Chị Lan nhớ lại công việc làm vườn và cơ khí của Tuấn trên mảnh đất đó. Một tia sáng lóe lên trong đầu chị.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Lời nói của tôi lúc đó, 'không cố ý', nó ám chỉ điều gì? Tôi đã thực sự cố ý làm gì, hay chỉ là một sự vô tình tai hại?",
+      "after": "Lời nói của Tuấn lúc đó, 'không cố ý', nó ám chỉ điều gì? Tôi đã thực sự cố ý làm gì, hay chỉ là một sự vô tình tai hại?",
+      "segment_before": "Lời nói của tôi lúc đó, 'không cố ý', nó ám chỉ điều gì? Tôi đã thực sự cố ý làm gì, hay chỉ là một sự vô tình tai hại?",
+      "segment_after": "Lời nói của Tuấn lúc đó, 'không cố ý', nó ám chỉ điều gì? Tôi đã thực sự cố ý làm gì, hay chỉ là một sự vô tình tai hại?",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Chính tôi. Chính bàn tay tôi, với chiếc máy xúc đó, đã vô tình làm thủng chiếc bể này. Vết thủng mà tôi chưa bao giờ nhìn thấy.",
+      "after": "Chính Tuấn, với chiếc máy xúc trong đêm dọn đất, đã vô tình chọc thủng chiếc bể chứa dầu thải chôn ngầm. Vết thủng mà tôi chưa bao giờ nhìn thấy.",
+      "segment_before": "Chính tôi. Chính bàn tay tôi, với chiếc máy xúc đó, đã vô tình làm thủng chiếc bể này. Vết thủng mà tôi chưa bao giờ nhìn thấy.",
+      "segment_after": "Chính Tuấn, với chiếc máy xúc trong đêm dọn đất, đã vô tình chọc thủng chiếc bể chứa dầu thải chôn ngầm. Vết thủng mà tôi chưa bao giờ nhìn thấy.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "rule": "UNMARKED_FIRST_PERSON_PROTAGONIST",
+      "before": "Lời nói 'không cố ý' của tôi không phải là lời chối bỏ trách nhiệm. Nó là lời thú nhận cho sự vô tình đã gây ra hậu quả nghiêm trọng này.",
+      "after": "Lời nói 'không cố ý' của Tuấn không phải là lời thoái thác, mà là lời thú nhận nghẹn ngào cho sự vô tình đã gây ra hậu quả nghiêm trọng này.",
+      "segment_before": "Lời nói 'không cố ý' của tôi không phải là lời chối bỏ trách nhiệm. Nó là lời thú nhận cho sự vô tình đã gây ra hậu quả nghiêm trọng này.",
+      "segment_after": "Lời nói 'không cố ý' của Tuấn không phải là lời thoái thác, mà là lời thú nhận nghẹn ngào cho sự vô tình đã gây ra hậu quả nghiêm trọng này.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "MC_NAME_COLLISION",
+      "rule": "MC_NAME_COLLISION",
+      "before": "Minh ơi.. Chị đã hiểu. Chị đã hiểu tất cả. Em đã phải chịu đựng một mình bao nhiêu năm qua.",
+      "after": "Tuấn ơi.. Chị đã hiểu. Chị đã hiểu tất cả. Em đã phải chịu đựng một mình bao nhiêu năm qua.",
+      "segment_before": "Minh ơi.. Chị đã hiểu. Chị đã hiểu tất cả. Em đã phải chịu đựng một mình bao nhiêu năm qua.",
+      "segment_after": "Tuấn ơi.. Chị đã hiểu. Chị đã hiểu tất cả. Em đã phải chịu đựng một mình bao nhiêu năm qua.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "MC_NAME_COLLISION",
+      "rule": "MC_NAME_COLLISION",
+      "before": "Cảm ơn em, Minh. Cảm ơn vì đã luôn yêu thương chị, dù đôi khi cách thể hiện của em khiến chị hiểu lầm.",
+      "after": "Cảm ơn em, Tuấn. Cảm ơn vì đã luôn yêu thương chị, dù đôi khi cách thể hiện của em khiến chị hiểu lầm.",
+      "segment_before": "Cảm ơn em, Minh. Cảm ơn vì đã luôn yêu thương chị, dù đôi khi cách thể hiện của em khiến chị hiểu lầm.",
+      "segment_after": "Cảm ơn em, Tuấn. Cảm ơn vì đã luôn yêu thương chị, dù đôi khi cách thể hiện của em khiến chị hiểu lầm.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "MC_NAME_COLLISION",
+      "rule": "MC_NAME_COLLISION",
+      "before": "Câu chuyện của chị Lan và Minh hôm nay đã khép lại. Nhưng những bài học về sự thấu hiểu, bao dung và tình thân sẽ còn đọng lại mãi.",
+      "after": "Câu chuyện của chị Lan và Tuấn hôm nay đã khép lại. Nhưng những bài học về sự thấu hiểu, bao dung và tình thân sẽ còn đọng lại mãi.",
+      "segment_before": "Câu chuyện của chị Lan và Minh hôm nay đã khép lại. Nhưng những bài học về sự thấu hiểu, bao dung và tình thân sẽ còn đọng lại mãi.",
+      "segment_after": "Câu chuyện của chị Lan và Tuấn hôm nay đã khép lại. Nhưng những bài học về sự thấu hiểu, bao dung và tình thân sẽ còn đọng lại mãi.",
+      "reason": "Chuẩn hóa ngôi kể thứ ba tài liệu và đổi tên nhân vật em trai thành Tuấn.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[056] Profile: REVEAL",
+      "after": "[056] Profile: MYSTERY",
+      "segment_before": "[056] Profile: REVEAL",
+      "segment_after": "[056] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [056] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[057] Profile: REVEAL",
+      "after": "[057] Profile: MYSTERY",
+      "segment_before": "[057] Profile: REVEAL",
+      "segment_after": "[057] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [057] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[058] Profile: REVEAL",
+      "after": "[058] Profile: MYSTERY",
+      "segment_before": "[058] Profile: REVEAL",
+      "segment_after": "[058] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [058] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[059] Profile: REVEAL",
+      "after": "[059] Profile: MYSTERY",
+      "segment_before": "[059] Profile: REVEAL",
+      "segment_after": "[059] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [059] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[060] Profile: REVEAL",
+      "after": "[060] Profile: MYSTERY",
+      "segment_before": "[060] Profile: REVEAL",
+      "segment_after": "[060] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [060] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[068] Profile: REVEAL",
+      "after": "[068] Profile: NORMAL",
+      "segment_before": "[068] Profile: REVEAL",
+      "segment_after": "[068] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [068] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[069] Profile: REVEAL",
+      "after": "[069] Profile: NORMAL",
+      "segment_before": "[069] Profile: REVEAL",
+      "segment_after": "[069] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [069] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    }
+  ]
+}
