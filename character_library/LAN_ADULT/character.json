@@ -12,18 +12,26 @@
   "visual_notes": "Preserve strict identity continuity across scenes. Restrained acting, serious domestic tone.",
   "visual_style": "Vietnamese realism, natural skin texture, 35mm cinematic lighting, muted tones",
   "references": [
-    "ref_portrait.png"
+    "ref_portrait.png",
+    "ref_portrait_v2.png"
   ],
-  "local_reference_id": "LAN_ADULT_REF_V1",
-  "flow": {
-    "project_id": "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e",
-    "media_id": null,
-    "upload_status": "LOCAL_ONLY"
+  "flow_media_ids": {
+    "ref_portrait_v2.png": "0d66130b-453c-4ee8-b995-85b099f88fbd",
+    "ref_portrait.png": "0d66130b-453c-4ee8-b995-85b099f88fbd",
+    "77f2440b-d6a0-4db2-8136-cc301488dafe": "0d66130b-453c-4ee8-b995-85b099f88fbd"
   },
-  "flow_media_ids": {},
-  "qc_status": "AWAITING_REVIEW",
+  "identity_relation": null,
   "wardrobes": {
     "LAN_ADULT_HOME": "Modest beige linen blouse and neutral dark casual trousers, understated domestic attire",
     "LAN_ADULT_BEDROOM": "Soft pale cotton loungewear, weary vulnerable evening domestic appearance"
-  }
+  },
+  "char_id": "LAN_ADULT",
+  "local_reference_id": "LAN_ADULT_REF_V1",
+  "flow": {
+    "project_id": "77f2440b-d6a0-4db2-8136-cc301488dafe",
+    "media_id": "0d66130b-453c-4ee8-b995-85b099f88fbd",
+    "upload_status": "UPLOADED"
+  },
+  "qc_status": "AWAITING_REVIEW",
+  "reference_source": "BANANA_PRO"
 }

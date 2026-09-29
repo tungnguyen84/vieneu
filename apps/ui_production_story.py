@@ -527,8 +527,15 @@ def render_production_story_ui(preset_voices_cache_getter):
                                         btn_cancel_char_gen = gr.Button("❌ Hủy", size="sm")
                                         btn_confirm_char_gen = gr.Button("🚀 Tạo ảnh", variant="primary", size="sm")
 
+                                char_ref_type_dd = gr.Radio(
+                                    choices=["Character Bible (16:9)", "Chân dung đơn (Portrait 3:4)"],
+                                    value="Character Bible (16:9)",
+                                    label="📐 Định dạng Reference",
+                                    interactive=True
+                                )
+
                                 with gr.Row():
-                                    btn_gen_char_ref = gr.Button("✨ Tạo ảnh nhân vật", variant="primary")
+                                    btn_gen_char_ref = gr.Button("✨ Tạo ảnh Character Bible", variant="primary")
                                     btn_regen_char_ref = gr.Button("🔄 Tạo lại", variant="secondary")
                                     btn_toggle_upload = gr.Button("📁 Upload ảnh riêng", variant="secondary")
 
@@ -780,6 +787,7 @@ def render_production_story_ui(preset_voices_cache_getter):
         "char_ref_confirm_msg_md": char_ref_confirm_msg_md,
         "btn_cancel_char_gen": btn_cancel_char_gen,
         "btn_confirm_char_gen": btn_confirm_char_gen,
+        "char_ref_type_dd": char_ref_type_dd,
         "btn_gen_char_ref": btn_gen_char_ref,
         "btn_regen_char_ref": btn_regen_char_ref,
         "btn_toggle_upload": btn_toggle_upload,
@@ -1949,9 +1957,9 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
                 gr.update(visible=False),
                 ""
             )
-        char_dir = CHARACTER_LIB_DIR / char_id
-        img_p = char_dir / "ref_portrait.png"
-        img_val = str(img_p) if (img_p.exists() and img_p.stat().st_size > 0) else None
+        from apps.visual_engine.character_manager import get_character_preview_path
+        preview_p = get_character_preview_path(char_id)
+        img_val = str(preview_p) if preview_p else None
 
         # Status: NOT_GENERATED / AWAITING_REVIEW / APPROVED / REJECTED
         if not img_val:
@@ -1989,6 +1997,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             anchor_badge = "✅ ĐÃ PHÊ DUYỆT" if is_anchor_approved else "⚠️ CHƯA PHÊ DUYỆT (CẦN PHÊ DUYỆT TRƯỚC)"
             young_notice = f"\n\n> [!NOTE]\n> **Identity Anchor:** Dựa trên `{anchor_cid}` ({anchor_badge})"
 
+        current_file_desc = f" (Tệp: `{preview_p.name}`)" if preview_p else ""
         details_md = (
             f"- **Độ tuổi / Vai trò:** {c.age_range} | {c.role}\n"
             f"- **Ngoại hình:** {c.appearance}\n"
@@ -1996,7 +2005,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             f"- **Mái tóc:** {c.hair}\n"
             f"- **Vóc dáng:** {c.body}\n"
             f"- **Trang phục mặc định:** {c.default_clothing}\n"
-            f"- **Nguồn ảnh hiện tại:** `{getattr(c, 'reference_source', None) or 'N/A'}`"
+            f"- **Nguồn ảnh hiện tại:** `{getattr(c, 'reference_source', None) or 'N/A'}`{current_file_desc}"
             f"{young_notice}"
         )
 
@@ -2010,7 +2019,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             ""                         # clear action status
         )
 
-    def _on_request_gen_char_ref(char_id, custom_pid):
+    def _on_request_gen_char_ref(char_id, custom_pid, ref_type_str):
         chars = load_character_library()
         c = chars.get(char_id)
         if not c:
@@ -2024,17 +2033,23 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
                 err_msg = f"⚠️ **Không thể tạo:** `LAN_YOUNG` yêu cầu reference của `{anchor_cid}` phải được phê duyệt trước (`APPROVED`). Vui lòng chọn và phê duyệt `{anchor_cid}` trước!"
                 return gr.update(visible=False), "", err_msg
 
+        is_bible = (ref_type_str == "Character Bible (16:9)")
+        mode_label = "Character Bible Model Sheet (Đa góc nhìn: Toàn thân, 3/4, Profile, Cận cảnh)" if is_bible else "Chân dung đơn (Portrait 3:4)"
+        aspect_label = "16:9 Landscape" if is_bible else "3:4 Portrait"
+
         pid = custom_pid or flow_adapter.default_project_id
         confirm_md = (
             f"### ⚠️ Xác nhận Tạo ảnh Reference bằng Nano Banana Pro\n\n"
             f"Tạo ảnh reference cho **{c.name}** (`{char_id}`)\n\n"
+            f"- **Định dạng:** {mode_label}\n"
+            f"- **Tỉ lệ khung hình:** `{aspect_label}`\n"
             f"- **Model:** Nano Banana Pro\n"
             f"- **Requests:** 1\n"
             f"- **Flow Project:** `{pid}`"
         )
         return gr.update(visible=True), confirm_md, ""
 
-    def _on_confirm_gen_char_ref(char_id, custom_pid, project_dir_str):
+    def _on_confirm_gen_char_ref(char_id, custom_pid, project_dir_str, ref_type_str):
         if not char_id:
             return (gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), "⚠️ Chưa chọn nhân vật.", gr.update())
 
@@ -2045,13 +2060,16 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
 
         banana = BananaClient(flow_adapter, asset_mgr, char_lib, preset=preset)
         try:
+            ref_mode = "CHARACTER_BIBLE" if (ref_type_str == "Character Bible (16:9)") else "PORTRAIT"
             new_ref_path = banana.generate_character_reference(
                 char_id=char_id,
                 project_id=custom_pid or "",
+                reference_type=ref_mode,
                 confirmed=True
             )
             img_val, header_md, status_md, details_md, _, _, _ = _on_load_char_ref(char_id)
-            success_msg = f"✨ Đã tạo thành công ảnh reference mới bằng Nano Banana Pro: `{new_ref_path.name}` (Trạng thái: AWAITING_REVIEW. Bấm 'Phê duyệt' để kích hoạt làm active reference)."
+            fmt_desc = "Character Bible (16:9)" if ref_mode == "CHARACTER_BIBLE" else "Chân dung (3:4)"
+            success_msg = f"✨ Đã tạo thành công ảnh reference `{fmt_desc}`: `{new_ref_path.name}` (Trạng thái: AWAITING_REVIEW. Bấm 'Phê duyệt' để kích hoạt làm active reference)."
             return (
                 img_val,
                 header_md,
@@ -2122,12 +2140,12 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     )
     c["btn_gen_char_ref"].click(
         fn=_on_request_gen_char_ref,
-        inputs=[c["char_select_dd"], c["flow_project_id_txt"]],
+        inputs=[c["char_select_dd"], c["flow_project_id_txt"], c["char_ref_type_dd"]],
         outputs=[c["char_ref_confirm_box"], c["char_ref_confirm_msg_md"], c["char_ref_action_status_md"]]
     )
     c["btn_regen_char_ref"].click(
         fn=_on_request_gen_char_ref,
-        inputs=[c["char_select_dd"], c["flow_project_id_txt"]],
+        inputs=[c["char_select_dd"], c["flow_project_id_txt"], c["char_ref_type_dd"]],
         outputs=[c["char_ref_confirm_box"], c["char_ref_confirm_msg_md"], c["char_ref_action_status_md"]]
     )
     c["btn_cancel_char_gen"].click(
@@ -2136,7 +2154,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     )
     c["btn_confirm_char_gen"].click(
         fn=_on_confirm_gen_char_ref,
-        inputs=[c["char_select_dd"], c["flow_project_id_txt"], c["story_project_dir_state"]],
+        inputs=[c["char_select_dd"], c["flow_project_id_txt"], c["story_project_dir_state"], c["char_ref_type_dd"]],
         outputs=[
             c["char_ref_portrait_img"],
             c["char_card_header_md"],

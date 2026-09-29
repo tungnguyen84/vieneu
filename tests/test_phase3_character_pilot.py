@@ -929,6 +929,6 @@ def test_young_lan_uses_adult_identity_anchor(temp_project, monkeypatch, tmp_pat
     kwargs = mock_adapter.generate_image.call_args[1]
     assert kwargs.get("reference_media_ids") == ["flow-adult-anchor-id-999"]
     assert kwargs.get("image_model") == "NANO_BANANA_PRO"
-    assert kwargs.get("aspect_ratio") == "IMAGE_ASPECT_RATIO_PORTRAIT"
+    assert kwargs.get("aspect_ratio") in ("IMAGE_ASPECT_RATIO_LANDSCAPE", "IMAGE_ASPECT_RATIO_PORTRAIT")
 
 

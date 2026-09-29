@@ -43,13 +43,14 @@ class BananaClient:
         self,
         char_id: str,
         project_id: str = "",
+        reference_type: str = "CHARACTER_BIBLE",
         confirmed: bool = False
     ) -> Path:
-        """Generates an identity reference portrait for a character via Nano Banana Pro.
+        """Generates an identity reference portrait or Character Bible model sheet via Nano Banana Pro.
 
         Enforces:
         - Credit confirmation before Banana API call
-        - Dynamic prompt from character.json using build_character_reference_prompt
+        - Dynamic prompt from character.json using build_character_reference_prompt (CHARACTER_BIBLE or PORTRAIT)
         - Special LAN_YOUNG rule (requires approved LAN_ADULT reference as identity anchor)
         - Version preservation (ref_portrait_v1.png, ref_portrait_v2.png, ...) without overwriting approved active ref
         - Sets qc_status="AWAITING_REVIEW" (never auto-approves)
@@ -57,8 +58,9 @@ class BananaClient:
         - Zero mutations to visual_plan.json or approved_semantic_hash
         """
         if not confirmed:
+            mode_desc = "Character Bible (16:9)" if reference_type == "CHARACTER_BIBLE" else "Chân dung (3:4)"
             raise ValueError(
-                f"Confirmation required: Tạo ảnh reference cho {char_id}\n"
+                f"Confirmation required: Tạo ảnh reference ({mode_desc}) cho {char_id}\n"
                 f"Model: Nano Banana Pro\n"
                 f"Requests: 1"
             )
@@ -76,6 +78,7 @@ class BananaClient:
         from apps.visual_engine.character_manager import (
             CHARACTER_LIB_DIR,
             build_character_reference_prompt,
+            is_valid_image_file,
             save_character
         )
         char_dir = CHARACTER_LIB_DIR / char_id
@@ -113,7 +116,7 @@ class BananaClient:
 
         main_ref = char_dir / "ref_portrait.png"
         import shutil
-        if main_ref.exists() and not existing_versions:
+        if is_valid_image_file(main_ref) and not existing_versions:
             shutil.copy2(main_ref, char_dir / "ref_portrait_v1.png")
             v_nums.append(1)
 
@@ -121,13 +124,14 @@ class BananaClient:
         new_version_filename = f"ref_portrait_v{next_v}.png"
         new_version_path = char_dir / new_version_filename
 
-        prompt = build_character_reference_prompt(char)
+        prompt = build_character_reference_prompt(char, reference_type=reference_type)
+        aspect_ratio = "IMAGE_ASPECT_RATIO_LANDSCAPE" if reference_type == "CHARACTER_BIBLE" else "IMAGE_ASPECT_RATIO_PORTRAIT"
 
-        logger.info(f"[BananaClient] Generating character reference {new_version_filename} for {char_id} on Flow project {target_pid}...")
+        logger.info(f"[BananaClient] Generating character reference {new_version_filename} ({reference_type}) for {char_id} on Flow project {target_pid}...")
         assets = self.adapter.generate_image(
             prompt=prompt,
             project_id=target_pid,
-            aspect_ratio="IMAGE_ASPECT_RATIO_PORTRAIT",
+            aspect_ratio=aspect_ratio,
             image_model="NANO_BANANA_PRO",
             reference_media_ids=ref_anchor_ids or None,
             count=1
@@ -138,8 +142,8 @@ class BananaClient:
         asset = assets[0]
         self.adapter.download_asset(asset.url, new_version_path)
 
-        # If no main reference existed on disk, initialize ref_portrait.png so preview works
-        if not main_ref.exists() or main_ref.stat().st_size == 0:
+        # If main reference is missing or invalid on disk, initialize it with new_version_path
+        if not is_valid_image_file(main_ref):
             shutil.copy2(new_version_path, main_ref)
 
         # Persist character metadata

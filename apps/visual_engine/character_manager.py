@@ -127,44 +127,82 @@ def load_character_library(base_dir: Path = CHARACTER_LIB_DIR) -> Dict[str, Char
     return characters
 
 
-def build_character_reference_prompt(character: CharacterProfile | dict) -> str:
-    """Builds a standardized photorealistic identity reference prompt from character.json.
+def is_valid_image_file(path: Path | str) -> bool:
+    """Verifies that the file exists and is a valid readable image (> 1KB)."""
+    if not path:
+        return False
+    p = Path(path)
+    if not p.exists() or p.stat().st_size < 1000:
+        return False
+    try:
+        from PIL import Image
+        with Image.open(p) as img:
+            img.verify()
+        return True
+    except Exception:
+        return False
 
-    Follows the strict format specified for Vietnamese cinematic social mystery drama.
-    For younger version characters (e.g. LAN_YOUNG), uses the specialized identity anchor prompt.
+
+def get_character_preview_path(char_id: str, base_dir: Optional[Path] = None) -> Optional[Path]:
+    """Resolves the best available image path for previewing character reference in UI.
+
+    Priority:
+    1. If character is AWAITING_REVIEW, returns the newest valid candidate (ref_portrait_v*.png).
+    2. If ref_portrait.png is valid, returns ref_portrait.png.
+    3. Falls back to newest valid candidate version.
+    4. None if no valid image exists on disk.
+    """
+    effective_dir = base_dir or CHARACTER_LIB_DIR
+    char_dir = effective_dir / char_id
+    if not char_dir.exists():
+        return None
+
+    chars = load_character_library(effective_dir)
+    profile = chars.get(char_id)
+
+    # Collect versioned candidates sorted by version number descending
+    versioned_candidates = []
+    for p in char_dir.glob("ref_portrait_v*.png"):
+        parts = p.stem.split("_v")
+        if len(parts) == 2 and parts[1].isdigit():
+            versioned_candidates.append((int(parts[1]), p))
+    versioned_candidates.sort(key=lambda x: x[0], reverse=True)
+
+    main_ref = char_dir / "ref_portrait.png"
+    main_is_valid = is_valid_image_file(main_ref)
+
+    # When awaiting review, prioritize showing the newest generated candidate
+    if profile and profile.qc_status != "APPROVED":
+        for _, v_path in versioned_candidates:
+            if is_valid_image_file(v_path):
+                return v_path
+
+    if main_is_valid:
+        return main_ref
+
+    for _, v_path in versioned_candidates:
+        if is_valid_image_file(v_path):
+            return v_path
+
+    return None
+
+
+def build_character_reference_prompt(
+    character: CharacterProfile | dict,
+    reference_type: str = "CHARACTER_BIBLE"
+) -> str:
+    """Builds a standardized cinematic reference prompt from character.json.
+
+    Supports:
+    - 'CHARACTER_BIBLE': Multi-angle character design turnaround model sheet (16:9 Landscape)
+      displaying full-body front view, three-quarter view, side profile view, and close-up facial crop.
+    - 'PORTRAIT': Single-view waist-up 3:4 portrait.
     """
     identity_rel = getattr(character, "identity_relation", None) if hasattr(character, "identity_relation") else (character.get("identity_relation") if isinstance(character, dict) else None)
     char_id = getattr(character, "id", None) or getattr(character, "char_id", None) or (character.get("id") or character.get("char_id") if isinstance(character, dict) else "")
+    is_young_version = bool((identity_rel and identity_rel.get("type") == "YOUNGER_VERSION_OF") or char_id == "LAN_YOUNG")
 
-    # LAN_YOUNG Special Rule: younger version prompt
-    if (identity_rel and identity_rel.get("type") == "YOUNGER_VERSION_OF") or char_id == "LAN_YOUNG":
-        return (
-            "Create a believable younger version of the SAME Vietnamese woman shown in the identity reference.\n\n"
-            "Age approximately 17–18.\n\n"
-            "Preserve recognizable:\n"
-            "facial bone structure,\n"
-            "eye shape,\n"
-            "nose structure,\n"
-            "mouth shape,\n"
-            "facial proportions,\n"
-            "overall identity.\n\n"
-            "Make her naturally younger rather than changing her into another person.\n\n"
-            "Vietnamese high-school-age appearance.\n"
-            "Natural black hair.\n"
-            "Simple modest Vietnamese student appearance.\n"
-            "White school blouse where appropriate.\n\n"
-            "Neutral character reference portrait.\n"
-            "Soft even lighting.\n"
-            "Simple neutral background.\n"
-            "Photorealistic realistic skin.\n"
-            "No glamour.\n"
-            "No heavy makeup.\n"
-            "No text.\n"
-            "No watermark.\n"
-            "3:4 portrait."
-        )
-
-    # Standard character reference prompt builder
+    # Helper to extract fields
     def _g(key: str) -> str:
         if hasattr(character, key):
             val = getattr(character, key)
@@ -190,6 +228,83 @@ def build_character_reference_prompt(character: CharacterProfile | dict) -> str:
         gender_desc = "Vietnamese person."
 
     age_desc = f"Age approximately {age}." if age else ""
+
+    # CHARACTER BIBLE (Turnaround Model Sheet - 16:9 Landscape)
+    if reference_type == "CHARACTER_BIBLE":
+        if is_young_version:
+            return (
+                "Photorealistic cinematic character bible model sheet for a Vietnamese social mystery drama.\n\n"
+                "A complete multi-view character design reference turnaround sheet of a young Vietnamese female student aged 17–18, "
+                "who is the younger version of the adult anchor character.\n\n"
+                "Turnaround layout displaying multiple views of the same young woman side-by-side in one wide image:\n"
+                "1. Full-body front view: Standing youthful posture, wearing classic Vietnamese high-school white student shirt and dark trousers, showing natural body proportions.\n"
+                "2. Three-quarter angle upper body view: Clear jawline contours, natural dark straight ponytail hair, delicate posture.\n"
+                "3. Side profile view: Natural facial silhouette, delicate nose bridge, clean neckline.\n"
+                "4. Detailed close-up facial crop: Soft youthful Vietnamese facial features, natural unblemished skin, innocent earnest eyes, subtle emotional depth.\n\n"
+                "Identity Continuity Rules:\n"
+                "- Must preserve the exact facial bone structure, eye shape, nose structure, and mouth contours of the adult reference character, portrayed 12–14 years younger.\n"
+                "- Classic Vietnamese high-school white student uniform blouse.\n"
+                "- Soft even diffuse studio lighting on solid neutral grey background.\n"
+                "- No glamour retouching, no editorial makeup, no dramatic cinematic shadows.\n"
+                "- No text, no typography, no labels, no watermark, no color swatches.\n"
+                "- Wide 16:9 landscape cinematic character model sheet composition.\n\n"
+                "This is a character bible model sheet, not an isolated single scene."
+            )
+
+        return (
+            "Photorealistic cinematic character bible model sheet for a Vietnamese social mystery drama.\n\n"
+            f"A complete multi-view character design reference turnaround sheet of the same {gender_desc.lower()} on a neutral studio background.\n\n"
+            "Turnaround layout displaying multiple views of the same character side-by-side in one composite image:\n"
+            "1. Full-body front view: Standing natural pose, head-to-toe view clearly displaying overall physical proportions and clothing style.\n"
+            "2. Three-quarter angle upper body view: Showing facial depth, jawline contours, and hair volume.\n"
+            "3. Side profile view: Showing silhouette, nose bridge, ear placement, and upright posture.\n"
+            "4. Detailed close-up facial crop: Focused on authentic Vietnamese facial features, natural skin texture, calm thoughtful expression.\n\n"
+            "Character Identity Specifications:\n"
+            f"- Identity: {gender_desc} {age_desc}\n"
+            f"- Facial Features: {face}\n"
+            f"- Hairstyle: {hair}\n"
+            f"- Body Build: {body}\n"
+            f"- General Appearance: {appearance}\n"
+            f"- Wardrobe / Attire: {clothing}\n\n"
+            "Aesthetic & Technical Rules:\n"
+            "- Absolute identity continuity: The exact same individual must appear across all views.\n"
+            "- Soft, even, diffuse neutral studio lighting with balanced fill.\n"
+            "- Clean solid neutral grey studio background.\n"
+            "- Realistic Vietnamese facial anatomy, natural pore skin texture, realistic lighting reflections.\n"
+            "- No glamour retouching, no editorial makeup, no exaggerated styling.\n"
+            "- No dramatic high-contrast film shadows, no cinematic background distractions, no props covering the face.\n"
+            "- No text, no typography, no labels, no watermark, no color swatches.\n"
+            "- Wide 16:9 landscape cinematic character model sheet composition.\n\n"
+            "This is a character bible model sheet, not an isolated single scene."
+        )
+
+    # PORTRAIT (Single-view 3:4)
+    if is_young_version:
+        return (
+            "Create a believable younger version of the SAME Vietnamese woman shown in the identity reference.\n\n"
+            "Age approximately 17–18.\n\n"
+            "Preserve recognizable:\n"
+            "facial bone structure,\n"
+            "eye shape,\n"
+            "nose structure,\n"
+            "mouth shape,\n"
+            "facial proportions,\n"
+            "overall identity.\n\n"
+            "Make her naturally younger rather than changing her into another person.\n\n"
+            "Vietnamese high-school-age appearance.\n"
+            "Natural black hair.\n"
+            "Simple modest Vietnamese student appearance.\n"
+            "White school blouse where appropriate.\n\n"
+            "Neutral character reference portrait.\n"
+            "Soft even lighting.\n"
+            "Simple neutral background.\n"
+            "Photorealistic realistic skin.\n"
+            "No glamour.\n"
+            "No heavy makeup.\n"
+            "No text.\n"
+            "No watermark.\n"
+            "3:4 portrait."
+        )
 
     sections = [
         "Photorealistic character reference portrait for a Vietnamese cinematic social mystery drama.\n",
@@ -220,7 +335,6 @@ def build_character_reference_prompt(character: CharacterProfile | dict) -> str:
         "3:4 portrait composition.\n",
         "This is an identity reference image, not a cinematic scene."
     ]
-
     return "\n".join(s for s in sections if s.strip() or s == "\n")
 
 
@@ -249,6 +363,20 @@ def approve_character_reference(
         raise ValueError(f"Character '{char_id}' not found.")
 
     char_dir = effective_dir / char_id
+
+    # Auto-resolve latest valid candidate version if none provided
+    if not version_filename:
+        versioned_candidates = []
+        for p in char_dir.glob("ref_portrait_v*.png"):
+            parts = p.stem.split("_v")
+            if len(parts) == 2 and parts[1].isdigit():
+                versioned_candidates.append((int(parts[1]), p))
+        versioned_candidates.sort(key=lambda x: x[0], reverse=True)
+        for _, v_path in versioned_candidates:
+            if is_valid_image_file(v_path):
+                version_filename = v_path.name
+                break
+
     if version_filename:
         v_path = char_dir / version_filename
         if v_path.exists():
@@ -265,7 +393,7 @@ def approve_character_reference(
         profile.references.insert(0, "ref_portrait.png")
 
     save_character(profile, effective_dir)
-    logger.info(f"[CharacterManager] Approved character reference for {char_id} (active: ref_portrait.png).")
+    logger.info(f"[CharacterManager] Approved character reference for {char_id} (active: ref_portrait.png, source: {version_filename or 'existing'}).")
     return profile
 
 
