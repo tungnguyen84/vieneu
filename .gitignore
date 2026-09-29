@@ -25,3 +25,11 @@ projects/
 
 # Music Library Backups
 music_library/backups/
+
+# Visual Generated Media (Phase 3)
+visual/images/
+visual/videos/
+visual/generated/
+projects/*/visual/images/
+projects/*/visual/videos/
+projects/*/visual/generated/

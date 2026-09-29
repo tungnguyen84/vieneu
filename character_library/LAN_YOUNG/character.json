@@ -11,6 +11,17 @@
   "default_clothing": "Modest youthful student or young worker outfit, simple white t-shirt and thin jacket",
   "visual_notes": "Represents Lan during past flashback 7 years ago. Soft vintage film feel.",
   "visual_style": "Vintage flashback tone, slightly softened contrast, warm film grain",
-  "references": [],
-  "flow_media_ids": {}
+  "references": [
+    "ref_portrait.png"
+  ],
+  "flow_media_ids": {
+    "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e": "media_ref_lan_young_b36f"
+  },
+  "identity_relation": {
+    "type": "YOUNGER_VERSION_OF",
+    "character_id": "LAN_ADULT"
+  },
+  "wardrobes": {
+    "LAN_YOUNG_SCHOOL": "Classic Vietnamese high-school white student shirt with simple collar, dark navy trousers, modest youthful attire"
+  }
 }

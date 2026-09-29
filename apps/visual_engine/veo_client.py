@@ -97,18 +97,33 @@ class VeoClient:
             logger.error(f"[VideoClient] Keyframe for {scene.scene_id} missing. Cannot generate video.")
             return None
 
+        # Check keyframe approval (Section 21, 24)
+        if item and item.image_qc_status != "APPROVED":
+            logger.error(f"[VideoClient] Keyframe for {scene.scene_id} is not APPROVED ({item.image_qc_status}). Video generation rejected.")
+            self.asset_mgr.update_item(scene.scene_id, video_status="FAILED", last_error=f"Keyframe not approved ({item.image_qc_status})")
+            return None
+
+        import hashlib
+        with open(keyframe_path, "rb") as f:
+            source_kf_hash = hashlib.md5(f.read()).hexdigest()
+
         # Update queue status: GENERATING
         self.asset_mgr.update_item(scene.scene_id, video_status="GENERATING", image_media_id=media_id, last_error=None)
 
         try:
             logger.info(f"[VideoClient] Submitting {self.model_family} I2V generation for {scene.scene_id} (duration {resolved_duration}s, project {target_pid})...")
-            video_prompt = scene.video_prompt or (
-                "Cinematic slow subject motion, subtle emotional breathing, realistic Vietnamese facial expressions, 24fps"
+            
+            # Runtime append continuity constraint (Section 22)
+            continuity_prefix = (
+                "Preserve exactly the identity, facial features, age, clothing, environment and composition of the input frame. "
+                "Do not introduce new people or objects. Natural restrained motion. No dialogue. No text. No subtitles. No camera shake. "
             )
+            base_prompt = scene.video_prompt or "Cinematic slow subject motion, subtle emotional breathing, realistic Vietnamese facial expressions, 24fps"
+            full_video_prompt = continuity_prefix + base_prompt
 
             res = self.adapter.generate_video(
                 start_image_media_id=media_id,
-                prompt=video_prompt,
+                prompt=full_video_prompt,
                 project_id=target_pid,
                 scene_id=scene.scene_id,
                 aspect_ratio="VIDEO_ASPECT_RATIO_LANDSCAPE",
@@ -139,7 +154,11 @@ class VeoClient:
                         self.asset_mgr.update_item(
                             scene.scene_id,
                             video_status="DONE",
-                            video_file=str(out_video_path.relative_to(self.asset_mgr.project_dir))
+                            video_qc_status="AWAITING_QC",
+                            source_keyframe_hash=source_kf_hash,
+                            video_file=str(out_video_path.relative_to(self.asset_mgr.project_dir)),
+                            is_stale=False,
+                            stale_reason=None
                         )
                         return out_video_path
 
@@ -193,19 +212,47 @@ class VeoClient:
             self.asset_mgr.update_item(
                 scene.scene_id,
                 video_status="DONE",
+                video_qc_status="AWAITING_QC",  # Section 24: user review required
                 video_media_id=video_media_id,
-                video_file=str(out_video_path.relative_to(self.asset_mgr.project_dir))
+                source_keyframe_media_id=media_id,
+                source_keyframe_hash=source_kf_hash,
+                video_file=str(out_video_path.relative_to(self.asset_mgr.project_dir)),
+                is_stale=False,
+                stale_reason=None
             )
+
+            # Append generation log (Section 28)
+            self.asset_mgr.append_generation_log({
+                "scene_id": scene.scene_id,
+                "operation": f"{self.model_family.upper()}_I2V",
+                "project_id": target_pid,
+                "model": self.model_family,
+                "duration_sec": resolved_duration,
+                "status": "DONE",
+                "media_id": video_media_id,
+                "attempt": (item.attempt_count if item else 0) + 1
+            })
+
             logger.info(f"[VideoClient] Successfully generated & saved video ({self.model_family}) for {scene.scene_id} ({out_video_path.stat().st_size:,} bytes)")
             return out_video_path
 
         except Exception as e:
             curr_attempt = (item.attempt_count if item else 0) + 1
+            self.asset_mgr.append_generation_log({
+                "scene_id": scene.scene_id,
+                "operation": f"{self.model_family.upper()}_I2V",
+                "project_id": target_pid,
+                "model": self.model_family,
+                "status": "FAILED",
+                "error": str(e),
+                "attempt": curr_attempt
+            })
             if allow_fallback:
                 logger.warning(f"[VeoClient] Veo generation unavailable for {scene.scene_id} ({e}). Activating FALLBACK to Banana Motion.")
                 self.asset_mgr.update_item(
                     scene.scene_id,
                     video_status="FALLBACK_MOTION",
+                    video_qc_status="AWAITING_QC",
                     attempt_count=curr_attempt,
                     last_error=f"Fallback activated: {e}"
                 )
@@ -214,6 +261,7 @@ class VeoClient:
                 self.asset_mgr.update_item(
                     scene.scene_id,
                     video_status="FAILED",
+                    video_qc_status="FAILED",
                     attempt_count=curr_attempt,
                     last_error=str(e)
                 )

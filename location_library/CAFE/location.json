@@ -5,5 +5,6 @@
   "visual_style": "Warm ambient realism, cinematic shallow focus",
   "lighting_default": "Soft filtered morning sun through green tree foliage outside window",
   "references": [],
-  "flow_media_ids": {}
+  "flow_media_ids": {},
+  "is_recurring": false
 }

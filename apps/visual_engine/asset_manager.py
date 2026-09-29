@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 class QueueItem:
     scene_id: str
     visual_type: str = "UNRESOLVED"  # "BANANA_IMAGE", "OMNI_FLASH_I2V", or "VEO_I2V"
-    image_status: str = "PLANNED"    # "PLANNED", "GENERATING", "DONE", "FAILED", "SKIPPED"
-    video_status: str = "PLANNED"    # "PLANNED", "GENERATING", "DONE", "FAILED", "SKIPPED"
+    image_status: str = "PLANNED"    # "PLANNED", "GENERATING", "DONE", "FAILED", "SKIPPED", "STALE"
+    video_status: str = "PLANNED"    # "PLANNED", "GENERATING", "DONE", "FAILED", "SKIPPED", "STALE"
     image_media_id: Optional[str] = None
     image_file: Optional[str] = None
     video_media_id: Optional[str] = None
@@ -33,6 +33,13 @@ class QueueItem:
     attempt_count: int = 0
     last_error: Optional[str] = None
     is_stale: bool = False
+    stale_reason: Optional[str] = None  # "STALE_REFERENCE", "STALE_KEYFRAME", None
+    image_qc_status: str = "PLANNED"  # "PLANNED", "AWAITING_QC", "APPROVED", "RETRY", "FAILED"
+    video_qc_status: str = "PLANNED"  # "PLANNED", "AWAITING_QC", "APPROVED", "RETRY", "FAILED"
+    source_keyframe_media_id: Optional[str] = None
+    source_keyframe_hash: Optional[str] = None
+    source_character_references: Dict[str, str] = field(default_factory=dict)
+    generation_metadata: Dict[str, Any] = field(default_factory=dict)
     updated_at: float = field(default_factory=time.time)
 
 
@@ -124,12 +131,13 @@ class VisualAssetManager:
         return queue
 
     def load_queue(self) -> Dict[str, QueueItem]:
-        """Loads queue from disk."""
+        """Loads queue from disk, filtering valid fields."""
         if not self.queue_file.exists():
             return {}
         with open(self.queue_file, "r", encoding="utf-8") as f:
             data = json.load(f)
-        return {s_id: QueueItem(**d) for s_id, d in data.items()}
+        valid_fields = {f.name for f in QueueItem.__dataclass_fields__.values()}
+        return {s_id: QueueItem(**{k: v for k, v in d.items() if k in valid_fields}) for s_id, d in data.items()}
 
     def save_queue(self, queue: Dict[str, QueueItem]) -> None:
         """Persists visual queue to disk safely."""
@@ -153,6 +161,198 @@ class VisualAssetManager:
         item.updated_at = time.time()
         self.save_queue(queue)
         return item
+
+    # Alias for update_item
+    update_queue_item = update_item
+
+    def append_generation_log(self, entry: Dict[str, Any]) -> None:
+        """Appends a generation request log entry to visual/generation_log.jsonl (Section 28)."""
+        log_file = self.visual_dir / "generation_log.jsonl"
+        safe_entry = {
+            "scene_id": entry.get("scene_id", ""),
+            "operation": entry.get("operation", ""),
+            "project_id": entry.get("project_id", ""),
+            "model": entry.get("model", ""),
+            "timestamp": entry.get("timestamp", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())),
+            "status": entry.get("status", ""),
+            "media_id": entry.get("media_id", ""),
+            "attempt": entry.get("attempt", 1),
+            "duration_sec": entry.get("duration_sec"),
+            "error": entry.get("error")
+        }
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(safe_entry, ensure_ascii=False) + "\n")
+
+    def mark_character_updated(self, char_id: str, new_media_id_or_scenes: Any = None) -> List[str]:
+        """Marks all scenes depending on this character as STALE_REFERENCE (Section 26).
+        Does NOT delete files from disk.
+        """
+        queue = self.load_queue()
+        stale_scenes = []
+
+        # Load plan to see which scenes reference this character
+        scenes_data = []
+        if isinstance(new_media_id_or_scenes, list):
+            scenes_data = [
+                {
+                    "scene_id": getattr(s, "scene_id", None) or s.get("scene_id"),
+                    "visible_characters": getattr(s, "visible_characters", None) or s.get("visible_characters") or [],
+                    "characters": getattr(s, "characters", None) or s.get("characters") or []
+                }
+                for s in new_media_id_or_scenes
+            ]
+        elif self.plan_file.exists():
+            try:
+                with open(self.plan_file, "r", encoding="utf-8") as f:
+                    pdata = json.load(f)
+                scenes_data = pdata.get("scenes", [])
+            except Exception as e:
+                logger.warning(f"Failed to read plan_file: {e}")
+
+        for sc in scenes_data:
+            s_id = sc.get("scene_id")
+            vis_chars = sc.get("visible_characters") or []
+            story_chars = sc.get("story_characters") or sc.get("characters") or []
+            if char_id in vis_chars or char_id in story_chars:
+                item = queue.get(s_id)
+                if item:
+                    item.is_stale = True
+                    item.stale_reason = "STALE_REFERENCE"
+                    item.image_status = "STALE_REFERENCE"
+                    item.image_qc_status = "AWAITING_QC"
+                    if item.video_status == "DONE":
+                        item.video_status = "STALE_KEYFRAME"
+                        item.video_qc_status = "AWAITING_QC"
+                    stale_scenes.append(s_id)
+
+        self.save_queue(queue)
+        logger.warning(f"Character {char_id} updated. Marked {len(stale_scenes)} scenes STALE_REFERENCE: {stale_scenes}")
+        return stale_scenes
+
+    def mark_keyframe_updated(self, scene_id: str, new_keyframe_hash: Optional[str] = None) -> None:
+        """Marks dependent Omni video as STALE_KEYFRAME when keyframe changes (Section 26).
+        Does NOT delete files from disk.
+        """
+        queue = self.load_queue()
+        item = queue.get(scene_id)
+        if item:
+            item.is_stale = True
+            item.stale_reason = f"STALE_KEYFRAME (new hash: {new_keyframe_hash})" if new_keyframe_hash else "STALE_KEYFRAME"
+            if item.video_status in ("DONE", "GENERATING"):
+                item.video_status = "STALE_KEYFRAME"
+                item.video_qc_status = "AWAITING_QC"
+            self.save_queue(queue)
+            logger.warning(f"Keyframe {scene_id} updated. Dependent video marked STALE_KEYFRAME.")
+
+    def approve_keyframe(self, scene_id: str, notes: str = "") -> None:
+        """Approves a keyframe after user review (Section 15, 21)."""
+        self.update_item(scene_id, image_qc_status="APPROVED", is_stale=False, stale_reason=None)
+
+    def approve_video(self, scene_id: str, notes: str = "") -> None:
+        """Approves a video clip after user review (Section 25)."""
+        self.update_item(scene_id, video_qc_status="APPROVED", is_stale=False, stale_reason=None)
+
+    def calculate_batch_credit_cost(
+        self,
+        scenes: List[Any],
+        target_scene_ids: Optional[List[str]] = None,
+        include_images: bool = True,
+        include_videos: bool = True
+    ) -> Dict[str, int]:
+        """Calculates exact request count before batch generation (Section 27)."""
+        targets = [
+            s for s in scenes
+            if not target_scene_ids or (getattr(s, "scene_id", None) or s.get("scene_id")) in target_scene_ids
+        ]
+        banana_cnt = len(targets) if include_images else 0
+        omni_cnt = sum(
+            1 for s in targets
+            if (getattr(s, "visual_type", None) or s.get("visual_type")) in ("OMNI_FLASH_I2V", "VEO_I2V")
+        ) if include_videos else 0
+        return {
+            "banana_requests": banana_cnt,
+            "omni_requests": omni_cnt,
+            "total_requests": banana_cnt + omni_cnt
+        }
+
+    def load_pilot_qc_status(self) -> Dict[str, Any]:
+        """Loads pilot QC report from visual/pilot_qc_report.json."""
+        qc_file = self.visual_dir / "pilot_qc_report.json"
+        if not qc_file.exists():
+            return {}
+        try:
+            with open(qc_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
+    def save_pilot_qc_status(self, report: Dict[str, Any]) -> None:
+        """Persists pilot QC report to visual/pilot_qc_report.json."""
+        qc_file = self.visual_dir / "pilot_qc_report.json"
+        with open(qc_file, "w", encoding="utf-8") as f:
+            json.dump(report, f, ensure_ascii=False, indent=2)
+
+    def is_full_generation_unlocked(
+        self,
+        scenes: List[Any],
+        character_lib: Dict[str, Any]
+    ) -> Tuple[bool, Dict[str, Any]]:
+        """Strict lock gate for Generate All (Section 30).
+        Unlock ONLY when:
+        - all required character references ready
+        - 8/8 pilot keyframes reviewed & approved
+        - all required pilot Omni clips reviewed & approved
+        - 0 critical semantic failure
+        """
+        pilot_ids = ["SC_001", "SC_005", "SC_011", "SC_025", "SC_030", "SC_035", "SC_041", "SC_045"]
+        pilot_omni_ids = ["SC_001", "SC_025", "SC_035", "SC_041", "SC_045"]
+
+        queue = self.load_queue()
+        pilot_report = self.load_pilot_qc_status()
+
+        # 1. Required character references
+        required_chars = ["LAN_ADULT", "HUNG", "UNCLE", "LAN_YOUNG"]
+        chars_ready = all(
+            cid in character_lib and getattr(character_lib[cid], "references", None)
+            for cid in required_chars
+        )
+
+        # 2. Pilot keyframes reviewed & approved
+        pilot_keyframes_approved = 0
+        for pid in pilot_ids:
+            item = queue.get(pid)
+            if item and item.image_qc_status == "APPROVED":
+                pilot_keyframes_approved += 1
+
+        # 3. Pilot Omni videos reviewed & approved
+        pilot_videos_approved = 0
+        for pid in pilot_omni_ids:
+            item = queue.get(pid)
+            if item and item.video_qc_status == "APPROVED":
+                pilot_videos_approved += 1
+
+        # 4. Critical semantic failures
+        critical_failures = 0
+        for pid, data in pilot_report.get("scenes", {}).items():
+            if data.get("status") == "FAILED" or data.get("critical_failure"):
+                critical_failures += 1
+
+        unlocked = (
+            chars_ready
+            and (pilot_keyframes_approved == len(pilot_ids))
+            and (pilot_videos_approved == len(pilot_omni_ids))
+            and (critical_failures == 0)
+        )
+
+        status_info = {
+            "full_generation_unlocked": unlocked,
+            "characters_ready": chars_ready,
+            "pilot_keyframes_approved": f"{pilot_keyframes_approved}/{len(pilot_ids)}",
+            "pilot_videos_approved": f"{pilot_videos_approved}/{len(pilot_omni_ids)}",
+            "critical_failures": critical_failures,
+            "reason": "Ready" if unlocked else "Pilot review pending: Approve all 8 pilot keyframes and 5 pilot videos first."
+        }
+        return unlocked, status_info
 
     def get_progress(self) -> Dict[str, Any]:
         """Calculates current visual generation progress for UI."""

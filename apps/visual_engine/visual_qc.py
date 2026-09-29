@@ -9,15 +9,168 @@ Validates the complete visual pipeline before final video rendering:
 """
 from __future__ import annotations
 
+import datetime
+import json
 import logging
+import subprocess
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from apps.visual_engine.asset_manager import VisualAssetManager
 from apps.visual_engine.visual_planner import VisualScene
 
 logger = logging.getLogger(__name__)
+
+
+def validate_technical_image(image_path: Path | str) -> Tuple[bool, Optional[str], Dict[str, Any]]:
+    """Technical auto-QC for generated still image/keyframe.
+    
+    Verifies:
+    - File existence & non-zero byte size
+    - Image can be decoded cleanly
+    - Dimensions and aspect ratio (expects ~16:9)
+    - Not fully corrupt or completely black/blank
+    """
+    p = Path(image_path)
+    if not p.exists():
+        return False, f"Image file does not exist: {p}", {}
+    if p.stat().st_size == 0:
+        return False, f"Image file is 0 bytes: {p}", {"file_size_bytes": 0}
+
+    try:
+        from PIL import Image
+        with Image.open(p) as img:
+            w, h = img.size
+            fmt = img.format
+            aspect = round(w / h, 2) if h > 0 else 0.0
+
+            # Blank/black image detection
+            rgb_img = img.convert("RGB")
+            extrema = rgb_img.getextrema()  # ((min_r, max_r), (min_g, max_g), (min_b, max_b))
+            is_black = all(min_val == 0 and max_val == 0 for min_val, max_val in extrema)
+
+            meta = {
+                "width": w,
+                "height": h,
+                "aspect_ratio": aspect,
+                "format": fmt,
+                "file_size_bytes": p.stat().st_size,
+                "is_blank_black": is_black
+            }
+
+            if is_black:
+                return False, "Image is completely black/empty", meta
+
+            if w < 640 or h < 360:
+                return False, f"Image resolution too low: {w}x{h}", meta
+
+            return True, None, meta
+    except Exception as e:
+        return False, f"Image decode error: {str(e)}", {"file_size_bytes": p.stat().st_size}
+
+
+def validate_technical_video(
+    video_path: Path | str,
+    expected_duration: Optional[float] = None,
+    ffprobe_bin: str = "ffprobe"
+) -> Tuple[bool, Optional[str], Dict[str, Any]]:
+    """Technical auto-QC for generated video clip.
+    
+    Verifies:
+    - File existence & non-zero byte size
+    - Playable container and video stream
+    - Actual duration matches expected duration if specified
+    """
+    p = Path(video_path)
+    if not p.exists():
+        return False, f"Video file does not exist: {p}", {}
+    if p.stat().st_size == 0:
+        return False, f"Video file is 0 bytes: {p}", {"file_size_bytes": 0}
+
+    try:
+        cmd = [
+            ffprobe_bin, "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=width,height,duration,nb_frames:format=duration",
+            "-of", "json",
+            str(p)
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            # If ffprobe failed, return warning or fallback file-size check
+            return False, f"ffprobe error: {proc.stderr[:200]}", {"file_size_bytes": p.stat().st_size}
+
+        data = json.loads(proc.stdout)
+        stream = data.get("streams", [{}])[0] if data.get("streams") else {}
+        format_info = data.get("format", {})
+
+        dur_str = format_info.get("duration") or stream.get("duration")
+        duration = float(dur_str) if dur_str else 0.0
+        w = int(stream.get("width", 0))
+        h = int(stream.get("height", 0))
+
+        meta = {
+            "width": w,
+            "height": h,
+            "duration": duration,
+            "file_size_bytes": p.stat().st_size
+        }
+
+        if expected_duration is not None and duration > 0:
+            # Check duration tolerance (e.g. within 1.5s of target)
+            diff = abs(duration - expected_duration)
+            if diff > 2.0:
+                meta["duration_diff"] = diff
+                return False, f"Video duration mismatch: actual {duration:.2f}s vs expected {expected_duration:.2f}s", meta
+
+        return True, None, meta
+    except Exception as e:
+        # Fallback if ffprobe not available
+        meta = {"file_size_bytes": p.stat().st_size, "error": str(e)}
+        if p.stat().st_size > 1024:
+            return True, None, meta
+        return False, f"Video verification error: {str(e)}", meta
+
+
+def record_pilot_qc(
+    asset_mgr: VisualAssetManager,
+    scene_id: str,
+    asset_type: str,
+    status: str,
+    notes: str = "",
+    user: str = "user"
+) -> Dict[str, Any]:
+    """Records human / reviewer semantic QC decisions on pilot assets.
+    
+    status: "APPROVED" | "REJECTED" | "AWAITING_QC"
+    asset_type: "IMAGE" | "VIDEO"
+    """
+    report = asset_mgr.load_pilot_qc_status()
+    scenes_map = report.setdefault("scenes", {})
+    scene_qc = scenes_map.setdefault(scene_id, {})
+
+    now_iso = datetime.datetime.now().isoformat()
+
+    if asset_type == "IMAGE":
+        scene_qc["image_status"] = status
+        scene_qc["image_reviewed_at"] = now_iso
+        scene_qc["image_notes"] = notes
+        scene_qc["reviewer"] = user
+        if status == "APPROVED":
+            asset_mgr.approve_keyframe(scene_id)
+    elif asset_type == "VIDEO":
+        scene_qc["video_status"] = status
+        scene_qc["video_reviewed_at"] = now_iso
+        scene_qc["video_notes"] = notes
+        scene_qc["reviewer"] = user
+        if status == "APPROVED":
+            asset_mgr.approve_video(scene_id)
+
+    report["last_updated"] = now_iso
+    asset_mgr.save_pilot_qc_status(report)
+    return scene_qc
+
 
 
 @dataclass

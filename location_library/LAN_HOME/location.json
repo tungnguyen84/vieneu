@@ -5,5 +5,6 @@
   "visual_style": "Vietnamese domestic realism, muted wood and neutral tones, 35mm shallow depth of field",
   "lighting_default": "Soft warm indoor ceiling lamp, evening mood, gentle shadows",
   "references": [],
-  "flow_media_ids": {}
+  "flow_media_ids": {},
+  "is_recurring": true
 }

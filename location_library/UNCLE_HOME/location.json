@@ -5,5 +5,6 @@
   "visual_style": "Worn rustic Vietnamese domestic atmosphere, muted earth tones",
   "lighting_default": "Natural afternoon window light cutting through thin dust, warm nostalgic glow",
   "references": [],
-  "flow_media_ids": {}
+  "flow_media_ids": {},
+  "is_recurring": true
 }

@@ -5,5 +5,6 @@
   "visual_style": "Urban realism, cinematic bokeh, authentic Vietnamese urban texture",
   "lighting_default": "Dusk twilight mixed with yellow streetlamp glow, moody urban isolation",
   "references": [],
-  "flow_media_ids": {}
+  "flow_media_ids": {},
+  "is_recurring": false
 }

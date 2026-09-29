@@ -34,6 +34,28 @@ from apps.visual_engine.resolvers import (
 
 logger = logging.getLogger(__name__)
 
+# Wardrobe profiles for strict clothing lock (Section 6)
+WARDROBE_PROFILES: Dict[str, str] = {
+    "LAN_ADULT_HOME": "dressed in a modest beige linen blouse and neutral dark casual trousers, understated domestic attire",
+    "LAN_ADULT_BEDROOM": "dressed in soft pale cotton loungewear, weary vulnerable evening domestic appearance",
+    "HUNG_HOME": "wearing a casual dark t-shirt and charcoal lounge pants, neat relaxed domestic appearance",
+    "HUNG_INVESTIGATION": "wearing a dark utilitarian jacket over a neat neutral collared shirt and practical trousers, observant investigative look",
+    "UNCLE_HOME": "wearing a faded collared short-sleeve shirt in muted olive or grey and worn dark trousers, unassuming domestic appearance",
+    "LAN_YOUNG_SCHOOL": "dressed in a classic Vietnamese high-school white student shirt with simple collar and dark navy trousers, modest youthful student attire",
+}
+
+# Pilot scenes set for Phase 3 (Section 10)
+PILOT_SCENE_IDS: List[str] = [
+    "SC_001",  # Hook / Lan opening letter (OMNI_FLASH_I2V, 4s)
+    "SC_005",  # Lan Young flashback (BANANA_IMAGE)
+    "SC_011",  # Bank transfer macro -5.000.000 VND (BANANA_IMAGE)
+    "SC_025",  # Hùng investigation in old neighborhood (OMNI_FLASH_I2V, 8s)
+    "SC_030",  # Death record reveal (BANANA_IMAGE)
+    "SC_035",  # Uncle reveal (OMNI_FLASH_I2V, 10s)
+    "SC_041",  # Hùng + Lan emotional two-shot (OMNI_FLASH_I2V, 10s)
+    "SC_045",  # Outro / window reflection (OMNI_FLASH_I2V, 6s)
+]
+
 
 @dataclass
 class VisualScene:
@@ -47,6 +69,7 @@ class VisualScene:
     characters: List[str] = field(default_factory=list)  # backward-compatible alias of story_characters
     story_characters: List[str] = field(default_factory=list)
     visible_characters: Optional[List[str]] = None
+    wardrobe_id: Optional[str] = None  # "LAN_ADULT_HOME", "HUNG_INVESTIGATION", etc.
     location: str = "LAN_HOME"
     visual_type: str = "BANANA_IMAGE"  # "BANANA_IMAGE" or "OMNI_FLASH_I2V"
     motion_value: int = 0  # 0 - 100
@@ -257,8 +280,72 @@ def validate_plan_for_generation(
                 if v is not True:
                     gate_issues.append(f"Critical scene {sc.scene_id} semantic_qc '{k}' is not True ({v}).")
 
+    # 6. Character reference validation for visible characters (Section 2)
+    if character_lib:
+        ref_ok, ref_issues = validate_scene_character_references(scenes, character_lib)
+        if not ref_ok:
+            gate_issues.extend(ref_issues)
+
     all_issues = issues + gate_issues
     return (len(all_issues) == 0), all_issues
+
+
+def validate_character_references_ready(
+    character_lib: Dict[str, CharacterProfile],
+    required_chars: Optional[List[str]] = None,
+    target_project_id: str = DEFAULT_FLOW_PROJECT_ID
+) -> Tuple[bool, List[str]]:
+    """Strictly validates that required characters have valid references and Flow media IDs."""
+    if required_chars is None:
+        required_chars = ["LAN_ADULT", "HUNG", "UNCLE", "LAN_YOUNG"]
+    issues: List[str] = []
+    from apps.visual_engine.character_manager import CHARACTER_LIB_DIR
+    for cid in required_chars:
+        char = character_lib.get(cid)
+        if not char:
+            issues.append(f"Required character '{cid}' is missing from character library.")
+            continue
+        if not char.references:
+            issues.append(f"Character '{cid}' has no reference images defined.")
+            continue
+        char_dir = CHARACTER_LIB_DIR / cid
+        ref_exists = any((char_dir / rf).exists() and (char_dir / rf).stat().st_size > 0 for rf in char.references)
+        if not ref_exists:
+            issues.append(f"Character '{cid}' reference file on disk is missing or empty in {char_dir}.")
+        cached_media_id = char.flow_media_ids.get(target_project_id) or (char.flow_media_ids.get(char.references[0]) if char.references else None)
+        if not cached_media_id and not any(char.flow_media_ids.values()):
+            issues.append(f"Character '{cid}' has no Flow media ID cached for project {target_project_id}.")
+        if not char.appearance or not char.default_clothing:
+            issues.append(f"Character '{cid}' missing appearance or default_clothing metadata.")
+        if cid == "LAN_YOUNG":
+            rel = char.identity_relation or {}
+            if rel.get("type") != "YOUNGER_VERSION_OF" or rel.get("character_id") != "LAN_ADULT":
+                issues.append("LAN_YOUNG missing valid identity_relation to LAN_ADULT.")
+
+    return (len(issues) == 0), issues
+
+
+def validate_scene_character_references(
+    scenes: List[VisualScene],
+    character_lib: Dict[str, CharacterProfile]
+) -> Tuple[bool, List[str]]:
+    """Ensures every visible character in planned scenes has a valid reference."""
+    issues: List[str] = []
+    from apps.visual_engine.character_manager import CHARACTER_LIB_DIR
+    for sc in scenes:
+        vis_chars = sc.visible_characters or []
+        for cid in vis_chars:
+            char = character_lib.get(cid)
+            if not char:
+                issues.append(f"Scene {sc.scene_id} visible character '{cid}' not in library.")
+                continue
+            if not char.references:
+                issues.append(f"Scene {sc.scene_id} visible character '{cid}' has no reference image.")
+                continue
+            char_dir = CHARACTER_LIB_DIR / cid
+            if not any((char_dir / rf).exists() for rf in char.references):
+                issues.append(f"Scene {sc.scene_id} visible character '{cid}' reference file missing on disk.")
+    return (len(issues) == 0), issues
 
 
 class VisualPlanningStrategy(ABC):
@@ -641,10 +728,13 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
                 motion = motion_palette[idx % len(motion_palette)]
                 transition = "crossfade"
 
+            wardrobe_id = entity_info.get("wardrobe_id")
+
             # Compose Prompts (Standardized English, no 8k boilerplate, strictly matching visible_characters)
             img_prompt, vid_prompt = self._compose_prompts(
                 story_chars=story_chars,
                 visible_chars=vis_chars,
+                wardrobe_id=wardrobe_id,
                 location=loc,
                 shot_composition=shot_comp,
                 text=combined_text,
@@ -684,6 +774,7 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
                 characters=story_chars,
                 story_characters=story_chars,
                 visible_characters=vis_chars,
+                wardrobe_id=wardrobe_id,
                 location=loc,
                 visual_type=visual_type,
                 motion_value=motion_value,
@@ -887,9 +978,29 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
                 "safe_area": "phone_screen_bubble"
             }]
 
+        # 5. Wardrobe ID resolution (Clothing Lock - Section 6)
+        wardrobe_id = None
+        if "LAN_YOUNG" in visible_chars or "LAN_YOUNG" in story_chars:
+            wardrobe_id = "LAN_YOUNG_SCHOOL"
+        elif "UNCLE" in visible_chars:
+            wardrobe_id = "UNCLE_HOME"
+        elif "HUNG" in visible_chars and "LAN_ADULT" not in visible_chars:
+            if loc in ("OLD_NEIGHBORHOOD", "ARCHIVE_OFFICE", "STREET", "CAFE"):
+                wardrobe_id = "HUNG_INVESTIGATION"
+            else:
+                wardrobe_id = "HUNG_HOME"
+        elif "LAN_ADULT" in visible_chars and "HUNG" not in visible_chars:
+            if loc == "LAN_BEDROOM":
+                wardrobe_id = "LAN_ADULT_BEDROOM"
+            else:
+                wardrobe_id = "LAN_ADULT_HOME"
+        elif "HUNG" in visible_chars and "LAN_ADULT" in visible_chars:
+            wardrobe_id = "LAN_ADULT_HOME"
+
         return {
             "story_characters": story_chars,
             "visible_characters": visible_chars,
+            "wardrobe_id": wardrobe_id,
             "location": loc,
             "shot_composition": shot_comp,
             "fact_ids": fact_ids,
@@ -903,19 +1014,25 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
         self,
         story_chars: List[str],
         visible_chars: List[str],
-        location: str,
-        shot_composition: str,
-        text: str,
-        profile: str,
-        importance: str,
-        is_video: bool,
-        character_lib: Dict[str, CharacterProfile],
-        location_lib: Dict[str, LocationProfile],
-        preset: Dict[str, Any]
+        wardrobe_id: Optional[str] = None,
+        location: str = "LAN_HOME",
+        shot_composition: str = "medium_shot",
+        text: str = "",
+        profile: str = "NORMAL",
+        importance: str = "MEDIUM",
+        is_video: bool = False,
+        character_lib: Optional[Dict[str, CharacterProfile]] = None,
+        location_lib: Optional[Dict[str, LocationProfile]] = None,
+        preset: Optional[Dict[str, Any]] = None
     ) -> Tuple[str, Optional[str]]:
-        """Composes standardized English prompts strictly matching visible_characters without 8k boilerplate."""
+        """Composes standardized English prompts strictly matching visible_characters and locked wardrobe."""
+        preset = preset or {}
+        location_lib = location_lib or {}
         series_style_info = preset.get("series_visual_style", {})
         genre = series_style_info.get("genre", "Vietnamese cinematic social mystery drama")
+
+        # Resolve clothing from wardrobe profiles (Section 6 Clothing Lock)
+        active_wardrobe = WARDROBE_PROFILES.get(wardrobe_id, "wearing modest authentic Vietnamese domestic clothing")
 
         # 1. Subject description strictly matching visible_characters
         if len(visible_chars) == 0:
@@ -932,29 +1049,33 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
         elif "HUNG" in visible_chars and "LAN_ADULT" in visible_chars:
             subject_desc = (
                 "Cinematic two-shot of Lan and Hung. "
-                "Lan, a 30-year-old Vietnamese woman with natural dark hair and weary eyes holding emotional secrets, in a modest linen blouse. "
-                "Hung, a 32-year-old Vietnamese technical engineer with neat dark hair and a calm restrained expression, in a casual shirt. "
+                f"Lan, a 30-year-old Vietnamese woman with natural dark hair and weary eyes holding emotional secrets, {WARDROBE_PROFILES['LAN_ADULT_HOME']}. "
+                f"Hung, a 32-year-old Vietnamese technical engineer with neat dark hair and a calm restrained expression, {WARDROBE_PROFILES['HUNG_HOME']}. "
                 "Both characters seated opposite each other, palpable psychological distance and restrained marital tension."
             )
         elif "LAN_YOUNG" in visible_chars:
+            young_wardrobe = WARDROBE_PROFILES.get(wardrobe_id, WARDROBE_PROFILES['LAN_YOUNG_SCHOOL'])
             subject_desc = (
-                "Lan in her youth (early 20s), slender build, long straight dark hair, gentle vulnerable Vietnamese facial contours with sorrowful eyes, "
-                "dressed in a simple student blouse. Subtle nostalgic warmth in tone."
+                "Lan in her youth (high school student), slender build, long straight dark hair, gentle vulnerable Vietnamese facial contours with sorrowful eyes, "
+                f"{young_wardrobe}. Subtle nostalgic warmth in tone."
             )
         elif "HUNG" in visible_chars:
+            hung_wardrobe = WARDROBE_PROFILES.get(wardrobe_id, WARDROBE_PROFILES['HUNG_HOME'])
             subject_desc = (
                 "Hung, a 32-year-old Vietnamese technical engineer with neat short dark hair, thoughtful observant eyes, "
-                "and composed demeanor, wearing a simple dark jacket or neutral collared shirt."
+                f"and composed demeanor, {hung_wardrobe}."
             )
         elif "UNCLE" in visible_chars:
+            uncle_wardrobe = WARDROBE_PROFILES.get(wardrobe_id, WARDROBE_PROFILES['UNCLE_HOME'])
             subject_desc = (
                 "Lan's maternal uncle, a Vietnamese man in his 50s with weathered facial features, calculating gaze and cautious demeanor, "
-                "wearing modest slightly worn domestic clothing."
+                f"{uncle_wardrobe}."
             )
         else:
+            lan_wardrobe = WARDROBE_PROFILES.get(wardrobe_id, WARDROBE_PROFILES['LAN_ADULT_HOME'])
             subject_desc = (
                 "Lan, a 30-year-old Vietnamese woman with natural dark hair tucked behind her ears, subtle fatigue shadows around her eyes holding a deep secret, "
-                "wearing modest neutral domestic clothing."
+                f"{lan_wardrobe}."
             )
 
         # 2. Location details

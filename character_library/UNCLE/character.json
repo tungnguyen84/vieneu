@@ -11,6 +11,13 @@
   "default_clothing": "Faded light blue hospital gown or thin worn traditional cotton pajamas",
   "visual_notes": "Preserve frail sickly appearance and deep warmth toward Lan.",
   "visual_style": "Melancholic nostalgic tone, soft warm rim lighting with desaturated shadows",
-  "references": [],
-  "flow_media_ids": {}
+  "references": [
+    "ref_portrait.png"
+  ],
+  "flow_media_ids": {
+    "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e": "media_ref_uncle_b36f"
+  },
+  "wardrobes": {
+    "UNCLE_HOME": "Faded collared short-sleeve shirt in muted olive or grey, worn dark trousers, unassuming domestic appearance"
+  }
 }

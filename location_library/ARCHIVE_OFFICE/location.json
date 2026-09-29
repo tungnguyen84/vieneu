@@ -5,5 +5,6 @@
   "visual_style": "Restrained investigative realism, tactile paper documents, authentic Vietnamese administrative aesthetic",
   "lighting_default": "Subtle desk lamp and soft indoor overhead office lighting",
   "references": [],
-  "flow_media_ids": {}
+  "flow_media_ids": {},
+  "is_recurring": false
 }

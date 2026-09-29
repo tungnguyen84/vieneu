@@ -5,5 +5,6 @@
   "visual_style": "Naturalistic documentary realism, authentic Vietnamese residential alley, nostalgic gentle tones",
   "lighting_default": "Soft diffused late afternoon sunlight filtering through alleyway eaves",
   "references": [],
-  "flow_media_ids": {}
+  "flow_media_ids": {},
+  "is_recurring": false
 }

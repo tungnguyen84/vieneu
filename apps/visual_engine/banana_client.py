@@ -9,6 +9,7 @@ Handles:
 """
 from __future__ import annotations
 
+import hashlib
 import logging
 import time
 from pathlib import Path
@@ -37,6 +38,72 @@ class BananaClient:
         self.asset_mgr = asset_mgr
         self.character_lib = character_lib
         self.preset = preset
+
+    def generate_character_reference(self, char_id: str, project_id: str = "") -> Path:
+        """Generates a clean identity reference portrait for a character via Banana Pro (Section 4)."""
+        char = self.character_lib.get(char_id)
+        if not char:
+            raise ValueError(f"Character '{char_id}' not found in character library.")
+
+        target_pid = resolve_flow_project_id(
+            ui_project_id=project_id,
+            visual_preset=self.preset,
+            adapter_default=self.adapter.default_project_id
+        )
+
+        from apps.visual_engine.character_manager import CHARACTER_LIB_DIR
+        char_dir = CHARACTER_LIB_DIR / char_id
+        char_dir.mkdir(parents=True, exist_ok=True)
+        out_ref_path = char_dir / "ref_portrait.png"
+
+        # Anchor to LAN_ADULT if younger version (Section 5)
+        ref_anchor_ids = []
+        if char.identity_relation and char.identity_relation.get("type") == "YOUNGER_VERSION_OF":
+            anchor_cid = char.identity_relation.get("character_id")
+            if anchor_cid:
+                ref_anchor_ids.extend(self.ensure_character_references(anchor_cid, project_id=target_pid))
+
+        prompt = (
+            f"Clean character identity reference sheet of {char.name}, {char.appearance}. "
+            f"Neutral solid studio background, waist-up portrait, natural front-facing pose, "
+            f"neutral calm facial expression, soft even cinematic lighting, accurate realistic Vietnamese skin texture and features, "
+            f"no dramatic camera angle, no text, no props obscuring face, 35mm portrait photography."
+        )
+
+        logger.info(f"[BananaClient] Generating clean character reference for {char_id} on Flow project {target_pid}...")
+        assets = self.adapter.generate_image(
+            prompt=prompt,
+            project_id=target_pid,
+            aspect_ratio="IMAGE_ASPECT_RATIO_PORTRAIT",
+            image_model="NANO_BANANA_PRO",
+            reference_media_ids=ref_anchor_ids or None,
+            count=1
+        )
+        if not assets:
+            raise RuntimeError(f"Failed to generate character reference for {char_id}")
+
+        asset = assets[0]
+        self.adapter.download_asset(asset.url, out_ref_path)
+
+        if "ref_portrait.png" not in char.references:
+            char.references.append("ref_portrait.png")
+        char.flow_media_ids[target_pid] = asset.media_id
+        save_character(char)
+
+        # Mark all scenes using this character as STALE_REFERENCE (Section 26)
+        self.asset_mgr.mark_character_updated(char_id, asset.media_id)
+
+        # Append generation log (Section 28)
+        self.asset_mgr.append_generation_log({
+            "scene_id": f"REF_{char_id}",
+            "operation": "CHARACTER_REFERENCE",
+            "project_id": target_pid,
+            "model": "NANO_BANANA_PRO",
+            "status": "DONE",
+            "media_id": asset.media_id
+        })
+
+        return out_ref_path
 
     def ensure_character_references(self, char_id: str, project_id: str = "") -> List[str]:
         """
@@ -117,6 +184,9 @@ class BananaClient:
             ref_media_ids: List[str] = []
             chars_to_reference = getattr(scene, "visible_characters", None) or scene.characters
             for c_id in chars_to_reference:
+                char = self.character_lib.get(c_id)
+                if not char or not char.references:
+                    raise ValueError(f"Cannot generate keyframe: Visible character '{c_id}' has no reference image.")
                 ref_media_ids.extend(self.ensure_character_references(c_id, project_id=target_pid))
 
             logger.info(f"[BananaClient] Requesting Banana Pro for {scene.scene_id} ({scene.visual_type}) on Flow project {target_pid}...")
@@ -138,18 +208,49 @@ class BananaClient:
             logger.info(f"[BananaClient] Downloading keyframe {scene.scene_id} from {asset.url[:60]}...")
             self.adapter.download_asset(asset.url, out_image_path)
 
+            # Calculate MD5 hash of downloaded image (Section 21)
+            with open(out_image_path, "rb") as f:
+                img_hash = hashlib.md5(f.read()).hexdigest()
+            prompt_hash = hashlib.md5(scene.image_prompt.encode("utf-8")).hexdigest()[:12]
+
             # Update scene & queue
             scene.image_media_id = asset.media_id
             scene.image_url = asset.url
             scene.status = "IMAGE_DONE"
 
+            # Check if this replaces an existing keyframe -> mark dependent video STALE (Section 26)
+            if item and item.image_media_id and item.image_media_id != asset.media_id:
+                self.asset_mgr.mark_keyframe_updated(scene.scene_id)
+
             self.asset_mgr.update_item(
                 scene.scene_id,
                 image_status="DONE",
+                image_qc_status="AWAITING_QC",  # Section 12: does not auto-approve
                 image_media_id=asset.media_id,
-                image_file=str(out_image_path.relative_to(self.asset_mgr.project_dir))
+                source_keyframe_media_id=asset.media_id,
+                source_keyframe_hash=img_hash,
+                image_file=str(out_image_path.relative_to(self.asset_mgr.project_dir)),
+                generation_metadata={
+                    "prompt_hash": prompt_hash,
+                    "generated_at": time.time(),
+                    "reference_media_ids": ref_media_ids
+                },
+                is_stale=False,
+                stale_reason=None
             )
-            logger.info(f"[BananaClient] Successfully generated & saved keyframe for {scene.scene_id} ({out_image_path.stat().st_size:,} bytes)")
+
+            # Append generation log (Section 28)
+            self.asset_mgr.append_generation_log({
+                "scene_id": scene.scene_id,
+                "operation": "BANANA_KEYFRAME",
+                "project_id": target_pid,
+                "model": "NANO_BANANA_PRO",
+                "status": "DONE",
+                "media_id": asset.media_id,
+                "attempt": (item.attempt_count if item else 0) + 1
+            })
+
+            logger.info(f"[BananaClient] Successfully generated & saved keyframe for {scene.scene_id} ({out_image_path.stat().st_size:,} bytes, hash: {img_hash[:8]})")
             return out_image_path
 
         except Exception as e:
@@ -158,9 +259,19 @@ class BananaClient:
             self.asset_mgr.update_item(
                 scene.scene_id,
                 image_status="FAILED",
+                image_qc_status="FAILED",
                 attempt_count=curr_attempt,
                 last_error=str(e)
             )
+            self.asset_mgr.append_generation_log({
+                "scene_id": scene.scene_id,
+                "operation": "BANANA_KEYFRAME",
+                "project_id": target_pid,
+                "model": "NANO_BANANA_PRO",
+                "status": "FAILED",
+                "error": str(e),
+                "attempt": curr_attempt
+            })
             return None
 
     def generate_all_keyframes(

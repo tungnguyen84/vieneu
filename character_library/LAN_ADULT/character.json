@@ -11,6 +11,14 @@
   "default_clothing": "Simple modest domestic clothing, muted beige linen blouse and neutral casual pants",
   "visual_notes": "Preserve strict identity continuity across scenes. Restrained acting, serious domestic tone.",
   "visual_style": "Vietnamese realism, natural skin texture, 35mm cinematic lighting, muted tones",
-  "references": [],
-  "flow_media_ids": {}
+  "references": [
+    "ref_portrait.png"
+  ],
+  "flow_media_ids": {
+    "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e": "media_ref_lan_adult_b36f"
+  },
+  "wardrobes": {
+    "LAN_ADULT_HOME": "Modest beige linen blouse and neutral dark casual trousers, understated domestic attire",
+    "LAN_ADULT_BEDROOM": "Soft pale cotton loungewear, weary vulnerable evening domestic appearance"
+  }
 }

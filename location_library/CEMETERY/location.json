@@ -5,5 +5,6 @@
   "visual_style": "Contemplative cinematic sorrow, muted grass greens and weathered stone grey",
   "lighting_default": "Soft diffused overcast daylight, quiet somber atmosphere",
   "references": [],
-  "flow_media_ids": {}
+  "flow_media_ids": {},
+  "is_recurring": false
 }

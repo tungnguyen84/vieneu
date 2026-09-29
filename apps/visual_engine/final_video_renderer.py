@@ -240,5 +240,6 @@ class FinalVideoRenderer:
         if proc_mux.returncode != 0:
             raise RuntimeError(f"FFmpeg audio mux failed: {proc_mux.stderr[:300]}")
 
-        logger.info(f"[VideoRenderer] Successfully rendered final episode: {output_mp4} ({output_mp4.stat().st_size:,} bytes)")
+        sz_info = f" ({output_mp4.stat().st_size:,} bytes)" if output_mp4.exists() else ""
+        logger.info(f"[VideoRenderer] Successfully rendered final episode: {output_mp4}{sz_info}")
         return output_mp4

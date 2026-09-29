@@ -35,7 +35,9 @@ class CharacterProfile:
     visual_notes: str = ""
     visual_style: str = ""
     references: List[str] = field(default_factory=list)
-    flow_media_ids: Dict[str, str] = field(default_factory=dict)  # ref_filename -> Google Flow media_id UUID
+    flow_media_ids: Dict[str, str] = field(default_factory=dict)  # ref_filename or project_id -> Google Flow media_id UUID
+    identity_relation: Optional[Dict[str, Any]] = None  # e.g. {"type": "YOUNGER_VERSION_OF", "character_id": "LAN_ADULT"}
+    wardrobes: Dict[str, str] = field(default_factory=dict)  # wardrobe_id -> description
     char_id: str = ""
 
     def __post_init__(self):
@@ -52,6 +54,7 @@ class LocationProfile:
     description: str = ""
     visual_style: str = ""
     lighting_default: str = ""
+    is_recurring: bool = False
     references: List[str] = field(default_factory=list)
     flow_media_ids: Dict[str, str] = field(default_factory=dict)
     location_id: str = ""
@@ -93,7 +96,9 @@ def load_character_library(base_dir: Path = CHARACTER_LIB_DIR) -> Dict[str, Char
                     visual_notes=data.get("visual_notes", ""),
                     visual_style=data.get("visual_style", ""),
                     references=data.get("references", []),
-                    flow_media_ids=data.get("flow_media_ids", {})
+                    flow_media_ids=data.get("flow_media_ids", {}),
+                    identity_relation=data.get("identity_relation"),
+                    wardrobes=data.get("wardrobes", {})
                 )
             except Exception as e:
                 logger.error(f"Error loading character {json_file}: {e}")
@@ -143,6 +148,7 @@ def load_location_library(base_dir: Path = LOCATION_LIB_DIR) -> Dict[str, Locati
                     description=data.get("description", ""),
                     visual_style=data.get("visual_style", ""),
                     lighting_default=data.get("lighting_default", ""),
+                    is_recurring=data.get("is_recurring", False),
                     references=data.get("references", []),
                     flow_media_ids=data.get("flow_media_ids", {})
                 )
