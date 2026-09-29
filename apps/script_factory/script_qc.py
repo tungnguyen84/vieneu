@@ -61,11 +61,21 @@ class ScriptQCEngine:
                     # Search if wrong number was stated where correct number should be
                     # e.g., if fact is 7 years, search if 8 years, 9 years or 10 years was stated
                     if "năm" in fact.description.lower() or "year" in fact.field.lower():
-                        # Find occurrences of "<number> năm"
-                        found_years = re.findall(r"(\d+)\s+năm", all_text.lower())
-                        if found_years:
-                            # If expected year not in found years or foreign conflicting year found
-                            if str(num_val) not in found_years:
+                        if 1900 <= num_val <= 2100:
+                            calendar_years = re.findall(r"(?:năm\s+)?(\b(?:19|20)\d{2}\b)", all_text.lower())
+                            if str(num_val) not in calendar_years and str(num_val) not in all_text:
+                                fact_conflicts.append({
+                                    "fact_id": fact.fact_id,
+                                    "field": fact.field,
+                                    "expected": fact.value,
+                                    "found": calendar_years,
+                                    "type": "TIMELINE_CONFLICT",
+                                    "description": f"Timeline conflict: Expected calendar year {num_val}, but found conflicting years: {calendar_years}."
+                                })
+                                revision_requests.append(f"Correct timeline conflict: change calendar year to {num_val}.")
+                        else:
+                            found_years = re.findall(r"(\d+)\s+năm", all_text.lower())
+                            if found_years and str(num_val) not in found_years and str(num_val) not in all_text:
                                 fact_conflicts.append({
                                     "fact_id": fact.fact_id,
                                     "field": fact.field,
@@ -75,9 +85,8 @@ class ScriptQCEngine:
                                     "description": f"Timeline conflict: Expected {num_val} năm, but found conflicting years: {found_years}."
                                 })
                                 revision_requests.append(f"Correct timeline conflict: change to {num_val} năm.")
-                elif "vnd" in val_lower or "triệu" in val_lower or "đồng" in val_lower:
+                elif "money" in fact.field.lower() or (("vnd" in val_lower or "triệu" in val_lower or "đồng" in val_lower) and len(val.split()) <= 5):
                     # Money conflict check
-                    # Check if exact money string or simplified money appears
                     clean_money = re.sub(r"[^\d]", "", val)
                     clean_text_digits = re.sub(r"[^\d]", " ", all_text)
                     if clean_money and clean_money not in clean_text_digits and val_lower not in all_text.lower():
@@ -91,7 +100,13 @@ class ScriptQCEngine:
                         revision_requests.append(f"Correct money conflict: ensure exact amount {fact.value} is stated.")
                 else:
                     # General fact / relationship check
-                    if val_lower not in all_text.lower():
+                    parts = [p.strip().lower() for p in re.split(r"[;,]", val) if p.strip()]
+                    found = any(p in all_text.lower() for p in parts) if parts else (val_lower in all_text.lower())
+                    if not found and len(val) > 25:
+                        key_words = [w for w in re.findall(r"\b\w{3,}\b", val_lower) if w not in ["người", "những", "trong", "được", "không", "thực", "hiện"]]
+                        match_count = sum(1 for kw in key_words if kw in all_text.lower())
+                        found = (match_count / max(1, len(key_words))) >= 0.4
+                    if not found:
                         fact_conflicts.append({
                             "fact_id": fact.fact_id,
                             "field": fact.field,
@@ -99,7 +114,7 @@ class ScriptQCEngine:
                             "type": "RELATIONSHIP_CONFLICT" if "cậu" in val_lower or "chú" in val_lower or "bác" in val_lower or "relat" in fact.field.lower() else "FACT_CONFLICT",
                             "description": f"Fact conflict: Expected '{fact.value}' for {fact.field} missing or contradicted."
                         })
-                        revision_requests.append(f"Correct relationship/fact conflict: clarify that person is {fact.value}.")
+                        revision_requests.append(f"Correct relationship/fact conflict: clarify that {fact.field} is {fact.value}.")
 
         # 2. MAJOR REVEAL RULE AUDIT
         # No audience address in Major Reveal block

@@ -1,0 +1,6 @@
+idea_id,episode_id,final_title,words,estimated_duration_min,segments,revision_count,logic,clue_causality,reveal_1,reveal_2,ep001_similarity_pct,closest_pilot_episode,cross_similarity_pct,status
+IDEA_003,EP003,Chiếc Hộp Gỗ Của Người Bà Quá Cố,3124,13.6,90,1,PASS,PASS,PASS,PASS,4.9,IDEA_011,35.7,AWAITING_USER_SCRIPT_REVIEW
+IDEA_005,EP005,Cuộc Gọi Lúc Nửa Đêm,2711,11.8,90,1,PASS,PASS,PASS,PASS,3.4,IDEA_011,33.9,AWAITING_USER_SCRIPT_REVIEW
+IDEA_011,EP011,Bức Ảnh Lạ Trong Điện Thoại Cũ,3005,13.1,90,3,PASS,PASS,PASS,PASS,6.8,IDEA_003,35.7,AWAITING_USER_SCRIPT_REVIEW
+IDEA_018,EP018,Tin Nhắn Từ Căn Nhà Bị Niêm Phong,2596,11.3,90,1,PASS,PASS,PASS,PASS,4.8,IDEA_021,34.4,AWAITING_USER_SCRIPT_REVIEW
+IDEA_021,EP021,Tài Khoản Mạng Xã Hội Giấu Kín Của Mẹ,2692,11.7,90,1,PASS,PASS,PASS,PASS,3.6,IDEA_018,34.4,AWAITING_USER_SCRIPT_REVIEW

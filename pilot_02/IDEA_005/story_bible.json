@@ -1,0 +1,169 @@
+{
+  "episode_id": "EP005",
+  "title": "Cuộc Gọi Lúc Nửa Đêm",
+  "protagonist": {
+    "name": "Lan",
+    "char_id": "LAN",
+    "age": 34,
+    "role": "Nhân vật chính",
+    "description": "Giáo viên tiểu học tại Hà Nội, sống có trách nhiệm, luôn lo toan cho gia đình và con cái. Ngoại hình ưa nhìn, đôi khi có vẻ mệt mỏi vì áp lực cuộc sống. Có phần nóng tính và dễ phán xét khi đối mặt với mâu thuẫn, đặc biệt là với em trai.",
+    "want": "Giải quyết dứt điểm tranh chấp đất đai với em trai để có tiền trang trải cho con bị bệnh.",
+    "fear": "Sợ con trai không đủ điều kiện chữa trị tốt nhất, sợ gánh nặng tài chính, sợ tình cảm gia đình ngày càng rạn nứt.",
+    "misbelief": "Tin rằng em trai Minh ích kỷ, chỉ quan tâm đến tiền bạc và cố tình gây khó dễ cho mình trong vụ tranh chấp đất."
+  },
+  "supporting_characters": [
+    {
+      "name": "Minh",
+      "char_id": "MINH",
+      "role": "Người nắm giữ bí mật / Em trai nhân vật chính",
+      "age": 30,
+      "description": "Thợ làm vườn kiêm sửa chữa cơ khí tại quê nhà Hải Dương. Ngoại hình rắn rỏi, có phần bụi bặm. Tính cách hiền lành, có phần nhút nhát và thiếu quyết đoán, luôn cảm thấy thua kém chị gái. Tình cảm với chị rất sâu sắc nhưng không giỏi biểu đạt.",
+      "want": "Bảo vệ chị gái khỏi những gánh nặng không đáng có, làm tròn bổn phận người em, mong muốn gia đình êm ấm.",
+      "fear": "Sợ làm chị gái thất vọng, sợ làm hỏng chuyện lớn, sợ bị xã hội lên án vì sự cố môi trường.",
+      "reason_for_silence": "Muốn tự mình giải quyết sự cố rò rỉ dầu thải để tránh làm chị Lan thêm lo lắng, sợ việc bị phát hiện sẽ khiến giá trị mảnh đất bị ảnh hưởng và Lan mất đi cơ hội bán đất để lo cho con."
+    },
+    {
+      "name": "Cụ Trâm",
+      "char_id": "CU_TRAM",
+      "role": "Hàng xóm / Người bị ảnh hưởng",
+      "age": 75,
+      "description": "Bà cụ hàng xóm của gia đình Lan - Minh, sống cạnh mảnh đất tranh chấp. Có chút tai tiếng vì hay để ý chuyện người khác, nhưng thực chất là người tốt bụng và quan tâm đến hàng xóm. Con cháu ở xa.",
+      "want": "Cuộc sống bình yên, không bị ảnh hưởng bởi mùi hôi thối và nước ô nhiễm.",
+      "fear": "Sợ sức khỏe bị ảnh hưởng bởi nguồn nước ô nhiễm, sợ bị làm phiền.",
+      "reason_for_silence": "Ban đầu chỉ nghĩ là mùi lạ thông thường, sau đó khi nước giếng có vấn đề thì có ý định nói với Lan/Minh nhưng chưa kịp hoặc ngại làm to chuyện."
+    }
+  ],
+  "relationships": [
+    {
+      "char_a": "LAN",
+      "char_b": "MINH",
+      "relationship": "Hai chị em ruột"
+    },
+    {
+      "char_a": "MINH",
+      "char_b": "CU_TRAM",
+      "relationship": "Hàng xóm thân thiết (trước sự cố)"
+    },
+    {
+      "char_a": "LAN",
+      "char_b": "CU_TRAM",
+      "relationship": "Biết nhau qua Minh"
+    }
+  ],
+  "timeline": [
+    "Khoảng 10-15 năm trước: Bố mẹ Minh/Lan từng mở xưởng tiện nhỏ, có chôn bể chứa dầu thải/hóa chất cơ khí dưới khu đất.",
+    "Khoảng 1 tuần trước tập phim: Minh dùng máy xúc dọn dẹp một phần đất để chuẩn bị làm xưởng cơ khí nhỏ, vô tình làm thủng bể chứa dầu thải.",
+    "Nhiều ngày trước tập phim: Dầu thải bắt đầu rò rỉ ngấm vào lòng đất, lan đến giếng nước nhà Cụ Trâm.",
+    "Đêm trước tập phim (khoảng 1h30 sáng): Minh phát hiện nước giếng nhà Cụ Trâm bốc mùi dầu nồng nặc và có màu lạ. Hoảng loạn, Minh gọi điện cho Lan.",
+    "Sáng hôm sau: Lan nhận cuộc gọi, tìm đến quê nhà và bắt đầu điều tra."
+  ],
+  "locations": [
+    "QUÊ NHÀ HẢI DƯƠNG (Mảnh đất tranh chấp, nhà Minh, nhà Cụ Trâm)",
+    "HÀ NỘI (Nhà Lan, trường học của Lan)"
+  ],
+  "money_facts": [],
+  "critical_facts": [
+    {
+      "fact_id": "FACT_001",
+      "field": "timeline_years",
+      "value": "Khoảng 10-15 năm",
+      "description": "Thời gian ước tính bể chứa dầu thải được chôn ngầm.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_002",
+      "field": "relationship_nature",
+      "value": "Hai chị em ruột (Lan và Minh)",
+      "description": "Mối quan hệ chính xác giữa Lan và Minh.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_003",
+      "field": "evidence_origin",
+      "value": "Bể chứa dầu thải/hóa chất cơ khí cũ chôn ngầm dưới đất, bị máy xúc của Minh làm thủng.",
+      "description": "Nguồn gốc của sự cố rò rỉ.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_004",
+      "field": "reveal_1_truth",
+      "value": "Minh vô tình làm thủng bể chứa dầu thải cũ dưới mảnh đất tranh chấp, gây ô nhiễm nguồn nước giếng của hàng xóm.",
+      "description": "Nội dung cốt lõi của Bước ngoặt 1.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_005",
+      "field": "reveal_2_truth",
+      "value": "Minh che giấu sự cố vì sợ Lan mất lợi thế tranh chấp, sợ bị phạt và muốn tự mình gánh trách nhiệm.",
+      "description": "Nội dung gốc rễ của Bước ngoặt 2.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_006",
+      "field": "land_size",
+      "value": "1.200 m2",
+      "description": "Diện tích mảnh đất tranh chấp.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_007",
+      "field": "minh_work",
+      "value": "Thợ làm vườn kiêm thợ cơ khí",
+      "description": "Nghề nghiệp của Minh.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_008",
+      "field": "lan_work",
+      "value": "Giáo viên tiểu học",
+      "description": "Nghề nghiệp của Lan.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_009",
+      "field": "location_province",
+      "value": "Hải Dương",
+      "description": "Tỉnh nơi diễn ra sự cố và tranh chấp.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_010",
+      "field": "neighbor_affected",
+      "value": "Cụ Trâm",
+      "description": "Hàng xóm bị ảnh hưởng trực tiếp bởi ô nhiễm.",
+      "status": "LOCKED"
+    }
+  ],
+  "secret": "Minh đã vô tình làm rò rỉ một bể chứa dầu thải/hóa chất cơ khí chôn ngầm dưới mảnh đất tranh chấp, gây ô nhiễm nguồn nước của hàng xóm.",
+  "false_lead": "Lan nghi ngờ Minh cố tình dàn dựng một vụ việc khủng hoảng để gây áp lực, buộc cô phải nhượng bộ trong việc phân chia đất đai, hoặc anh ta đã làm sai giấy tờ đất.",
+  "clues": [
+    "Cuộc gọi lúc 1h30 sáng từ số của Minh, chỉ có tiếng thở dốc và câu nói 'Chị... em không cố ý... nó vỡ rồi...'.",
+    "Cụ Trâm phàn nàn về mùi lạ và nước giếng có váng dầu, nghi ngờ có gì đó bất thường dưới đất.",
+    "Minh tỏ ra lúng túng, né tránh khi Lan hỏi về nguồn nước và tình hình khu đất, liên tục kiểm tra điện thoại và có vẻ hoảng loạn."
+  ],
+  "reveal_1": "Minh không cố tình dàn dựng. Anh ta đã vô tình làm thủng một bể chứa dầu thải/hóa chất cơ khí cũ chôn ngầm dưới mảnh đất tranh chấp khi đang dọn đất, gây ra sự rò rỉ và ô nhiễm nguồn nước giếng của hàng xóm (Cụ Trâm).",
+  "reveal_2": "Minh đã cố gắng che giấu sự cố này vì sợ Lan sẽ càng thêm áp lực tài chính khi biết giá trị mảnh đất bị ảnh hưởng nặng nề, và bản thân anh cũng sợ bị phạt nặng về môi trường. Lời nói 'không cố ý' là ám chỉ việc làm thủng bể chứa, chứ không phải cố ý gây ô nhiễm. Anh ta đang dằn vặt vì cảm thấy mình là đứa em kém cỏi, muốn tự mình gánh vác trách nhiệm.",
+  "emotional_payoff": "Lan nhận ra Minh không hề ích kỷ hay muốn hại mình, mà chỉ đang mắc kẹt trong nỗi sợ hãi, sự dằn vặt và tình thương em dành cho chị. Cô xúc động trước nỗ lực của em trai để bảo vệ mình và gia đình. Hai chị em cùng nhau đối mặt với hậu quả, tìm giải pháp khắc phục và hàn gắn mối quan hệ.",
+  "reflection_theme": "Những mâu thuẫn gia đình, đặc biệt là tranh chấp tài sản, có thể che mờ đi sự thật và động cơ thực sự của mỗi người. Lòng tham và nỗi sợ hãi có thể khiến con người đưa ra những lựa chọn sai lầm, nhưng tình yêu thương và sự thấu hiểu sẽ là sợi dây kết nối, giúp họ tìm lại con đường đúng đắn.",
+  "ending": "Lan và Minh cùng nhau tìm cách xử lý ô nhiễm, báo cáo với chính quyền địa phương và có kế hoạch khắc phục lâu dài. Họ chấp nhận rằng giá trị mảnh đất có thể bị ảnh hưởng, nhưng tình thân và sự bình yên của khu dân cư quan trọng hơn. Mối quan hệ giữa hai chị em được hàn gắn, Lan hiểu và thông cảm cho Minh, còn Minh cảm thấy nhẹ nhõm khi được chia sẻ gánh nặng.",
+  "source_idea_id": "IDEA_005",
+  "time_period": "Hiện tại (2024), với các mốc quá khứ quan trọng từ khoảng 2005-2015 (thời điểm bố mẹ còn sống và có thể xảy ra sự cố chôn bể)",
+  "mystery_question": "Cuộc gọi lúc nửa đêm của Minh với câu nói đứt quãng 'Chị... em không cố ý... nó vỡ rồi...' có ý nghĩa gì? Liệu đây có phải là một chiêu trò mới của Minh trong cuộc tranh chấp đất đai hay không?",
+  "narrative_skeleton": {
+    "trigger": "Cuộc gọi bí ẩn từ số của em trai Minh vào lúc nửa đêm, với lời lẽ hoảng loạn và đứt quãng.",
+    "initial_suspicion": "Lan lập tức nghi ngờ Minh đang cố tình dàn dựng hoặc làm điều gì đó khuất tất liên quan đến vụ tranh chấp đất đai, nhằm gây áp lực lên cô.",
+    "investigation_method": "Lan tìm về quê để chất vấn Minh, đồng thời thu thập thông tin từ những người xung quanh, đặc biệt là hàng xóm Cụ Trâm và quan sát thái độ của Minh.",
+    "evidence_chain": [
+      "Cuộc gọi nửa đêm bí ẩn từ số Minh.",
+      "Cụ Trâm phàn nàn về mùi lạ và nước giếng có váng dầu.",
+      "Thái độ lúng túng, né tránh và hoảng loạn của Minh khi bị Lan gặng hỏi."
+    ],
+    "reveal_mechanism": "Khi Lan đối chất trực tiếp với Minh và Cụ Trâm, sự thật về bể chứa dầu thải bị thủng và nguồn nước bị ô nhiễm dần được hé lộ. Minh cuối cùng không thể che giấu được nữa.",
+    "second_reveal_mechanism": "Sau khi sự cố rò rỉ được phơi bày, Minh thừa nhận toàn bộ động cơ và nỗi dằn vặt của mình với Lan, giải thích lý do anh muốn tự mình giải quyết và lời nói 'không cố ý' thực chất là gì.",
+    "emotional_resolution": "Lan ban đầu tức giận và thất vọng, nhưng khi hiểu ra hoàn cảnh và nỗi lòng của Minh, cô xúc động và quyết định cùng em trai gánh vác trách nhiệm, tìm cách khắc phục hậu quả và hàn gắn tình cảm."
+  },
+  "status": "DRAFT",
+  "approved_by": null,
+  "approved_at": null,
+  "last_modified_at": 1790668965.7448947
+}

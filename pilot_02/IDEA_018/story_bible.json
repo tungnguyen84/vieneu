@@ -1,0 +1,128 @@
+{
+  "episode_id": "EP018",
+  "title": "Tin Nhắn Từ Căn Nhà Bị Niêm Phong",
+  "protagonist": {
+    "name": "Hùng",
+    "char_id": "HÙNG",
+    "age": 32,
+    "role": "Nhân vật chính",
+    "description": "Là một nhân viên thiết kế nội thất tại Thành phố Hồ Chí Minh, sinh ra và lớn lên ở miền Trung. Hùng đang áp lực vì khoản nợ kinh doanh và quyết định cùng họ hàng bán căn nhà cổ của bà nội để chia tiền.",
+    "want": "Nhanh chóng giải quyết thủ tục bán căn nhà cổ để lấy tiền trả nợ và ổn định cuộc sống.",
+    "fear": "Sợ đối mặt với sự phán xét của họ hàng và cảm giác bất lực khi không thể bảo vệ được di sản của gia đình.",
+    "misbelief": "Hùng nghĩ rằng căn nhà chỉ là tài sản quy đổi ra tiền mặt để giải quyết khủng hoảng tài chính trước mắt, hoàn toàn không biết ý nghĩa lịch sử của nó."
+  },
+  "supporting_characters": [
+    {
+      "name": "Ông Út",
+      "char_id": "UT",
+      "age": 55,
+      "role": "Người nắm giữ bí mật / Chú ruột của Hùng",
+      "description": "Người con trai út ở quê, ngày ngày chăm sóc căn nhà rường cổ của cụ Sen, tính tình trầm mặc, ít nói và bị họ hàng xem nhẹ.",
+      "want": "Bảo vệ nếp nhà thờ tự của tổ tiên và thực hiện tâm nguyện của người mẹ quá cố.",
+      "fear": "Sợ căn nhà bị bán đi, bàn thờ tổ tiên bị bỏ bê và di nguyện của mẹ bị vùi dập.",
+      "reason_for_silence": "Bị cô lập trong gia tộc, không ai chịu lắng nghe, buộc phải dùng SIM cũ của mẹ để nhắn tin ẩn danh cảnh báo Hùng."
+    },
+    {
+      "name": "Cụ Sen",
+      "char_id": "SEN",
+      "age": 88,
+      "role": "Bà nội đã khuất",
+      "description": "Người phụ nữ tần tảo, sống qua hai cuộc kháng chiến, là chủ nhân cũ của căn nhà rường cổ, người giữ gìn sự yên bình cho gia tộc.",
+      "want": "Giữ gìn mảnh đất hương hỏa và sự thật pháp lý về quyền sở hữu đất.",
+      "fear": "Sợ con cháu tranh giành tài sản, làm mai một nếp nhà và đánh mất cội nguồn.",
+      "reason_for_silence": "Giấu kín tập nhật ký và trích lục địa bạ dưới gốc khế để tránh những cuộc tranh chấp pháp lý tiềm ẩn."
+    }
+  ],
+  "relationships": [
+    {
+      "char_a": "HÙNG",
+      "char_b": "SEN",
+      "relationship": "Cháu trai và bà nội quá cố"
+    },
+    {
+      "char_a": "HÙNG",
+      "char_b": "UT",
+      "relationship": "Cháu trai và chú ruột"
+    }
+  ],
+  "timeline": [
+    "Mốc thời gian 1 (1985 - 1988): Cụ Sen lưu giữ bản trích lục địa bạ và viết nhật ký ghi lại nguồn gốc thật sự của mảnh đất thờ tự.",
+    "Mốc thời gian 2 (6 tháng trước): Cụ Sen qua đời, để lại căn nhà rường cổ chuẩn bị bị niêm phong do tranh chấp thừa kế giữa các anh chị em.",
+    "Mốc thời gian hiện tại: Hùng nhận được tin nhắn lạ từ số của bà và tiến hành điều tra."
+  ],
+  "locations": [
+    "CĂN NHÀ RƯỜNG CỔ Ở QUẢNG NAM",
+    "VĂN PHÒNG LUẬT SƯ TẠI TP.HCM",
+    "SÂN VƯỜN DƯỚI GỐC CÂY KHẾ"
+  ],
+  "money_facts": [],
+  "critical_facts": [
+    {
+      "fact_id": "FACT_001",
+      "field": "timeline_years",
+      "value": "39 năm",
+      "description": "Khoảng thời gian từ mốc trích lục địa bạ năm 1985 đến nay",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_002",
+      "field": "relationship_nature",
+      "value": "Chú cháu ruột",
+      "description": "Mối quan hệ thực tế giữa người gửi tin nhắn (chú Út) và Hùng",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_003",
+      "field": "evidence_origin",
+      "value": "Hộp sắt bánh quy chứa nhật ký 1988 và trích lục địa bạ 1985",
+      "description": "Nguồn gốc xác thực của vật chứng chôn dưới gốc khế",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_004",
+      "field": "reveal_1_truth",
+      "value": "Tin nhắn do chú Út gửi bằng SIM cũ của bà nội để đánh động Hùng",
+      "description": "Nội dung cốt lõi của Bước ngoặt 1",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_005",
+      "field": "reveal_2_truth",
+      "value": "Bí mật dưới gốc khế là giấy tờ pháp lý chứng minh đất thờ tự riêng",
+      "description": "Nội dung gốc rễ của Bước ngoặt 2",
+      "status": "LOCKED"
+    }
+  ],
+  "secret": "Cụ Sen không muốn bán nhà vì dưới gốc cây khế chôn một hộp sắt đựng tập nhật ký năm 1988 và bản trích lục địa bạ gốc năm 1985, chứng minh mảnh đất do ông bà ngoại để lại cho nhánh của bố Hùng làm nơi thờ tự, không thuộc diện tài sản chung bị chia chác.",
+  "false_lead": "Hùng nghĩ rằng đó là một trò đùa quái ác của ai đó biết số điện thoại cũ của bà nội, hoặc một người hàng xóm muốn phá đám việc giao dịch mua bán đất.",
+  "clues": [
+    "Manh mối 1: Hùng phát hiện cước điện thoại trả sau của số máy bà nội vẫn được đóng đều đặn hằng tháng (25.000đ/tháng) bởi chú Út nhằm giữ lại chiếc SIM kỷ niệm.",
+    "Manh mối 2: Hàng xóm cho biết chỉ có chú Út thường xuyên thui thủi ra dọn cỏ, chăm sóc gốc cây khế ở góc vườn sau mỗi dịp giỗ chạp.",
+    "Manh mối 3: Hùng tự tay đào xới vùng đất dưới gốc cây khế theo gợi ý trong tin nhắn và phát hiện một hộp sắt bánh quy chứa tài liệu pháp lý."
+  ],
+  "reveal_1": "Tin nhắn thực chất do chú Út gửi đi bằng chiếc SIM cũ của bà nội. Chú Út duy trì đóng cước 25.000đ/tháng để giữ kỷ niệm về mẹ, và buộc phải dùng cách này vì bị họ hàng gạt ra khỏi các cuộc họp gia đình về việc bán nhà.",
+  "reveal_2": "Bí mật dưới gốc khế không phải là kho báu vàng bạc, mà là hộp sắt chứa tập nhật ký năm 1988 của cụ Sen và bản trích lục địa bạ gốc năm 1985. Tài liệu này chứng minh mảnh đất là tài sản riêng phục vụ việc thờ tự của nhánh gia đình Hùng, không phải tài sản chung để họ hàng tùy tiện chia chác hay bán trục lợi.",
+  "emotional_payoff": "Hùng nhận ra sự ích kỷ của bản thân khi định bán đi di sản duy nhất. Anh thấu hiểu nỗi cô độc và sự kiên trì âm thầm của chú Út trong việc bảo vệ nếp nhà.",
+  "reflection_theme": "Những bí mật được chôn giấu dưới lòng đất không phải là của cải vật chất, mà là minh chứng cho trách nhiệm, tình cảm gia đình và đạo lý uống nước nhớ nguồn vượt lên trên mọi cám dỗ vật chất.",
+  "ending": "Hùng hủy bỏ kế hoạch bán nhà, cùng chú Út hoàn thiện thủ tục pháp lý để bảo vệ căn nhà rường cổ, đồng thời hàn gắn lại mối quan hệ rạn nứt trong gia tộc.",
+  "source_idea_id": "IDEA_018",
+  "time_period": "Hiện tại (2024), với các mốc quá khứ năm 1985 (trích lục địa bạ) và 1988 (nhật ký của cụ Sen).",
+  "mystery_question": "Ai đã gửi tin nhắn từ số điện thoại của bà nội, và bí mật dưới gốc cây khế là gì?",
+  "narrative_skeleton": {
+    "trigger": "Căn nhà cổ bị niêm phong tạm thời và Hùng nhận được tin nhắn từ số điện thoại của bà nội đã mất",
+    "initial_suspicion": "Hùng nghi ngờ có kẻ trò đùa trục lợi hoặc lừa đảo liên quan đến việc bán nhà",
+    "investigation_method": "Hùng về quê trực tiếp tìm hiểu, kiểm tra hóa đơn cước điện thoại và quan sát hành vi của chú Út",
+    "evidence_chain": [
+      "Hóa đơn đóng cước SIM cũ hằng tháng của chú Út",
+      "Thói quen chăm sóc gốc khế của chú Út",
+      "Chiếc hộp sắt chứa giấy tờ pháp lý dưới gốc cây"
+    ],
+    "reveal_mechanism": "Hùng chất vấn chú Út và đối chiếu thông tin từ nhà mạng di động",
+    "second_reveal_mechanism": "Hùng tự tay đào hộp sắt lên và đọc nội dung bên trong dưới sự chứng kiến của chú Út",
+    "emotional_resolution": "Hùng từ bỏ ý định bán nhà, ôm lấy chú Út và quyết định cùng bảo vệ căn nhà thờ tổ"
+  },
+  "status": "DRAFT",
+  "approved_by": null,
+  "approved_at": null,
+  "last_modified_at": 1790670091.2612936
+}

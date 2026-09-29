@@ -1,0 +1,37 @@
+[
+  {
+    "fact_id": "FACT_001",
+    "field": "timeline_years",
+    "value": "39 năm",
+    "description": "Khoảng thời gian từ mốc trích lục địa bạ năm 1985 đến nay",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_002",
+    "field": "relationship_nature",
+    "value": "Chú cháu ruột",
+    "description": "Mối quan hệ thực tế giữa người gửi tin nhắn (chú Út) và Hùng",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_003",
+    "field": "evidence_origin",
+    "value": "Hộp sắt bánh quy chứa nhật ký 1988 và trích lục địa bạ 1985",
+    "description": "Nguồn gốc xác thực của vật chứng chôn dưới gốc khế",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_004",
+    "field": "reveal_1_truth",
+    "value": "Tin nhắn do chú Út gửi bằng SIM cũ của bà nội để đánh động Hùng",
+    "description": "Nội dung cốt lõi của Bước ngoặt 1",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_005",
+    "field": "reveal_2_truth",
+    "value": "Bí mật dưới gốc khế là giấy tờ pháp lý chứng minh đất thờ tự riêng",
+    "description": "Nội dung gốc rễ của Bước ngoặt 2",
+    "status": "LOCKED"
+  }
+]

@@ -26,6 +26,9 @@ class ApprovalStatus(str, Enum):
     BLOCKED_IMPLAUSIBLE = "BLOCKED_IMPLAUSIBLE"
     USER_APPROVED = "USER_APPROVED"
     USER_REJECTED = "USER_REJECTED"
+    # Full Script Pilot 02 Statuses
+    AWAITING_USER_SCRIPT_REVIEW = "AWAITING_USER_SCRIPT_REVIEW"
+    NEEDS_HUMAN_SCRIPT_FIX = "NEEDS_HUMAN_SCRIPT_FIX"
 
 
 class DeliveryProfile(str, Enum):
@@ -156,6 +159,10 @@ class StoryBible:
     emotional_payoff: str = ""
     reflection_theme: str = ""
     ending: str = ""
+    source_idea_id: str = ""
+    time_period: str = ""
+    mystery_question: str = ""
+    narrative_skeleton: Optional[Dict[str, Any]] = None
     status: str = "DRAFT"
     approved_by: Optional[str] = None
     approved_at: Optional[float] = None

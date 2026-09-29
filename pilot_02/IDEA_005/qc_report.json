@@ -1,0 +1,18 @@
+{
+  "episode_id": "EP005",
+  "status": "PASS",
+  "scores": {
+    "hook": 95.0,
+    "mystery": 92.0,
+    "logic": 90.0,
+    "twist": 96.0,
+    "emotion": 93.0,
+    "novelty": 94.0,
+    "tts_readability": 98.0
+  },
+  "fact_conflicts": [],
+  "logic_issues": [],
+  "repetition_issues": [],
+  "revision_requests": [],
+  "checked_at": 1790670615.8153408
+}
