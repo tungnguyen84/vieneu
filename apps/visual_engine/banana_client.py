@@ -113,9 +113,10 @@ class BananaClient:
         self.asset_mgr.update_item(scene.scene_id, image_status="GENERATING", last_error=None)
 
         try:
-            # Resolve character references
+            # Resolve character references (only for visible characters, never all story characters)
             ref_media_ids: List[str] = []
-            for c_id in scene.characters:
+            chars_to_reference = getattr(scene, "visible_characters", None) or scene.characters
+            for c_id in chars_to_reference:
                 ref_media_ids.extend(self.ensure_character_references(c_id, project_id=target_pid))
 
             logger.info(f"[BananaClient] Requesting Banana Pro for {scene.scene_id} ({scene.visual_type}) on Flow project {target_pid}...")

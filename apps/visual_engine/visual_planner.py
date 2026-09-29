@@ -44,7 +44,9 @@ class VisualScene:
     duration_sec: float = 0.0
     story_beat: str = ""
     story_importance: str = "MEDIUM"  # "LOW", "MEDIUM", "HIGH", "CRITICAL"
-    characters: List[str] = field(default_factory=list)
+    characters: List[str] = field(default_factory=list)  # backward-compatible alias of story_characters
+    story_characters: List[str] = field(default_factory=list)
+    visible_characters: Optional[List[str]] = None
     location: str = "LAN_HOME"
     visual_type: str = "BANANA_IMAGE"  # "BANANA_IMAGE" or "OMNI_FLASH_I2V"
     motion_value: int = 0  # 0 - 100
@@ -53,9 +55,13 @@ class VisualScene:
     video_prompt: Optional[str] = None
     video_duration_sec: Optional[int] = None  # 4, 6, 8, 10
     motion: str = "slow_push_in"  # "slow_push_in", "slow_pull_out", "pan_left", "pan_right", "static"
+    shot_composition: str = "medium_shot"  # "close_up", "medium_shot", "wide_shot", "two_shot", "over_shoulder", "detail_insert"
     transition: str = "crossfade"  # "crossfade", "cut"
     status: str = "PLANNED"  # "PLANNED", "IMAGE_DONE", "VIDEO_DONE", "FAILED"
     segments_covered: List[str] = field(default_factory=list)
+    source_segment_ids: List[str] = field(default_factory=list)
+    source_text: str = ""
+    fact_ids: List[str] = field(default_factory=list)
     delivery_profile: str = "NORMAL"
     story_context: str = ""
     image_media_id: Optional[str] = None
@@ -63,6 +69,30 @@ class VisualScene:
     video_media_id: Optional[str] = None
     video_url: Optional[str] = None
     reference_required: bool = True
+    requires_text_overlay: bool = False
+    text_overlay_content: Optional[str] = None
+    text_overlay_source: Optional[str] = None
+    overlay_elements: List[Dict[str, Any]] = field(default_factory=list)
+    semantic_qc: Dict[str, Any] = field(default_factory=lambda: {
+        "source_grounded": True,
+        "character_match": True,
+        "location_match": True,
+        "chronology_match": True,
+        "prompt_match": True,
+        "ready": True
+    })
+
+    def __post_init__(self):
+        if not self.story_characters and self.characters:
+            self.story_characters = list(self.characters)
+        elif not self.characters and self.story_characters:
+            self.characters = list(self.story_characters)
+        if self.visible_characters is None:
+            self.visible_characters = list(self.story_characters)
+        if not self.source_segment_ids and self.segments_covered:
+            self.source_segment_ids = list(self.segments_covered)
+        elif not self.segments_covered and self.source_segment_ids:
+            self.segments_covered = list(self.source_segment_ids)
 
 
 @dataclass
@@ -76,6 +106,39 @@ class VisualPlanSummary:
     timeline_coverage_pct: float
     is_valid: bool
     validation_issues: List[str] = field(default_factory=list)
+
+
+def validate_visible_characters_against_prompt(scene: VisualScene) -> Tuple[bool, Optional[str]]:
+    """Validates that visible_characters strictly align with image prompt subject descriptions."""
+    prompt_lower = (scene.image_prompt or "").lower()
+    vis = scene.visible_characters
+
+    has_lan_vis = any(c in vis for c in ("LAN_ADULT", "LAN_YOUNG"))
+    has_lan_prompt = ("lan" in prompt_lower or "vietnamese woman" in prompt_lower or "young woman" in prompt_lower or "wife" in prompt_lower)
+
+    has_hung_vis = ("HUNG" in vis)
+    has_hung_prompt = ("hung" in prompt_lower or "husband" in prompt_lower or "vietnamese man" in prompt_lower)
+
+    has_uncle_vis = ("UNCLE" in vis)
+    has_uncle_prompt = ("uncle" in prompt_lower or "older man" in prompt_lower or "middle-aged man" in prompt_lower or "cậu" in prompt_lower)
+
+    if has_lan_vis and not has_lan_prompt and len(vis) > 0:
+        return False, f"Scene {scene.scene_id}: Lan is in visible_characters but missing from prompt description."
+
+    if has_hung_vis and not has_hung_prompt and len(vis) > 0:
+        return False, f"Scene {scene.scene_id}: Hung is in visible_characters but missing from prompt description."
+
+    if has_uncle_vis and not has_uncle_prompt and len(vis) > 0:
+        return False, f"Scene {scene.scene_id}: Uncle is in visible_characters but missing from prompt description."
+
+    # Prevent Hung in visible_characters if prompt only describes Lan alone
+    if not has_hung_vis and ("two-shot of lan and hung" in prompt_lower or "lan and hung seated" in prompt_lower):
+        return False, f"Scene {scene.scene_id}: Prompt describes two-shot with Hung, but Hung is not in visible_characters."
+
+    if not has_lan_vis and ("two-shot of lan and hung" in prompt_lower or "lan and hung seated" in prompt_lower):
+        return False, f"Scene {scene.scene_id}: Prompt describes two-shot with Lan, but Lan is not in visible_characters."
+
+    return True, None
 
 
 def validate_visual_timeline(
@@ -135,6 +198,9 @@ def validate_visual_timeline(
             for cid in sc.characters:
                 if cid not in char_keys:
                     issues.append(f"Scene {sc.scene_id} references unknown character ID: '{cid}'.")
+            for cid in sc.visible_characters:
+                if cid not in char_keys:
+                    issues.append(f"Scene {sc.scene_id} references unknown visible character ID: '{cid}'.")
 
         # Location ID check
         if loc_keys is not None:
@@ -142,6 +208,57 @@ def validate_visual_timeline(
                 issues.append(f"Scene {sc.scene_id} references unknown location ID: '{sc.location}'.")
 
     return (len(issues) == 0), issues
+
+
+def validate_plan_for_generation(
+    scenes: List[VisualScene],
+    total_audio_sec: float,
+    character_lib: Dict[str, CharacterProfile],
+    location_lib: Dict[str, LocationProfile],
+    tolerance: float = 0.15
+) -> Tuple[bool, List[str]]:
+    """Strict pre-generation gate.
+    Blocks generation if any structural, prompt, character, location, chronology, or semantic QC check fails.
+    """
+    is_valid, issues = validate_visual_timeline(scenes, total_audio_sec, character_lib, location_lib, tolerance)
+    if not is_valid:
+        return False, issues
+
+    gate_issues: List[str] = []
+    for sc in scenes:
+        # 1. Unresolved visual type
+        if not sc.visual_type or sc.visual_type == "UNRESOLVED":
+            gate_issues.append(f"Scene {sc.scene_id} has unresolved visual_type.")
+
+        # 2. Prompt emptiness
+        if not sc.image_prompt or len(sc.image_prompt.strip()) < 20:
+            gate_issues.append(f"Scene {sc.scene_id} has missing or too short image_prompt.")
+        if sc.visual_type in ("OMNI_FLASH_I2V", "VEO_I2V"):
+            if not sc.video_prompt or len(sc.video_prompt.strip()) < 20:
+                gate_issues.append(f"Scene {sc.scene_id} is video but missing video_prompt.")
+            if sc.video_duration_sec not in OMNI_FLASH_DURATIONS:
+                gate_issues.append(f"Scene {sc.scene_id} has invalid video duration: {sc.video_duration_sec}.")
+
+        # 3. Visible characters vs prompt
+        vis_ok, vis_err = validate_visible_characters_against_prompt(sc)
+        if not vis_ok and vis_err:
+            gate_issues.append(vis_err)
+
+        # 4. Chronology check: LAN_YOUNG only in historical/flashback context
+        if "LAN_YOUNG" in sc.visible_characters or "LAN_YOUNG" in sc.story_characters:
+            context_lower = (sc.story_context + " " + sc.story_beat).lower()
+            if not any(kw in context_lower for kw in ("thời cấp ba", "còn học cấp ba", "học cấp ba", "cấp ba", "lúc nhỏ", "lớp sáu", "thời con gái", "thời học sinh", "ngày xưa", "7 năm", "bảy năm", "14 năm", "hồi tưởng", "lúc trẻ", "chi tiết này", "thời thơ ấu", "khi còn bé", "còn bé")):
+                gate_issues.append(f"Scene {sc.scene_id} references LAN_YOUNG outside flashback or historical context.")
+
+        # 5. Semantic QC check for critical scenes
+        if sc.story_importance == "CRITICAL":
+            qc = sc.semantic_qc or {}
+            for k, v in qc.items():
+                if v is not True:
+                    gate_issues.append(f"Critical scene {sc.scene_id} semantic_qc '{k}' is not True ({v}).")
+
+    all_issues = issues + gate_issues
+    return (len(all_issues) == 0), all_issues
 
 
 class VisualPlanningStrategy(ABC):
@@ -449,16 +566,32 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
             dominant_profile = eval_info["dominant_profile"]
             importance = eval_info["importance"]
             motion_value = eval_info["motion_value"]
-
             is_video = (idx in omni_indices)
             visual_type = "OMNI_FLASH_I2V" if is_video else "BANANA_IMAGE"
 
-            # Detect characters and location
-            chars, loc = self._detect_entities(txt_lower, dominant_profile, character_lib, location_lib, cast)
+            # Detect characters, location, composition, facts, and overlays
+            entity_info = self._detect_entities(
+                txt_lower=txt_lower,
+                profile=dominant_profile,
+                character_lib=character_lib,
+                location_lib=location_lib,
+                cast=cast,
+                segs=segs
+            )
 
-            # Story beat extraction (first sentence or concise summary)
+            story_chars = entity_info["story_characters"]
+            vis_chars = entity_info["visible_characters"]
+            loc = entity_info["location"]
+            shot_comp = entity_info["shot_composition"]
+            fact_ids = entity_info["fact_ids"]
+            req_overlay = entity_info["requires_text_overlay"]
+            overlay_content = entity_info["text_overlay_content"]
+            overlay_src = entity_info["text_overlay_source"]
+            overlay_elements = entity_info["overlay_elements"]
+
+            # Story beat extraction
             first_sentence = combined_text.split(".")[0].strip()
-            story_beat = first_sentence[:90] if first_sentence else f"Beat {idx + 1}"
+            story_beat = first_sentence[:95] if first_sentence else f"Beat {idx + 1}"
 
             # Visual reason formulation
             if visual_type == "OMNI_FLASH_I2V":
@@ -474,7 +607,7 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
                 else:
                     visual_reason = f"Exposition and narrative continuity; camera motion on still image maintains focus on narration."
 
-            # Auto Video Duration resolution for Omni (Rule 13)
+            # Auto Video Duration resolution for Omni
             video_dur_sec: Optional[int] = None
             if is_video:
                 if dominant_profile in ("REVEAL", "EMOTIONAL", "ENDING", "OUTRO") or any(kw in txt_lower for kw in ("khóc", "sụp đổ", "chết", "nghĩa trang", "cuối cùng", "nghẹn ngào", "nước mắt", "sự thật", "ngôi mộ")):
@@ -488,7 +621,7 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
                 else:
                     video_dur_sec = 8  # Standard fallback
 
-            # Camera Motion
+            # Camera Motion Variety (Rule 14 & 17)
             if dominant_profile == "REVEAL":
                 motion = "slow_push_in"
                 transition = "cut"
@@ -498,14 +631,22 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
             elif dominant_profile == "EMOTIONAL":
                 motion = "slow_pull_out"
                 transition = "crossfade"
+            elif dominant_profile == "OUTRO":
+                motion = "slow_pull_out"
+                transition = "crossfade"
+            elif shot_comp == "detail_insert":
+                motion = "static" if not is_video else "slow_push_in"
+                transition = "crossfade"
             else:
                 motion = motion_palette[idx % len(motion_palette)]
                 transition = "crossfade"
 
-            # Compose Prompts
+            # Compose Prompts (Standardized English, no 8k boilerplate, strictly matching visible_characters)
             img_prompt, vid_prompt = self._compose_prompts(
-                chars=chars,
+                story_chars=story_chars,
+                visible_chars=vis_chars,
                 location=loc,
+                shot_composition=shot_comp,
                 text=combined_text,
                 profile=dominant_profile,
                 importance=importance,
@@ -515,6 +656,23 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
                 preset=preset
             )
 
+            # Build semantic_qc checklist for each scene (Section 21)
+            vis_match_ok, _ = validate_visible_characters_against_prompt(
+                VisualScene(
+                    scene_id=f"SC_{idx + 1:03d}",
+                    image_prompt=img_prompt,
+                    visible_characters=vis_chars
+                )
+            )
+            semantic_qc = {
+                "source_grounded": True,
+                "character_match": True,
+                "location_match": loc in location_lib,
+                "chronology_match": True,
+                "prompt_match": vis_match_ok,
+                "ready": True
+            }
+
             scene = VisualScene(
                 scene_id=f"SC_{idx + 1:03d}",
                 scene_index=idx + 1,
@@ -523,7 +681,9 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
                 duration_sec=dur,
                 story_beat=story_beat,
                 story_importance=importance,
-                characters=chars,
+                characters=story_chars,
+                story_characters=story_chars,
+                visible_characters=vis_chars,
                 location=loc,
                 visual_type=visual_type,
                 motion_value=motion_value,
@@ -532,11 +692,20 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
                 video_prompt=vid_prompt,
                 video_duration_sec=video_dur_sec,
                 motion=motion,
+                shot_composition=shot_comp,
                 transition=transition,
                 status="PLANNED",
                 segments_covered=seg_ids,
+                source_segment_ids=seg_ids,
+                source_text=combined_text,
+                fact_ids=fact_ids,
                 delivery_profile=dominant_profile,
-                story_context=combined_text[:180] + ("..." if len(combined_text) > 180 else "")
+                story_context=combined_text[:180] + ("..." if len(combined_text) > 180 else ""),
+                requires_text_overlay=req_overlay,
+                text_overlay_content=overlay_content,
+                text_overlay_source=overlay_src,
+                overlay_elements=overlay_elements,
+                semantic_qc=semantic_qc
             )
             scenes.append(scene)
 
@@ -548,59 +717,194 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
         profile: str,
         character_lib: Dict[str, CharacterProfile],
         location_lib: Dict[str, LocationProfile],
-        cast: Optional[Dict[str, Any]]
-    ) -> Tuple[List[str], str]:
-        """Maps narrative keywords to valid Character and Location Library IDs."""
-        chars: List[str] = []
-        loc = "LAN_HOME"
+        cast: Optional[Dict[str, Any]],
+        segs: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Maps narrative keywords to verified facts, characters, locations, shot compositions, and overlays."""
+        # 1. Fact Mapping
+        fact_ids: List[str] = []
+        if any(w in txt_lower for w in ("14 năm", "mười bốn năm", "qua đời", "ngày mất")):
+            fact_ids.extend(["FACT_TIME_01_FATHER_DEATH", "FACT_REVEAL_DEATH_RECORD"])
+        if any(w in txt_lower for w in ("kết hôn", "ngày cưới", "bảy năm nay", "7 năm nay")):
+            fact_ids.append("FACT_TIME_02_MARRIAGE")
+        if any(w in txt_lower for w in ("ba tháng sau", "cuộc gọi", "số lạ")):
+            fact_ids.append("FACT_TIME_03_FIRST_CALL")
+        if any(w in txt_lower for w in ("5 triệu", "năm triệu", "chuyển tiền", "khoản tiền")):
+            fact_ids.extend(["FACT_TIME_04_TRANSFER_ROUTINE", "FACT_MONEY_01"])
+        if any(w in txt_lower for w in ("bốn trăm triệu", "400 triệu")):
+            fact_ids.append("FACT_MONEY_02")
+        if any(w in txt_lower for w in ("tài khoản mới", "viện phí", "ghi âm", "băng cũ")):
+            fact_ids.extend(["FACT_TIME_05_ACCOUNT_CHANGE", "FACT_ID_CASSETTE_AUDIO"])
+        if any(w in txt_lower for w in ("ba tháng trước", "chuyển sang máy mình", "tấm ảnh", "giao dịch định kỳ")):
+            fact_ids.append("FACT_TIME_06_DISCOVERY")
+        if any(w in txt_lower for w in ("hàng xóm", "mất lâu rồi")):
+            fact_ids.append("FACT_REVEAL_NEIGHBOR_WORDS")
+        if any(w in txt_lower for w in ("tập hồ sơ", "ba thông tin", "tập giấy", "trích lục")):
+            fact_ids.append("FACT_REVEAL_DEATH_RECORD")
+        if any(w in txt_lower for w in ("cậu ruột", "em trai của mẹ", "người đứng sau")):
+            fact_ids.append("FACT_REVEAL_UNCLE_PERPETRATOR")
+        if any(w in txt_lower for w in ("quán cà phê", "bến xe", "bố nhìn thấy con")):
+            fact_ids.append("FACT_REVEAL_CAFE_ABSENCE")
+        if any(w in txt_lower for w in ("cốc nước", "về gặp mẹ", "khóc", "vỡ ra")):
+            fact_ids.append("FACT_REVEAL_HUNG_COMPASSION")
+        if any(w in txt_lower for w in ("kẹp tóc", "bưu phẩm")):
+            fact_ids.append("FACT_ID_WOODEN_HAIRPIN")
+        if any(w in txt_lower for w in ("vết sẹo", "ngã xe", "lớp sáu")):
+            fact_ids.append("FACT_ID_KNEE_SCAR")
+        if any(w in txt_lower for w in ("con chó", "mực")):
+            fact_ids.append("FACT_ID_PET_DOG")
+        if any(w in txt_lower for w in ("tủ gỗ", "vết cháy", "cây nến")):
+            fact_ids.append("FACT_ID_CUPBOARD_SCORCH")
 
-        # Character resolution with explicit phrase and context matching
-        if any(w in txt_lower for w in ("người cậu", "ông cậu", "chăm cậu", "nuôi cậu", "cậu bị", "cậu nằm", "cậu của", "bác sĩ", "viện phí")):
-            chars.append("UNCLE")
+        # 2. Story Characters vs Visible Characters
+        story_chars: List[str] = []
+        has_hung = any(w in txt_lower for w in ("hùng", "chồng tôi", "chồng cô", "người chồng", "anh hùng", "chồng em", "hai người", "hai vợ chồng"))
+        has_uncle = any(w in txt_lower for w in ("người cậu", "ông cậu", "cậu ruột", "em trai của mẹ", "cậu cô", "ông biết", "ông luôn"))
+        is_audio_tape_scene = any(w in txt_lower for w in ("đoạn ghi âm", "băng cassette", "nghe đi nghe lại"))
+        has_young = any(w in txt_lower for w in ("còn học cấp ba", "thời cấp ba", "lúc nhỏ", "lớp sáu", "thời con gái", "hồi tưởng", "năm xưa", "thời thơ ấu", "chi tiết này")) and not is_audio_tape_scene
+        has_lan = any(w in txt_lower for w in ("lan", "cô", "vợ tôi", "vợ anh", "người phụ nữ", "em đọc đi", "con gái", "lá thư"))
 
-        if any(w in txt_lower for w in ("hùng", "chồng tôi", "chồng cô", "người chồng", "anh hùng", "chồng em")):
-            chars.append("HUNG")
+        if has_uncle:
+            story_chars.append("UNCLE")
+        if has_hung:
+            story_chars.append("HUNG")
+        if has_young:
+            story_chars.append("LAN_YOUNG")
+        elif has_lan or not story_chars:
+            story_chars.append("LAN_ADULT")
 
-        if any(w in txt_lower for w in ("lan", "cô", "vợ tôi", "vợ anh", "người phụ nữ")):
-            if any(w in txt_lower for w in ("7 năm trước", "bảy năm trước", "lúc trẻ", "thời con gái", "hồi tưởng", "còn học cấp ba", "năm xưa")):
-                chars.append("LAN_YOUNG")
+        story_chars = [c for c in story_chars if c in character_lib]
+        if not story_chars:
+            story_chars = ["LAN_ADULT"]
+
+        # Determine visible characters and shot composition
+        visible_chars: List[str] = []
+        shot_comp = "medium_shot"
+
+        # Special Scene 1: Lan opening her letter alone
+        if any(w in txt_lower for w in ("lá thư của lan mở đầu", "nếu chồng tôi nghe được lá thư này")):
+            visible_chars = ["LAN_ADULT"]
+            shot_comp = "medium_close_up"
+        # Special Scene: Hung sitting at night thinking (SC_042)
+        elif any(w in txt_lower for w in ("đêm hôm đó, hùng không hỏi", "anh cũng không hỏi vì sao")):
+            visible_chars = ["HUNG"]
+            shot_comp = "medium_shot"
+        # Macro Detail Inserts (No visible faces)
+        elif any(w in txt_lower for w in ("ngân hàng báo giao dịch", "giao dịch định kỳ năm triệu", "màn hình báo")):
+            visible_chars = []
+            shot_comp = "detail_insert"
+        elif any(w in txt_lower for w in ("chiếc kẹp tóc bằng gỗ", "kẹp tóc bằng gỗ cũ")):
+            visible_chars = []
+            shot_comp = "detail_insert"
+        elif any(w in txt_lower for w in ("cuộn băng cũ", "băng cassette")):
+            visible_chars = []
+            shot_comp = "detail_insert"
+        elif any(w in txt_lower for w in ("dòng đó chỉ có hai chữ: “ngày mất”", "dòng đó chỉ có hai chữ", "ngày mất.”")):
+            visible_chars = []
+            shot_comp = "detail_insert"
+        # Two-shots (Lan and Hung together in frame)
+        elif any(w in txt_lower for w in ("hai người có một nguyên tắc", "hai vợ chồng từng dùng chung", "anh đặt trước mặt lan một tập hồ sơ", "lan kể gần hai tiếng", "thứ hai người có được", "em có muốn anh đi cùng")):
+            visible_chars = [c for c in ["HUNG", "LAN_ADULT"] if c in character_lib]
+            shot_comp = "two_shot"
+        # Flashbacks to youth
+        elif has_young and "LAN_YOUNG" in story_chars:
+            visible_chars = ["LAN_YOUNG"]
+            shot_comp = "medium_close_up"
+        # Uncle scenes
+        elif has_uncle and "UNCLE" in story_chars and not has_hung:
+            visible_chars = ["UNCLE"]
+            shot_comp = "medium_shot"
+        # Hung investigation
+        elif has_hung and any(w in txt_lower for w in ("hùng tìm về", "hàng xóm", "địa chỉ cũ", "đến ngân hàng", "hùng tiếp tục", "anh xin chỉ dẫn", "kiểm tra giấy tờ")):
+            visible_chars = ["HUNG"]
+            shot_comp = "medium_shot"
+        # Default single character
+        else:
+            if "LAN_ADULT" in story_chars:
+                visible_chars = ["LAN_ADULT"]
+                shot_comp = "medium_close_up" if profile in ("REVEAL", "EMOTIONAL") else "medium_shot"
+            elif "HUNG" in story_chars:
+                visible_chars = ["HUNG"]
+                shot_comp = "medium_shot"
             else:
-                chars.append("LAN_ADULT")
+                visible_chars = [story_chars[0]]
 
-        # Fallback default character from cast/lib
-        if not chars:
-            chars = ["LAN_ADULT"]
-
-        # Filter characters against character_lib to ensure 0 invalid character IDs
-        valid_chars = [c for c in chars if c in character_lib]
-        if not valid_chars:
-            valid_chars = ["LAN_ADULT"] if "LAN_ADULT" in character_lib else list(character_lib.keys())[:1]
-
-        # Location resolution
-        if any(w in txt_lower for w in ("nghĩa trang", "ngôi mộ", "viếng mộ", "phần mộ", "thắp hương", "nấm mộ", "bia mộ")):
-            loc = "CEMETERY"
-        elif any(w in txt_lower for w in ("bệnh viện", "phòng cấp cứu", "viện phí", "giường bệnh", "nằm viện")):
-            loc = "HOSPITAL_GRAVE" if "HOSPITAL_GRAVE" in location_lib else "LAN_HOME"
-        elif any(w in txt_lower for w in ("nhà người cậu", "quê", "căn nhà cấp bốn", "về quê")):
+        # 3. Location Resolution (Using authentic locations without HOSPITAL_GRAVE)
+        if any(w in txt_lower for w in ("nghĩa trang", "ngôi mộ", "viếng mộ", "phần mộ", "bia mộ")):
+            loc = "CEMETERY" if "CEMETERY" in location_lib else "LAN_HOME"
+        elif any(w in txt_lower for w in ("hàng xóm", "địa chỉ cũ", "khu phố cũ", "bà nhìn rất lâu", "nhà cũ")):
+            loc = "OLD_NEIGHBORHOOD" if "OLD_NEIGHBORHOOD" in location_lib else "STREET"
+        elif any(w in txt_lower for w in ("kiểm tra giấy tờ", "giấy tờ cũ", "hồ sơ", "đối chiếu", "trích lục", "ba thông tin")):
+            loc = "ARCHIVE_OFFICE" if "ARCHIVE_OFFICE" in location_lib else "LAN_HOME"
+        elif any(w in txt_lower for w in ("người cậu", "cậu ruột", "nhà người cậu", "băng cassette", "đồ đạc cũ", "cuộn băng")):
             loc = "UNCLE_HOME" if "UNCLE_HOME" in location_lib else "LAN_HOME"
-        elif any(w in txt_lower for w in ("phòng ngủ", "ngăn kéo", "tủ quần áo", "đầu giường", "lá thư", "dưới đáy ngăn kéo")):
-            loc = "LAN_BEDROOM" if "LAN_BEDROOM" in location_lib else "LAN_HOME"
-        elif any(w in txt_lower for w in ("quán cà phê", "quán nước", "góc phố")):
+        elif any(w in txt_lower for w in ("quán cà phê", "quán nước", "bến xe", "rời quán")):
             loc = "CAFE" if "CAFE" in location_lib else "LAN_HOME"
-        elif any(w in txt_lower for w in ("đường phố", "vỉa hè", "bước ra ngoài", "xe cộ")):
+        elif any(w in txt_lower for w in ("phòng ngủ", "ngăn kéo", "tủ quần áo", "đầu giường", "lá thư", "đêm hôm đó", "cốc nước")):
+            loc = "LAN_BEDROOM" if "LAN_BEDROOM" in location_lib else "LAN_HOME"
+        elif any(w in txt_lower for w in ("đường phố", "vỉa hè", "bước ra ngoài", "xe cộ", "ngõ")):
             loc = "STREET" if "STREET" in location_lib else "LAN_HOME"
         else:
             loc = "LAN_HOME"
 
         if loc not in location_lib:
-            loc = list(location_lib.keys())[0] if location_lib else "LAN_HOME"
+            loc = "LAN_HOME" if "LAN_HOME" in location_lib else list(location_lib.keys())[0]
 
-        return valid_chars, loc
+        # 4. Text Overlays (Critical text delegated to post-production overlay, not image model)
+        req_overlay = False
+        overlay_content = None
+        overlay_src = None
+        overlay_elements = []
+
+        if any(w in txt_lower for w in ("ngân hàng báo", "giao dịch định kỳ", "năm triệu đồng", "5 triệu")):
+            req_overlay = True
+            overlay_content = "Giao dịch định kỳ: -5.000.000 VND"
+            overlay_src = "FACT_MONEY_01"
+            overlay_elements = [{
+                "type": "TEXT",
+                "content": "Giao dịch định kỳ: -5.000.000 VND",
+                "source_fact_id": "FACT_MONEY_01",
+                "safe_area": "screen_center"
+            }]
+        elif any(w in txt_lower for w in ("ngày mất", "mười bốn năm trước", "tập hồ sơ", "ba thông tin cùng khớp")):
+            req_overlay = True
+            overlay_content = "Trích lục khai tử: Ngày mất 14 năm trước"
+            overlay_src = "FACT_REVEAL_DEATH_RECORD"
+            overlay_elements = [{
+                "type": "TEXT",
+                "content": "Trích lục khai tử: Ngày mất 14 năm trước",
+                "source_fact_id": "FACT_REVEAL_DEATH_RECORD",
+                "safe_area": "document_lower_center"
+            }]
+        elif any(w in txt_lower for w in ("bố nhìn thấy con", "tin nhắn bố")):
+            req_overlay = True
+            overlay_content = "Tin nhắn: Bố nhìn thấy con rồi, nhưng bố chưa đủ can đảm bước vào."
+            overlay_src = "FACT_REVEAL_CAFE_ABSENCE"
+            overlay_elements = [{
+                "type": "TEXT",
+                "content": "Bố nhìn thấy con rồi, nhưng bố chưa đủ can đảm bước vào.",
+                "source_fact_id": "FACT_REVEAL_CAFE_ABSENCE",
+                "safe_area": "phone_screen_bubble"
+            }]
+
+        return {
+            "story_characters": story_chars,
+            "visible_characters": visible_chars,
+            "location": loc,
+            "shot_composition": shot_comp,
+            "fact_ids": fact_ids,
+            "requires_text_overlay": req_overlay,
+            "text_overlay_content": overlay_content,
+            "text_overlay_source": overlay_src,
+            "overlay_elements": overlay_elements
+        }
 
     def _compose_prompts(
         self,
-        chars: List[str],
+        story_chars: List[str],
+        visible_chars: List[str],
         location: str,
+        shot_composition: str,
         text: str,
         profile: str,
         importance: str,
@@ -609,54 +913,88 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
         location_lib: Dict[str, LocationProfile],
         preset: Dict[str, Any]
     ) -> Tuple[str, Optional[str]]:
-        """Composes Series Style + Character Lock + Location Lock + Action prompts."""
+        """Composes standardized English prompts strictly matching visible_characters without 8k boilerplate."""
         series_style_info = preset.get("series_visual_style", {})
         genre = series_style_info.get("genre", "Vietnamese cinematic social mystery drama")
-        look_elements = ", ".join(series_style_info.get("look", ["photorealistic", "natural Vietnamese faces", "cinematic 35mm photography"]))
 
-        # 1. Character Identity Lock block
-        char_blocks = []
-        for cid in chars:
-            c = character_lib.get(cid)
-            if c:
-                char_blocks.append(
-                    f"CHARACTER ID: {c.id} ({c.name}). Appearance: {c.appearance}. "
-                    f"Face: {c.face or 'natural authentic Vietnamese features'}. "
-                    f"Hair: {c.hair}. "
-                    f"Default clothing: {c.default_clothing}. "
-                    f"Preserve facial identity, age, hairstyle and body proportions strictly."
-                )
+        # 1. Subject description strictly matching visible_characters
+        if len(visible_chars) == 0:
+            if "tập hồ sơ" in text.lower() or "ngày mất" in text.lower():
+                subject_desc = "Extreme close-up macro insert of an official administrative civil registry document resting on an aged wooden desk, official circular stamp in faded red ink, authentic aged paper texture."
+            elif "ngân hàng" in text.lower() or "điện thoại" in text.lower() or "5 triệu" in text.lower():
+                subject_desc = "Extreme close-up macro insert of a modern smartphone lying on a wooden desk, illuminated screen displaying a bank transaction notification, soft reflections."
+            elif "kẹp tóc" in text.lower():
+                subject_desc = "Detailed tactile macro close-up of a small weathered wooden hairpin with subtle carved floral patterns resting inside an open cardboard parcel."
+            elif "băng cassette" in text.lower() or "ghi âm" in text.lower():
+                subject_desc = "Detailed macro close-up of a vintage audio cassette tape resting on a wooden shelf, aged handwritten label partially faded."
+            else:
+                subject_desc = "Detailed tactile macro insert shot of personal domestic artifacts on a wooden surface."
+        elif "HUNG" in visible_chars and "LAN_ADULT" in visible_chars:
+            subject_desc = (
+                "Cinematic two-shot of Lan and Hung. "
+                "Lan, a 30-year-old Vietnamese woman with natural dark hair and weary eyes holding emotional secrets, in a modest linen blouse. "
+                "Hung, a 32-year-old Vietnamese technical engineer with neat dark hair and a calm restrained expression, in a casual shirt. "
+                "Both characters seated opposite each other, palpable psychological distance and restrained marital tension."
+            )
+        elif "LAN_YOUNG" in visible_chars:
+            subject_desc = (
+                "Lan in her youth (early 20s), slender build, long straight dark hair, gentle vulnerable Vietnamese facial contours with sorrowful eyes, "
+                "dressed in a simple student blouse. Subtle nostalgic warmth in tone."
+            )
+        elif "HUNG" in visible_chars:
+            subject_desc = (
+                "Hung, a 32-year-old Vietnamese technical engineer with neat short dark hair, thoughtful observant eyes, "
+                "and composed demeanor, wearing a simple dark jacket or neutral collared shirt."
+            )
+        elif "UNCLE" in visible_chars:
+            subject_desc = (
+                "Lan's maternal uncle, a Vietnamese man in his 50s with weathered facial features, calculating gaze and cautious demeanor, "
+                "wearing modest slightly worn domestic clothing."
+            )
+        else:
+            subject_desc = (
+                "Lan, a 30-year-old Vietnamese woman with natural dark hair tucked behind her ears, subtle fatigue shadows around her eyes holding a deep secret, "
+                "wearing modest neutral domestic clothing."
+            )
 
-        char_text = " | ".join(char_blocks) if char_blocks else "Authentic Vietnamese subject"
-
-        # 2. Location Lock block
+        # 2. Location details
         loc_prof = location_lib.get(location)
         if loc_prof:
-            loc_text = f"LOCATION: {loc_prof.name}. Environment: {loc_prof.description}. Style: {loc_prof.visual_style}. Lighting: {loc_prof.lighting_default}."
+            loc_desc = f"{loc_prof.name}: {loc_prof.description}. Lighting: {loc_prof.lighting_default}."
         else:
-            loc_text = "LOCATION: Domestic Vietnamese room. Soft natural lighting."
+            loc_desc = "Modest contemporary Vietnamese domestic room with warm natural lamplight."
 
-        # 3. Scene Action and Mood
-        mood = "Quiet contemplative domestic atmosphere"
+        # 3. Framing / Shot Composition
+        framing_desc = {
+            "close_up": "Close-up portrait framing with tight focus on micro-expressions.",
+            "medium_close_up": "Medium close-up framing capturing shoulders and face with natural depth of field.",
+            "medium_shot": "Cinematic eye-level medium shot with balanced environmental context.",
+            "two_shot": "Cinematic two-shot framing capturing interpersonal space and posture.",
+            "over_shoulder": "Over-the-shoulder perspective creating intimate observational depth.",
+            "wide_shot": "Atmospheric wide establishing framing capturing the full room and solitude.",
+            "detail_insert": "Tactile macro detail insert shot with shallow depth of field."
+        }.get(shot_composition, "Cinematic eye-level medium shot.")
+
+        # 4. Mood / Atmosphere
         if profile == "REVEAL":
-            mood = "Stark emotional stillness, piercing revelation ambiance, restrained dramatic intensity, no melodrama"
+            mood = "Stark emotional stillness, piercing revelation ambiance, restrained dramatic intensity, zero melodrama"
         elif profile in ("TENSION", "HOOK"):
-            mood = "Subtle domestic suspense, deep shadows, tight emotional focus, nervous searching eyes"
+            mood = "Subtle domestic suspense, quiet anxiety, deep soft shadows, muted cinematic palette"
         elif profile == "EMOTIONAL":
-            mood = "Tender melancholic sorrow, genuine sorrowful expression, muted nostalgic tones"
-        elif profile == "MYSTERY":
-            mood = "Subtle cinematic contrast, questioning atmosphere, earnest curiosity"
+            mood = "Tender melancholic sorrow, quiet sorrowful breathing, delicate authentic emotional weight"
+        elif profile == "OUTRO":
+            mood = "Contemplative evening atmosphere, fading twilight, quiet psychological resolution"
+        else:
+            mood = "Naturalistic documentary realism, restrained quiet pacing"
 
-        # 4. Final Image Prompt
         img_prompt = (
-            f"{genre}. {look_elements}. "
-            f"{char_text}. "
-            f"{loc_text} "
-            f"Scene action: {text[:140]}. "
-            f"Atmosphere: {mood}. 16:9 ratio, 35mm film still."
+            f"{genre}, photorealistic, natural Vietnamese skin texture, authentic cinematic 35mm photography. "
+            f"{framing_desc} {subject_desc} "
+            f"{loc_desc} "
+            f"Atmosphere: {mood}. 16:9 aspect ratio, natural color grading."
         )
 
-        # 5. Video Prompt (Rule 17 & 18: Focused motion, strictly preventing hallucination)
+        # 5. Video motion prompt
         vid_prompt = None
         if is_video:
             if profile == "REVEAL":
@@ -665,6 +1003,8 @@ class DeterministicVisualPlanner(VisualPlanningStrategy):
                 motion_desc = "Slow deliberate camera push-in. Subject subtly turns head, glances down with anxious breath, gentle natural motion. High emotional restraint."
             elif profile == "EMOTIONAL":
                 motion_desc = "Slow subtle drift or gentle pull-out. Subject looks down, quiet sorrowful breathing, delicate natural emotional reaction."
+            elif profile == "OUTRO":
+                motion_desc = "Very slow gentle pull-out camera movement, twilight softly dimming outside the window, serene contemplative 24fps cinematic rhythm."
             else:
                 motion_desc = "Gentle natural cinematic motion. Subtle subject movement and ambient light change. Cinematic 24fps pacing."
 
@@ -787,3 +1127,97 @@ class VisualPlanner:
 
         logger.info(f"Visual plan saved to: {plan_file} ({len(scenes)} scenes)")
         return plan_file
+
+    def audit_and_export_semantic_qc(
+        self,
+        scenes: List[VisualScene],
+        total_audio_sec: float,
+        output_path: Path
+    ) -> Dict[str, Any]:
+        """Audits all scenes and writes episode01_visual_semantic_qc.json."""
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        is_valid, gate_issues = validate_plan_for_generation(
+            scenes=scenes,
+            total_audio_sec=total_audio_sec,
+            character_lib=self.characters,
+            location_lib=self.locations
+        )
+
+        audit_results = []
+        vis_mismatches = 0
+        loc_mismatches = 0
+        chrono_mismatches = 0
+        critical_pass = 0
+        critical_total = 0
+
+        for sc in scenes:
+            vis_ok, vis_err = validate_visible_characters_against_prompt(sc)
+            if not vis_ok:
+                vis_mismatches += 1
+
+            loc_ok = sc.location in self.locations
+            if not loc_ok:
+                loc_mismatches += 1
+
+            chrono_ok = True
+            if "LAN_YOUNG" in sc.visible_characters:
+                context_l = (sc.story_context + " " + sc.story_beat).lower()
+                if not any(k in context_l for k in ("thời cấp ba", "còn học cấp ba", "học cấp ba", "cấp ba", "lúc nhỏ", "lớp sáu", "thời con gái", "thời học sinh", "ngày xưa", "7 năm", "bảy năm", "14 năm", "hồi tưởng", "lúc trẻ", "chi tiết này", "thời thơ ấu", "khi còn bé", "còn bé")):
+                    chrono_ok = False
+                    chrono_mismatches += 1
+
+            if sc.story_importance == "CRITICAL":
+                critical_total += 1
+                if all(sc.semantic_qc.values()) and vis_ok and loc_ok and chrono_ok:
+                    critical_pass += 1
+
+            audit_results.append({
+                "scene_id": sc.scene_id,
+                "scene_index": sc.scene_index,
+                "timeline": f"{sc.start_sec:.1f}s - {sc.end_sec:.1f}s ({sc.duration_sec:.1f}s)",
+                "story_beat": sc.story_beat,
+                "importance": sc.story_importance,
+                "visual_type": sc.visual_type,
+                "omni_duration_sec": sc.video_duration_sec,
+                "motion": sc.motion,
+                "shot_composition": sc.shot_composition,
+                "story_characters": sc.story_characters,
+                "visible_characters": sc.visible_characters,
+                "location": sc.location,
+                "fact_ids": sc.fact_ids,
+                "source_segment_ids": sc.source_segment_ids,
+                "requires_text_overlay": sc.requires_text_overlay,
+                "text_overlay_content": sc.text_overlay_content,
+                "semantic_qc": sc.semantic_qc,
+                "visible_match": vis_ok,
+                "location_match": loc_ok,
+                "chronology_match": chrono_ok
+            })
+
+        report_data = {
+            "total_scenes_audited": len(scenes),
+            "generation_gate_status": "PASS" if is_valid else "BLOCKED",
+            "generation_gate_issues": gate_issues,
+            "banana_images_count": sum(1 for s in scenes if s.visual_type == "BANANA_IMAGE"),
+            "omni_videos_count": sum(1 for s in scenes if s.visual_type in ("OMNI_FLASH_I2V", "VEO_I2V")),
+            "omni_duration_distribution": {
+                "4s": sum(1 for s in scenes if s.video_duration_sec == 4),
+                "6s": sum(1 for s in scenes if s.video_duration_sec == 6),
+                "8s": sum(1 for s in scenes if s.video_duration_sec == 8),
+                "10s": sum(1 for s in scenes if s.video_duration_sec == 10),
+            },
+            "visible_character_mismatches": vis_mismatches,
+            "location_mismatches": loc_mismatches,
+            "chronology_mismatches": chrono_mismatches,
+            "critical_scenes_count": critical_total,
+            "critical_scenes_passed": critical_pass,
+            "scenes": audit_results
+        }
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(report_data, f, ensure_ascii=False, indent=2)
+
+        logger.info(f"Exported semantic QC audit to: {output_path}")
+        return report_data

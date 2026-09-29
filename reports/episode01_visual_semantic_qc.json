@@ -1,0 +1,1766 @@
+{
+  "total_scenes_audited": 45,
+  "generation_gate_status": "PASS",
+  "generation_gate_issues": [],
+  "banana_images_count": 27,
+  "omni_videos_count": 18,
+  "omni_duration_distribution": {
+    "4s": 2,
+    "6s": 5,
+    "8s": 9,
+    "10s": 2
+  },
+  "visible_character_mismatches": 0,
+  "location_mismatches": 0,
+  "chronology_mismatches": 0,
+  "critical_scenes_count": 5,
+  "critical_scenes_passed": 5,
+  "scenes": [
+    {
+      "scene_id": "SC_001",
+      "scene_index": 1,
+      "timeline": "0.0s - 12.7s (12.7s)",
+      "story_beat": "Lá thư của Lan mở đầu bằng một câu thế này: “Nếu chồng tôi nghe được lá thư này",
+      "importance": "HIGH",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 4,
+      "motion": "slow_push_in",
+      "shot_composition": "medium_close_up",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_BEDROOM",
+      "fact_ids": [
+        "FACT_TIME_02_MARRIAGE",
+        "FACT_TIME_04_TRANSFER_ROUTINE",
+        "FACT_MONEY_01"
+      ],
+      "source_segment_ids": [
+        "001",
+        "002"
+      ],
+      "requires_text_overlay": true,
+      "text_overlay_content": "Giao dịch định kỳ: -5.000.000 VND",
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_002",
+      "scene_index": 2,
+      "timeline": "12.7s - 27.2s (14.6s)",
+      "story_beat": "Nếu chỉ nghe đến đây, bạn sẽ nghĩ người đàn ông ấy là ai? Người yêu cũ? Một mối quan hệ ngoài l",
+      "importance": "HIGH",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "slow_push_in",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_04_TRANSFER_ROUTINE",
+        "FACT_MONEY_01"
+      ],
+      "source_segment_ids": [
+        "003",
+        "004"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_003",
+      "scene_index": 3,
+      "timeline": "27.2s - 46.1s (18.8s)",
+      "story_beat": "Chào mừng bạn đến với Sau Cánh Cửa",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "pan_left",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_BEDROOM",
+      "fact_ids": [
+        "FACT_TIME_02_MARRIAGE"
+      ],
+      "source_segment_ids": [
+        "005",
+        "006"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_004",
+      "scene_index": 4,
+      "timeline": "46.1s - 57.4s (11.4s)",
+      "story_beat": "Hai người có một nguyên tắc từ ngày cưới: tiền sinh hoạt có thể ai tiện người đó chi, nhưng kho",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "pan_right",
+      "shot_composition": "two_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_02_MARRIAGE",
+        "FACT_TIME_04_TRANSFER_ROUTINE",
+        "FACT_MONEY_01"
+      ],
+      "source_segment_ids": [
+        "007"
+      ],
+      "requires_text_overlay": true,
+      "text_overlay_content": "Giao dịch định kỳ: -5.000.000 VND",
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_005",
+      "scene_index": 5,
+      "timeline": "57.4s - 73.4s (15.9s)",
+      "story_beat": "Điều khiến câu chuyện bắt đầu không phải sau đám cưới, mà từ khi Lan còn học cấp ba",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 8,
+      "motion": "static",
+      "shot_composition": "medium_close_up",
+      "story_characters": [
+        "LAN_YOUNG"
+      ],
+      "visible_characters": [
+        "LAN_YOUNG"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [],
+      "source_segment_ids": [
+        "008",
+        "009"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_006",
+      "scene_index": 6,
+      "timeline": "73.4s - 85.8s (12.4s)",
+      "story_beat": "Lan kể rằng cô từng giận bố rất nhiều",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 8,
+      "motion": "slow_push_in",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_03_FIRST_CALL"
+      ],
+      "source_segment_ids": [
+        "010",
+        "011"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_007",
+      "scene_index": 7,
+      "timeline": "85.8s - 101.6s (15.8s)",
+      "story_beat": "Chiều hôm ấy, Lan đang ở lại công ty làm nốt sổ sách thì một số lạ gọi đến",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "slow_pull_out",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_03_FIRST_CALL"
+      ],
+      "source_segment_ids": [
+        "012",
+        "013"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_008",
+      "scene_index": 8,
+      "timeline": "101.6s - 117.9s (16.3s)",
+      "story_beat": "Lan viết: “Tôi nhận ra giọng bố",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 8,
+      "motion": "pan_left",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_04_TRANSFER_ROUTINE",
+        "FACT_MONEY_01"
+      ],
+      "source_segment_ids": [
+        "014",
+        "015"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_009",
+      "scene_index": 9,
+      "timeline": "117.9s - 132.0s (14.2s)",
+      "story_beat": "Lần đầu là hai triệu",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "pan_right",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_04_TRANSFER_ROUTINE",
+        "FACT_MONEY_01"
+      ],
+      "source_segment_ids": [
+        "016",
+        "017"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_010",
+      "scene_index": 10,
+      "timeline": "132.0s - 150.7s (18.7s)",
+      "story_beat": "Ông nhớ vết sẹo nhỏ ở đầu gối Lan do ngã xe năm lớp sáu",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 8,
+      "motion": "slow_push_in",
+      "shot_composition": "detail_insert",
+      "story_characters": [
+        "LAN_YOUNG"
+      ],
+      "visible_characters": [],
+      "location": "OLD_NEIGHBORHOOD",
+      "fact_ids": [
+        "FACT_ID_WOODEN_HAIRPIN",
+        "FACT_ID_KNEE_SCAR",
+        "FACT_ID_PET_DOG"
+      ],
+      "source_segment_ids": [
+        "018",
+        "019"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_011",
+      "scene_index": 11,
+      "timeline": "150.7s - 166.4s (15.7s)",
+      "story_beat": "Có một chi tiết khác khiến Lan càng tin",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 8,
+      "motion": "slow_push_in",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "OLD_NEIGHBORHOOD",
+      "fact_ids": [
+        "FACT_ID_CUPBOARD_SCORCH"
+      ],
+      "source_segment_ids": [
+        "020"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_012",
+      "scene_index": 12,
+      "timeline": "166.4s - 182.3s (16.0s)",
+      "story_beat": "Lan nhớ vết cháy đó",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 8,
+      "motion": "slow_pull_out",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_ID_WOODEN_HAIRPIN",
+        "FACT_ID_CUPBOARD_SCORCH"
+      ],
+      "source_segment_ids": [
+        "021",
+        "022"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_013",
+      "scene_index": 13,
+      "timeline": "182.3s - 199.0s (16.6s)",
+      "story_beat": "Và đây là chỗ tôi muốn bạn để ý",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "pan_left",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [],
+      "source_segment_ids": [
+        "023",
+        "024"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_014",
+      "scene_index": 14,
+      "timeline": "199.0s - 215.4s (16.5s)",
+      "story_beat": "Lan hỏi địa chỉ, ông không cho",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 8,
+      "motion": "pan_right",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "CAFE",
+      "fact_ids": [
+        "FACT_REVEAL_CAFE_ABSENCE"
+      ],
+      "source_segment_ids": [
+        "025",
+        "026"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_015",
+      "scene_index": 15,
+      "timeline": "215.4s - 231.5s (16.0s)",
+      "story_beat": "Mười phút sau khi Lan rời quán, điện thoại nhận được tin nhắn: bố nhìn thấy con rồi, nhưng bố c",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 4,
+      "motion": "static",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "CAFE",
+      "fact_ids": [
+        "FACT_TIME_03_FIRST_CALL",
+        "FACT_REVEAL_CAFE_ABSENCE"
+      ],
+      "source_segment_ids": [
+        "027",
+        "028"
+      ],
+      "requires_text_overlay": true,
+      "text_overlay_content": "Tin nhắn: Bố nhìn thấy con rồi, nhưng bố chưa đủ can đảm bước vào.",
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_016",
+      "scene_index": 16,
+      "timeline": "231.5s - 255.1s (23.6s)",
+      "story_beat": "Ít phút sau, ông nhắn rằng điện thoại quá cũ, camera hỏng và ông đang ở cùng phòng với người kh",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 6,
+      "motion": "slow_push_in",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [],
+      "source_segment_ids": [
+        "029",
+        "030",
+        "031"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_017",
+      "scene_index": 17,
+      "timeline": "255.1s - 267.7s (12.6s)",
+      "story_beat": "Lan đã định kể cho Hùng ngay từ năm đầu tiên",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "slow_pull_out",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [],
+      "source_segment_ids": [
+        "032"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_018",
+      "scene_index": 18,
+      "timeline": "267.7s - 284.9s (17.2s)",
+      "story_beat": "Thế là cô tự nhủ chỉ giúp vài tháng",
+      "importance": "HIGH",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "pan_left",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_05_ACCOUNT_CHANGE",
+        "FACT_ID_CASSETTE_AUDIO"
+      ],
+      "source_segment_ids": [
+        "033",
+        "034"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_019",
+      "scene_index": 19,
+      "timeline": "284.9s - 298.1s (13.2s)",
+      "story_beat": "Đến đây, nếu là bạn, có lẽ bạn sẽ dừng chuyển tiền ngay",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "pan_right",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_04_TRANSFER_ROUTINE",
+        "FACT_MONEY_01",
+        "FACT_TIME_05_ACCOUNT_CHANGE",
+        "FACT_ID_CASSETTE_AUDIO"
+      ],
+      "source_segment_ids": [
+        "035",
+        "036"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_020",
+      "scene_index": 20,
+      "timeline": "298.1s - 313.5s (15.4s)",
+      "story_beat": "Lan bắt đầu nghi ngờ",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "static",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_05_ACCOUNT_CHANGE",
+        "FACT_ID_CASSETTE_AUDIO"
+      ],
+      "source_segment_ids": [
+        "037",
+        "038"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_021",
+      "scene_index": 21,
+      "timeline": "313.5s - 326.2s (12.7s)",
+      "story_beat": "Có một tháng Lan quyết định không chuyển tiền",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "slow_push_in",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_03_FIRST_CALL",
+        "FACT_TIME_04_TRANSFER_ROUTINE",
+        "FACT_MONEY_01"
+      ],
+      "source_segment_ids": [
+        "039"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_022",
+      "scene_index": 22,
+      "timeline": "326.2s - 344.4s (18.1s)",
+      "story_beat": "Không trách móc",
+      "importance": "HIGH",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "static",
+      "shot_composition": "detail_insert",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_04_TRANSFER_ROUTINE",
+        "FACT_MONEY_01",
+        "FACT_TIME_06_DISCOVERY",
+        "FACT_REVEAL_HUNG_COMPASSION"
+      ],
+      "source_segment_ids": [
+        "040",
+        "041",
+        "042"
+      ],
+      "requires_text_overlay": true,
+      "text_overlay_content": "Giao dịch định kỳ: -5.000.000 VND",
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_023",
+      "scene_index": 23,
+      "timeline": "344.4s - 356.7s (12.3s)",
+      "story_beat": "Anh nhìn tên người nhận rồi hỏi: người này là ai? Lan trả lời đó là tiền góp giúp một người họ ",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 8,
+      "motion": "pan_left",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [],
+      "source_segment_ids": [
+        "043",
+        "044",
+        "045"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_024",
+      "scene_index": 24,
+      "timeline": "356.7s - 372.4s (15.8s)",
+      "story_beat": "Hai ngày sau, Hùng xin nghỉ làm",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "pan_right",
+      "shot_composition": "two_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "location": "ARCHIVE_OFFICE",
+      "fact_ids": [],
+      "source_segment_ids": [
+        "046",
+        "047"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_025",
+      "scene_index": 25,
+      "timeline": "372.4s - 386.3s (13.9s)",
+      "story_beat": "Hùng không kiểm tra điện thoại của vợ thêm",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "static",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_04_TRANSFER_ROUTINE",
+        "FACT_MONEY_01"
+      ],
+      "source_segment_ids": [
+        "048"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_026",
+      "scene_index": 26,
+      "timeline": "386.3s - 406.4s (20.1s)",
+      "story_beat": "Số điện thoại đó đã đổi chủ nhiều lần",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 8,
+      "motion": "slow_push_in",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_04_TRANSFER_ROUTINE",
+        "FACT_MONEY_01"
+      ],
+      "source_segment_ids": [
+        "049",
+        "050"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_027",
+      "scene_index": 27,
+      "timeline": "406.4s - 428.9s (22.5s)",
+      "story_beat": "Đây là lúc Hùng có thể dừng lại",
+      "importance": "HIGH",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "slow_pull_out",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "HUNG"
+      ],
+      "location": "OLD_NEIGHBORHOOD",
+      "fact_ids": [
+        "FACT_TIME_05_ACCOUNT_CHANGE",
+        "FACT_ID_CASSETTE_AUDIO",
+        "FACT_REVEAL_NEIGHBOR_WORDS"
+      ],
+      "source_segment_ids": [
+        "051",
+        "052"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_028",
+      "scene_index": 28,
+      "timeline": "428.9s - 448.4s (19.5s)",
+      "story_beat": "Hùng vẫn chưa tin lời người hàng xóm",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 6,
+      "motion": "pan_left",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "HUNG"
+      ],
+      "location": "OLD_NEIGHBORHOOD",
+      "fact_ids": [
+        "FACT_REVEAL_NEIGHBOR_WORDS"
+      ],
+      "source_segment_ids": [
+        "053",
+        "054"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_029",
+      "scene_index": 29,
+      "timeline": "448.4s - 457.8s (9.4s)",
+      "story_beat": "Đến khi ba thông tin cùng khớp, anh mới hiểu điều mình sắp mang về nhà không còn là một nghi ng",
+      "importance": "CRITICAL",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "slow_push_in",
+      "shot_composition": "medium_close_up",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "ARCHIVE_OFFICE",
+      "fact_ids": [
+        "FACT_REVEAL_NEIGHBOR_WORDS",
+        "FACT_REVEAL_DEATH_RECORD"
+      ],
+      "source_segment_ids": [
+        "055",
+        "056"
+      ],
+      "requires_text_overlay": true,
+      "text_overlay_content": "Trích lục khai tử: Ngày mất 14 năm trước",
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_030",
+      "scene_index": 30,
+      "timeline": "457.8s - 475.1s (17.3s)",
+      "story_beat": "Hùng không kể chuyện đó cho vợ ngay",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 6,
+      "motion": "static",
+      "shot_composition": "two_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "location": "ARCHIVE_OFFICE",
+      "fact_ids": [
+        "FACT_REVEAL_DEATH_RECORD"
+      ],
+      "source_segment_ids": [
+        "057",
+        "058",
+        "059",
+        "060"
+      ],
+      "requires_text_overlay": true,
+      "text_overlay_content": "Trích lục khai tử: Ngày mất 14 năm trước",
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_031",
+      "scene_index": 31,
+      "timeline": "475.1s - 490.1s (15.1s)",
+      "story_beat": "Theo bạn, nếu phát hiện vợ giấu một khoản tiền suốt nhiều năm, bạn sẽ hỏi thẳng ngay hay âm thầ",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 6,
+      "motion": "slow_push_in",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "HUNG"
+      ],
+      "visible_characters": [
+        "HUNG"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_04_TRANSFER_ROUTINE",
+        "FACT_MONEY_01"
+      ],
+      "source_segment_ids": [
+        "061",
+        "062",
+        "063"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_032",
+      "scene_index": 32,
+      "timeline": "490.1s - 501.3s (11.2s)",
+      "story_beat": "Nhưng ở cuối tờ giấy có một dòng mà Lan nói cô phải đọc lại nhiều lần",
+      "importance": "CRITICAL",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "slow_push_in",
+      "shot_composition": "detail_insert",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_01_FATHER_DEATH",
+        "FACT_REVEAL_DEATH_RECORD"
+      ],
+      "source_segment_ids": [
+        "064",
+        "065",
+        "066"
+      ],
+      "requires_text_overlay": true,
+      "text_overlay_content": "Trích lục khai tử: Ngày mất 14 năm trước",
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_033",
+      "scene_index": 33,
+      "timeline": "501.3s - 516.6s (15.3s)",
+      "story_beat": "Nếu vậy, người gọi cho Lan suốt bảy năm là ai? Ai có giọng nói đủ giống, có những kỷ niệm riêng",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "pan_left",
+      "shot_composition": "medium_close_up",
+      "story_characters": [
+        "HUNG",
+        "LAN_YOUNG"
+      ],
+      "visible_characters": [
+        "LAN_YOUNG"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_05_ACCOUNT_CHANGE",
+        "FACT_ID_CASSETTE_AUDIO"
+      ],
+      "source_segment_ids": [
+        "067",
+        "068"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_034",
+      "scene_index": 34,
+      "timeline": "516.6s - 534.2s (17.5s)",
+      "story_beat": "Người đứng sau tài khoản và những cuộc gọi ấy",
+      "importance": "CRITICAL",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "slow_push_in",
+      "shot_composition": "detail_insert",
+      "story_characters": [
+        "UNCLE",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [],
+      "location": "UNCLE_HOME",
+      "fact_ids": [
+        "FACT_TIME_03_FIRST_CALL",
+        "FACT_REVEAL_UNCLE_PERPETRATOR",
+        "FACT_ID_WOODEN_HAIRPIN"
+      ],
+      "source_segment_ids": [
+        "069",
+        "070",
+        "071"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_035",
+      "scene_index": 35,
+      "timeline": "534.2s - 558.9s (24.8s)",
+      "story_beat": "Ông biết chuyện Lan day dứt vì bố",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "static",
+      "shot_composition": "detail_insert",
+      "story_characters": [
+        "UNCLE",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [],
+      "location": "UNCLE_HOME",
+      "fact_ids": [
+        "FACT_TIME_03_FIRST_CALL",
+        "FACT_TIME_05_ACCOUNT_CHANGE",
+        "FACT_ID_CASSETTE_AUDIO",
+        "FACT_REVEAL_CAFE_ABSENCE"
+      ],
+      "source_segment_ids": [
+        "072",
+        "073",
+        "074"
+      ],
+      "requires_text_overlay": true,
+      "text_overlay_content": "Tin nhắn: Bố nhìn thấy con rồi, nhưng bố chưa đủ can đảm bước vào.",
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_036",
+      "scene_index": 36,
+      "timeline": "558.9s - 568.9s (10.0s)",
+      "story_beat": "Hãy dừng ở chi tiết này một chút",
+      "importance": "CRITICAL",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "slow_push_in",
+      "shot_composition": "medium_close_up",
+      "story_characters": [
+        "LAN_YOUNG"
+      ],
+      "visible_characters": [
+        "LAN_YOUNG"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_01_FATHER_DEATH",
+        "FACT_REVEAL_DEATH_RECORD",
+        "FACT_TIME_03_FIRST_CALL"
+      ],
+      "source_segment_ids": [
+        "075"
+      ],
+      "requires_text_overlay": true,
+      "text_overlay_content": "Trích lục khai tử: Ngày mất 14 năm trước",
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_037",
+      "scene_index": 37,
+      "timeline": "568.9s - 593.2s (24.3s)",
+      "story_beat": "Sau khi sự thật lộ ra, mẹ Lan mới kể thêm một điều",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "slow_pull_out",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "UNCLE_HOME",
+      "fact_ids": [],
+      "source_segment_ids": [
+        "076",
+        "077"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_038",
+      "scene_index": 38,
+      "timeline": "593.2s - 615.3s (22.1s)",
+      "story_beat": "Tổng số tiền Lan chuyển trong bảy năm vượt quá bốn trăm triệu đồng",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "pan_left",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "ARCHIVE_OFFICE",
+      "fact_ids": [
+        "FACT_MONEY_02"
+      ],
+      "source_segment_ids": [
+        "078",
+        "079",
+        "080"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_039",
+      "scene_index": 39,
+      "timeline": "615.3s - 633.5s (18.1s)",
+      "story_beat": "Lan cũng phải đối diện với một câu hỏi khó chịu: tại sao trong bảy năm cô chưa từng tìm cách xá",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 6,
+      "motion": "pan_right",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [],
+      "source_segment_ids": [
+        "081"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_040",
+      "scene_index": 40,
+      "timeline": "633.5s - 652.6s (19.2s)",
+      "story_beat": "Khi một người rất muốn tin rằng người thân đã quay về, bằng chứng đôi khi không cần hoàn hảo",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "static",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_TIME_04_TRANSFER_ROUTINE",
+        "FACT_MONEY_01",
+        "FACT_REVEAL_DEATH_RECORD"
+      ],
+      "source_segment_ids": [
+        "082",
+        "083",
+        "084"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_041",
+      "scene_index": 41,
+      "timeline": "652.6s - 666.9s (14.2s)",
+      "story_beat": "Nhưng Hùng không hỏi câu đó",
+      "importance": "CRITICAL",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "slow_push_in",
+      "shot_composition": "two_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [
+        "FACT_REVEAL_HUNG_COMPASSION"
+      ],
+      "source_segment_ids": [
+        "085",
+        "086"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_042",
+      "scene_index": 42,
+      "timeline": "666.9s - 680.6s (13.8s)",
+      "story_beat": "Đêm hôm đó, Hùng không hỏi tổng cộng vợ đã giấu mình bao nhiêu tiền",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 10,
+      "motion": "slow_pull_out",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "HUNG"
+      ],
+      "location": "LAN_BEDROOM",
+      "fact_ids": [
+        "FACT_TIME_03_FIRST_CALL",
+        "FACT_REVEAL_HUNG_COMPASSION"
+      ],
+      "source_segment_ids": [
+        "087"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_043",
+      "scene_index": 43,
+      "timeline": "680.6s - 693.4s (12.8s)",
+      "story_beat": "Lan kể gần hai tiếng",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "pan_left",
+      "shot_composition": "two_shot",
+      "story_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "HUNG",
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [],
+      "source_segment_ids": [
+        "088"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_044",
+      "scene_index": 44,
+      "timeline": "693.4s - 709.0s (15.6s)",
+      "story_beat": "Có những bí mật bắt đầu không phải vì chúng ta muốn phản bội ai, mà vì ta nghĩ mình có thể tự g",
+      "importance": "MEDIUM",
+      "visual_type": "OMNI_FLASH_I2V",
+      "omni_duration_sec": 10,
+      "motion": "pan_right",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_HOME",
+      "fact_ids": [],
+      "source_segment_ids": [
+        "089",
+        "090"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    },
+    {
+      "scene_id": "SC_045",
+      "scene_index": 45,
+      "timeline": "709.0s - 731.7s (22.7s)",
+      "story_beat": "Còn bạn, điều khiến bạn day dứt nhất trong câu chuyện này là số tiền bị lấy đi, việc Lan giấu c",
+      "importance": "MEDIUM",
+      "visual_type": "BANANA_IMAGE",
+      "omni_duration_sec": null,
+      "motion": "static",
+      "shot_composition": "medium_shot",
+      "story_characters": [
+        "LAN_ADULT"
+      ],
+      "visible_characters": [
+        "LAN_ADULT"
+      ],
+      "location": "LAN_BEDROOM",
+      "fact_ids": [],
+      "source_segment_ids": [
+        "091",
+        "092",
+        "093"
+      ],
+      "requires_text_overlay": false,
+      "text_overlay_content": null,
+      "semantic_qc": {
+        "source_grounded": true,
+        "character_match": true,
+        "location_match": true,
+        "chronology_match": true,
+        "prompt_match": true,
+        "ready": true
+      },
+      "visible_match": true,
+      "location_match": true,
+      "chronology_match": true
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "OLD_NEIGHBORHOOD",
+  "name": "Khu phố cũ nhà bố Lan",
+  "description": "Quiet, aged Vietnamese residential alleyway with weathered walls, modest gates, potted plants, where elderly neighbors have lived for decades",
+  "visual_style": "Naturalistic documentary realism, authentic Vietnamese residential alley, nostalgic gentle tones",
+  "lighting_default": "Soft diffused late afternoon sunlight filtering through alleyway eaves",
+  "references": [],
+  "flow_media_ids": {}
+}

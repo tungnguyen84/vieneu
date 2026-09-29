@@ -1,0 +1,9 @@
+{
+  "id": "ARCHIVE_OFFICE",
+  "name": "Phòng lưu trữ hồ sơ hộ tịch cũ",
+  "description": "Modest municipal records office with wooden desk, archival paper dossiers, folders, official registry seals and certificates under warm fluorescent lighting",
+  "visual_style": "Restrained investigative realism, tactile paper documents, authentic Vietnamese administrative aesthetic",
+  "lighting_default": "Subtle desk lamp and soft indoor overhead office lighting",
+  "references": [],
+  "flow_media_ids": {}
+}
