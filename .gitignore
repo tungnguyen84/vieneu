@@ -36,3 +36,13 @@ projects/*/visual/generated/
 
 # Script Factory runtime logs
 script_factory/logs/
+
+# Final Auto Assembler cache and outputs
+cache/final_assembler/
+final/*.mp4
+preview/*.mp4
+*.mp4
+*.wav
+*.zip
+!examples/**
+

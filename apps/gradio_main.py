@@ -37,6 +37,7 @@ except ImportError:
 from apps.srt_speech import srt_to_speech
 from apps.ui_production_story import render_production_story_ui, bind_production_story_events
 from apps.ui_script_factory import render_script_factory_ui, bind_script_factory_events
+from apps.ui_final_auto_assembler import render_final_auto_assembler_ui, bind_final_auto_assembler_events
 from apps.user_voices import (
     load_user_voices, save_user_voice, delete_user_voice, list_user_voices, supports_saving,
 )
@@ -2077,6 +2078,9 @@ with gr.Blocks(theme=theme, css=css, title="VieNeu-TTS", head=head_html) as demo
                             with gr.Tab("✍️ Script Factory", id="script_factory_subtab"):
                                 script_factory_components = render_script_factory_ui()
 
+                            with gr.Tab("🎬 Ghép Video Hoàn Chỉnh", id="final_auto_assembler_subtab"):
+                                final_assembler_components = render_final_auto_assembler_ui()
+
                     # --- TAB 3: SRT → SPEECH (Vietnamese subtitles in, one audio out) ---
                     with gr.Tab("📝 SRT", id="srt_tab") as srt_tab:
                         gr.Markdown(
@@ -2446,6 +2450,9 @@ with gr.Blocks(theme=theme, css=css, title="VieNeu-TTS", head=head_html) as demo
 
         # --- Script Factory V1 Event Handlers ---
         bind_script_factory_events(script_factory_components)
+
+        # --- Final Auto Assembler V9.3.1 Event Handlers ---
+        bind_final_auto_assembler_events(final_assembler_components)
 
         # --- Auto-adjust Temperature on Tab Switch ---
         conv_tab.select(
