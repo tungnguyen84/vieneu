@@ -1,4 +1,13 @@
 {
+  "pilot": "PILOT_01_V1_2_QC",
+  "series": "Sau Cánh Cửa",
+  "timestamp": 1790665881.311473,
+  "total_ideas": 20,
+  "status_summary": {
+    "AWAITING_USER_REVIEW": 17,
+    "NEEDS_NOVELTY_REWRITE": 1,
+    "NEEDS_GENRE_REWRITE": 2
+  },
   "ideas": [
     {
       "idea_id": "IDEA_002",
@@ -2088,6 +2097,1185 @@
       "selected_for_pilot": false
     }
   ],
-  "updated_at": 1790665881.2994423,
-  "total_count": 20
+  "qc_reports": [
+    {
+      "idea_id": "IDEA_002",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 71.8,
+      "narrative_skeleton_similarity": 22.0,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 95.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Hùng tìm thấy một hộp thư cũ chứa những lá thư tình từ một người đàn ông khác, có nhắc đến việc 'chúng ta sẽ mãi là cha mẹ của con'.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Anh tìm thấy một giấy khai sinh cũ đã bị tẩy xóa, nhưng vẫn nhìn rõ tên một bé gái và tên người cha không phải anh.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Một người bạn cũ của Lan vô tình nhắc đến việc Lan từng phải trải qua một giai đoạn khó khăn khi còn trẻ, nhưng không nói rõ chi tiết.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Giấy tờ này có được công chứng hợp pháp tại cơ quan chức năng Việt Nam không?",
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "BETRAYAL",
+      "has_death_or_tragedy": true,
+      "title_strength": 6.0,
+      "title_specificity": 6.0,
+      "title_curiosity_gap": 7.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_003",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 74.7,
+      "narrative_skeleton_similarity": 20.2,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 85.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Mai tìm thấy một tờ giấy viết tay trong hộp, ghi lại những con số và ký hiệu khó hiểu, kèm theo một địa chỉ ở Đà Lạt.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Cô hỏi những người thân lớn tuổi hơn và được biết bà cố từng có một người bạn thân thiết đã mất liên lạc từ lâu, người đó cũng sống ở Đà Lạt.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Mai tra cứu thông tin về những tài sản trong giấy tờ và phát hiện chúng đều được mua vào những năm chiến tranh, bằng tên của bà và người phụ nữ lạ trong ảnh.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "STRONG"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "SACRIFICE",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_004",
+      "status": "NEEDS_NOVELTY_REWRITE",
+      "novelty_score": 36.5,
+      "narrative_skeleton_similarity": 63.5,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 95.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Nam tìm thấy một cuốn sổ ghi chép cũ của bố, trong đó có những dòng chữ mã hóa và một tên người phụ nữ lạ, kèm theo ngày tháng và số tiền chuyển khoản.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Trong một lần tình cờ, Nam nghe lỏm được cuộc điện thoại của bố, trong đó bố nhắc đến 'lời hứa năm xưa' và 'sự chuộc lỗi'.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Nam bí mật theo dõi bố và thấy ông ghé thăm một viện dưỡng lão ở ngoại ô thành phố, nơi ông thường xuyên trò chuyện với một cụ bà lớn tuổi.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "MEDIUM"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Dòng tiền lớn như vậy được rút hoặc chuyển qua kênh nào mà không để lại thông báo biến động số dư?",
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "SACRIFICE",
+      "has_death_or_tragedy": false,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": [
+        "Khung truyện trùng lặp 63.5% trong khoảng cảnh báo 60-69.9%. Yêu cầu viết lại tính độc bản."
+      ]
+    },
+    {
+      "idea_id": "IDEA_005",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 78.7,
+      "narrative_skeleton_similarity": 16.5,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 95.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Lan kiểm tra lại số điện thoại và thấy đó đúng là số của Minh, nhưng khi gọi lại thì không ai bắt máy.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Một người hàng xóm kể lại rằng đã thấy Minh đi lại lén lút gần khu đất tranh chấp vào đêm xảy ra cuộc gọi, vẻ mặt rất hoảng hốt.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Lan tìm thấy một bản đồ cũ vẽ tay về khu đất trong đồ đạc của mẹ, có đánh dấu một vị trí bí ẩn mà Minh luôn cố gắng tránh nhắc đến.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "MISUNDERSTANDING",
+      "has_death_or_tragedy": false,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_006",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 79.7,
+      "narrative_skeleton_similarity": 17.6,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 85.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Quân tìm thấy trong nhật ký của Tuấn những dòng chữ viết vội vàng về việc 'bị gài bẫy' và 'mất tất cả', nhưng không nhắc đến tên L. cụ thể.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Quân phát hiện Tuấn gần đây có tham gia một dự án đầu tư mạo hiểm cùng một nhóm bạn cũ, và người đứng đầu nhóm đó có tên viết tắt là 'L'.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Một người bạn chung kể rằng Tuấn gần đây rất lo lắng về số tiền đầu tư và có vẻ như đã bị lợi dụng, nhưng Tuấn luôn bảo vệ người tên L. đó.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "STRONG"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1.",
+        "Bước ngoặt 2 (Reveal 2) chưa được gieo mầm (seeded) từ các manh mối ban đầu."
+      ],
+      "emotional_device": "SACRIFICE",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_007",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 65.4,
+      "narrative_skeleton_similarity": 21.4,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 95.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Minh tìm thấy một bức thư cũ trong tập tài liệu của ông nội, trong đó ông nội nhắc đến một 'lỗi lầm tuổi trẻ' và 'sự hối hận'.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Một người bạn già của ông nội kể lại rằng ông nội từng có một mối tình sâu đậm với một cô gái nghèo nhưng bị gia đình ngăn cấm, và cô gái đó đã biến mất sau khi mang thai.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Minh phát hiện ra địa chỉ của Thúy Hằng, đó là một ngôi nhà nhỏ ở vùng quê nghèo, nơi bà đang sống cùng một người con trai có nét mặt rất giống ông nội.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "MEDIUM"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Giấy tờ này có được công chứng hợp pháp tại cơ quan chức năng Việt Nam không?",
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "BETRAYAL",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 7.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_008",
+      "status": "NEEDS_GENRE_REWRITE",
+      "novelty_score": 72.3,
+      "narrative_skeleton_similarity": 23.1,
+      "plausibility_score": 75.0,
+      "genre_fit_score": 65.0,
+      "vietnamese_social_fit_score": 95.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Hương tìm thấy một bản đồ cũ trong ngăn kéo của bố, trên đó có đánh dấu một ngôi nhà nhỏ và tên 'Thảo' được khoanh tròn.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Khi đến địa chỉ đó, Hương gặp một người phụ nữ lớn tuổi tên Thảo, bà ấy tỏ ra rất ngạc nhiên và xúc động khi nghe tên ông An.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Thảo đưa Hương xem một số giấy tờ tùy thân của ông An đã được làm lại với ngày tháng mới, cùng một số hóa đơn viện phí từ một bệnh viện khác.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao trong suốt 10 năm nằm viện/mất trí, cơ sở y tế không liên lạc với gia đình?",
+        "Hồ sơ bệnh án và viện phí suốt nhiều năm qua được ai bảo lãnh chi trả?",
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?"
+      ],
+      "logic_issues": [
+        "Khoảng thời gian y tế/mất trí kéo dài 10 năm cần giải trình rõ viện phí và hồ sơ bệnh án.",
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "MISUNDERSTANDING",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": [
+        "Yếu tố thể loại (fantasy) chưa thuần chất tâm lý gia đình Việt Nam.",
+        "Điểm phù hợp thể loại 65.0 < 70. Yêu cầu sửa đổi để loại bỏ yếu tố giật gân/kinh dị lệch chuẩn."
+      ]
+    },
+    {
+      "idea_id": "IDEA_009",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 71.4,
+      "narrative_skeleton_similarity": 23.6,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 95.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Một lần, Phong vô tình thấy được người trong ảnh là một người đàn ông lạ, không phải bố anh, đang ôm một đứa bé sơ sinh.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Phong lục tìm trong máy tính cũ của bố và phát hiện một folder ẩn chứa những tài liệu về một vụ án mất tích trẻ em nhiều năm trước, và một trong số đó có hình ảnh của người đàn ông trong bức ảnh.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Phong nhận thấy ngày tháng trên bức ảnh trùng khớp với thời điểm mẹ anh từng phải nằm viện dài ngày vì một căn bệnh bí ẩn, theo lời kể của dì anh.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "SACRIFICE",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_010",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 72.8,
+      "narrative_skeleton_similarity": 16.6,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 95.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Hạnh tìm thấy một tấm bưu thiếp cũ trong hộp kỷ vật của mình, có hình ảnh một bờ biển và một dòng chữ viết tay mờ nhạt 'Mùa hè đáng nhớ'.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Cô Hạnh bắt đầu có những giấc mơ kỳ lạ về một bãi biển và một giọng nói quen thuộc nhưng không thể xác định. Những giấc mơ này ngày càng rõ ràng hơn.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Hạnh quyết định đến địa chỉ trên phong bì. Đó là một viện dưỡng lão. Tại đây, cô gặp một cụ bà đang cầm một bức ảnh cũ, trong đó có Hạnh và một cậu bé.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "SACRIFICE",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_011",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 72.2,
+      "narrative_skeleton_similarity": 23.6,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 85.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Linh phát hiện ra ngày chụp bức ảnh là vào khoảng thời gian Nam thường xuyên đi công tác xa, và anh luôn tỏ ra khó chịu khi chị hỏi về những chuyến đi đó.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Trong danh bạ điện thoại của Nam, Linh tìm thấy một số điện thoại được lưu dưới tên 'Công việc' nhưng lại có nhiều cuộc gọi đi và đến vào những khung giờ không phải làm việc.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Linh tìm thấy một chiếc vòng tay trẻ em trong hộp kỷ vật của Nam, có khắc tên 'An' và ngày sinh trùng khớp với ngày tháng trên bức ảnh.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "BETRAYAL",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_012",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 76.2,
+      "narrative_skeleton_similarity": 14.1,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 85.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Hùng tìm thấy những tài liệu cũ về một dự án nghiên cứu y tế dang dở trong phòng ông Vinh, cùng với danh sách các bệnh nhân nghèo.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Một đồng nghiệp cũ kể rằng ông Vinh từng rất tâm huyết với dự án phát triển thuốc giá rẻ cho người nghèo nhưng bị ban lãnh đạo mới gạt bỏ.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Hùng nghe lén được một đoạn hội thoại, ông Vinh nói về việc 'không thể để công sức của bao nhiêu người đổ sông đổ biển' và 'phải giữ lời hứa với những người đã tin tưởng'.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "SACRIFICE",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_013",
+      "status": "NEEDS_GENRE_REWRITE",
+      "novelty_score": 77.6,
+      "narrative_skeleton_similarity": 17.9,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 55.0,
+      "vietnamese_social_fit_score": 95.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Mai tìm thấy một tờ báo cũ bị kẹt dưới khe cửa, đưa tin về vụ mất tích bí ẩn của một nghệ sĩ piano trẻ cách đây 20 năm, tên là Thảo.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Trong một lần vô tình nhìn vào khe cửa hé mở khi đi ngang qua, Mai thấy một bóng người lướt qua nhanh chóng, giống như đang lẩn trốn.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Mai phát hiện ra rằng hàng xóm cũ của căn nhà đó đã chuyển đi đột ngột sau khi kể về những tiếng động lạ và bóng người mờ ảo bên trong.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "MEDIUM"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "MISUNDERSTANDING",
+      "has_death_or_tragedy": false,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": [
+        "Phát hiện nguy cơ trôi dạt sang phong cách kinh dị/giật gân (horror/captivity thriller), lệch khỏi tôn chỉ bí ẩn xã hội/gia đình.",
+        "Điểm phù hợp thể loại 55.0 < 70. Yêu cầu sửa đổi để loại bỏ yếu tố giật gân/kinh dị lệch chuẩn."
+      ]
+    },
+    {
+      "idea_id": "IDEA_014",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 65.4,
+      "narrative_skeleton_similarity": 21.4,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 95.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Hạnh tìm thấy một bức thư cũ trong hộp kỷ vật của cha, viết bởi một người phụ nữ tên Loan, đề cập đến 'con của chúng ta' và 'sự lựa chọn khó khăn'.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Một người bạn già của ông Sáu kể lại rằng ông Sáu từng yêu một cô gái tên Loan nhưng gia đình ông đã phản đối kịch liệt vì Loan xuất thân nghèo khó.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Hạnh tìm được địa chỉ cũ của Loan và đến đó. Người hàng xóm cũ kể rằng Loan đã rời đi đột ngột sau khi sinh một bé gái và luôn nói rằng đứa bé đã mất.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "BETRAYAL",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 7.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_015",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 71.1,
+      "narrative_skeleton_similarity": 20.5,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 85.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Một lá thư nhắc đến 'những cuộc hẹn lén lút ở quán cà phê góc phố cũ' và 'nỗi sợ hãi bị phát hiện'.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "An tìm thấy một bức ảnh cũ chụp dì cô cùng một nhóm bạn. Trong đó có một người đàn ông tên Hưng, mà dì cô luôn giữ khoảng cách một cách kỳ lạ mỗi khi nhắc đến.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "An tìm thấy một bài báo cũ về đám cưới của một doanh nhân thành đạt tên Hưng, kèm theo bức ảnh chụp cô dâu đeo một chiếc khăn tay tương tự chiếc khăn thêu tên 'H.A.' của dì An.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "SACRIFICE",
+      "has_death_or_tragedy": false,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_016",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 71.4,
+      "narrative_skeleton_similarity": 19.7,
+      "plausibility_score": 75.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 95.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Bà Hoa tìm thấy một giấy tờ cũ về việc nhận nuôi Lan, trong đó có một chi tiết nhỏ về tên bệnh viện nơi Lan được sinh ra, khác với thông tin Lan vẫn thường kể.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Trong điện thoại cũ của Lan, bà Hoa thấy tin nhắn trao đổi với một người lạ về 'tiền trợ cấp' và 'không được để mẹ nuôi biết'.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Bà Hoa tra cứu thông tin về bệnh viện đó và phát hiện có một vụ kiện tụng lớn về việc nhầm lẫn trẻ sơ sinh cách đây hơn 20 năm, đúng vào thời điểm Lan chào đời.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao trong suốt 20 năm nằm viện/mất trí, cơ sở y tế không liên lạc với gia đình?",
+        "Hồ sơ bệnh án và viện phí suốt nhiều năm qua được ai bảo lãnh chi trả?",
+        "Dòng tiền lớn như vậy được rút hoặc chuyển qua kênh nào mà không để lại thông báo biến động số dư?"
+      ],
+      "logic_issues": [
+        "Khoảng thời gian y tế/mất trí kéo dài 20 năm cần giải trình rõ viện phí và hồ sơ bệnh án.",
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "GUILT",
+      "has_death_or_tragedy": false,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_017",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 73.4,
+      "narrative_skeleton_similarity": 19.4,
+      "plausibility_score": 82.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 85.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Hải tìm thấy một cuốn sổ tay cũ của ông Hoàng, ghi chép những con số lớn và tên của một người bạn đã mất từ lâu: 'Long'.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Hải nghe lén cuộc gọi. Bên kia là giọng một phụ nữ trẻ, nói về 'tiền học phí' và 'lời hứa của cha anh'.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Hải tìm đến nhà người bạn cũ của cha, Long. Con gái của Long kể rằng cha cô từng cho ông Hoàng vay một khoản tiền lớn để cứu công ty của ông Hoàng khỏi phá sản, với lời hứa sẽ trả lại khi cô bé lớn lên.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Dòng tiền lớn như vậy được rút hoặc chuyển qua kênh nào mà không để lại thông báo biến động số dư?",
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Giao dịch tài chính chưa nêu rõ hình thức thanh toán (chuyển khoản ngân hàng hay tiền mặt).",
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "GUILT",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_018",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 72.2,
+      "narrative_skeleton_similarity": 17.0,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 95.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Hùng nhớ lại một lần bà nội từng kể về một 'người khách lạ' đến thăm nhà vào những năm chiến tranh, và sau đó bà thường xuyên ra gốc cây khế một mình.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Một người hàng xóm cũ kể rằng bà nội Hùng từng nhận nuôi một đứa bé bị bỏ rơi, nhưng sau đó đứa bé được một gia đình khác đưa đi mà không ai rõ lý do.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Hùng bí mật đào dưới gốc cây khế và tìm thấy một chiếc hộp sắt chứa đầy vàng miếng, cùng với một bức thư cũ và một giấy khai sinh.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "STRONG"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Giấy tờ này có được công chứng hợp pháp tại cơ quan chức năng Việt Nam không?",
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "SACRIFICE",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_019",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 72.8,
+      "narrative_skeleton_similarity": 20.9,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 85.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Linh tìm thấy một tấm ảnh cũ ố vàng, chụp ông nội thời trẻ cùng một người phụ nữ xinh đẹp, phía sau có ghi tên 'Thoa - 1945'.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Một người họ hàng lớn tuổi kể rằng ông nội từng có một mối tình đầu rất sâu đậm, nhưng không bao giờ kể rõ lý do tại sao họ lại chia tay.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Linh tìm thấy một sổ ghi chép gia phả cũ, trong đó có một dòng bị gạch xóa về 'người vợ đầu tiên' của ông nội, và tên Thoa được viết mờ bên cạnh.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "SACRIFICE",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_020",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 72.9,
+      "narrative_skeleton_similarity": 18.7,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 85.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Trong nhật ký chiến trường của ông nội, An đọc được một đoạn viết về 'người bạn thân nhất, đã hy sinh để cứu tôi' và 'chiếc đồng hồ của anh ấy'.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "An tìm thấy một bức ảnh cũ chụp ông nội cùng một người lính khác. Người lính đó đeo một chiếc đồng hồ tương tự chiếc mà An đang cầm.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "STRONG"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "An gặp một cựu chiến binh cùng đơn vị với ông nội. Ông kể rằng vào ngày đó, 3 giờ 15 phút, đơn vị của họ bị phục kích. Người đồng đội của ông nội đã dùng thân mình che chắn, giúp ông nội sống sót, và chiếc đồng hồ của anh ta đã bị vỡ và dừng lại ở khoảnh khắc đó.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "STRONG"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "SACRIFICE",
+      "has_death_or_tragedy": true,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    },
+    {
+      "idea_id": "IDEA_021",
+      "status": "AWAITING_USER_REVIEW",
+      "novelty_score": 75.5,
+      "narrative_skeleton_similarity": 19.3,
+      "plausibility_score": 90.0,
+      "genre_fit_score": 90.0,
+      "vietnamese_social_fit_score": 95.0,
+      "false_lead_strength": 8.5,
+      "reveal_qc": {
+        "reveal_1_surprise": 8.5,
+        "reveal_1_fairness": 6.5,
+        "reveal_2_surprise": 8.6,
+        "reveal_2_fairness": 8.9,
+        "reveal_2_value": 8.8
+      },
+      "clues_causality": [
+        {
+          "clue_field": "clue_1",
+          "clue": "Mai đọc được những bình luận từ những người bạn ảo, họ gọi mẹ cô bằng một cái tên khác và nhắc đến những cuộc hẹn hò 'trên mạng'.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_2",
+          "clue": "Mai phát hiện mẹ thường thức khuya, lén lút sử dụng điện thoại và có những biểu hiện trầm tư khi không có ai ở gần.",
+          "supports": [
+            "REVEAL_1"
+          ],
+          "causal_strength": "MEDIUM"
+        },
+        {
+          "clue_field": "clue_3",
+          "clue": "Trong một bài đăng, mẹ Mai viết về 'nỗi thất vọng về một cuộc hôn nhân không tình yêu' và 'khát khao được sống là chính mình'.",
+          "supports": [
+            "REVEAL_2"
+          ],
+          "causal_strength": "MEDIUM"
+        }
+      ],
+      "coincidence_count": 0,
+      "skeptical_viewer_questions": [
+        "Dòng tiền lớn như vậy được rút hoặc chuyển qua kênh nào mà không để lại thông báo biến động số dư?",
+        "Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?",
+        "Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?",
+        "Người giữ bí mật có động cơ thực sự thuyết phục để chấp nhận đánh đổi lớn như vậy không?"
+      ],
+      "logic_issues": [
+        "Cần tối thiểu 2 manh mối vững chắc (STRONG clues) để chứng minh cho Bước ngoặt 1."
+      ],
+      "emotional_device": "BETRAYAL",
+      "has_death_or_tragedy": false,
+      "title_strength": 8.5,
+      "title_specificity": 8.8,
+      "title_curiosity_gap": 8.0,
+      "reasons": []
+    }
+  ]
 }

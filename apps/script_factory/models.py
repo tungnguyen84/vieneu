@@ -18,6 +18,14 @@ class ApprovalStatus(str, Enum):
     USER_REVIEW_REQUIRED = "USER_REVIEW_REQUIRED"
     AWAITING_USER_REVIEW = "AWAITING_USER_REVIEW"
     STORY_BIBLE_CHANGED = "STORY_BIBLE_CHANGED"
+    # Script Factory V1.2 Status Pipeline
+    NEEDS_NOVELTY_REWRITE = "NEEDS_NOVELTY_REWRITE"
+    NEEDS_LOGIC_REWRITE = "NEEDS_LOGIC_REWRITE"
+    NEEDS_GENRE_REWRITE = "NEEDS_GENRE_REWRITE"
+    BLOCKED_NARRATIVE_DUPLICATE = "BLOCKED_NARRATIVE_DUPLICATE"
+    BLOCKED_IMPLAUSIBLE = "BLOCKED_IMPLAUSIBLE"
+    USER_APPROVED = "USER_APPROVED"
+    USER_REJECTED = "USER_REJECTED"
 
 
 class DeliveryProfile(str, Enum):
@@ -27,6 +35,24 @@ class DeliveryProfile(str, Enum):
     REVEAL = "REVEAL"
     COMMENT = "COMMENT"
     ENDING = "ENDING"
+
+
+@dataclass
+class NarrativeSkeleton:
+    trigger: str = ""
+    initial_suspicion: str = ""
+    investigation_method: str = ""
+    evidence_chain: List[str] = field(default_factory=list)
+    reveal_mechanism: str = ""
+    second_reveal_mechanism: str = ""
+    emotional_resolution: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> NarrativeSkeleton:
+        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
 
 @dataclass
@@ -77,6 +103,28 @@ class IdeaItem:
     logical_plausibility: Optional[float] = None
     long_form_potential: Optional[float] = None
     created_at: float = field(default_factory=time.time)
+
+    # V1.2 Story Quality Hardening Fields
+    narrative_skeleton: Optional[Dict[str, Any]] = None
+    narrative_skeleton_similarity: Optional[float] = None
+    plausibility_score: Optional[float] = None
+    plausibility_issues: List[str] = field(default_factory=list)
+    required_explanations: List[str] = field(default_factory=list)
+    skeptical_viewer_questions: List[str] = field(default_factory=list)
+    logic_issues: List[str] = field(default_factory=list)
+    clues_causality: List[Dict[str, Any]] = field(default_factory=list)
+    reveal_qc: Dict[str, float] = field(default_factory=dict)
+    false_lead_strength: Optional[float] = None
+    coincidence_count: int = 0
+    genre_fit_score: Optional[float] = None
+    vietnamese_social_fit_score: Optional[float] = None
+    emotional_device: str = ""
+    has_death_or_tragedy: bool = False
+    title_strength: Optional[float] = None
+    title_specificity: Optional[float] = None
+    title_curiosity_gap: Optional[float] = None
+    locked_fields: List[str] = field(default_factory=list)
+    selected_for_pilot: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

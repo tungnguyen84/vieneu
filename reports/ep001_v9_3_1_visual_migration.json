@@ -1,0 +1,23 @@
+{
+  "episode_id": "EP001",
+  "migration_target": "V9.3.1_HYBRID_VISUAL",
+  "total_scenes": 45,
+  "existing_images_preserved": 45,
+  "image_regeneration_count": 0,
+  "video_generation_requests": 0,
+  "flow_requests": 0,
+  "production_summary": {
+    "total_scenes": 45,
+    "images_required": 45,
+    "image_only_count": 39,
+    "video_recommended_count": 6,
+    "p1_count": 5,
+    "p2_count": 1,
+    "p3_count": 0,
+    "video_ratio_pct": 13.3,
+    "video_budget": "BALANCED",
+    "estimated_video_requests": 6
+  },
+  "manifest_path": "projects\\sau_canh_cua_ep01_v9_3_manual_visual\\visual_manifest_v9_3_1.json",
+  "prompts_csv_path": "projects\\sau_canh_cua_ep01_v9_3_manual_visual\\visual_prompts_v9_3_1.csv"
+}

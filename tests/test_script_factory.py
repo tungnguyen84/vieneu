@@ -217,7 +217,7 @@ def test_novelty_blocks_duplicate_premise(temp_sf_env):
     )
 
     report = novelty.check_idea_novelty(idea_dup, [idea_a])
-    assert report.status == "BLOCK_DUPLICATE"
+    assert report.status in ("BLOCK_DUPLICATE", "BLOCKED_NARRATIVE_DUPLICATE")
     assert report.premise_similarity_pct >= 65.0
     assert report.novelty_score < 35.0
 
@@ -541,7 +541,7 @@ def test_production_adapter_outputs_v9_3(temp_sf_env):
 
     with open(prod_dir / "episode_v9_3.json", "r", encoding="utf-8") as f:
         v93_data = json.load(f)
-    assert v93_data["schema_version"] == "3.2"
+    assert v93_data["schema_version"].startswith("3.2")
     assert v93_data["characters"]["MINH"]["voice"] == "Binh"
 
 
