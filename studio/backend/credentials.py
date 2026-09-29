@@ -7,9 +7,16 @@ import json
 import os
 import platform
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-
 from cryptography.fernet import Fernet
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    _repo_root = Path(__file__).resolve().parent.parent.parent
+    if (_repo_root / ".env").exists():
+        load_dotenv(_repo_root / ".env")
+except Exception:
+    pass
 
 # User-level secret storage directory outside any repository or project directory
 SECRETS_DIR = Path.home() / ".scc_studio"

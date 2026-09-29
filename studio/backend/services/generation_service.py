@@ -33,10 +33,9 @@ def get_configured_ai_provider():
     default_p = status.get("default_provider", "gemini")
     model = status.get("default_model", "gemini-2.5-flash")
 
-    if default_p == "gemini":
-        gemini_key = get_active_api_key("gemini")
-        if gemini_key:
-            return GeminiScriptAIProvider(api_key=gemini_key, default_model=model)
+    gemini_key = get_active_api_key("gemini")
+    if gemini_key:
+        return GeminiScriptAIProvider(api_key=gemini_key, default_model=model)
 
     return MockScriptAIProvider()
 
