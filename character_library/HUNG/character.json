@@ -14,9 +14,14 @@
   "references": [
     "ref_portrait.png"
   ],
-  "flow_media_ids": {
-    "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e": "media_ref_hung_b36f"
+  "local_reference_id": "HUNG_REF_V1",
+  "flow": {
+    "project_id": "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e",
+    "media_id": null,
+    "upload_status": "LOCAL_ONLY"
   },
+  "flow_media_ids": {},
+  "qc_status": "AWAITING_REVIEW",
   "wardrobes": {
     "HUNG_HOME": "Casual dark t-shirt and charcoal lounge pants, neat relaxed domestic appearance",
     "HUNG_INVESTIGATION": "Dark utilitarian jacket over a neat neutral collared shirt, practical trousers, observant investigative look"

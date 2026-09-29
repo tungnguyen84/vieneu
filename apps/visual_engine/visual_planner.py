@@ -44,16 +44,17 @@ WARDROBE_PROFILES: Dict[str, str] = {
     "LAN_YOUNG_SCHOOL": "dressed in a classic Vietnamese high-school white student shirt with simple collar and dark navy trousers, modest youthful student attire",
 }
 
-# Pilot scenes set for Phase 3 (Section 10)
+# Pilot scene IDs for Phase 3 (Section 10).
+# All scene metadata (visual_type, duration, location, prompt, etc.) MUST be loaded dynamically from visual_plan.json.
 PILOT_SCENE_IDS: List[str] = [
-    "SC_001",  # Hook / Lan opening letter (OMNI_FLASH_I2V, 4s)
-    "SC_005",  # Lan Young flashback (BANANA_IMAGE)
-    "SC_011",  # Bank transfer macro -5.000.000 VND (BANANA_IMAGE)
-    "SC_025",  # Hùng investigation in old neighborhood (OMNI_FLASH_I2V, 8s)
-    "SC_030",  # Death record reveal (BANANA_IMAGE)
-    "SC_035",  # Uncle reveal (OMNI_FLASH_I2V, 10s)
-    "SC_041",  # Hùng + Lan emotional two-shot (OMNI_FLASH_I2V, 10s)
-    "SC_045",  # Outro / window reflection (OMNI_FLASH_I2V, 6s)
+    "SC_001",
+    "SC_005",
+    "SC_011",
+    "SC_025",
+    "SC_030",
+    "SC_035",
+    "SC_041",
+    "SC_045",
 ]
 
 
@@ -346,6 +347,34 @@ def validate_scene_character_references(
             if not any((char_dir / rf).exists() for rf in char.references):
                 issues.append(f"Scene {sc.scene_id} visible character '{cid}' reference file missing on disk.")
     return (len(issues) == 0), issues
+
+
+def compute_visual_plan_semantic_hash(scenes_or_plan: Any) -> str:
+    """Computes a deterministic SHA256 semantic hash of visual plan scenes.
+    
+    Protects plan from silent alterations post-QC (Section 4).
+    """
+    scenes = scenes_or_plan.get("scenes", []) if isinstance(scenes_or_plan, dict) else scenes_or_plan
+    canonical_items = []
+    for sc in scenes:
+        item = {
+            "scene_id": getattr(sc, "scene_id", None) or sc.get("scene_id"),
+            "source_segment_ids": sorted(getattr(sc, "source_segment_ids", None) or sc.get("source_segment_ids") or []),
+            "story_beat": getattr(sc, "story_beat", None) or sc.get("story_beat") or "",
+            "visible_characters": sorted(getattr(sc, "visible_characters", None) or sc.get("visible_characters") or []),
+            "location": getattr(sc, "location", None) or sc.get("location") or "",
+            "visual_type": getattr(sc, "visual_type", None) or sc.get("visual_type") or "",
+            "video_duration_sec": getattr(sc, "video_duration_sec", None) or sc.get("video_duration_sec"),
+            "wardrobe_id": getattr(sc, "wardrobe_id", None) or sc.get("wardrobe_id"),
+            "text_overlay_content": getattr(sc, "text_overlay_content", None) or sc.get("text_overlay_content"),
+            "image_prompt": getattr(sc, "image_prompt", None) or sc.get("image_prompt") or "",
+            "video_prompt": getattr(sc, "video_prompt", None) or sc.get("video_prompt") or ""
+        }
+        canonical_items.append(item)
+    canonical_items.sort(key=lambda x: str(x["scene_id"]))
+    payload = json.dumps(canonical_items, sort_keys=True, ensure_ascii=False)
+    import hashlib
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 class VisualPlanningStrategy(ABC):
@@ -1241,6 +1270,7 @@ class VisualPlanner:
             "total_scenes": len(scenes),
             "banana_count": sum(1 for s in scenes if s.visual_type == "BANANA_IMAGE"),
             "omni_count": sum(1 for s in scenes if s.visual_type in ("OMNI_FLASH_I2V", "VEO_I2V")),
+            "semantic_hash": compute_visual_plan_semantic_hash(scenes),
         }
 
         with open(plan_file, "w", encoding="utf-8") as f:

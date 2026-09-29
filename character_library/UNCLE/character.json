@@ -14,9 +14,14 @@
   "references": [
     "ref_portrait.png"
   ],
-  "flow_media_ids": {
-    "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e": "media_ref_uncle_b36f"
+  "local_reference_id": "UNCLE_REF_V1",
+  "flow": {
+    "project_id": "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e",
+    "media_id": null,
+    "upload_status": "LOCAL_ONLY"
   },
+  "flow_media_ids": {},
+  "qc_status": "AWAITING_REVIEW",
   "wardrobes": {
     "UNCLE_HOME": "Faded collared short-sleeve shirt in muted olive or grey, worn dark trousers, unassuming domestic appearance"
   }

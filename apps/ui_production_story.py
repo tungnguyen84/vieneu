@@ -486,11 +486,30 @@ def render_production_story_ui(preset_voices_cache_getter):
             with gr.Tabs():
                 with gr.Tab("🎭 Nhân vật (Characters)"):
                     char_lib_table = gr.Dataframe(
-                        headers=["Char ID", "Tên", "Vai trò", "Reference Portrait", "Flow Media IDs", "Wardrobes", "Identity Link"],
-                        datatype=["str", "str", "str", "str", "str", "str", "str"],
+                        headers=["Char ID", "Tên", "Vai trò", "Reference ID", "Flow Status", "QC Status", "Wardrobes", "Identity Link"],
+                        datatype=["str", "str", "str", "str", "str", "str", "str", "str"],
                         interactive=False
                     )
                     btn_refresh_char_lib = gr.Button("🔄 Tải lại Thư viện Nhân vật", size="sm")
+
+                    with gr.Accordion("🔍 Xem & Phê duyệt Reference Nhân vật (Character Approval Gate)", open=True):
+                        with gr.Row():
+                            char_select_dd = gr.Dropdown(
+                                label="Chọn Nhân vật kiểm duyệt",
+                                choices=["LAN_ADULT", "HUNG", "UNCLE", "LAN_YOUNG"],
+                                value="LAN_ADULT",
+                                interactive=True,
+                                scale=2
+                            )
+                            btn_load_char_ref = gr.Button("👁 Nạp thông tin Reference", scale=1)
+                        with gr.Row():
+                            with gr.Column(scale=1):
+                                char_ref_portrait_img = gr.Image(label="🖼 Reference Portrait (ref_portrait.png)", interactive=False)
+                            with gr.Column(scale=2):
+                                char_ref_details_md = gr.Markdown("**Thông tin nhân vật:** Bấm 'Nạp thông tin Reference' để xem chi tiết.")
+                                with gr.Row():
+                                    btn_approve_char_ref = gr.Button("✅ Phê duyệt Nhân vật (Approve)", variant="primary")
+                                    btn_reject_char_ref = gr.Button("❌ Từ chối Nhân vật (Reject)", variant="stop")
                 with gr.Tab("📍 Bối cảnh (Locations)"):
                     loc_lib_table = gr.Dataframe(
                         headers=["Location ID", "Tên bối cảnh", "Tính chất", "Mô tả", "Visual Style", "Ánh sáng mặc định"],
@@ -532,19 +551,19 @@ def render_production_story_ui(preset_voices_cache_getter):
             gr.Markdown(
                 "### 🛡️ Pilot Quality Gatekeeper (8 Scenes: SC_001, SC_005, SC_011, SC_025, SC_030, SC_035, SC_041, SC_045)\n"
                 "Quy trình bắt buộc trước khi mở khóa tạo hàng loạt (Generate All 45 scenes):\n"
-                "1. Duyệt đủ 4/4 Reference Portraits của nhân vật.\n"
+                "1. Duyệt đủ 4/4 Reference Portraits của nhân vật (LAN_ADULT, HUNG, UNCLE, LAN_YOUNG).\n"
                 "2. Sinh và duyệt đạt chuẩn 8/8 Pilot Keyframes (Banana Pro).\n"
-                "3. Sinh và duyệt đạt chuẩn 5/5 Pilot Videos (Omni 1.1 Flash: SC_001, SC_025, SC_035, SC_041, SC_045).\n"
-                "4. Không còn lỗi nghiêm trọng về character identity hay continuity."
+                "3. Sinh và duyệt đạt chuẩn các Pilot Videos theo Visual Plan (Omni 1.1 Flash: SC_001, SC_005, SC_011, SC_030).\n"
+                "4. Không còn lỗi nghiêm trọng về character identity, continuity hay chronology."
             )
             with gr.Row():
                 btn_calc_pilot_cost = gr.Button("💰 1. Kiểm tra chi phí Pilot Credits", variant="secondary")
                 btn_gen_pilot_keyframes = gr.Button("🎨 2. Sinh 8 Pilot Keyframes (Banana Pro)", variant="primary")
-                btn_gen_pilot_videos = gr.Button("🎥 3. Sinh 5 Pilot Videos (Omni 1.1 Flash)", variant="primary")
+                btn_gen_pilot_videos = gr.Button("🎥 3. Sinh Pilot Videos (Omni 1.1 Flash)", variant="primary")
                 btn_refresh_pilot_status = gr.Button("🔄 Cập nhật tiến độ Pilot", size="sm")
 
             pilot_cost_info_md = gr.Markdown("*(Bấm 'Kiểm tra chi phí' để tính toán trước khi bấm sinh hình/video)*")
-            pilot_gate_status_md = gr.Markdown("### 🔒 Trạng thái Khóa: Đang khóa Generate All\n- Cần duyệt đủ 8 keyframes và 5 videos pilot.")
+            pilot_gate_status_md = gr.Markdown("### 🔒 Trạng thái Khóa: Đang khóa Generate All\n- Cần duyệt đủ 4 nhân vật và các pilot keyframes/videos.")
 
             with gr.Row():
                 pilot_scene_select_dd = gr.Dropdown(
@@ -555,6 +574,8 @@ def render_production_story_ui(preset_voices_cache_getter):
                     scale=2
                 )
                 btn_load_pilot_scene = gr.Button("👁 Nạp Media Scene", scale=1)
+
+            pilot_scene_metadata_md = gr.Markdown("")
 
             with gr.Row():
                 with gr.Column(scale=1):
@@ -716,6 +737,12 @@ def render_production_story_ui(preset_voices_cache_getter):
         "visual_scenes_table": visual_scenes_table,
         "char_lib_table": char_lib_table,
         "btn_refresh_char_lib": btn_refresh_char_lib,
+        "char_select_dd": char_select_dd,
+        "btn_load_char_ref": btn_load_char_ref,
+        "char_ref_portrait_img": char_ref_portrait_img,
+        "char_ref_details_md": char_ref_details_md,
+        "btn_approve_char_ref": btn_approve_char_ref,
+        "btn_reject_char_ref": btn_reject_char_ref,
         "loc_lib_table": loc_lib_table,
         "btn_refresh_loc_lib": btn_refresh_loc_lib,
         "scene_select_dd": scene_select_dd,
@@ -738,6 +765,7 @@ def render_production_story_ui(preset_voices_cache_getter):
         "pilot_gate_status_md": pilot_gate_status_md,
         "pilot_scene_select_dd": pilot_scene_select_dd,
         "btn_load_pilot_scene": btn_load_pilot_scene,
+        "pilot_scene_metadata_md": pilot_scene_metadata_md,
         "pilot_keyframe_img": pilot_keyframe_img,
         "pilot_keyframe_status_md": pilot_keyframe_status_md,
         "btn_approve_pilot_keyframe": btn_approve_pilot_keyframe,
@@ -1837,20 +1865,85 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         chars = load_character_library()
         rows = []
         for cid, c in chars.items():
-            media_str = ", ".join(c.flow_media_ids) if c.flow_media_ids else "-"
-            ref_str = ", ".join(c.references) if c.references else "❌ Missing"
+            flow_st = c.flow.get("upload_status", "LOCAL_ONLY") if getattr(c, "flow", None) else "LOCAL_ONLY"
+            if getattr(c, "flow", None) and c.flow.get("media_id"):
+                flow_st += f" ({c.flow['media_id'][:8]}...)"
+            ref_id = c.local_reference_id or f"{cid}_REF_V1"
+            qc_st = getattr(c, "qc_status", "AWAITING_REVIEW")
             wardrobe_str = ", ".join(c.wardrobes.keys()) if getattr(c, "wardrobes", None) else "-"
             identity_str = f"{c.identity_relation.get('type', '')} -> {c.identity_relation.get('character_id', '')}" if getattr(c, "identity_relation", None) else "-"
             rows.append([
                 c.char_id,
                 c.name,
                 c.role or "-",
-                ref_str,
-                media_str,
+                ref_id,
+                flow_st,
+                qc_st,
                 wardrobe_str,
                 identity_str
             ])
         return rows
+
+    def _on_load_char_ref(char_id):
+        from apps.visual_engine.character_manager import CHARACTER_LIB_DIR
+        chars = load_character_library()
+        c = chars.get(char_id)
+        if not c:
+            return None, f"⚠️ Không tìm thấy nhân vật {char_id}"
+        char_dir = CHARACTER_LIB_DIR / char_id
+        img_p = char_dir / (c.references[0] if c.references else "ref_portrait.png")
+        img_val = str(img_p) if (img_p.exists() and img_p.stat().st_size > 0) else None
+
+        qc_color = "#10b981" if c.qc_status == "APPROVED" else ("#ef4444" if c.qc_status == "REJECTED" else "#f59e0b")
+        flow_media = c.flow.get("media_id") or "Chưa upload (sẽ upload khi generate)"
+        details_md = (
+            f"### 🎭 Nhân vật: **{c.name}** (`{c.char_id}`)\n"
+            f"- **Trạng thái Duyệt (QC):** <span style='color: {qc_color}; font-weight: bold;'>{c.qc_status}</span>\n"
+            f"- **Local Reference ID:** `{c.local_reference_id}`\n"
+            f"- **Google Flow Status:** `{c.flow.get('upload_status', 'LOCAL_ONLY')}` | **Media ID:** `{flow_media}`\n"
+            f"- **Độ tuổi / Vai trò:** {c.age_range} | {c.role}\n"
+            f"- **Ngoại hình:** {c.appearance}\n"
+            f"- **Trang phục mặc định:** {c.default_clothing}\n"
+            f"- **Ghi chú visual:** {c.visual_notes}"
+        )
+        return img_val, details_md
+
+    def _on_approve_char_ref(char_id):
+        if not char_id:
+            return gr.update(), "⚠️ Chưa chọn nhân vật"
+        from apps.visual_engine.character_manager import set_character_qc_status
+        set_character_qc_status(char_id, "APPROVED")
+        _, details_md = _on_load_char_ref(char_id)
+        return _build_char_lib_table(), details_md
+
+    def _on_reject_char_ref(char_id):
+        if not char_id:
+            return gr.update(), "⚠️ Chưa chọn nhân vật"
+        from apps.visual_engine.character_manager import set_character_qc_status
+        set_character_qc_status(char_id, "REJECTED")
+        _, details_md = _on_load_char_ref(char_id)
+        return _build_char_lib_table(), details_md
+
+    c["btn_load_char_ref"].click(
+        fn=_on_load_char_ref,
+        inputs=[c["char_select_dd"]],
+        outputs=[c["char_ref_portrait_img"], c["char_ref_details_md"]]
+    )
+    c["char_select_dd"].change(
+        fn=_on_load_char_ref,
+        inputs=[c["char_select_dd"]],
+        outputs=[c["char_ref_portrait_img"], c["char_ref_details_md"]]
+    )
+    c["btn_approve_char_ref"].click(
+        fn=_on_approve_char_ref,
+        inputs=[c["char_select_dd"]],
+        outputs=[c["char_lib_table"], c["char_ref_details_md"]]
+    )
+    c["btn_reject_char_ref"].click(
+        fn=_on_reject_char_ref,
+        inputs=[c["char_select_dd"]],
+        outputs=[c["char_lib_table"], c["char_ref_details_md"]]
+    )
 
     def _build_loc_lib_table():
         locs = load_location_library()
@@ -2237,18 +2330,32 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     )
 
     # 3.5. Phase 3 Pilot Event Handlers
-    def _render_pilot_gate_status_md(asset_mgr: VisualAssetManager):
+    def _render_pilot_gate_status_md(asset_mgr: VisualAssetManager, project_dir: Optional[Path] = None):
         char_lib = load_character_library()
-        unlocked, info = asset_mgr.is_full_generation_unlocked([], char_lib)
+        scenes = []
+        p_dir = project_dir or asset_mgr.project_dir
+        if p_dir:
+            plan_file = Path(p_dir) / "visual/visual_plan.json"
+            if plan_file.exists():
+                try:
+                    with open(plan_file, "r", encoding="utf-8") as f:
+                        scenes = [VisualScene(**d) for d in json.load(f).get("scenes", [])]
+                except Exception:
+                    scenes = []
+        unlocked, info = asset_mgr.is_full_generation_unlocked(scenes, char_lib)
         badge = "🔓 **ĐÃ MỞ KHÓA GENERATE ALL**" if unlocked else "🔒 **ĐANG KHÓA GENERATE ALL (PILOT REQUIRED)**"
         color = "#10b981" if unlocked else "#f59e0b"
+        hash_status = "✅ Hợp lệ (Deterministic Hash)" if info.get("semantic_hash_valid") else "❌ Không khớp (Kế hoạch bị sửa đổi post-QC)"
+        num_omni = len(info.get("pilot_omni_ids", []))
+        chars_status = "✅ 4/4 Sẵn sàng & Đã duyệt" if info.get("characters_approved") else "❌ Cần phê duyệt đủ 4/4 nhân vật"
         return (
             f"### <span style='color: {color};'>{badge}</span>\n"
-            f"- **Nhân vật Reference:** {'✅ 4/4 Sẵn sàng' if info['characters_ready'] else '❌ Chưa đủ 4 nhân vật'}\n"
-            f"- **Pilot Keyframes Approved:** {info['pilot_keyframes_approved']} (Yêu cầu 8/8)\n"
-            f"- **Pilot Omni Videos Approved:** {info['pilot_videos_approved']} (Yêu cầu 5/5)\n"
-            f"- **Lỗi Semantic nghiêm trọng:** {info['critical_failures']}\n"
-            f"- **Trạng thái:** *{info['reason']}*"
+            f"- **Nhân vật Reference:** {chars_status}\n"
+            f"- **Semantic Hash QC:** {hash_status}\n"
+            f"- **Pilot Keyframes Approved:** {info.get('pilot_keyframes_approved', '0/8')} (Yêu cầu 8/8)\n"
+            f"- **Pilot Omni Videos Approved:** {info.get('pilot_videos_approved', f'0/{num_omni}')} (Yêu cầu {num_omni}/{num_omni})\n"
+            f"- **Lỗi Semantic nghiêm trọng:** {info.get('critical_failures', 0)}\n"
+            f"- **Trạng thái:** *{info.get('reason', '')}*"
         )
 
     def _on_calc_pilot_cost(project_dir_str):
@@ -2262,15 +2369,19 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             plan_data = json.load(f)
         scenes = [VisualScene(**d) for d in plan_data["scenes"]]
         asset_mgr = VisualAssetManager(p_dir)
-        pilot_ids = ["SC_001", "SC_005", "SC_011", "SC_025", "SC_030", "SC_035", "SC_041", "SC_045"]
-        cost = asset_mgr.calculate_batch_credit_cost(scenes, target_scene_ids=pilot_ids)
+        from apps.visual_engine.visual_planner import PILOT_SCENE_IDS
+        cost = asset_mgr.calculate_batch_credit_cost(scenes, target_scene_ids=PILOT_SCENE_IDS)
+        scenes_map = {s.scene_id: s for s in scenes}
+        pilot_omni_scenes = [scenes_map[pid] for pid in PILOT_SCENE_IDS if pid in scenes_map and scenes_map[pid].visual_type in ("OMNI_FLASH_I2V", "VEO_I2V")]
+        omni_desc = ", ".join([f"{s.scene_id} ({s.video_duration_sec}s)" for s in pilot_omni_scenes])
+        total_omni_s = sum(s.video_duration_sec or 0 for s in pilot_omni_scenes)
         return (
-            f"### 💰 Dự tính Credits cho Pilot Review\n"
-            f"- **Scenes Pilot:** 8 scenes ({', '.join(pilot_ids)})\n"
-            f"- **Banana Pro Keyframes:** {cost['banana_requests']} requests\n"
-            f"- **Omni 1.1 Flash Videos:** {cost['omni_requests']} requests (SC_001, SC_025, SC_035, SC_041, SC_045)\n"
+            f"### 💰 Dự tính Credits cho Pilot Review (Section 27)\n"
+            f"- **Scenes Pilot:** 8 scenes ({', '.join(PILOT_SCENE_IDS)})\n"
+            f"- **Banana Pro Keyframes:** {cost['banana_requests']} requests (8 keyframes)\n"
+            f"- **Omni 1.1 Flash Videos:** {cost['omni_requests']} requests ({omni_desc}) — Tổng {total_omni_s}s video\n"
             f"- **Tổng Requests dự kiến:** {cost['total_requests']}\n"
-            f"*Xác nhận: Bấm nút 'Sinh 8 Pilot Keyframes' hoặc 'Sinh 5 Pilot Videos' để bắt đầu.*"
+            f"*Xác nhận: Bấm nút 'Sinh 8 Pilot Keyframes' hoặc 'Sinh {cost['omni_requests']} Pilot Videos' để bắt đầu.*"
         )
 
     c["btn_calc_pilot_cost"].click(
@@ -2292,12 +2403,19 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         preset = load_visual_preset("sau_canh_cua")
         char_lib = load_character_library()
         asset_mgr = VisualAssetManager(p_dir)
+
+        # Gatekeeper: Character Approval Gate
+        pilot_unlocked, pilot_gate_info = asset_mgr.is_pilot_generation_unlocked(char_lib)
+        if not pilot_unlocked:
+            gate_md = _render_pilot_gate_status_md(asset_mgr, p_dir)
+            return f"🔒 KHÓA PILOT GENERATION: {pilot_gate_info['reason']}", gr.update(), gr.update(), gate_md
+
         resolved_pid = resolve_flow_project_id(
             ui_project_id=custom_pid, visual_preset=preset, adapter_default=flow_adapter.default_project_id
         )
         banana_client = BananaClient(flow_adapter, asset_mgr, char_lib, preset=preset)
-        pilot_ids = set(["SC_001", "SC_005", "SC_011", "SC_025", "SC_030", "SC_035", "SC_041", "SC_045"])
-        pilot_scenes = [s for s in scenes if s.scene_id in pilot_ids]
+        from apps.visual_engine.visual_planner import PILOT_SCENE_IDS
+        pilot_scenes = [s for s in scenes if s.scene_id in PILOT_SCENE_IDS]
 
         success_count = 0
         for sc in pilot_scenes:
@@ -2307,7 +2425,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
 
         table_rows = _build_scenes_table_data(scenes, asset_mgr)
         progress_md = _render_visual_progress_md(asset_mgr)
-        gate_md = _render_pilot_gate_status_md(asset_mgr)
+        gate_md = _render_pilot_gate_status_md(asset_mgr, p_dir)
         status_log = f"🎨 Đã sinh {success_count}/{len(pilot_scenes)} Pilot Keyframes trên Flow `{resolved_pid}`. Trạng thái hiện tại: AWAITING_QC (cần người dùng phê duyệt)."
         return status_log, progress_md, table_rows, gate_md
 
@@ -2338,8 +2456,11 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
             flow_adapter, asset_mgr, model_family=resolved_model, duration_s=resolved_duration, preset=preset
         )
 
-        pilot_omni_ids = set(["SC_001", "SC_025", "SC_035", "SC_041", "SC_045"])
-        pilot_omni_scenes = [s for s in scenes if s.scene_id in pilot_omni_ids]
+        from apps.visual_engine.visual_planner import PILOT_SCENE_IDS
+        pilot_omni_scenes = [
+            s for s in scenes
+            if s.scene_id in PILOT_SCENE_IDS and s.visual_type in ("OMNI_FLASH_I2V", "VEO_I2V")
+        ]
         success_count = 0
         err_msgs = []
         for sc in pilot_omni_scenes:
@@ -2354,8 +2475,9 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
 
         table_rows = _build_scenes_table_data(scenes, asset_mgr)
         progress_md = _render_visual_progress_md(asset_mgr)
-        gate_md = _render_pilot_gate_status_md(asset_mgr)
-        status_log = f"🎥 Đã xử lý {success_count}/{len(pilot_omni_scenes)} Pilot Videos bằng {ui_model}."
+        gate_md = _render_pilot_gate_status_md(asset_mgr, p_dir)
+        omni_names = ", ".join([s.scene_id for s in pilot_omni_scenes])
+        status_log = f"🎥 Đã xử lý {success_count}/{len(pilot_omni_scenes)} Pilot Videos bằng {ui_model} ({omni_names})."
         if err_msgs:
             status_log += f" Lỗi: {'; '.join(err_msgs[:2])}"
         return status_log, progress_md, table_rows, gate_md
@@ -2369,8 +2491,9 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
     def _on_refresh_pilot_status(project_dir_str):
         if not project_dir_str:
             return "⚠️ Chưa tải dự án."
-        asset_mgr = VisualAssetManager(Path(project_dir_str))
-        return _render_pilot_gate_status_md(asset_mgr)
+        p_dir = Path(project_dir_str)
+        asset_mgr = VisualAssetManager(p_dir)
+        return _render_pilot_gate_status_md(asset_mgr, p_dir)
 
     c["btn_refresh_pilot_status"].click(
         fn=_on_refresh_pilot_status,
@@ -2380,10 +2503,37 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
 
     def _on_load_pilot_scene(project_dir_str, scene_id):
         if not project_dir_str or not scene_id:
-            return None, "**Keyframe:** -", None, "**Video:** -", ""
-        asset_mgr = VisualAssetManager(Path(project_dir_str))
+            return None, "**Keyframe:** -", None, "**Video:** -", "", ""
+        p_dir = Path(project_dir_str)
+        asset_mgr = VisualAssetManager(p_dir)
         queue = asset_mgr.load_queue()
         pilot_rep = asset_mgr.load_pilot_qc_status().get("scenes", {}).get(scene_id, {})
+
+        meta_md = ""
+        plan_file = p_dir / "visual/visual_plan.json"
+        if plan_file.exists():
+            try:
+                with open(plan_file, "r", encoding="utf-8") as f:
+                    plan_data = json.load(f)
+                scenes = plan_data.get("scenes", [])
+                target = next((s for s in scenes if s.get("scene_id") == scene_id), None)
+                if target:
+                    dur_str = f" | Video: {target.get('video_duration_sec')}s" if target.get("video_duration_sec") else ""
+                    overlay_str = f"- **Text Overlay:** `{target.get('text_overlay_content')}`\n" if target.get("text_overlay_content") else ""
+                    vis_chars = target.get("visible_characters") or []
+                    ref_ids = [f"{c}_REF_V1" for c in vis_chars]
+                    meta_md = (
+                        f"### 📋 Metadata Scene {scene_id} *(Nguồn: visual_plan.json)*\n"
+                        f"- **Story Beat:** {target.get('story_beat')}\n"
+                        f"- **Nhân vật hiển thị:** {', '.join(vis_chars) or 'None (Object/Environment)'}\n"
+                        f"- **Character Reference:** {', '.join(ref_ids) or 'N/A'}\n"
+                        f"- **Bối cảnh:** `{target.get('location')}` | **Visual Type:** `{target.get('visual_type')}`{dur_str}\n"
+                        f"{overlay_str}"
+                        f"- **Prompt Banana:** *{target.get('image_prompt')}*\n"
+                        f"- **Prompt Motion:** *{target.get('video_prompt') or 'N/A'}*"
+                    )
+            except Exception as e:
+                meta_md = f"⚠️ Lỗi đọc metadata: {e}"
 
         q_item = queue.get(scene_id)
         img_p = asset_mgr.images_dir / f"{scene_id}.jpg"
@@ -2405,12 +2555,17 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         vid_md = f"**Status:** {vid_st} | **QC:** `{vid_qc}`"
         notes = pilot_rep.get("image_notes") or pilot_rep.get("video_notes") or ""
 
-        return img_val, img_md, vid_val, vid_md, notes
+        return img_val, img_md, vid_val, vid_md, notes, meta_md
 
     c["btn_load_pilot_scene"].click(
         fn=_on_load_pilot_scene,
         inputs=[c["story_project_dir_state"], c["pilot_scene_select_dd"]],
-        outputs=[c["pilot_keyframe_img"], c["pilot_keyframe_status_md"], c["pilot_video_player"], c["pilot_video_status_md"], c["pilot_review_notes_txt"]]
+        outputs=[c["pilot_keyframe_img"], c["pilot_keyframe_status_md"], c["pilot_video_player"], c["pilot_video_status_md"], c["pilot_review_notes_txt"], c["pilot_scene_metadata_md"]]
+    )
+    c["pilot_scene_select_dd"].change(
+        fn=_on_load_pilot_scene,
+        inputs=[c["story_project_dir_state"], c["pilot_scene_select_dd"]],
+        outputs=[c["pilot_keyframe_img"], c["pilot_keyframe_status_md"], c["pilot_video_player"], c["pilot_video_status_md"], c["pilot_review_notes_txt"], c["pilot_scene_metadata_md"]]
     )
 
     def _on_approve_pilot_keyframe(project_dir_str, scene_id, notes):
@@ -2419,7 +2574,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         p_dir = Path(project_dir_str)
         asset_mgr = VisualAssetManager(p_dir)
         record_pilot_qc(asset_mgr, scene_id, "IMAGE", "APPROVED", notes=notes)
-        gate_md = _render_pilot_gate_status_md(asset_mgr)
+        gate_md = _render_pilot_gate_status_md(asset_mgr, p_dir)
         plan_file = p_dir / "visual/visual_plan.json"
         table_rows = gr.update()
         if plan_file.exists():
@@ -2435,7 +2590,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         p_dir = Path(project_dir_str)
         asset_mgr = VisualAssetManager(p_dir)
         record_pilot_qc(asset_mgr, scene_id, "IMAGE", "REJECTED", notes=notes)
-        gate_md = _render_pilot_gate_status_md(asset_mgr)
+        gate_md = _render_pilot_gate_status_md(asset_mgr, p_dir)
         return "**Keyframe QC:** `REJECTED` ❌", gate_md, gr.update()
 
     def _on_approve_pilot_video(project_dir_str, scene_id, notes):
@@ -2444,7 +2599,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         p_dir = Path(project_dir_str)
         asset_mgr = VisualAssetManager(p_dir)
         record_pilot_qc(asset_mgr, scene_id, "VIDEO", "APPROVED", notes=notes)
-        gate_md = _render_pilot_gate_status_md(asset_mgr)
+        gate_md = _render_pilot_gate_status_md(asset_mgr, p_dir)
         plan_file = p_dir / "visual/visual_plan.json"
         table_rows = gr.update()
         if plan_file.exists():
@@ -2460,7 +2615,7 @@ def bind_production_story_events(components: dict, get_tts_engine_fn, get_availa
         p_dir = Path(project_dir_str)
         asset_mgr = VisualAssetManager(p_dir)
         record_pilot_qc(asset_mgr, scene_id, "VIDEO", "REJECTED", notes=notes)
-        gate_md = _render_pilot_gate_status_md(asset_mgr)
+        gate_md = _render_pilot_gate_status_md(asset_mgr, p_dir)
         return "**Video QC:** `REJECTED` ❌", gate_md, gr.update()
 
     c["btn_approve_pilot_keyframe"].click(

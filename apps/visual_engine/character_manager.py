@@ -35,16 +35,27 @@ class CharacterProfile:
     visual_notes: str = ""
     visual_style: str = ""
     references: List[str] = field(default_factory=list)
-    flow_media_ids: Dict[str, str] = field(default_factory=dict)  # ref_filename or project_id -> Google Flow media_id UUID
+    flow_media_ids: Dict[str, str] = field(default_factory=dict)  # ref_filename or project_id -> Google Flow media_id UUID (only verified Flow IDs)
     identity_relation: Optional[Dict[str, Any]] = None  # e.g. {"type": "YOUNGER_VERSION_OF", "character_id": "LAN_ADULT"}
     wardrobes: Dict[str, str] = field(default_factory=dict)  # wardrobe_id -> description
     char_id: str = ""
+    local_reference_id: str = ""
+    flow: Dict[str, Any] = field(default_factory=dict)
+    qc_status: str = "AWAITING_REVIEW"  # "AWAITING_REVIEW" | "APPROVED" | "REJECTED"
 
     def __post_init__(self):
         if not self.id and self.char_id:
             self.id = self.char_id
         elif not self.char_id and self.id:
             self.char_id = self.id
+        if not self.local_reference_id and self.id:
+            self.local_reference_id = f"{self.id}_REF_V1"
+        if not self.flow:
+            self.flow = {
+                "project_id": "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e",
+                "media_id": None,
+                "upload_status": "LOCAL_ONLY"
+            }
 
 
 @dataclass
@@ -82,6 +93,11 @@ def load_character_library(base_dir: Path = CHARACTER_LIB_DIR) -> Dict[str, Char
                 with open(json_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 char_id = data.get("id") or char_dir.name
+                flow_data = data.get("flow") or {
+                    "project_id": "b36fca1c-4d91-49eb-a7f7-5c3b7dd1598e",
+                    "media_id": None,
+                    "upload_status": "LOCAL_ONLY"
+                }
                 characters[char_id] = CharacterProfile(
                     id=char_id,
                     name=data.get("name", char_id),
@@ -98,7 +114,10 @@ def load_character_library(base_dir: Path = CHARACTER_LIB_DIR) -> Dict[str, Char
                     references=data.get("references", []),
                     flow_media_ids=data.get("flow_media_ids", {}),
                     identity_relation=data.get("identity_relation"),
-                    wardrobes=data.get("wardrobes", {})
+                    wardrobes=data.get("wardrobes", {}),
+                    local_reference_id=data.get("local_reference_id", f"{char_id}_REF_V1"),
+                    flow=flow_data,
+                    qc_status=data.get("qc_status", "AWAITING_REVIEW")
                 )
             except Exception as e:
                 logger.error(f"Error loading character {json_file}: {e}")
@@ -115,6 +134,17 @@ def save_character(profile: CharacterProfile, base_dir: Path = CHARACTER_LIB_DIR
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     return json_path
+
+
+def set_character_qc_status(char_id: str, status: str, base_dir: Path = CHARACTER_LIB_DIR) -> Optional[CharacterProfile]:
+    """Sets QC/approval status for a character profile ("APPROVED", "REJECTED", "AWAITING_REVIEW")."""
+    chars = load_character_library(base_dir)
+    profile = chars.get(char_id)
+    if profile:
+        profile.qc_status = status
+        save_character(profile, base_dir)
+        return profile
+    return None
 
 
 def delete_character(char_id: str, base_dir: Path = CHARACTER_LIB_DIR) -> bool:

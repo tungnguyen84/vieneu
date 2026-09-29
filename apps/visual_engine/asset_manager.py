@@ -292,6 +292,81 @@ class VisualAssetManager:
         with open(qc_file, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
 
+    def is_pilot_generation_unlocked(
+        self,
+        character_lib: Dict[str, Any]
+    ) -> Tuple[bool, Dict[str, Any]]:
+        """Strict lock gate for Pilot Keyframe Generation (Phase 3.1).
+        Unlock ONLY when:
+        - 4/4 required characters (LAN_ADULT, HUNG, UNCLE, LAN_YOUNG) have references on disk
+        - 4/4 required characters have been reviewed & APPROVED by user (qc_status == 'APPROVED')
+        - visual_plan.json semantic hash is valid and matches plan scenes on disk
+        """
+        from apps.visual_engine.character_manager import CHARACTER_LIB_DIR
+        from apps.visual_engine.visual_planner import compute_visual_plan_semantic_hash
+
+        required_chars = ["LAN_ADULT", "HUNG", "UNCLE", "LAN_YOUNG"]
+        missing_chars = []
+        missing_refs = []
+        unapproved_chars = []
+
+        for cid in required_chars:
+            char = character_lib.get(cid)
+            if not char:
+                missing_chars.append(cid)
+                continue
+            refs = getattr(char, "references", []) or []
+            char_dir = CHARACTER_LIB_DIR / cid
+            ref_exists = any((char_dir / rf).exists() and (char_dir / rf).stat().st_size > 0 for rf in refs)
+            if not ref_exists:
+                missing_refs.append(cid)
+            qc_stat = getattr(char, "qc_status", "AWAITING_REVIEW")
+            if qc_stat != "APPROVED":
+                unapproved_chars.append(f"{cid} ({qc_stat})")
+
+        # Semantic hash check
+        plan_file = self.visual_dir / "visual_plan.json"
+        semantic_hash_ok = True
+        hash_err = None
+        if plan_file.exists():
+            try:
+                with open(plan_file, "r", encoding="utf-8") as f:
+                    plan_data = json.load(f)
+                stored_hash = plan_data.get("semantic_hash")
+                computed_hash = compute_visual_plan_semantic_hash(plan_data.get("scenes", []))
+                if not stored_hash or stored_hash != computed_hash:
+                    semantic_hash_ok = False
+                    hash_err = "Semantic hash mismatch: visual_plan.json has been modified post-QC."
+            except Exception as e:
+                semantic_hash_ok = False
+                hash_err = f"Failed to verify semantic hash: {e}"
+
+        unlocked = (
+            len(missing_chars) == 0
+            and len(missing_refs) == 0
+            and len(unapproved_chars) == 0
+            and semantic_hash_ok
+        )
+
+        status_info = {
+            "pilot_generation_unlocked": unlocked,
+            "characters_ready": len(missing_chars) == 0 and len(missing_refs) == 0,
+            "characters_approved": len(unapproved_chars) == 0,
+            "unapproved_characters": unapproved_chars,
+            "semantic_hash_valid": semantic_hash_ok,
+            "semantic_hash_error": hash_err,
+            "reason": (
+                "Ready for Pilot Generation."
+                if unlocked
+                else (
+                    hash_err
+                    if not semantic_hash_ok
+                    else f"Character approval pending: {', '.join(unapproved_chars)} must be approved first."
+                )
+            )
+        }
+        return unlocked, status_info
+
     def is_full_generation_unlocked(
         self,
         scenes: List[Any],
@@ -299,58 +374,104 @@ class VisualAssetManager:
     ) -> Tuple[bool, Dict[str, Any]]:
         """Strict lock gate for Generate All (Section 30).
         Unlock ONLY when:
-        - all required character references ready
+        - all required character references ready & approved
+        - visual_plan.json semantic hash matches
         - 8/8 pilot keyframes reviewed & approved
-        - all required pilot Omni clips reviewed & approved
+        - all required pilot Omni clips reviewed & approved (dynamically computed from visual plan)
         - 0 critical semantic failure
         """
-        pilot_ids = ["SC_001", "SC_005", "SC_011", "SC_025", "SC_030", "SC_035", "SC_041", "SC_045"]
-        pilot_omni_ids = ["SC_001", "SC_025", "SC_035", "SC_041", "SC_045"]
+        from apps.visual_engine.visual_planner import PILOT_SCENE_IDS, compute_visual_plan_semantic_hash
 
         queue = self.load_queue()
         pilot_report = self.load_pilot_qc_status()
 
-        # 1. Required character references
+        # Dynamic derivation of Omni pilot scenes from input scenes
+        scene_map = {getattr(s, "scene_id", None) or s.get("scene_id"): s for s in scenes}
+        pilot_omni_ids = [
+            pid for pid in PILOT_SCENE_IDS
+            if pid in scene_map and (getattr(scene_map[pid], "visual_type", None) or scene_map[pid].get("visual_type")) in ("OMNI_FLASH_I2V", "VEO_I2V")
+        ]
+
+        # 1. Semantic hash check
+        plan_file = self.visual_dir / "visual_plan.json"
+        semantic_hash_ok = True
+        hash_err = None
+        if plan_file.exists():
+            try:
+                with open(plan_file, "r", encoding="utf-8") as f:
+                    plan_data = json.load(f)
+                stored_hash = plan_data.get("semantic_hash")
+                computed_hash = compute_visual_plan_semantic_hash(plan_data.get("scenes", []))
+                if not stored_hash or stored_hash != computed_hash:
+                    semantic_hash_ok = False
+                    hash_err = "Semantic hash mismatch: visual_plan.json has been modified post-QC."
+            except Exception as e:
+                semantic_hash_ok = False
+                hash_err = f"Failed to verify semantic hash: {e}"
+
+        # 2. Required character references & approval
         required_chars = ["LAN_ADULT", "HUNG", "UNCLE", "LAN_YOUNG"]
         chars_ready = all(
             cid in character_lib and getattr(character_lib[cid], "references", None)
             for cid in required_chars
         )
+        chars_approved = all(
+            cid in character_lib and getattr(character_lib[cid], "qc_status", "") == "APPROVED"
+            for cid in required_chars
+        )
 
-        # 2. Pilot keyframes reviewed & approved
+        # 3. Pilot keyframes reviewed & approved
         pilot_keyframes_approved = 0
-        for pid in pilot_ids:
+        for pid in PILOT_SCENE_IDS:
             item = queue.get(pid)
             if item and item.image_qc_status == "APPROVED":
                 pilot_keyframes_approved += 1
 
-        # 3. Pilot Omni videos reviewed & approved
+        # 4. Pilot Omni videos reviewed & approved
         pilot_videos_approved = 0
         for pid in pilot_omni_ids:
             item = queue.get(pid)
             if item and item.video_qc_status == "APPROVED":
                 pilot_videos_approved += 1
 
-        # 4. Critical semantic failures
+        # 5. Critical semantic failures
         critical_failures = 0
         for pid, data in pilot_report.get("scenes", {}).items():
             if data.get("status") == "FAILED" or data.get("critical_failure"):
                 critical_failures += 1
 
         unlocked = (
-            chars_ready
-            and (pilot_keyframes_approved == len(pilot_ids))
+            semantic_hash_ok
+            and chars_ready
+            and chars_approved
+            and (pilot_keyframes_approved == len(PILOT_SCENE_IDS))
             and (pilot_videos_approved == len(pilot_omni_ids))
             and (critical_failures == 0)
         )
 
+        if not semantic_hash_ok:
+            reason = hash_err
+        elif not chars_approved:
+            reason = "Character review pending: All 4 character references must be approved."
+        elif pilot_keyframes_approved < len(PILOT_SCENE_IDS):
+            reason = f"Pilot review pending: Approve all {len(PILOT_SCENE_IDS)} pilot keyframes first ({pilot_keyframes_approved}/{len(PILOT_SCENE_IDS)})."
+        elif pilot_videos_approved < len(pilot_omni_ids):
+            reason = f"Pilot video review pending: Approve all {len(pilot_omni_ids)} pilot Omni videos first ({pilot_videos_approved}/{len(pilot_omni_ids)})."
+        elif critical_failures > 0:
+            reason = f"Critical semantic failures detected in pilot QC: {critical_failures} issues."
+        else:
+            reason = "Ready"
+
         status_info = {
             "full_generation_unlocked": unlocked,
+            "semantic_hash_valid": semantic_hash_ok,
             "characters_ready": chars_ready,
-            "pilot_keyframes_approved": f"{pilot_keyframes_approved}/{len(pilot_ids)}",
+            "characters_approved": chars_approved,
+            "pilot_keyframes_approved": f"{pilot_keyframes_approved}/{len(PILOT_SCENE_IDS)}",
             "pilot_videos_approved": f"{pilot_videos_approved}/{len(pilot_omni_ids)}",
+            "pilot_omni_ids": pilot_omni_ids,
             "critical_failures": critical_failures,
-            "reason": "Ready" if unlocked else "Pilot review pending: Approve all 8 pilot keyframes and 5 pilot videos first."
+            "reason": reason
         }
         return unlocked, status_info
 

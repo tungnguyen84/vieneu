@@ -377,34 +377,201 @@ def test_generated_audio_not_used_by_final_renderer(temp_project):
 
 def test_full_generation_locked_before_pilot_approval(temp_project):
     """12. Strict lock gate for Generate All (Section 30).
-    Locked until 8 pilot keyframes and 5 pilot videos are approved.
+    Locked until 8 pilot keyframes and dynamically resolved pilot videos are approved.
     """
     asset_mgr = VisualAssetManager(temp_project)
-    char_lib = load_character_library()
+    # Character profiles with APPROVED status
+    char_lib = {
+        cid: CharacterProfile(
+            char_id=cid,
+            name=cid,
+            references=["ref_portrait.png"],
+            qc_status="APPROVED"
+        )
+        for cid in ["LAN_ADULT", "HUNG", "UNCLE", "LAN_YOUNG"]
+    }
+
+    # Create dummy reference files on disk
+    from apps.visual_engine.character_manager import CHARACTER_LIB_DIR
+    for cid in char_lib:
+        cdir = CHARACTER_LIB_DIR / cid
+        cdir.mkdir(parents=True, exist_ok=True)
+        (cdir / "ref_portrait.png").write_bytes(b"dummy")
+
+    scenes = [
+        VisualScene(scene_id="SC_001", visual_type="OMNI_FLASH_I2V", video_duration_sec=4),
+        VisualScene(scene_id="SC_005", visual_type="OMNI_FLASH_I2V", video_duration_sec=8),
+        VisualScene(scene_id="SC_011", visual_type="OMNI_FLASH_I2V", video_duration_sec=8),
+        VisualScene(scene_id="SC_025", visual_type="BANANA_IMAGE"),
+        VisualScene(scene_id="SC_030", visual_type="OMNI_FLASH_I2V", video_duration_sec=6),
+        VisualScene(scene_id="SC_035", visual_type="BANANA_IMAGE"),
+        VisualScene(scene_id="SC_041", visual_type="BANANA_IMAGE"),
+        VisualScene(scene_id="SC_045", visual_type="BANANA_IMAGE"),
+    ]
 
     pilot_ids = ["SC_001", "SC_005", "SC_011", "SC_025", "SC_030", "SC_035", "SC_041", "SC_045"]
-    pilot_omni_ids = ["SC_001", "SC_025", "SC_035", "SC_041", "SC_045"]
+    pilot_omni_ids = ["SC_001", "SC_005", "SC_011", "SC_030"]
 
     # Initially empty queue -> locked!
-    unlocked, info = asset_mgr.is_full_generation_unlocked([], char_lib)
+    unlocked, info = asset_mgr.is_full_generation_unlocked(scenes, char_lib)
     assert not unlocked
     assert "Pilot review pending" in info["reason"]
+    assert info["pilot_omni_ids"] == pilot_omni_ids
 
     # Approve 8 keyframes but 0 videos -> still locked
     for pid in pilot_ids:
         asset_mgr.update_queue_item(pid, image_status="DONE", image_qc_status="APPROVED")
-    unlocked, info = asset_mgr.is_full_generation_unlocked([], char_lib)
+    unlocked, info = asset_mgr.is_full_generation_unlocked(scenes, char_lib)
     assert not unlocked
 
-    # Approve only 4 of 5 omni videos -> still locked
+    # Approve only 3 of 4 omni videos -> still locked
     for pid in pilot_omni_ids[:-1]:
         asset_mgr.update_queue_item(pid, video_status="DONE", video_qc_status="APPROVED")
-    unlocked, info = asset_mgr.is_full_generation_unlocked([], char_lib)
+    unlocked, info = asset_mgr.is_full_generation_unlocked(scenes, char_lib)
     assert not unlocked
 
-    # Approve the 5th omni video -> UNLOCKED!
+    # Approve the 4th omni video -> UNLOCKED!
     asset_mgr.update_queue_item(pilot_omni_ids[-1], video_status="DONE", video_qc_status="APPROVED")
-    unlocked, info = asset_mgr.is_full_generation_unlocked([], char_lib)
+    unlocked, info = asset_mgr.is_full_generation_unlocked(scenes, char_lib)
     assert unlocked
     assert info["full_generation_unlocked"] is True
     assert info["reason"] == "Ready"
+
+
+def test_pilot_metadata_loaded_from_visual_plan():
+    """13. Pilot source-of-truth test (Phase 3.1):
+    All metadata MUST be loaded directly from visual/visual_plan.json.
+    """
+    plan_path = REPO_ROOT / "projects/sau_canh_cua_-_episode_01_v9_1_master_reference/visual/visual_plan.json"
+    assert plan_path.exists(), f"Missing visual_plan.json at {plan_path}"
+
+    with open(plan_path, "r", encoding="utf-8") as f:
+        plan = json.load(f)
+
+    scenes_by_id = {s["scene_id"]: s for s in plan.get("scenes", [])}
+
+    # Verify all 8 pilot scene IDs are present
+    for pid in PILOT_SCENE_IDS:
+        assert pid in scenes_by_id, f"Pilot scene {pid} missing from visual_plan.json"
+        s = scenes_by_id[pid]
+        assert s.get("story_beat"), f"{pid} has empty story_beat"
+        assert s.get("location"), f"{pid} has empty location"
+        assert s.get("visual_type") in ("BANANA_IMAGE", "OMNI_FLASH_I2V"), f"{pid} invalid visual_type"
+        assert s.get("image_prompt"), f"{pid} has empty image_prompt"
+
+    # Dynamic Omni count in pilot must be exactly 4 (SC_001, SC_005, SC_011, SC_030), total 26s
+    pilot_omni_scenes = [scenes_by_id[pid] for pid in PILOT_SCENE_IDS if scenes_by_id[pid].get("visual_type") == "OMNI_FLASH_I2V"]
+    assert len(pilot_omni_scenes) == 4
+    assert [s["scene_id"] for s in pilot_omni_scenes] == ["SC_001", "SC_005", "SC_011", "SC_030"]
+    total_omni_sec = sum(s.get("video_duration_sec", 0) for s in pilot_omni_scenes)
+    assert total_omni_sec == 26
+
+    # Verify SC_030 Archive Office death record 14 years ago
+    sc_030 = scenes_by_id["SC_030"]
+    assert sc_030["location"] == "ARCHIVE_OFFICE"
+    assert sc_030["visible_characters"] == ["HUNG", "LAN_ADULT"]
+    assert sc_030["visual_type"] == "OMNI_FLASH_I2V"
+    assert sc_030["video_duration_sec"] == 6
+    assert "14 năm trước" in sc_030["text_overlay_content"]
+
+    # Verify SC_041 Climax at Lan Home
+    sc_041 = scenes_by_id["SC_041"]
+    assert sc_041["location"] == "LAN_HOME"
+    assert sc_041["visible_characters"] == ["HUNG", "LAN_ADULT"]
+    assert sc_041["visual_type"] == "BANANA_IMAGE"
+
+    # Verify SC_001 Lan Bedroom Bank Transfer overlay
+    sc_001 = scenes_by_id["SC_001"]
+    assert sc_001["location"] == "LAN_BEDROOM"
+    assert sc_001["visible_characters"] == ["LAN_ADULT"]
+    assert sc_001["visual_type"] == "OMNI_FLASH_I2V"
+    assert sc_001["video_duration_sec"] == 4
+    assert "-5.000.000 VND" in sc_001["text_overlay_content"]
+
+    # Verify SC_005 Lan Young flashback at Lan Home
+    sc_005 = scenes_by_id["SC_005"]
+    assert sc_005["location"] == "LAN_HOME"
+    assert sc_005["visible_characters"] == ["LAN_YOUNG"]
+    assert sc_005["visual_type"] == "OMNI_FLASH_I2V"
+    assert sc_005["video_duration_sec"] == 8
+
+
+def test_pilot_generation_gate_character_approval(temp_project):
+    """14. Pilot generation is locked until all 4 characters are approved."""
+    asset_mgr = VisualAssetManager(temp_project)
+
+    # Characters with AWAITING_REVIEW
+    char_lib = {
+        cid: CharacterProfile(
+            char_id=cid,
+            name=cid,
+            references=["ref_portrait.png"],
+            qc_status="AWAITING_REVIEW"
+        )
+        for cid in ["LAN_ADULT", "HUNG", "UNCLE", "LAN_YOUNG"]
+    }
+
+    # Initially locked because characters are unapproved
+    unlocked, info = asset_mgr.is_pilot_generation_unlocked(char_lib)
+    assert not unlocked
+    assert info["characters_approved"] is False
+    assert len(info["unapproved_characters"]) == 4
+
+    # Approve 3 of 4 -> still locked
+    for cid in ["LAN_ADULT", "HUNG", "UNCLE"]:
+        char_lib[cid].qc_status = "APPROVED"
+    unlocked, info = asset_mgr.is_pilot_generation_unlocked(char_lib)
+    assert not unlocked
+    assert len(info["unapproved_characters"]) == 1
+
+    # Approve all 4 -> UNLOCKED
+    char_lib["LAN_YOUNG"].qc_status = "APPROVED"
+    unlocked, info = asset_mgr.is_pilot_generation_unlocked(char_lib)
+    assert unlocked
+    assert info["pilot_generation_unlocked"] is True
+    assert info["reason"] == "Ready for Pilot Generation."
+
+
+def test_semantic_hash_tamper_protection(temp_project):
+    """15. Generation gates are locked if visual_plan.json is modified post-QC."""
+    asset_mgr = VisualAssetManager(temp_project)
+    from apps.visual_engine.visual_planner import compute_visual_plan_semantic_hash
+
+    char_lib = {
+        cid: CharacterProfile(
+            char_id=cid,
+            name=cid,
+            references=["ref_portrait.png"],
+            qc_status="APPROVED"
+        )
+        for cid in ["LAN_ADULT", "HUNG", "UNCLE", "LAN_YOUNG"]
+    }
+
+    scenes = [
+        {"scene_id": "SC_001", "story_beat": "Intro", "visual_type": "BANANA_IMAGE", "location": "LAN_BEDROOM"}
+    ]
+    correct_hash = compute_visual_plan_semantic_hash(scenes)
+
+    plan_file = temp_project / "visual/visual_plan.json"
+    plan_data = {"scenes": scenes, "semantic_hash": correct_hash}
+    with open(plan_file, "w", encoding="utf-8") as f:
+        json.dump(plan_data, f)
+
+    # Valid hash -> unlocked
+    unlocked, info = asset_mgr.is_pilot_generation_unlocked(char_lib)
+    assert unlocked
+    assert info["semantic_hash_valid"] is True
+
+    # Tamper with scene content without recomputing hash
+    tampered_scenes = [
+        {"scene_id": "SC_001", "story_beat": "Altered beat", "visual_type": "BANANA_IMAGE", "location": "LAN_BEDROOM"}
+    ]
+    tampered_data = {"scenes": tampered_scenes, "semantic_hash": correct_hash}
+    with open(plan_file, "w", encoding="utf-8") as f:
+        json.dump(tampered_data, f)
+
+    # Tampered plan -> gate must immediately lock!
+    unlocked, info = asset_mgr.is_pilot_generation_unlocked(char_lib)
+    assert not unlocked
+    assert info["semantic_hash_valid"] is False
+    assert "Semantic hash mismatch" in info["reason"]
