@@ -1,0 +1,38 @@
+{
+  "audited_episodes": [
+    "IDEA_003",
+    "IDEA_005",
+    "IDEA_011",
+    "IDEA_018",
+    "IDEA_021"
+  ],
+  "character_name_consistency": "PASS",
+  "unmarked_first_person": "PASS",
+  "no_op_editorial_changes": "PASS",
+  "reveal_consistency": "PASS",
+  "timeline_consistency": "PASS",
+  "tts_readiness": "PASS",
+  "episode_comparisons": {
+    "unmarked_first_person_counts": {
+      "IDEA_003": 0,
+      "IDEA_005": 0,
+      "IDEA_011": 0,
+      "IDEA_018": 0,
+      "IDEA_021": 0
+    },
+    "no_op_edits_counts": {
+      "IDEA_003": 0,
+      "IDEA_005": 0,
+      "IDEA_011": 0,
+      "IDEA_018": 0,
+      "IDEA_021": 0
+    },
+    "stale_minh_references": {
+      "IDEA_003": 0,
+      "IDEA_005": 0,
+      "IDEA_011": 0,
+      "IDEA_018": 0,
+      "IDEA_021": 0
+    }
+  }
+}

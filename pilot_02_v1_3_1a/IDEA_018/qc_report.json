@@ -1,0 +1,13 @@
+{
+  "episode_id": "EP018",
+  "idea_id": "IDEA_018",
+  "status": "PASS",
+  "script_status": "AWAITING_USER_SCRIPT_REVIEW",
+  "production_readiness": "NEEDS_HUMAN_SCRIPT_REVIEW",
+  "total_issues": 0,
+  "blockers_count": 0,
+  "fails_count": 0,
+  "warns_count": 0,
+  "issues": [],
+  "checked_at": 1790686308.8868942
+}

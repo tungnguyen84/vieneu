@@ -1,0 +1,73 @@
+{
+  "episode_id": "EP021",
+  "total_segments": 90,
+  "rules": [
+    {
+      "fact_id": "FACT_001",
+      "fact_type": "SETUP",
+      "field": "timeline_years",
+      "description": "Thời gian cuộc hôn nhân không tình yêu kéo dài",
+      "target_value": "30 năm",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_002",
+      "fact_type": "SETUP",
+      "field": "relationship_nature",
+      "description": "Mối quan hệ cốt lõi thúc đẩy câu chuyện tiến triển",
+      "target_value": "Con gái và mẹ",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Mối"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_003",
+      "fact_type": "SETUP",
+      "field": "evidence_origin",
+      "description": "Nguồn gốc xác thực của vật chứng dẫn đến sự thật",
+      "target_value": "Tài khoản mạng xã hội ẩn danh và cuốn sổ phác thảo cũ",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Nguồn",
+        "Tài"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_004",
+      "fact_type": "REVEAL_1",
+      "field": "reveal_1_truth",
+      "description": "Nội dung cốt lõi của Bước ngoặt 1",
+      "target_value": "Tài khoản mạng xã hội là không gian nghệ thuật bí mật của mẹ",
+      "earliest_allowed_segment": 61,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 61,
+      "key_entities": [
+        "Tài"
+      ],
+      "sensitivity_level": "CRITICAL"
+    },
+    {
+      "fact_id": "FACT_005",
+      "fact_type": "REVEAL_2",
+      "field": "reveal_2_truth",
+      "description": "Nội dung gốc rễ của Bước ngoặt 2",
+      "target_value": "Sự vô tâm lâu năm của gia đình đã biến mẹ thành bóng ma trong chính ngôi nhà",
+      "earliest_allowed_segment": 76,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 76,
+      "key_entities": [],
+      "sensitivity_level": "CRITICAL"
+    }
+  ]
+}

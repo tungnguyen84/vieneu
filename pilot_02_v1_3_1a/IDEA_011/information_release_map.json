@@ -1,0 +1,131 @@
+{
+  "episode_id": "EP011",
+  "total_segments": 90,
+  "rules": [
+    {
+      "fact_id": "FACT_001",
+      "fact_type": "SETUP",
+      "field": "timeline_years",
+      "description": "Khoảng thời gian Nam bí mật chu cấp và chăm sóc bé An.",
+      "target_value": "10 năm",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Khoảng",
+        "Nam"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_002",
+      "fact_type": "SETUP",
+      "field": "relationship_nature",
+      "description": "Mối quan hệ chính xác giữa các nhân vật liên quan đến bí mật.",
+      "target_value": "Vợ chồng (Linh và Nam), Chú - Cháu gái (Nam và An), Em gái họ (Nam và Thảo)",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Mối",
+        "Linh",
+        "Nam",
+        "Thảo"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_003",
+      "fact_type": "SETUP",
+      "field": "evidence_origin",
+      "description": "Nguồn gốc xác thực của vật chứng chính dẫn đến bí mật.",
+      "target_value": "Điện thoại Nokia cũ của Nam (2012) và hộp kỷ vật cá nhân của Nam.",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Nguồn",
+        "Điện",
+        "Nokia",
+        "Nam"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_004",
+      "fact_type": "REVEAL_1",
+      "field": "reveal_1_truth",
+      "description": "Nội dung cốt lõi của Bước ngoặt 1: Xác định thân phận người phụ nữ và mối quan hệ.",
+      "target_value": "Người phụ nữ trong ảnh là Thảo, em gái họ của Nam, đã mất năm 2013 sau khi sinh con gái tên An.",
+      "earliest_allowed_segment": 61,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 61,
+      "key_entities": [
+        "Xác",
+        "Thảo",
+        "Nam"
+      ],
+      "sensitivity_level": "CRITICAL"
+    },
+    {
+      "fact_id": "FACT_005",
+      "fact_type": "REVEAL_2",
+      "field": "reveal_2_truth",
+      "description": "Nội dung gốc rễ của Bước ngoặt 2: Giải thích lý do Nam che giấu và bản chất thực sự của sự việc.",
+      "target_value": "Nam không phải cha ruột của An. Anh đã bí mật nhận nuôi và chu cấp cho An sau khi Thảo qua đời, giấu Linh vì lý do tài chính và tâm lý.",
+      "earliest_allowed_segment": 76,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 76,
+      "key_entities": [
+        "Nam",
+        "Thảo",
+        "Linh",
+        "cha ruột"
+      ],
+      "sensitivity_level": "CRITICAL"
+    },
+    {
+      "fact_id": "FACT_006",
+      "fact_type": "SETUP",
+      "field": "birth_year_an",
+      "description": "Năm sinh của bé An.",
+      "target_value": "2013",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Năm"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_007",
+      "fact_type": "SETUP",
+      "field": "death_year_thao",
+      "description": "Năm Thảo qua đời.",
+      "target_value": "2013",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Năm Thảo"
+      ],
+      "sensitivity_level": "LOW"
+    },
+    {
+      "fact_id": "FACT_008",
+      "fact_type": "SETUP",
+      "field": "nam_financial_support_period",
+      "description": "Khoảng thời gian Nam chu cấp tài chính cho An.",
+      "target_value": "Từ 2013 đến nay",
+      "earliest_allowed_segment": 1,
+      "latest_allowed_segment": 90,
+      "forbidden_before_segment": 1,
+      "key_entities": [
+        "Khoảng",
+        "Nam"
+      ],
+      "sensitivity_level": "LOW"
+    }
+  ]
+}

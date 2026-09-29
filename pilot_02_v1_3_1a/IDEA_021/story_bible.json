@@ -1,0 +1,128 @@
+{
+  "episode_id": "EP021",
+  "title": "Tài Khoản Mạng Xã Hội Giấu Kín Của Mẹ",
+  "protagonist": {
+    "name": "Mai",
+    "char_id": "MAI",
+    "age": 32,
+    "role": "Nhân vật chính",
+    "description": "Là một nhân viên truyền thông tại Hà Nội, nhạy cảm, bận rộn với guồng quay công việc nhưng luôn tự hào về gia đình nền nếp và người mẹ tận tụy.",
+    "want": "Làm sáng tỏ những bí ẩn bất thường của mẹ để bảo vệ gia đình khỏi nguy cơ bị lừa đảo hoặc đổ vỡ.",
+    "fear": "Sợ rằng tổ ấm bình yên lâu nay chỉ là vỏ bọc cho một sự thật đau lòng hoặc đổ vỡ không thể cứu vãn.",
+    "misbelief": "Tin rằng sự quan tâm qua vật chất và những bữa cơm gia đình là đủ, và mẹ cô hoàn toàn mãn nguyện với vai trò người nội trợ."
+  },
+  "supporting_characters": [
+    {
+      "name": "Bà Lan",
+      "char_id": "LAN",
+      "role": "Người mẹ / Chủ nhân tài khoản bí mật",
+      "age": 53,
+      "description": "Người phụ nữ tần tảo, luôn chu toàn mọi việc trong nhà, ẩn giấu một tâm hồn nghệ sĩ và sự cô đơn kéo dài ba thập kỷ.",
+      "want": "Có một không gian riêng nhỏ bé để vẽ tranh và trò chuyện với những người thấu hiểu đam mê của mình.",
+      "fear": "Sợ bị phán xét, sợ việc theo đuổi sở thích cá nhân bị coi là ích kỷ trong mắt chồng con.",
+      "reason_for_silence": "Sự im lặng đã trở thành thói quen sau nhiều năm sống trong cuộc hôn nhân sắp đặt, nơi cảm xúc cá nhân không được đặt lên hàng đầu."
+    },
+    {
+      "name": "Ông Hưng",
+      "char_id": "HUNG",
+      "role": "Người bố",
+      "age": 58,
+      "description": "Đàn ông truyền thống, cần mẫn làm ăn, gia trưởng nhưng không ác ý, quen nhìn vợ như một phần cố định và hiển nhiên của ngôi nhà.",
+      "want": "Duy trì sự ổn định, nề nếp gia phong đã gìn giữ bao năm.",
+      "fear": "Sợ sự thay đổi, sợ việc gia đình thiếu đi sự chăm lo chu toàn quen thuộc.",
+      "reason_for_silence": "Sự khô khan và thiếu nhạy cảm trong việc kết nối cảm xúc với vợ."
+    }
+  ],
+  "relationships": [
+    {
+      "char_a": "MAI",
+      "char_b": "LAN",
+      "relationship": "Con gái và mẹ"
+    },
+    {
+      "char_a": "HUNG",
+      "char_b": "LAN",
+      "relationship": "Vợ chồng lâu năm"
+    }
+  ],
+  "timeline": [
+    "Mốc thời gian 1 (1994): Bà Lan kết hôn với ông Hưng theo sự sắp đặt của gia đình hai bên, gác lại ước mơ theo đuổi hội họa.",
+    "Mốc thời gian 2 (2014): Bà Lan lập tài khoản mạng xã hội dưới bút danh 'Mộc Lan' để bắt đầu lưu giữ những bức tranh và tâm sự cá nhân.",
+    "Mốc thời gian 3 (Hiện tại): Mai tình cờ lướt thấy tài khoản của mẹ qua một thuật toán gợi ý kết bạn chung và bắt đầu hành trình điều tra."
+  ],
+  "locations": [
+    "CĂN HỘ CỦA MAI TẠI HÀ NỘI",
+    "NHÀ BỐ MẸ Ở TỈNH",
+    "KHÔNG GIAN ẢO TRÊN MẠNG XÃ HỘI"
+  ],
+  "money_facts": [],
+  "critical_facts": [
+    {
+      "fact_id": "FACT_001",
+      "field": "timeline_years",
+      "value": "30 năm",
+      "description": "Thời gian cuộc hôn nhân không tình yêu kéo dài",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_002",
+      "field": "relationship_nature",
+      "value": "Con gái và mẹ",
+      "description": "Mối quan hệ cốt lõi thúc đẩy câu chuyện tiến triển",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_003",
+      "field": "evidence_origin",
+      "value": "Tài khoản mạng xã hội ẩn danh và cuốn sổ phác thảo cũ",
+      "description": "Nguồn gốc xác thực của vật chứng dẫn đến sự thật",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_004",
+      "field": "reveal_1_truth",
+      "value": "Tài khoản mạng xã hội là không gian nghệ thuật bí mật của mẹ",
+      "description": "Nội dung cốt lõi của Bước ngoặt 1",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_005",
+      "field": "reveal_2_truth",
+      "value": "Sự vô tâm lâu năm của gia đình đã biến mẹ thành bóng ma trong chính ngôi nhà",
+      "description": "Nội dung gốc rễ của Bước ngoặt 2",
+      "status": "LOCKED"
+    }
+  ],
+  "secret": "Bà Lan duy trì tài khoản mạng xã hội ẩn danh 'Mộc Lan' suốt nhiều năm để đăng tranh vẽ màu nước và giãi bày nỗi cô đơn trong cuộc hôn nhân không tình yêu.",
+  "false_lead": "Mai ban đầu nghi ngờ mẹ đang vướng vào một vụ lừa đảo tình cảm qua mạng (romance scam) hoặc có mối quan hệ ngoại hương tuổi xế chiều.",
+  "clues": [
+    "Manh mối 1: Tài khoản ẩn danh 'Mộc Lan' đăng tải những bức tranh tĩnh vật vẽ tay tinh tế kèm dòng chú thích buồn bã về sự cô độc.",
+    "Manh mối 2: Tin nhắn qua lại giữa mẹ và một tài khoản khác thảo luận về kỹ thuật pha màu và lời hẹn gặp tại một buổi triển lãm tranh nhỏ.",
+    "Manh mối 3: Cuốn sổ phác thảo cũ kỹ cất giấu dưới đáy tủ quần áo của mẹ, chứa đầy những bức họa trùng khớp hoàn toàn với nội dung trên mạng."
+  ],
+  "reveal_1": "Bà Lan hoàn toàn không ngoại tình hay bị lừa đảo; tài khoản mạng xã hội đó là 'bình dưỡng khí' tinh thần nơi bà được sống với đam mê hội họa và kết nối với những người bạn đồng điệu.",
+  "reveal_2": "Sự thật sâu xa là cuộc hôn nhân 30 năm không tiếng nói chung đã bào mòn tâm hồn bà. Mai nhận ra chính cô và bố đã vô tình đẩy mẹ vào vai trò một 'người phục vụ' vô hình, ép mẹ phải giấu kín phần hồn nghệ sĩ của mình.",
+  "emotional_payoff": "Mai vỡ lẽ và thấu hiểu chiều sâu tổn thương của mẹ. Cô quyết định đối thoại thẳng thắn với bố, cùng mẹ thiết lập lại không gian sống và sự tôn trọng lẫn nhau trong gia đình.",
+  "reflection_theme": "Trong thời đại số, những bí mật ẩn sau màn hình có thể là tiếng kêu cứu thầm lặng của những tâm hồn khao khát được thấu hiểu, và điều cần thiết nhất không phải là sự phán xét, mà là sự lắng nghe chân thành từ người thân.",
+  "ending": "Không có phép màu hàn gắn tức thì, nhưng ông Hưng bắt đầu học cách quan tâm đến sở thích của vợ, còn bà Lan không phải lén lút sống trong thế giới ảo nữa mà có thể cất tiếng nói ngay trong chính ngôi nhà của mình.",
+  "source_idea_id": "IDEA_021",
+  "time_period": "Hiện tại (2024), nhìn lại dòng thời gian 30 năm hôn nhân từ 1994 đến nay.",
+  "mystery_question": "Tại sao một người mẹ hiền lành, quanh quẩn bếp núc lại có một tài khoản mạng xã hội giấu kín với những tâm sự u hoài và các mối quan hệ lạ?",
+  "narrative_skeleton": {
+    "trigger": "Mai tình cờ phát hiện tài khoản 'Mộc Lan' có những bài đăng đồng điệu đến kỳ lạ với thói quen và nét chữ của mẹ.",
+    "initial_suspicion": "Nghi ngờ mẹ bị lừa đảo tình cảm qua mạng hoặc có người tình lớn tuổi.",
+    "investigation_method": "Theo dõi âm thầm các bài đăng, kiểm tra tin nhắn và tìm kiếm vật chứng thực tế trong nhà.",
+    "evidence_chain": [
+      "Bài đăng tranh vẽ kèm nhật ký u hoài",
+      "Tin nhắn bàn về nghệ thuật với một tài khoản lạ",
+      "Cuốn sổ phác thảo giấu kín dưới đáy tủ"
+    ],
+    "reveal_mechanism": "Mai đối chất trực tiếp với mẹ bằng cuốn sổ phác thảo và tài khoản mạng xã hội.",
+    "second_reveal_mechanism": "Nhìn nhận lại toàn bộ lịch sử gia đình và thái độ vô tâm của bố con cô suốt bao năm qua.",
+    "emotional_resolution": "Buổi nói chuyện ba người giúp buông bỏ định kiến, thiết lập ranh giới lành mạnh và sự tôn trọng tối thiểu cho đời sống tinh thần của mẹ."
+  },
+  "status": "DRAFT",
+  "approved_by": null,
+  "approved_at": null,
+  "last_modified_at": 1790670135.5105839
+}

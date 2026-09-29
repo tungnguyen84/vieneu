@@ -1,0 +1,58 @@
+[
+  {
+    "fact_id": "FACT_001",
+    "field": "timeline_years",
+    "value": "10 năm",
+    "description": "Khoảng thời gian Nam bí mật chu cấp và chăm sóc bé An.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_002",
+    "field": "relationship_nature",
+    "value": "Vợ chồng (Linh và Nam), Chú - Cháu gái (Nam và An), Em gái họ (Nam và Thảo)",
+    "description": "Mối quan hệ chính xác giữa các nhân vật liên quan đến bí mật.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_003",
+    "field": "evidence_origin",
+    "value": "Điện thoại Nokia cũ của Nam (2012) và hộp kỷ vật cá nhân của Nam.",
+    "description": "Nguồn gốc xác thực của vật chứng chính dẫn đến bí mật.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_004",
+    "field": "reveal_1_truth",
+    "value": "Người phụ nữ trong ảnh là Thảo, em gái họ của Nam, đã mất năm 2013 sau khi sinh con gái tên An.",
+    "description": "Nội dung cốt lõi của Bước ngoặt 1: Xác định thân phận người phụ nữ và mối quan hệ.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_005",
+    "field": "reveal_2_truth",
+    "value": "Nam không phải cha ruột của An. Anh đã bí mật nhận nuôi và chu cấp cho An sau khi Thảo qua đời, giấu Linh vì lý do tài chính và tâm lý.",
+    "description": "Nội dung gốc rễ của Bước ngoặt 2: Giải thích lý do Nam che giấu và bản chất thực sự của sự việc.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_006",
+    "field": "birth_year_an",
+    "value": "2013",
+    "description": "Năm sinh của bé An.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_007",
+    "field": "death_year_thao",
+    "value": "2013",
+    "description": "Năm Thảo qua đời.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_008",
+    "field": "nam_financial_support_period",
+    "value": "Từ 2013 đến nay",
+    "description": "Khoảng thời gian Nam chu cấp tài chính cho An.",
+    "status": "LOCKED"
+  }
+]

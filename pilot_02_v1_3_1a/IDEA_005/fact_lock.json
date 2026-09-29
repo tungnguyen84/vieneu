@@ -1,0 +1,72 @@
+[
+  {
+    "fact_id": "FACT_001",
+    "field": "timeline_years",
+    "value": "Khoảng 10-15 năm",
+    "description": "Thời gian ước tính bể chứa dầu thải được chôn ngầm.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_002",
+    "field": "relationship_nature",
+    "value": "Hai chị em ruột (Lan và Tuấn)",
+    "description": "Mối quan hệ chính xác giữa Lan và Tuấn.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_003",
+    "field": "evidence_origin",
+    "value": "Bể chứa dầu thải/hóa chất cơ khí cũ chôn ngầm dưới đất, bị máy xúc của Tuấn làm thủng.",
+    "description": "Nguồn gốc của sự cố rò rỉ.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_004",
+    "field": "reveal_1_truth",
+    "value": "Tuấn vô tình làm thủng bể chứa dầu thải cũ dưới mảnh đất tranh chấp, gây ô nhiễm nguồn nước giếng của hàng xóm.",
+    "description": "Nội dung cốt lõi của Bước ngoặt 1.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_005",
+    "field": "reveal_2_truth",
+    "value": "Tuấn che giấu sự cố vì sợ Lan mất lợi thế tranh chấp, sợ bị phạt và muốn tự mình gánh trách nhiệm.",
+    "description": "Nội dung gốc rễ của Bước ngoặt 2.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_006",
+    "field": "land_size",
+    "value": "1.200 m2",
+    "description": "Diện tích mảnh đất tranh chấp.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_007",
+    "field": "tuan_work",
+    "value": "Thợ làm vườn kiêm thợ cơ khí",
+    "description": "Nghề nghiệp của Tuấn.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_008",
+    "field": "lan_work",
+    "value": "Giáo viên tiểu học",
+    "description": "Nghề nghiệp của Lan.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_009",
+    "field": "location_province",
+    "value": "Hải Dương",
+    "description": "Tỉnh nơi diễn ra sự cố và tranh chấp.",
+    "status": "LOCKED"
+  },
+  {
+    "fact_id": "FACT_010",
+    "field": "neighbor_affected",
+    "value": "Cụ Trâm",
+    "description": "Hàng xóm bị ảnh hưởng trực tiếp bởi ô nhiễm.",
+    "status": "LOCKED"
+  }
+]

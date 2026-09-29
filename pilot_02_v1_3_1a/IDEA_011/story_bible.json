@@ -1,0 +1,173 @@
+{
+  "episode_id": "EP011",
+  "title": "Bức Ảnh Lạ Trong Điện Thoại Cũ",
+  "protagonist": {
+    "name": "Linh",
+    "char_id": "LINH",
+    "age": 32,
+    "role": "Nhân vật chính",
+    "description": "Linh là một người phụ nữ làm công việc văn phòng, có tính cách tỉ mỉ, yêu thương gia đình nhưng đôi khi hơi nhạy cảm và hay suy nghĩ. Cô có một cuộc sống ổn định, êm đềm bên chồng, anh Nam.",
+    "want": "Tìm hiểu sự thật đằng sau bức ảnh bí ẩn để giải tỏa nghi ngờ và bảo vệ hạnh phúc gia đình.",
+    "fear": "Sợ rằng người chồng mà cô hết mực tin tưởng lại có một bí mật động trời, dẫn đến sự đổ vỡ trong hôn nhân.",
+    "misbelief": "Tin rằng Nam có người phụ nữ khác và con riêng, dẫn đến cảm giác bị phản bội và nghi ngờ sâu sắc."
+  },
+  "supporting_characters": [
+    {
+      "name": "Nam",
+      "char_id": "NAM",
+      "role": "Người nắm giữ bí mật",
+      "age": 35,
+      "description": "Nam là một người đàn ông chăm chỉ, có trách nhiệm, làm công việc kỹ thuật đòi hỏi sự tập trung và đôi khi phải đi công tác xa. Anh yêu thương Linh nhưng luôn mang trong mình một gánh nặng và nỗi sợ.",
+      "want": "Bảo vệ Linh khỏi những gánh nặng và sự thật đau lòng, giữ gìn hạnh phúc gia đình mà không muốn Linh phải lo lắng.",
+      "fear": "Sợ Linh sẽ không chấp nhận sự thật về bé An, sợ Linh gánh vác gánh nặng tài chính và tinh thần, sợ đối mặt với quá khứ.",
+      "reason_for_silence": "Muốn bảo vệ Linh khỏi gánh nặng tài chính và tinh thần, giữ sự bình yên cho gia đình, và giữ lời hứa với người đã khuất. Anh mặc cảm về hoàn cảnh khó khăn của bản thân và sợ Linh sẽ phán xét."
+    },
+    {
+      "name": "Thảo",
+      "char_id": "THAO",
+      "role": "Người thân đã khuất",
+      "age": 22,
+      "description": "Em gái họ của Nam, mồ côi mẹ từ nhỏ và được mẹ Nam cưu mang. Thảo có hoàn cảnh khó khăn, sinh con ngoài giá thú và qua đời vì tai biến hậu sản.",
+      "want": "An toàn cho con mình sau khi ra đi.",
+      "fear": "Không có.",
+      "reason_for_silence": "Đã mất."
+    },
+    {
+      "name": "Bé An",
+      "char_id": "AN",
+      "role": "Cháu gái ruột của Nam",
+      "age": 10,
+      "description": "Con gái của Thảo, được Nam đứng ra bảo lãnh và sau đó nhờ gia đình hiếm muộn nhận nuôi hợp pháp. Bé An là trung tâm của bí mật mà Nam che giấu.",
+      "want": "Một cuộc sống bình yên và được yêu thương.",
+      "fear": "Không có.",
+      "reason_for_silence": "Còn quá nhỏ để hiểu và tham gia vào bí mật của người lớn."
+    }
+  ],
+  "relationships": [
+    {
+      "char_a": "LINH",
+      "char_b": "NAM",
+      "relationship": "Vợ chồng"
+    },
+    {
+      "char_a": "NAM",
+      "char_b": "THAO",
+      "relationship": "Anh em họ (Nam là anh họ, coi Thảo như em gái ruột)"
+    },
+    {
+      "char_a": "NAM",
+      "char_b": "AN",
+      "relationship": "Chú - Cháu gái"
+    },
+    {
+      "char_a": "THAO",
+      "char_b": "AN",
+      "relationship": "Mẹ - Con gái"
+    }
+  ],
+  "timeline": [
+    "2012: Nam chụp bức ảnh em gái họ Thảo bế con sơ sinh tại bệnh viện tỉnh Nam Định.",
+    "2013: Thảo qua đời vì tai biến hậu sản. Nam đứng ra lo hậu sự, làm thủ tục bảo lãnh viện phí và tìm gia đình hiếm muộn nhận nuôi bé An.",
+    "Từ 2013 đến 2024: Nam bí mật chu cấp tài chính cho bé An thông qua gia đình nhận nuôi, làm thêm nhiều việc để có tiền, giấu Linh.",
+    "Hiện tại (2024): Linh dọn kho đồ cũ, tìm thấy điện thoại Nokia của Nam từ thời sinh viên, phát hiện bức ảnh lạ."
+  ],
+  "locations": [
+    "NHÀ RIÊNG CỦA LINH VÀ NAM",
+    "KHO CHỨA ĐỒ CŨ",
+    "VĂN PHÒNG CỦA LINH",
+    "BỆNH VIỆN TỈNH NAM ĐỊNH (trong ảnh)",
+    "NHÀ BỐ MẸ NAM (nơi Thảo từng ở)",
+    "NHÀ GIA ĐÌNH NHẬN NUÔI AN"
+  ],
+  "money_facts": [],
+  "critical_facts": [
+    {
+      "fact_id": "FACT_001",
+      "field": "timeline_years",
+      "value": "10 năm",
+      "description": "Khoảng thời gian Nam bí mật chu cấp và chăm sóc bé An.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_002",
+      "field": "relationship_nature",
+      "value": "Vợ chồng (Linh và Nam), Chú - Cháu gái (Nam và An), Em gái họ (Nam và Thảo)",
+      "description": "Mối quan hệ chính xác giữa các nhân vật liên quan đến bí mật.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_003",
+      "field": "evidence_origin",
+      "value": "Điện thoại Nokia cũ của Nam (2012) và hộp kỷ vật cá nhân của Nam.",
+      "description": "Nguồn gốc xác thực của vật chứng chính dẫn đến bí mật.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_004",
+      "field": "reveal_1_truth",
+      "value": "Người phụ nữ trong ảnh là Thảo, em gái họ của Nam, đã mất năm 2013 sau khi sinh con gái tên An.",
+      "description": "Nội dung cốt lõi của Bước ngoặt 1: Xác định thân phận người phụ nữ và mối quan hệ.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_005",
+      "field": "reveal_2_truth",
+      "value": "Nam không phải cha ruột của An. Anh đã bí mật nhận nuôi và chu cấp cho An sau khi Thảo qua đời, giấu Linh vì lý do tài chính và tâm lý.",
+      "description": "Nội dung gốc rễ của Bước ngoặt 2: Giải thích lý do Nam che giấu và bản chất thực sự của sự việc.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_006",
+      "field": "birth_year_an",
+      "value": "2013",
+      "description": "Năm sinh của bé An.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_007",
+      "field": "death_year_thao",
+      "value": "2013",
+      "description": "Năm Thảo qua đời.",
+      "status": "LOCKED"
+    },
+    {
+      "fact_id": "FACT_008",
+      "field": "nam_financial_support_period",
+      "value": "Từ 2013 đến nay",
+      "description": "Khoảng thời gian Nam chu cấp tài chính cho An.",
+      "status": "LOCKED"
+    }
+  ],
+  "secret": "Nam đã bí mật nhận nuôi và chăm sóc con gái của em gái họ đã mất, giấu Linh vì sợ cô lo lắng và gánh nặng tài chính.",
+  "false_lead": "Linh nghi ngờ Nam có mối quan hệ ngoài luồng với người phụ nữ trong ảnh và có con riêng, cảm thấy bị phản bội.",
+  "clues": [
+    "Chiếc điện thoại Nokia cũ của Nam từ năm 2012 chứa một bức ảnh chụp Nam bế một đứa trẻ sơ sinh cạnh một cô gái trẻ tại bệnh viện tỉnh Nam Định.",
+    "Trong danh bạ điện thoại, có một số lưu tên 'Công việc' có nhiều cuộc gọi nhỡ và cuộc gọi đi vào các khung giờ khuya hoặc cuối tuần.",
+    "Một chiếc vòng tay trẻ em có khắc tên 'An' và ngày sinh trùng khớp với ngày tháng trên bức ảnh được tìm thấy trong hộp kỷ vật cũ của Nam."
+  ],
+  "reveal_1": "Người phụ nữ trong ảnh là Thảo, em gái họ của Nam, người đã qua đời năm 2013 sau khi sinh con. Đứa bé là con gái của Thảo, tên là An.",
+  "reveal_2": "Nam không phải cha ruột của bé An. Anh đã hỗ trợ em gái họ Thảo lúc cô hấp hối, sau đó đứng ra làm người bảo lãnh viện phí và tìm một gia đình hiếm muộn cho bé An nhận nuôi hợp pháp. Nam âm thầm chu cấp tiền nuôi dưỡng An suốt 10 năm qua từ tiền làm thêm, giấu Linh vì mặc cảm nghèo khó, sợ Linh không chấp nhận gánh nặng tài chính và không muốn làm cô lo lắng.",
+  "emotional_payoff": "Linh xúc động và cảm phục trước sự hy sinh thầm lặng, tình yêu thương vô bờ bến và tinh thần trách nhiệm của Nam. Cô nhận ra bí mật của chồng không phải là sự phản bội mà là tình yêu thương sâu sắc. Cô quyết định cùng Nam gánh vác, yêu thương An như con ruột, xây dựng một gia đình lớn hơn, trọn vẹn hơn.",
+  "reflection_theme": "Tình yêu thương đôi khi được thể hiện qua những hy sinh thầm lặng và những bí mật được giữ kín. Sự thấu hiểu, bao dung và sẻ chia là nền tảng vững chắc để vượt qua mọi thử thách, hàn gắn và củng cố mối quan hệ gia đình.",
+  "ending": "Linh ôm chầm lấy Nam, nước mắt lăn dài. Cô nắm lấy tay anh, khẳng định rằng họ sẽ cùng nhau chăm sóc bé An. Cảnh cuối là ba người (Linh, Nam, An) cùng nhau đi dạo trong công viên, tạo nên một bức tranh gia đình ấm áp và tràn đầy hy vọng.",
+  "source_idea_id": "IDEA_011",
+  "time_period": "Hiện tại (2024), các mốc quá khứ chính: 2012 (chụp ảnh), 2013 (Thảo mất, bé An ra đời), từ 2013 đến nay (Nam chăm sóc An).",
+  "mystery_question": "Người phụ nữ trong bức ảnh là ai? Tại sao Nam lại lưu giữ bức ảnh này và che giấu nó khỏi Linh?",
+  "narrative_skeleton": {
+    "trigger": "Linh dọn nhà, tìm thấy điện thoại cũ của Nam và phát hiện bức ảnh lạ.",
+    "initial_suspicion": "Linh nghi ngờ Nam ngoại tình và có con riêng.",
+    "investigation_method": "Linh xem lại danh bạ điện thoại, tìm kiếm thông tin trên các vật dụng cá nhân cũ của Nam (hộp kỷ vật).",
+    "evidence_chain": [
+      "Bức ảnh trong điện thoại cũ.",
+      "Số điện thoại lạ trong danh bạ 'Công việc'.",
+      "Chiếc vòng tay trẻ em khắc tên 'An' và ngày sinh."
+    ],
+    "reveal_mechanism": "Thông qua việc đối chiếu ngày sinh trên vòng tay với ngày chụp ảnh, Linh có thể lần theo dấu vết về bé An và có thể liên hệ với gia đình nhận nuôi hoặc tìm hiểu về lịch sử bệnh tật/tai nạn của gia đình Nam để hé lộ sự thật về Thảo.",
+    "second_reveal_mechanism": "Khi sự thật về Thảo và An được hé mở, Linh chất vấn Nam. Nam, trước áp lực và sự thấu hiểu của Linh, cuối cùng đã thú nhận toàn bộ câu chuyện về sự hy sinh và gánh nặng của mình.",
+    "emotional_resolution": "Linh ban đầu sốc và đau khổ vì sự lừa dối, nhưng nhanh chóng chuyển sang cảm phục và thấu hiểu khi biết được lý do sâu xa là tình yêu thương và sự bảo vệ của Nam. Cả hai cùng nhau chấp nhận và yêu thương bé An, xây dựng một gia đình mới, đoàn viên hơn."
+  },
+  "status": "DRAFT",
+  "approved_by": null,
+  "approved_at": null,
+  "last_modified_at": 1790669904.9688437
+}

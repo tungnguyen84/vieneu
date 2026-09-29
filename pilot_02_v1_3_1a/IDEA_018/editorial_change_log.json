@@ -1,0 +1,182 @@
+{
+  "idea_id": "IDEA_018",
+  "episode_id": "EP018",
+  "total_changes": 16,
+  "migration_record": null,
+  "changes": [
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "GENERIC_AI_PROSE",
+      "rule": "GENERIC_AI_PROSE",
+      "before": "Có những ngôi nhà không chỉ là gạch đá hay tài sản thừa kế, mà còn là nơi neo giữ phần hồn của cả một dòng họ qua bao thăng trầm.",
+      "after": "Căn nhà rường cổ ở ven sông không đơn thuần là một khối tài sản tranh chấp, mà là nơi lưu giữ ký ức và nếp sống của gia đình Hùng qua nhiều thế hệ.",
+      "segment_before": "Có những ngôi nhà không chỉ là gạch đá hay tài sản thừa kế, mà còn là nơi neo giữ phần hồn của cả một dòng họ qua bao thăng trầm.",
+      "segment_after": "Căn nhà rường cổ ở ven sông không đơn thuần là một khối tài sản tranh chấp, mà là nơi lưu giữ ký ức và nếp sống của gia đình Hùng qua nhiều thế hệ.",
+      "reason": "Thay thế câu mở đầu triết lý AI sáo rỗng bằng bối cảnh căn nhà rường cổ cụ thể.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "UNSUPPORTED_LEGAL_CERTAINTY",
+      "rule": "UNSUPPORTED_LEGAL_CERTAINTY",
+      "before": "Tờ trích lục địa bạ năm 1985 chính là chìa khóa pháp lý quan trọng nhất mà cụ Sen đã cẩn thận chôn giấu.",
+      "after": "Tờ trích lục địa bạ năm 1985 là manh mối then chốt nhất, mở đường cho việc đối chiếu với hồ sơ địa chính lưu trữ của địa phương để làm rõ nguồn gốc đất thờ tự.",
+      "segment_before": "Tờ trích lục địa bạ năm 1985 chính là chìa khóa pháp lý quan trọng nhất mà cụ Sen đã cẩn thận chôn giấu.",
+      "segment_after": "Tờ trích lục địa bạ năm 1985 là manh mối then chốt nhất, mở đường cho việc đối chiếu với hồ sơ địa chính lưu trữ của địa phương để làm rõ nguồn gốc đất thờ tự.",
+      "reason": "Điều chỉnh nhận định pháp lý: tài liệu cũ là manh mối đối chiếu địa chính chính thức thay vì giấy tờ tự quyết định quyền sở hữu.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[056] Profile: REVEAL",
+      "after": "[056] Profile: MYSTERY",
+      "segment_before": "[056] Profile: REVEAL",
+      "segment_after": "[056] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [056] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[057] Profile: REVEAL",
+      "after": "[057] Profile: MYSTERY",
+      "segment_before": "[057] Profile: REVEAL",
+      "segment_after": "[057] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [057] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[058] Profile: REVEAL",
+      "after": "[058] Profile: MYSTERY",
+      "segment_before": "[058] Profile: REVEAL",
+      "segment_after": "[058] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [058] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[059] Profile: REVEAL",
+      "after": "[059] Profile: MYSTERY",
+      "segment_before": "[059] Profile: REVEAL",
+      "segment_after": "[059] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [059] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[060] Profile: REVEAL",
+      "after": "[060] Profile: MYSTERY",
+      "segment_before": "[060] Profile: REVEAL",
+      "segment_after": "[060] Profile: MYSTERY",
+      "reason": "Chuyển phân đoạn [060] trước cao trào sang MYSTERY để cô đọng khối REVEAL.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[068] Profile: REVEAL",
+      "after": "[068] Profile: NORMAL",
+      "segment_before": "[068] Profile: REVEAL",
+      "segment_after": "[068] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [068] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[069] Profile: REVEAL",
+      "after": "[069] Profile: NORMAL",
+      "segment_before": "[069] Profile: REVEAL",
+      "segment_after": "[069] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [069] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[070] Profile: REVEAL",
+      "after": "[070] Profile: NORMAL",
+      "segment_before": "[070] Profile: REVEAL",
+      "segment_after": "[070] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [070] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[071] Profile: REVEAL",
+      "after": "[071] Profile: NORMAL",
+      "segment_before": "[071] Profile: REVEAL",
+      "segment_after": "[071] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [071] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[072] Profile: REVEAL",
+      "after": "[072] Profile: NORMAL",
+      "segment_before": "[072] Profile: REVEAL",
+      "segment_after": "[072] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [072] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[073] Profile: REVEAL",
+      "after": "[073] Profile: NORMAL",
+      "segment_before": "[073] Profile: REVEAL",
+      "segment_after": "[073] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [073] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "segment_id": "EPISODE",
+      "rule_id": "OVERLONG_REVEAL_BLOCK",
+      "rule": "OVERLONG_REVEAL_BLOCK",
+      "before": "[074] Profile: REVEAL",
+      "after": "[074] Profile: NORMAL",
+      "segment_before": "[074] Profile: REVEAL",
+      "segment_after": "[074] Profile: NORMAL",
+      "reason": "Chuyển phân đoạn hệ quả [074] sau cao trào sang NORMAL để nhường REVEAL cho sự thật then chốt.",
+      "story_fact_changed": false
+    },
+    {
+      "episode_id": "EP018",
+      "segment_id": "016",
+      "rule_id": "GENERIC_AI_PROSE",
+      "rule": "GENERIC_AI_PROSE",
+      "before": "Có những góc khuất tồn tại âm thầm suốt gần bốn mươi năm, chờ đúng thời điểm để lật giở lại những trang quá khứ tưởng đã lãng quên.",
+      "after": "Những kỷ vật trong căn nhà cổ đã nằm im suốt gần bốn mươi năm, chờ đợi người có đủ tâm huyết mở lại để thấu hiểu câu chuyện của tiền nhân.",
+      "reason": "Thay thế câu văn mẫu tại [016] bằng chi tiết cụ thể của căn nhà rường và bài học hiếu nghĩa gia đình.",
+      "story_fact_changed": false
+    },
+    {
+      "episode_id": "EP018",
+      "segment_id": "081",
+      "rule_id": "GENERIC_REFLECTION",
+      "rule": "GENERIC_REFLECTION",
+      "before": "Có những lúc, chúng ta phải đi một vòng lớn bên ngoài xã hội mới nhận ra giá trị thực sự nằm ngay ở ngưỡng cửa nhà mình.",
+      "after": "Đứng trước căn nhà rường cổ sau giông bão tranh chấp, Hùng nhận ra giá trị lớn nhất mà ông bà để lại không nằm ở giá trị mảnh đất, mà ở sự gắn kết và lòng hiếu nghĩa.",
+      "reason": "Thay thế câu văn mẫu tại [081] bằng chi tiết cụ thể của căn nhà rường và bài học hiếu nghĩa gia đình.",
+      "story_fact_changed": false
+    }
+  ]
+}
