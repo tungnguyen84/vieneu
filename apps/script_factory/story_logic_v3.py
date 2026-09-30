@@ -676,6 +676,78 @@ class ScriptProseQCV3Engine:
         ending_count = len(ending_segs)
         ending_pct = (ending_count / max(1, total_segs)) * 100
 
+        # A two-pass generation must still produce one continuous episode.
+        # Detect closure by spoken text as well as metadata because models can
+        # label a sign-off NORMAL or mark reflective prose as ENDING.
+        signoff_pattern = re.compile(
+            r"(?:cảm\s+ơn\s+quý\s+vị\s+đã\s+lắng\s+nghe|"
+            r"xin\s+chào\s+và\s+hẹn\s+gặp\s+lại|"
+            r"tôi\s+là\s+minh[^.]{0,80}hẹn\s+gặp\s+lại)",
+            re.IGNORECASE,
+        )
+        signoff_indices = [
+            idx for idx, segment in enumerate(segments)
+            if signoff_pattern.search(str(getattr(segment, "text", "") or ""))
+        ]
+        ending_profile_indices = [
+            idx for idx, segment in enumerate(segments)
+            if str(getattr(segment, "delivery_profile", "") or "").upper() == "ENDING"
+        ]
+        final_idx = total_segs - 1
+
+        if not signoff_indices or signoff_indices[-1] != final_idx:
+            issues.append({
+                "rule": "MISSING_FINAL_SIGNOFF",
+                "severity": "HIGH",
+                "target": f"segments[{total_segs}]",
+                "message": "Phân đoạn cuối chưa có lời chào kết chuẩn của MC Minh. Một tập hoàn chỉnh phải chào kết đúng một lần ở phân đoạn cuối.",
+            })
+
+        if len(signoff_indices) > 1:
+            ids = [str(getattr(segments[idx], "id", idx + 1)) for idx in signoff_indices]
+            issues.append({
+                "rule": "DUPLICATE_SIGNOFF",
+                "severity": "CRITICAL",
+                "target": f"segments[{', '.join(ids)}]",
+                "message": f"Lời chào kết bị lặp {len(signoff_indices)} lần tại các phân đoạn {', '.join(ids)}. Kịch bản đã khép lại rồi tiếp tục kể lại câu chuyện.",
+            })
+
+        premature_indices = sorted({
+            idx for idx in [*signoff_indices, *ending_profile_indices] if idx < final_idx
+        })
+        if premature_indices:
+            ids = [str(getattr(segments[idx], "id", idx + 1)) for idx in premature_indices]
+            issues.append({
+                "rule": "PREMATURE_SIGNOFF",
+                "severity": "CRITICAL",
+                "target": f"segments[{', '.join(ids)}]",
+                "message": f"Kịch bản dùng lời chào hoặc nhãn ENDING trước khi câu chuyện kết thúc tại phân đoạn {', '.join(ids)}.",
+            })
+
+        if signoff_indices and signoff_indices[0] < final_idx:
+            first_idx = signoff_indices[0]
+            later_content = [
+                str(getattr(segment, "id", idx + 1))
+                for idx, segment in enumerate(segments[first_idx + 1:], start=first_idx + 1)
+                if str(getattr(segment, "text", "") or "").strip()
+                and not signoff_pattern.search(str(getattr(segment, "text", "") or ""))
+            ]
+            if later_content:
+                issues.append({
+                    "rule": "CONTENT_AFTER_SIGNOFF",
+                    "severity": "CRITICAL",
+                    "target": f"segments[{later_content[0]}..{later_content[-1]}]",
+                    "message": "Sau lời chào kết vẫn còn nội dung kể chuyện. Đây là dấu hiệu ghép hai phần sai mạch hoặc lặp lại một vòng điều tra.",
+                })
+
+        if ending_profile_indices != [final_idx]:
+            issues.append({
+                "rule": "ENDING_PROFILE_PLACEMENT",
+                "severity": "HIGH",
+                "target": "delivery_profile",
+                "message": "delivery_profile='ENDING' chỉ được dùng đúng một lần cho phân đoạn cuối cùng.",
+            })
+
         # Check if ending is larger than 12%
         if ending_pct > 12.0 and ending_count >= 8:
             issues.append({

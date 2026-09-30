@@ -134,6 +134,7 @@ class ScriptService:
             causal_chains=data.get("causal_chains", []),
             knowledge_ledger=data.get("knowledge_ledger", []),
             reveal_justifications=data.get("reveal_justifications", {}),
+            has_story_bible=True,
         )
 
     def _compute_story_qc(self, data: Dict[str, Any]) -> Dict[str, Any]:

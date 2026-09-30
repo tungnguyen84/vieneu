@@ -28,6 +28,54 @@ logger = logging.getLogger("VieNeu.GeminiProvider")
 
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
 
+_SCRIPT_SIGNOFF_RE = re.compile(
+    r"(?:cảm\s+ơn\s+quý\s+vị\s+đã\s+lắng\s+nghe|"
+    r"xin\s+chào\s+và\s+hẹn\s+gặp\s+lại|"
+    r"tôi\s+là\s+minh[^.]{0,80}hẹn\s+gặp\s+lại)",
+    re.IGNORECASE,
+)
+
+
+def _parse_script_segment_array(raw: str) -> List[Dict[str, Any]]:
+    """Parse a Gemini JSON response into a segment list."""
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict) and "segments" in data:
+            data = data["segments"]
+        return data if isinstance(data, list) else []
+    except Exception:
+        match = re.search(r"\[\s*\{.*\}\s*\]", raw, re.DOTALL)
+        if not match:
+            return []
+        data = json.loads(match.group(0))
+        return data if isinstance(data, list) else []
+
+
+def _part_has_closure(segments: List[Dict[str, Any]]) -> bool:
+    """Return True when a non-final generation part prematurely closes the show."""
+    return any(
+        str(segment.get("delivery_profile", "")).upper() == "ENDING"
+        or bool(_SCRIPT_SIGNOFF_RE.search(str(segment.get("text", ""))))
+        for segment in segments
+        if isinstance(segment, dict)
+    )
+
+
+def _has_one_final_signoff(segments: List[Dict[str, Any]]) -> bool:
+    """The completed episode must have one sign-off, in its final segment only."""
+    if not segments:
+        return False
+    signoff_indices = [
+        idx for idx, segment in enumerate(segments)
+        if isinstance(segment, dict) and _SCRIPT_SIGNOFF_RE.search(str(segment.get("text", "")))
+    ]
+    ending_indices = [
+        idx for idx, segment in enumerate(segments)
+        if isinstance(segment, dict) and str(segment.get("delivery_profile", "")).upper() == "ENDING"
+    ]
+    final_idx = len(segments) - 1
+    return signoff_indices == [final_idx] and ending_indices == [final_idx]
+
 
 def _get_api_key(explicit_key: Optional[str] = None) -> str:
     """Finds GEMINI_API_KEY from parameter, environment, or .env file."""
@@ -938,7 +986,7 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
             f"Định dạng nội dung: Một lá thư/câu chuyện tâm sự của nhân vật gửi về cho chương trình. MC Minh là người đọc toàn bộ kịch bản.\n"
             f"QUY TẮC CỨNG BẮT BUỘC:\n"
             f"1. KHÔNG ĐỌC MÃ TẬP / SỐ TẬP NỘI BỘ: Tuyệt đối KHÔNG viết hoặc đọc các mã như 'EP1005', 'EP002', 'IDEA_...', và KHÔNG đọc số thứ tự tập bằng chữ hay số (như 'tập 1005', 'tập một nghìn không trăm linh năm'). Khi chào mở đầu ở phân đoạn 004, MC Minh CHỈ nói: 'Chào mừng quý vị và các bạn đến với Sau Cánh Cửa.'\n"
-            f"2. KHÔNG NGẮT TẬP GIẢ TẠO: Đây là một tập phim hoàn chỉnh liền mạch. Tuyệt đối KHÔNG dùng các cụm từ 'phần tiếp theo', 'ở phần sau', 'hãy đón xem', 'chúng ta sẽ quay lại sau', 'tập tiếp theo' ở bất kỳ đâu trong kịch bản. Ở phân đoạn 090 cuối cùng, lời chào kết thúc chuẩn của MC Minh BẮT BUỘC là: 'Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.' (TUYỆT ĐỐI KHÔNG nói 'hẹn gặp lại trong tập tiếp theo').\n"
+            f"2. KHÔNG NGẮT TẬP GIẢ TẠO: Đây là một tập phim hoàn chỉnh liền mạch. Tuyệt đối KHÔNG dùng các cụm từ 'phần tiếp theo', 'ở phần sau', 'hãy đón xem', 'chúng ta sẽ quay lại sau', 'tập tiếp theo' ở bất kỳ đâu trong kịch bản. Lời chào kết thúc chuẩn chỉ được xuất hiện ĐÚNG MỘT LẦN trong phân đoạn CUỐI CÙNG của PHẦN 2: 'Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.' PHẦN 1 tuyệt đối không được khép lại câu chuyện, không được có delivery_profile='ENDING' và không được dùng bất kỳ lời cảm ơn hay lời chào tạm biệt nào.\n"
             f"3. CHỈ DÙNG NHÂN VẬT TRONG STORY BIBLE: Tuyệt đối không tự bịa thêm tên riêng nhân vật phụ ngoài danh sách Story Bible.\n"
             f"4. NHẤT QUÁN NHẬN THỨC NHÂN VẬT (KNOWLEDGE LEDGER): Tuân thủ tuyệt đối ai biết bí mật, ai không biết. Nếu trong Story Bible có người thân (như vợ/mẹ/nhân chứng) biết sự thật, tuyệt đối KHÔNG được viết câu mâu thuẫn như 'không một ai hay biết' hay 'không thể sẻ chia cùng ai kể cả người vợ gối chăn'.\n"
             f"5. KỶ LUẬT BẰNG CHỨNG (EVIDENCE CHAIN): Không nhảy cóc từ một manh mối ban đầu sang kết luận cuối cùng. Mỗi manh mối chỉ chứng minh đúng phạm vi của nó và đặt ra câu hỏi tiếp theo.\n"
@@ -986,6 +1034,11 @@ Cấu trúc Phân bổ Phần 1 (khoảng 40-50 phân đoạn):
 5. Act 5: INVESTIGATION (khoảng 8-10 phân đoạn):
    - Nhân vật chính bắt đầu hành động xác minh thực tế, tìm gặp nhân chứng hoặc đối chiếu tài liệu thứ hai.
 
+ĐIỂM DỪNG BẮT BUỘC CỦA PHẦN 1:
+- Dừng ở một hành động xác minh đang diễn ra hoặc một câu hỏi còn mở để PHẦN 2 tiếp tục trực tiếp.
+- KHÔNG tiết lộ đáp án cuối, KHÔNG giải quyết xung đột, KHÔNG đúc kết bài học, KHÔNG cảm ơn thính giả và KHÔNG chào tạm biệt.
+- Không một object nào trong PHẦN 1 được dùng delivery_profile='ENDING'.
+
 Yêu cầu định dạng JSON:
 Trả về JSON Array gồm các objects từ id '001' trở đi (khoảng 40-50 phân đoạn tự nhiên):
 [
@@ -1007,26 +1060,49 @@ Trả về JSON Array gồm các objects từ id '001' trở đi (khoảng 40-50
             system_instruction=system_instruction,
         )
 
-        try:
-            p1_data = json.loads(raw_p1)
-            if isinstance(p1_data, dict) and "segments" in p1_data:
-                p1_data = p1_data["segments"]
-        except Exception:
-            m = re.search(r"\[\s*\{.*\}\s*\]", raw_p1, re.DOTALL)
-            p1_data = json.loads(m.group(0)) if m else []
+        p1_data = _parse_script_segment_array(raw_p1)
+        if not p1_data or _part_has_closure(p1_data):
+            retry_prompt = prompt_part1 + """
+
+YÊU CẦU SỬA BẮT BUỘC: Kết quả trước đã khép lại câu chuyện quá sớm hoặc sai định dạng.
+Hãy viết lại TOÀN BỘ PHẦN 1. Không dùng ENDING, không có lời cảm ơn/lời chào, không giải quyết bí mật.
+Phân đoạn cuối phải là một hành động xác minh đang tiếp diễn để PHẦN 2 nối tiếp ngay.
+"""
+            raw_retry, retry_in, retry_out = self._call_generate_content(
+                prompt=retry_prompt,
+                model=model or self.default_model,
+                response_json=True,
+                system_instruction=system_instruction,
+            )
+            in_tok1 += retry_in
+            out_tok1 += retry_out
+            p1_data = _parse_script_segment_array(raw_retry)
+        if not p1_data:
+            raise RuntimeError("Gemini returned an empty or invalid Part 1 script.")
+        if _part_has_closure(p1_data):
+            raise RuntimeError("Gemini Part 1 still contains a premature ending/sign-off after retry; script rejected.")
 
         time.sleep(2)
 
         # ---------------- PART 2: ACTS 5 (cont) to 9 (~40 to 50 Segments) ----------------
-        p1_context = "\n".join(f"[{s.get('id')}] {s.get('text')[:80]}..." for s in p1_data[-5:]) if p1_data else ""
+        p1_context = "\n".join(
+            f"[{s.get('id')}] {str(s.get('text', ''))[:240]}"
+            for s in p1_data
+            if isinstance(s, dict)
+        )
         p1_count = len(p1_data)
         next_start_id = p1_count + 1
 
         prompt_part2 = f"""Hãy viết tiếp PHẦN 2 cho kịch bản câu chuyện: '{clean_title}'.
 Mục tiêu độ dài Phần 2: Khoảng 1.200 - 1.600 từ tiếng Việt, triển khai tự nhiên khoảng 40 - 50 phân đoạn tiếp theo.
 
-Bối cảnh cuối Phần 1 vừa kết thúc (tổng cộng {p1_count} phân đoạn):
+BẢN ĐỒ TOÀN BỘ NỘI DUNG ĐÃ KỂ Ở PHẦN 1 (tổng cộng {p1_count} phân đoạn):
 {p1_context}
+
+KỶ LUẬT NỐI MẠCH:
+- Tiếp tục trực tiếp từ hành động cuối của PHẦN 1. Không mở đầu lại câu chuyện, không giới thiệu lại nhân vật và không kể lại dấu hiệu/manh mối đã có trong bản đồ trên.
+- Mỗi chứng cứ cũ chỉ được nhắc lại rất ngắn khi nó dẫn thẳng tới một phát hiện mới; tuyệt đối không dựng lại một vòng điều tra thứ hai.
+- Chỉ giải quyết câu chuyện ở Act 8 và chỉ chào kết đúng một lần ở object cuối cùng của PHẦN 2.
 
 Nội dung Bước ngoặt, Chuỗi Nhân Quả & Hóa giải cảm xúc của Story Bible:
 - Bước ngoặt 1 (Reveal 1): {story_bible.reveal_1}
@@ -1081,13 +1157,25 @@ Trả về JSON Array gồm các objects từ id '{next_start_id:03d}' trở đi
             system_instruction=system_instruction,
         )
 
-        try:
-            p2_data = json.loads(raw_p2)
-            if isinstance(p2_data, dict) and "segments" in p2_data:
-                p2_data = p2_data["segments"]
-        except Exception:
-            m = re.search(r"\[\s*\{.*\}\s*\]", raw_p2, re.DOTALL)
-            p2_data = json.loads(m.group(0)) if m else []
+        p2_data = _parse_script_segment_array(raw_p2)
+        if not _has_one_final_signoff(p1_data + p2_data):
+            retry_prompt = prompt_part2 + """
+
+YÊU CẦU SỬA BẮT BUỘC: Kết quả trước có lời chào sai vị trí, lặp lời chào hoặc thiếu lời chào cuối.
+Hãy viết lại TOÀN BỘ PHẦN 2. Chỉ object cuối cùng được dùng delivery_profile='ENDING' và chứa đúng một lời chào chuẩn.
+Mọi object trước đó không được cảm ơn thính giả hoặc chào tạm biệt.
+"""
+            raw_retry, retry_in, retry_out = self._call_generate_content(
+                prompt=retry_prompt,
+                model=model or self.default_model,
+                response_json=True,
+                system_instruction=system_instruction,
+            )
+            in_tok2 += retry_in
+            out_tok2 += retry_out
+            p2_data = _parse_script_segment_array(raw_retry)
+        if not _has_one_final_signoff(p1_data + p2_data):
+            raise RuntimeError("Gemini script does not contain exactly one final sign-off after retry; script rejected.")
 
         combined_data = p1_data + p2_data
         segments: List[ScriptSegment] = []

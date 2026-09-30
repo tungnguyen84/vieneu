@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from apps.script_factory.auto_revision import AutoRevisionManager
+from apps.script_factory.auto_revision import AutoRevisionManager, MAX_REVISION_ROUNDS
 from apps.script_factory.cost_control import CostController
 from apps.script_factory.idea_generator import IdeaGenerator
 from apps.script_factory.models import IdeaItem, StoryBible, FullScript, ScriptSegment
@@ -523,11 +523,12 @@ class GenerationService:
         qc_report = qc_engine.run_qc(script=script, story_bible=story_bible)
         if qc_report.status != "PASS":
             rev_manager = AutoRevisionManager(provider=provider, cost_controller=self.cost_ctrl, qc_engine=qc_engine)
-            script, qc_report = rev_manager.auto_revise_and_recheck(
-                script=script,
-                story_bible=story_bible,
-                qc_report=qc_report,
-            )
+            while qc_report.status != "PASS" and script.revision_round < MAX_REVISION_ROUNDS:
+                script, qc_report = rev_manager.auto_revise_and_recheck(
+                    script=script,
+                    story_bible=story_bible,
+                    qc_report=qc_report,
+                )
 
         # Attach generation_source and trace to script and project metadata
         script_dict = script.to_dict()
@@ -539,7 +540,7 @@ class GenerationService:
         script_dict["source_story_generation_request_id"] = story_bible.generation_request_id
         current_story_data = json.loads(story_path.read_text(encoding="utf-8"))
         script_dict["source_story_content_hash"] = story_content_hash(current_story_data)
-        script_dict["artifact_status"] = "CURRENT"
+        script_dict["artifact_status"] = "CURRENT" if qc_report.status == "PASS" else "NEEDS_REVISION"
         script_dict.pop("stale_reason", None)
         script_dict.pop("stale_reasons", None)
         script_dict.pop("stale_at", None)
@@ -556,7 +557,7 @@ class GenerationService:
         qc_dict["generation_request_id"] = script_dict.get("generation_request_id")
         qc_dict["source_story_generation_request_id"] = story_bible.generation_request_id
         qc_dict["source_story_content_hash"] = script_dict["source_story_content_hash"]
-        qc_dict["artifact_status"] = "CURRENT"
+        qc_dict["artifact_status"] = "CURRENT" if qc_report.status == "PASS" else "NEEDS_REVISION"
         qc_path = script_dir / "qc_report.json"
         with open(qc_path, "w", encoding="utf-8") as f:
             json.dump(qc_dict, f, ensure_ascii=False, indent=2)
@@ -583,7 +584,7 @@ class GenerationService:
                 p_curr["script_generation_request_id"] = getattr(script, "generation_request_id", None)
                 p_curr["script_source_story_generation_request_id"] = story_bible.generation_request_id
                 p_curr["script_source_story_content_hash"] = script_dict["source_story_content_hash"]
-                p_curr["script_artifact_status"] = "CURRENT"
+                p_curr["script_artifact_status"] = script_dict["artifact_status"]
                 p_curr["qc_status"] = qc_report.status
                 with open(p_json, "w", encoding="utf-8") as f:
                     json.dump(p_curr, f, ensure_ascii=False, indent=2)
@@ -626,11 +627,15 @@ class GenerationService:
         rev_manager = AutoRevisionManager(provider=provider, cost_controller=self.cost_ctrl, qc_engine=qc_engine)
 
         qc_report = qc_engine.run_qc(script=script, story_bible=story_bible)
-        revised_script, final_qc = rev_manager.auto_revise_and_recheck(
-            script=script,
-            story_bible=story_bible,
-            qc_report=qc_report
-        )
+        if qc_report.status == "PASS":
+            revised_script, final_qc = script, qc_report
+            revised_script.status = "QC_PASS"
+        else:
+            revised_script, final_qc = rev_manager.auto_revise_and_recheck(
+                script=script,
+                story_bible=story_bible,
+                qc_report=qc_report,
+            )
 
         # Auto-repair is allowed only inside the current Story lineage and must
         # preserve all lineage metadata when the dataclass is serialized again.
@@ -638,9 +643,10 @@ class GenerationService:
         for key in (
             "generation_source", "generation_request_id", "prompt_version",
             "model_name", "provider_name", "source_story_generation_request_id",
-            "source_story_content_hash", "artifact_status",
+            "source_story_content_hash",
         ):
             revised_data[key] = original_script_data.get(key)
+        revised_data["artifact_status"] = "CURRENT" if final_qc.status == "PASS" else "NEEDS_REVISION"
         with open(script_path, "w", encoding="utf-8") as f:
             json.dump(revised_data, f, ensure_ascii=False, indent=2)
         with open(qc_path, "w", encoding="utf-8") as f:
@@ -650,9 +656,17 @@ class GenerationService:
                 "generation_request_id": revised_data.get("generation_request_id"),
                 "source_story_generation_request_id": revised_data.get("source_story_generation_request_id"),
                 "source_story_content_hash": revised_data.get("source_story_content_hash"),
-                "artifact_status": "CURRENT",
+                "artifact_status": revised_data["artifact_status"],
             })
             json.dump(final_qc_data, f, ensure_ascii=False, indent=2)
+
+        project_path = proj_dir / "project.json"
+        if project_path.exists():
+            project_data = json.loads(project_path.read_text(encoding="utf-8"))
+            project_data["script_artifact_status"] = revised_data["artifact_status"]
+            project_data["qc_status"] = final_qc.status
+            project_data["updated_at"] = time.time()
+            project_path.write_text(json.dumps(project_data, ensure_ascii=False, indent=2), encoding="utf-8")
 
         total_words = revised_script.total_words or sum(len(s.text.split()) for s in revised_script.segments)
         return {

@@ -414,6 +414,20 @@ def repair_project_script(project_id: str):
 
 @app.post("/api/projects/{project_id}/script/approve")
 def approve_project_script(project_id: str):
+    try:
+        status = require_current_full_script(
+            project_id,
+            BASE_DIR / "projects",
+            require_approved=False,
+            require_clean_qc=True,
+        )
+        if status.get("qc_status") != "PASS":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Không thể duyệt kịch bản chưa vượt qua QC (trạng thái: {status.get('qc_status') or 'MISSING'}).",
+            )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     return pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.APPROVED)
 
 

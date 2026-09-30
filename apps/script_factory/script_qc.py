@@ -24,6 +24,43 @@ SERIES_BIBLE_PATH = Path("script_factory/series_bible.json")
 STORY_FORMULA_PATH = Path("script_factory/story_formula_v1.json")
 
 
+def _vietnamese_integer_words(value: int) -> Optional[str]:
+    """Return the common spoken Vietnamese form for small locked-fact numbers."""
+    digits = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"]
+    if value < 0 or value > 99:
+        return None
+    if value < 10:
+        return digits[value]
+    tens, units = divmod(value, 10)
+    prefix = "mười" if tens == 1 else f"{digits[tens]} mươi"
+    if units == 0:
+        return prefix
+    spoken_unit = "mốt" if units == 1 and tens > 1 else "lăm" if units == 5 else digits[units]
+    return f"{prefix} {spoken_unit}"
+
+
+def _numeric_unit_fact_present(value: str, script_text: str) -> Optional[bool]:
+    """Match `18 tháng`, `mười tám tháng`, and decimal punctuation variants."""
+    match = re.search(
+        r"\b(\d+(?:[.,]\d+)?)\s*(tỷ|triệu|nghìn|trăm|năm|tháng|ngày)\b",
+        value.lower(),
+    )
+    if not match:
+        return None
+
+    raw_number, unit = match.groups()
+    canonical_number = raw_number.replace(",", ".")
+    normalized_text = re.sub(r"(?<=\d),(?=\d)", ".", script_text.lower())
+    if re.search(rf"\b{re.escape(canonical_number)}\s*{re.escape(unit)}\b", normalized_text):
+        return True
+
+    if "." not in canonical_number:
+        words = _vietnamese_integer_words(int(canonical_number))
+        if words and re.search(rf"\b{re.escape(words)}\s*{re.escape(unit)}\b", normalized_text):
+            return True
+    return False
+
+
 class ScriptQCEngine:
     """Audits scripts against Story Bible, Locked Facts, and narrative standards."""
 
@@ -200,8 +237,9 @@ class ScriptQCEngine:
                     clean_money = re.sub(r"[^\d]", "", val)
                     clean_text_digits = re.sub(r"[^\d]", " ", all_text)
                     num_words = {"1": "một", "2": "hai", "3": "ba", "4": "bốn", "5": "năm", "6": "sáu", "7": "bảy", "8": "tám", "9": "chín", "10": "mười"}
-                    found_money = False
-                    if clean_money and clean_money in clean_text_digits:
+                    numeric_unit_match = _numeric_unit_fact_present(val, all_text)
+                    found_money = numeric_unit_match is True
+                    if not found_money and clean_money and clean_money in clean_text_digits:
                         found_money = True
                     elif val_lower in all_text.lower():
                         found_money = True
@@ -228,6 +266,8 @@ class ScriptQCEngine:
                     num_words = {"1": "một", "2": "hai", "3": "ba", "4": "bốn", "5": "năm", "6": "sáu", "7": "bảy", "8": "tám", "9": "chín", "10": "mười"}
                     parts = [p.strip().lower() for p in re.split(r"[;,]", val) if p.strip()]
                     found = any(p in all_text.lower() for p in parts) if parts else (val_lower in all_text.lower())
+                    if not found and _numeric_unit_fact_present(val, all_text) is True:
+                        found = True
                     if not found:
                         for p in parts:
                             m = re.match(r"^(\d+)\s+(năm|tháng|ngày|năm\s+trước)$", p)
@@ -930,6 +970,9 @@ class ScriptQCEngine:
             "SCRIPT_FACT_DRIFT",
             "FINAL_SCRIPT_TOPIC_DRIFT",
             "INTERNAL_TEMPLATE_LEAKAGE",
+            "PREMATURE_SIGNOFF",
+            "DUPLICATE_SIGNOFF",
+            "CONTENT_AFTER_SIGNOFF",
         }
         has_critical_failure = (
             any(
@@ -956,7 +999,16 @@ class ScriptQCEngine:
             )
             or any(iss.get("severity") == "CRITICAL" or iss.get("rule") in critical_rule_set for iss in evidence_issues)
         )
-        has_hard_fail = any(iss.get("rule") in ("FINAL_SCRIPT_TOPIC_DRIFT", "INTERNAL_TEMPLATE_LEAKAGE", "RELATIONSHIP_TIMELINE_CONTRADICTION", "TIMELINE_FACT_CONTRADICTION") for iss in evidence_issues)
+        hard_fail_rules = {
+            "FINAL_SCRIPT_TOPIC_DRIFT",
+            "INTERNAL_TEMPLATE_LEAKAGE",
+            "RELATIONSHIP_TIMELINE_CONTRADICTION",
+            "TIMELINE_FACT_CONTRADICTION",
+            "PREMATURE_SIGNOFF",
+            "DUPLICATE_SIGNOFF",
+            "CONTENT_AFTER_SIGNOFF",
+        }
+        has_hard_fail = any(iss.get("rule") in hard_fail_rules for iss in evidence_issues)
         has_issues = bool(fact_conflicts or logic_issues or repetition_issues or evidence_issues)
 
         if has_hard_fail:

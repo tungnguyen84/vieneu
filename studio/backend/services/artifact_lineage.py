@@ -28,6 +28,13 @@ _LEAK_PATTERNS = (
     ("100.000.000 VND", re.compile(r"\b100(?:[.,\s]?000){2}\s*(?:vnd|đồng)?\b", re.IGNORECASE)),
 )
 
+_SIGNOFF_RE = re.compile(
+    r"(?:cảm\s+ơn\s+quý\s+vị\s+đã\s+lắng\s+nghe|"
+    r"xin\s+chào\s+và\s+hẹn\s+gặp\s+lại|"
+    r"tôi\s+là\s+minh[^.]{0,80}hẹn\s+gặp\s+lại)",
+    re.IGNORECASE,
+)
+
 _VOLATILE_STORY_KEYS = {
     "status", "approved_by", "approved_at", "last_modified_at", "generated_at",
     "story_qc_report", "artifact_status", "stale_reason", "stale_reasons", "stale_at",
@@ -110,13 +117,30 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
         reasons.append("Full Script không thuộc generation lineage của Story Bible hiện tại")
     if not source_story_hash or source_story_hash != current_story_hash:
         reasons.append("Nội dung Story Bible đã thay đổi sau khi Full Script được tạo")
-    if str(script.get("artifact_status", "")).upper() == "STALE":
+    artifact_state = str(script.get("artifact_status", "")).upper()
+    if artifact_state == "STALE":
         reasons.append(str(script.get("stale_reason") or "Full Script đã được đánh dấu stale"))
+    elif artifact_state in {"NEEDS_REVISION", "REJECTED"}:
+        reasons.append("Full Script chưa vượt qua QC và cần được tạo hoặc sửa lại")
 
     segments = script.get("segments") if isinstance(script.get("segments"), list) else []
     valid_segments = [s for s in segments if isinstance(s, dict) and str(s.get("text", "")).strip()]
     if not valid_segments:
         reasons.append("Full Script không có phân đoạn hợp lệ")
+    else:
+        signoff_indices = [
+            idx for idx, segment in enumerate(valid_segments)
+            if _SIGNOFF_RE.search(str(segment.get("text", "")))
+        ]
+        ending_indices = [
+            idx for idx, segment in enumerate(valid_segments)
+            if str(segment.get("delivery_profile", "")).upper() == "ENDING"
+        ]
+        final_idx = len(valid_segments) - 1
+        has_premature_closure = any(idx < final_idx for idx in [*signoff_indices, *ending_indices])
+        has_duplicate_closure = len(signoff_indices) > 1 or len(ending_indices) > 1
+        if has_premature_closure or has_duplicate_closure:
+            reasons.append("Kịch bản phải có đúng một lời chào kết và một nhãn ENDING tại phân đoạn cuối")
 
     leakage = find_template_leakage(script)
     if leakage:
@@ -139,7 +163,8 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
     script_stage_status = stage_statuses.get("03_script") or script.get("status")
 
     critical_qc_issues: List[str] = []
-    has_critical_failure = bool(qc.get("has_critical_failure") or qc.get("status") == "FAIL")
+    qc_status = str(qc.get("status", "")).upper()
+    has_critical_failure = bool(qc.get("has_critical_failure") or qc_status == "FAIL")
 
     for issue in qc.get("evidence_issues", []) + qc.get("fact_conflicts", []) + qc.get("issues", []):
         if isinstance(issue, dict):
@@ -148,7 +173,8 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
             if severity == "CRITICAL" or rule_code in [
                 "TIMELINE_FACT_CONTRADICTION", "RELATIONSHIP_TIMELINE_CONTRADICTION", "CAUSAL_GAP",
                 "CHARACTER_KNOWLEDGE_CONTRADICTION", "EVIDENCE_DOES_NOT_PROVE_CLAIM", "REVEAL_UNDERJUSTIFIED",
-                "SCRIPT_FACT_DRIFT", "FINAL_SCRIPT_TOPIC_DRIFT", "INTERNAL_TEMPLATE_LEAKAGE"
+                "SCRIPT_FACT_DRIFT", "FINAL_SCRIPT_TOPIC_DRIFT", "INTERNAL_TEMPLATE_LEAKAGE",
+                "PREMATURE_SIGNOFF", "DUPLICATE_SIGNOFF", "CONTENT_AFTER_SIGNOFF", "MISSING_FINAL_SIGNOFF",
             ]:
                 has_critical_failure = True
                 msg = issue.get("message") or issue.get("rule") or "Lỗi QC nghiêm trọng"
@@ -176,6 +202,7 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
         "audio_gate_reason": audio_gate_reason,
         "critical_qc_count": len(critical_qc_issues),
         "critical_qc_issues": critical_qc_issues,
+        "qc_status": qc_status or None,
         "script_stage_status": script_stage_status,
         "generation_source": script.get("generation_source"),
         "generated_by": "Gemini" if "gemini" in str(script.get("provider_name", "")).lower() else script.get("provider_name"),

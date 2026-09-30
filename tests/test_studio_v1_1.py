@@ -353,11 +353,12 @@ def test_script_generation_and_auto_repair_flow():
         assert "qc_status" in repair_res
         assert "rounds" in repair_res
 
-        # 4. Approve Script
+        # 4. Mock lineage must not be approved as a production/current script.
         res_app = client.post(f"/api/projects/{TEST_EP_ID}/script/approve")
-        assert res_app.status_code == 200
+        assert res_app.status_code == 400
+        assert "STALE" in res_app.json()["detail"]
         proj = pm.get_project(TEST_EP_ID)
-        assert proj.stage_statuses["03_script"] == "APPROVED"
+        assert proj.stage_statuses["03_script"] == "NEEDS_REVIEW"
 
 
 def test_import_existing_script_text():

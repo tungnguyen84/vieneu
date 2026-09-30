@@ -2,8 +2,11 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from apps.script_factory.models import QCReport
 from studio.backend.services import audio_service as audio_module
+from studio.backend.services import generation_service as generation_module
 from studio.backend.services.artifact_lineage import (
     STALE_LABEL,
     mark_full_script_stale,
@@ -11,6 +14,8 @@ from studio.backend.services.artifact_lineage import (
     validate_full_script,
 )
 from studio.backend.services.audio_service import AudioService
+from studio.backend.services.generation_service import GenerationService
+from tests.mocks.mock_script_provider import MockScriptAIProvider
 
 
 STORY_REQUEST = "11111111-1111-4111-8111-111111111111"
@@ -24,6 +29,7 @@ def _write_current_artifacts(root: Path, project_id: str = "EP3001") -> Path:
     story = {
         "episode_id": project_id,
         "title": "Bí mật ngoại tình công sở",
+        "protagonist": {"name": "Nam", "char_id": "NAM"},
         "generation_source": "REAL_AI",
         "generation_request_id": STORY_REQUEST,
         "prompt_version": "story-v3.0",
@@ -42,8 +48,10 @@ def _write_current_artifacts(root: Path, project_id: str = "EP3001") -> Path:
         "source_story_generation_request_id": STORY_REQUEST,
         "source_story_content_hash": story_content_hash(story),
         "artifact_status": "CURRENT",
+        "host": {"id": "MINH", "name": "Minh", "voice": "Binh"},
         "segments": [
-            {"id": "001", "speaker": "MINH", "text": "Một lá thư mới vừa được gửi tới.", "delivery_profile": "HOOK"}
+            {"id": "001", "speaker": "MINH", "text": "Một lá thư mới vừa được gửi tới.", "delivery_profile": "HOOK"},
+            {"id": "002", "speaker": "MINH", "text": "Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", "delivery_profile": "ENDING"},
         ],
     }
     (project / "story" / "story_bible.json").write_text(json.dumps(story), encoding="utf-8")
@@ -77,7 +85,7 @@ class StudioLineageGuardTests(unittest.TestCase):
             self.assertEqual(saved["artifact_status"], "STALE")
 
     def test_audio_fails_fast_for_invalid_script(self):
-        for mutation in ("lineage", "idea_lineage", "source", "leakage", "empty"):
+        for mutation in ("lineage", "idea_lineage", "source", "leakage", "premature_signoff", "empty"):
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 project = _write_current_artifacts(root)
@@ -93,6 +101,13 @@ class StudioLineageGuardTests(unittest.TestCase):
                     script["generation_source"] = "MOCK"
                 elif mutation == "leakage":
                     script["segments"][0]["text"] = "Nhân vật chính tìm Manh mối 2 và Bước ngoặt 1 trị giá 100.000.000 VND."
+                elif mutation == "premature_signoff":
+                    script["segments"].insert(1, {
+                        "id": "002",
+                        "speaker": "MINH",
+                        "text": "Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.",
+                        "delivery_profile": "ENDING",
+                    })
                 else:
                     script["segments"] = []
                 script_path.write_text(json.dumps(script), encoding="utf-8")
@@ -103,6 +118,48 @@ class StudioLineageGuardTests(unittest.TestCase):
                         AudioService().generate_narration("EP3001", "020")
                 finally:
                     audio_module.PROJECTS_DIR = original_projects_dir
+
+    def test_recheck_promotes_a_qc_passed_script_back_to_current(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = _write_current_artifacts(root)
+            script_path = project / "script" / "full_script.json"
+            script = json.loads(script_path.read_text())
+            script.update({"artifact_status": "NEEDS_REVISION", "revision_round": 3})
+            script["segments"] = [
+                {"id": "001", "speaker": "MINH", "text": "Một lá thư cụ thể mở ra nghi vấn về gia đình Nam.", "delivery_profile": "HOOK"},
+                {"id": "002", "speaker": "MINH", "text": "Quý vị sẽ chọn cách nào để tìm hiểu?", "delivery_profile": "COMMENT", "audience_address": True},
+                {"id": "003", "speaker": "MINH", "text": "Quý vị có từng gặp một dấu hiệu như vậy?", "delivery_profile": "COMMENT", "audience_address": True},
+                {"id": "004", "speaker": "MINH", "text": "Chúng ta cùng theo dõi câu chuyện.", "delivery_profile": "COMMENT", "audience_address": True},
+                {"id": "005", "speaker": "MINH", "text": "Một chứng cứ xác thực đã làm rõ sự thật.", "delivery_profile": "REVEAL", "importance": "critical"},
+                {"id": "006", "speaker": "MINH", "text": "Gia đình ngồi lại và bình tĩnh giải quyết biến cố.", "delivery_profile": "NORMAL"},
+                {"id": "007", "speaker": "MINH", "text": "Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", "delivery_profile": "ENDING"},
+            ]
+            script_path.write_text(json.dumps(script), encoding="utf-8")
+            (project / "project.json").write_text(json.dumps({
+                "project_id": "EP3001",
+                "selected_idea": {"idea_id": "IDEA_3001"},
+                "script_artifact_status": "NEEDS_REVISION",
+                "qc_status": "NEEDS_REVISION",
+            }), encoding="utf-8")
+
+            original_projects_dir = generation_module.PROJECTS_DIR
+            generation_module.PROJECTS_DIR = root
+            service = GenerationService()
+            service.get_provider = lambda provider_id=None, model_id=None: MockScriptAIProvider()
+            try:
+                pass_report = QCReport(episode_id="EP3001", status="PASS")
+                with patch.object(generation_module.ScriptQCEngine, "run_qc", return_value=pass_report):
+                    result = service.auto_repair_script("EP3001")
+            finally:
+                generation_module.PROJECTS_DIR = original_projects_dir
+
+            saved_script = json.loads(script_path.read_text(encoding="utf-8"))
+            saved_project = json.loads((project / "project.json").read_text(encoding="utf-8"))
+            self.assertEqual(result["qc_status"], "PASS")
+            self.assertEqual(saved_script["artifact_status"], "CURRENT")
+            self.assertEqual(saved_project["script_artifact_status"], "CURRENT")
+            self.assertEqual(saved_project["qc_status"], "PASS")
 
 
 if __name__ == "__main__":

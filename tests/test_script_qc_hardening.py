@@ -9,6 +9,7 @@ from apps.script_factory.cost_control import CostController
 from apps.script_factory.models import FullScript, LockedFact, ScriptSegment, StoryBible
 from apps.script_factory.providers.mock_provider import MockScriptAIProvider
 from apps.script_factory.script_qc import ScriptQCEngine
+from apps.script_factory.story_logic_v3 import ScriptProseQCV3Engine
 from studio.backend.services.audio_service import (
     AudioService,
     normalize_script_segment,
@@ -35,6 +36,98 @@ def _base_valid_segments() -> list[ScriptSegment]:
         ScriptSegment(id="006", speaker="MINH", text="Sự thật được xác thực: Bản di chúc hoàn toàn hợp pháp để bảo vệ gia đình.", delivery_profile="REVEAL", importance="critical"),
         ScriptSegment(id="007", speaker="MINH", text="Cảm ơn quý vị đã lắng nghe câu chuyện tối nay.", delivery_profile="ENDING"),
     ]
+
+
+def test_qc_rejects_mid_script_signoff_and_continued_story(qc_env):
+    qc: ScriptQCEngine = qc_env["qc"]
+    bible = StoryBible(
+        episode_id="EP_QC_DOUBLE_ENDING",
+        title="Dấu vết kỹ thuật số",
+        protagonist={"name": "Nam", "char_id": "NAM"},
+    )
+    segments = _base_valid_segments()
+    segments[4] = ScriptSegment(
+        id="005",
+        speaker="MINH",
+        text="Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.",
+        delivery_profile="ENDING",
+    )
+    segments.insert(5, ScriptSegment(
+        id="006",
+        speaker="MINH",
+        text="Sáng hôm sau, Nam tiếp tục kiểm tra hồ sơ và tìm thấy một chứng cứ mới.",
+        delivery_profile="MYSTERY",
+    ))
+    for idx, segment in enumerate(segments, start=1):
+        segment.id = f"{idx:03d}"
+    script = FullScript(
+        episode_id=bible.episode_id,
+        title=bible.title,
+        host={"id": "MINH", "voice": "Binh"},
+        segments=segments,
+    )
+
+    report = qc.run_qc(script, bible)
+    rules = {issue.get("rule") for issue in report.evidence_issues}
+
+    assert report.status == "FAIL"
+    assert {"PREMATURE_SIGNOFF", "DUPLICATE_SIGNOFF", "CONTENT_AFTER_SIGNOFF"} <= rules
+
+
+def test_qc_accepts_single_signoff_only_at_final_segment():
+    bible = StoryBible(
+        episode_id="EP_QC_ONE_ENDING",
+        title="Một câu chuyện liền mạch",
+        protagonist={"name": "Nam", "char_id": "NAM"},
+    )
+
+    issues = ScriptProseQCV3Engine().audit_script_prose(
+        FullScript(
+            episode_id=bible.episode_id,
+            title=bible.title,
+            host={"id": "MINH", "voice": "Binh"},
+            segments=_base_valid_segments(),
+        ),
+        bible,
+    )
+
+    ending_rules = {
+        "PREMATURE_SIGNOFF",
+        "DUPLICATE_SIGNOFF",
+        "CONTENT_AFTER_SIGNOFF",
+        "MISSING_FINAL_SIGNOFF",
+        "ENDING_PROFILE_PLACEMENT",
+    }
+    assert not any(issue.get("rule") in ending_rules for issue in issues)
+
+
+def test_qc_matches_locked_numbers_written_naturally_in_vietnamese(qc_env):
+    qc: ScriptQCEngine = qc_env["qc"]
+    bible = StoryBible(
+        episode_id="EP_QC_VI_NUMBERS",
+        title="Đối chiếu con số tự nhiên",
+        protagonist={"name": "Phương", "char_id": "PHUONG"},
+        critical_facts=[
+            LockedFact(fact_id="F1", field="timeline_months", value="18 tháng", status="LOCKED"),
+            LockedFact(fact_id="F2", field="fraud_amount", value="2.2 tỷ VNĐ", status="LOCKED"),
+            LockedFact(fact_id="F3", field="decoy_payment", value="10 triệu VNĐ/tháng", status="LOCKED"),
+        ],
+    )
+    segments = _base_valid_segments()
+    segments[1].text = (
+        "Sự việc kéo dài mười tám tháng; hồ sơ ghi khoản 2,2 tỷ đồng và "
+        "một khoản mười triệu đồng được chuyển đều mỗi tháng."
+    )
+    script = FullScript(
+        episode_id=bible.episode_id,
+        title=bible.title,
+        host={"id": "MINH", "voice": "Binh"},
+        segments=segments,
+    )
+
+    report = qc.run_qc(script, bible)
+
+    assert not any(conflict.get("fact_id") in {"F1", "F2", "F3"} for conflict in report.fact_conflicts)
 
 
 def test_qc_detects_hook_vs_reveal_contradiction(qc_env):
@@ -159,7 +252,8 @@ def test_qc_detects_overlong_ending_proportion(qc_env):
 
     script = FullScript(episode_id="EP_QC_END", title="Tỷ lệ kết", host={"id": "MINH", "voice": "Binh"}, segments=segs)
     report = qc.run_qc(script, bible)
-    assert report.status == "NEEDS_REVISION"
+    assert report.status == "FAIL"
+    assert any(iss.get("rule") == "PREMATURE_SIGNOFF" for iss in report.evidence_issues)
     assert any(iss.get("rule") == "ENDING_PROPORTION_VIOLATION" for iss in report.evidence_issues)
 
 

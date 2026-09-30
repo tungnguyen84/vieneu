@@ -446,7 +446,7 @@ class MockScriptAIProvider(ScriptAIProvider):
         for idx, text in enumerate(reflection_lines):
             sid = f"{idx + 85:03d}"
             aud = (sid == "086")
-            prof = "COMMENT" if idx < 2 else "ENDING"
+            prof = "COMMENT" if idx < 2 else ("NORMAL" if idx == 2 else "ENDING")
             speed = 1.025 if aud else (0.965 if prof == "ENDING" else 1.01)
             segments.append(ScriptSegment(id=sid, speaker=host_id, text=text, delivery_profile=prof, importance="normal", audience_address=aud, speed=speed))
 
