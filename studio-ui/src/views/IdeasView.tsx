@@ -80,6 +80,9 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
         core_mystery: idea.core_mystery || '',
         possible_reveal: idea.possible_reveal || '',
         novelty_score: idea.novelty_score || idea.novelty || 8.5,
+        original_user_topic: idea.original_user_topic || direction || '',
+        topic_intent: idea.topic_intent,
+        topic_adherence_score: idea.topic_adherence_score,
       };
       const res = await fetch(`/api/projects/${projectId}/ideas/select`, {
         method: 'POST',
@@ -211,11 +214,16 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
                       </div>
 
                       <div className="text-right shrink-0 ml-4 flex flex-col items-end justify-between h-full">
-                        <div>
+                        <div className="flex flex-col items-end space-y-1">
                           <span className="text-[10px] text-[#64748B] block">Novelty Score</span>
                           <span className="font-mono-code text-sm font-bold text-[#10B981]">
                             {idea.novelty_score} / 10
                           </span>
+                          {idea.topic_adherence_score !== undefined && idea.topic_adherence_score !== null && (
+                            <span className="font-mono-code text-[10px] text-[#3B82F6] font-semibold bg-[#3B82F6]/15 border border-[#3B82F6]/30 px-1.5 py-0.5 rounded">
+                              Topic Match: {Math.round(idea.topic_adherence_score)}%
+                            </span>
+                          )}
                         </div>
                         <button
                           onClick={() => handleSelectIdea(idea)}

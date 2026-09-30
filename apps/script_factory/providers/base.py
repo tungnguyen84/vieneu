@@ -20,6 +20,8 @@ class ScriptAIProvider(ABC):
         diversity_categories: List[str],
         hook_archetypes: List[str],
         model: Optional[str] = None,
+        user_topic: Optional[str] = None,
+        topic_intent: Optional[Any] = None,
     ) -> Tuple[List[IdeaItem], int, int]:
         """Generates premise ideas. Returns (ideas_list, input_tokens, output_tokens)."""
         pass

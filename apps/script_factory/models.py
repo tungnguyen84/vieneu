@@ -128,6 +128,9 @@ class IdeaItem:
     title_curiosity_gap: Optional[float] = None
     locked_fields: List[str] = field(default_factory=list)
     selected_for_pilot: bool = False
+    original_user_topic: Optional[str] = None
+    topic_intent: Optional[Dict[str, Any]] = None
+    topic_adherence_score: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -169,6 +172,9 @@ class StoryBible:
     structured_clues: List[Dict[str, Any]] = field(default_factory=list)
     reveal_justifications: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     story_qc_report: Optional[Dict[str, Any]] = None
+    original_user_topic: Optional[str] = None
+    topic_intent: Optional[Dict[str, Any]] = None
+    topic_adherence: Optional[Dict[str, Any] | float] = None
     status: str = "DRAFT"
     approved_by: Optional[str] = None
     approved_at: Optional[float] = None

@@ -64,6 +64,8 @@ class IdeaGenerator:
         count: int = 10,
         model: Optional[str] = None,
         is_pilot: bool = False,
+        user_topic: Optional[str] = None,
+        topic_intent: Optional[Any] = None,
     ) -> List[IdeaItem]:
         """
         Generates a batch of premise ideas (10, 20, 50, 100).
@@ -79,6 +81,15 @@ class IdeaGenerator:
         self.cost_ctrl.check_budget_pre_flight(batch_size=count)
 
         existing = [] if is_pilot else self.load_idea_bank()
+
+        from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
+        topic_intent_obj = None
+        if isinstance(topic_intent, TopicIntent):
+            topic_intent_obj = topic_intent
+        elif isinstance(topic_intent, dict):
+            topic_intent_obj = TopicIntent.from_dict(topic_intent)
+        elif user_topic:
+            topic_intent_obj = extract_topic_intent(user_topic)
 
         # Load categories from story formula
         diversity_categories = []
@@ -100,6 +111,8 @@ class IdeaGenerator:
                 diversity_categories=diversity_categories,
                 hook_archetypes=hook_archetypes,
                 model=model,
+                user_topic=user_topic or (topic_intent_obj.original_topic if topic_intent_obj else None),
+                topic_intent=topic_intent_obj,
             )
             lat = time.time() - t0
             self.cost_ctrl.record_operation(

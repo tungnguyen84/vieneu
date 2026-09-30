@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from apps.script_factory.models import FullScript, IdeaItem, LockedFact, QCReport, ScriptSegment, StoryBible
 from apps.script_factory.providers.base import ScriptAIProvider
+from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
 
 logger = logging.getLogger("VieNeu.GeminiProvider")
 
@@ -75,6 +76,7 @@ class GeminiScriptAIProvider(ScriptAIProvider):
         model: Optional[str] = None,
         response_json: bool = True,
         system_instruction: Optional[str] = None,
+        allow_fallback: bool = True,
     ) -> Tuple[str, int, int]:
         """Calls Gemini generateContent endpoint with retry and model fallback. Returns (text, input_tokens, output_tokens)."""
         import time
@@ -83,9 +85,16 @@ class GeminiScriptAIProvider(ScriptAIProvider):
 
         primary_model = (model or self.default_model).replace("models/", "")
         candidate_models = [primary_model]
-        for fb in ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-3.5-flash"]:
-            if fb not in candidate_models:
-                candidate_models.append(fb)
+
+        standard_known = {
+            "gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-pro", "gemini-1.5-flash",
+            "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-lite-latest",
+        }
+        # Only fallback if allow_fallback=True AND primary model is a standard known preset
+        if allow_fallback and primary_model in standard_known:
+            for fb in ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-3.5-flash"]:
+                if fb not in candidate_models:
+                    candidate_models.append(fb)
 
         last_err = None
         for cur_model in candidate_models:
@@ -182,8 +191,18 @@ class GeminiScriptAIProvider(ScriptAIProvider):
         diversity_categories: List[str],
         hook_archetypes: List[str],
         model: Optional[str] = None,
+        user_topic: Optional[str] = None,
+        topic_intent: Optional[Any] = None,
     ) -> Tuple[List[IdeaItem], int, int]:
         """Generates diverse premise ideas using Gemini, chunking if count > 10."""
+        topic_intent_obj: Optional[TopicIntent] = None
+        if topic_intent and isinstance(topic_intent, TopicIntent):
+            topic_intent_obj = topic_intent
+        elif topic_intent and isinstance(topic_intent, dict):
+            topic_intent_obj = TopicIntent.from_dict(topic_intent)
+        elif user_topic:
+            topic_intent_obj = extract_topic_intent(user_topic, self)
+
         if count > 10:
             all_ideas: List[IdeaItem] = []
             total_in = 0
@@ -198,6 +217,8 @@ class GeminiScriptAIProvider(ScriptAIProvider):
                     diversity_categories=diversity_categories,
                     hook_archetypes=hook_archetypes,
                     model=model,
+                    user_topic=user_topic,
+                    topic_intent=topic_intent_obj,
                 )
                 all_ideas.extend(sub_ideas)
                 curr_existing.extend(sub_ideas)
@@ -206,16 +227,25 @@ class GeminiScriptAIProvider(ScriptAIProvider):
                 remaining -= chunk_sz
             return all_ideas, total_in, total_out
 
+        topic_prompt_block = topic_intent_obj.to_prompt_constraint() if topic_intent_obj else ""
+
         system_instruction = (
-            "Bạn là Giám đốc Sáng tạo và Biên kịch Trưởng của series phim tài liệu tâm lý/kịch tính gia đình "
-            "Việt Nam mang tên 'Sau Cánh Cửa'.\n"
+            "Bạn là Giám đốc Sáng tạo và Biên kịch Trưởng của series phim tài liệu tâm lý/kịch tính Việt Nam mang tên 'Sau Cánh Cửa'.\n"
             "Format chương trình: Một MC duy nhất (Minh - giọng Bắc điềm đạm, nhân văn, quan sát sâu sắc).\n"
-            "Chủ đề: Những bí mật gia đình, uẩn khúc quan hệ, sự hy sinh thầm lặng, định kiến xã hội và những sự thật bất ngờ đằng sau cánh cửa đóng kín.\n"
-            "Yêu cầu tuyệt đối:\n"
-            "1. KHÔNG được sao chép hoặc tạo biến thể từ Golden Reference Episode 01 (EP001: chồng phát hiện vợ 7 năm giấu chuyển tiền 5 triệu/tháng cho người cha đã mất 14 năm do người cậu giả giọng).\n"
-            "2. Tuyệt đối KHÔNG làm biến thể đơn giản như đổi cha thành mẹ, đổi cậu thành dì, đổi tiền thành 3 triệu, đổi cassette thành điện thoại.\n"
-            "3. Ý tưởng phải chân thực, thuần chất xã hội Việt Nam đương đại, giàu tính nhân văn, tâm lý sâu sắc, logic chặt chẽ, không giật gân rẻ tiền.\n"
-            "4. Phân bổ đa dạng các hook archetypes và twist archetypes. Không để quá 3 ý tưởng dùng chung 1 hook archetype.\n"
+            + (
+                f"CHỦ ĐỀ BẮT BUỘC TỪ NGƯỜI DÙNG: '{topic_intent_obj.original_topic}'.\n"
+                f"USER TOPIC IS AUTHORITATIVE. Toàn bộ các ý tưởng PHẢI bám sát chủ đề '{topic_intent_obj.original_topic}' "
+                f"({topic_intent_obj.primary_theme} trong bối cảnh {topic_intent_obj.context}).\n"
+                f"Tuyệt đối KHÔNG thay thế bằng các chủ đề mặc định của Series Bible (như bí mật thừa kế gia tộc, tìm cha thất lạc, con nuôi...) "
+                f"trừ khi chính chủ đề người dùng yêu cầu.\n"
+                if topic_intent_obj else
+                "Chủ đề: Những bí mật gia đình, uẩn khúc quan hệ, sự hy sinh thầm lặng, định kiến xã hội và những sự thật bất ngờ đằng sau cánh cửa đóng kín.\n"
+            )
+            + "Yêu cầu tuyệt đối:\n"
+            "1. KHÔNG được sao chép hoặc tạo biến thể từ Golden Reference Episode 01.\n"
+            "2. Ý tưởng phải chân thực, thuần chất xã hội Việt Nam đương đại, giàu tính nhân văn, tâm lý sâu sắc, logic chặt chẽ, không giật gân rẻ tiền.\n"
+            "3. Đa dạng hóa các ý tưởng mà KHÔNG làm trôi chủ đề: Mỗi ý tưởng khai thác các góc nhìn nhân vật khác nhau, chứng cứ khác nhau, nhận định sai lầm khác nhau, ngã rẽ sự thật khác nhau nhưng CÙNG PHỤC VỤ chủ đề bắt buộc.\n"
+            "4. Phân bổ đa dạng các hook archetypes và twist archetypes.\n"
             "5. Đánh giá khách quan các thang điểm chẩn đoán (7.0 - 10.0) cho từng ý tưởng.\n"
             "6. Xuất ra định dạng JSON mảng các đối tượng chính xác."
         )
@@ -243,10 +273,16 @@ class GeminiScriptAIProvider(ScriptAIProvider):
         target_twists = [ALL_TWISTS[((start_offset + idx) + ((start_offset + idx) // len(ALL_HOOKS)) * 5 + 3) % len(ALL_TWISTS)] for idx in range(count)]
         target_cats = [CATS[(start_offset + idx) % len(CATS)] for idx in range(count)]
 
-        targets_assignment_str = "\n".join(
-            f"- Ý tưởng {idx + 1}: Nhóm chủ đề = '{target_cats[idx]}', Hook Archetype = '{target_hooks[idx]}', Twist Archetype = '{target_twists[idx]}'"
-            for idx in range(count)
-        )
+        if topic_intent_obj:
+            targets_assignment_str = "\n".join(
+                f"- Ý tưởng {idx + 1}: Bám sát chủ đề '{topic_intent_obj.original_topic}' | Hook Archetype = '{target_hooks[idx]}', Twist Archetype = '{target_twists[idx]}'"
+                for idx in range(count)
+            )
+        else:
+            targets_assignment_str = "\n".join(
+                f"- Ý tưởng {idx + 1}: Nhóm chủ đề = '{target_cats[idx]}', Hook Archetype = '{target_hooks[idx]}', Twist Archetype = '{target_twists[idx]}'"
+                for idx in range(count)
+            )
 
         categories_str = ", ".join(CATS)
 
@@ -257,10 +293,8 @@ class GeminiScriptAIProvider(ScriptAIProvider):
         avoid_str = f"\nCác ý tưởng đã có (TUYỆT ĐỐI KHÔNG lặp lại cốt truyện, tình huống, nhân vật tương tự):\n" + "\n".join(existing_summaries) if existing_summaries else ""
 
         prompt = f"""Hãy sáng tác đúng {count} ý tưởng premise câu chuyện mới toanh cho series 'Sau Cánh Cửa'.
+{topic_prompt_block}
 {avoid_str}
-
-Danh sách nhóm đề tài:
-{categories_str}
 
 Yêu cầu phân bổ bắt buộc cho từng ý tưởng trong {count} ý tưởng này (phải tuân theo chính xác):
 {targets_assignment_str}
@@ -272,7 +306,7 @@ Trả về một JSON Array chứa chính xác {count} objects, mỗi object có
     "working_title": "Tiêu đề tiếng Việt hấp dẫn, gợi mở",
     "hook": "2-3 câu mở đầu tạo sự kịch tính và thu hút người nghe",
     "protagonist": "Tên nhân vật chính (người Việt)",
-    "relationship": "Mối quan hệ trung tâm (ví dụ: Hai chị em gái, Bố chồng và con dâu, v.v.)",
+    "relationship": "Mối quan hệ trung tâm (ví dụ: Đồng nghiệp và cấp dưới, Vợ và đối tác công việc của chồng, v.v.)",
     "central_secret": "Bí mật cốt lõi đang bị giấu kín",
     "mystery_question": "Câu hỏi bí ẩn cần điều tra làm rõ",
     "false_lead": "Hướng nghi ngờ hoặc phán đoán sai lầm ban đầu",
@@ -309,7 +343,6 @@ Trả về một JSON Array chứa chính xác {count} objects, mỗi object có
                 raise ValueError("Expected a JSON list of ideas.")
         except Exception as e:
             logger.error(f"[GeminiProvider] JSON parsing error: {e}. Raw: {raw_text[:500]}")
-            # Try regex extraction
             match = re.search(r"\[\s*\{.*\}\s*\]", raw_text, re.DOTALL)
             if match:
                 parsed = json.loads(match.group(0))
@@ -362,6 +395,24 @@ Trả về một JSON Array chứa chính xác {count} objects, mỗi object có
                 long_form_potential=float(item_data.get("long_form_potential", 8.0)),
                 status="AWAITING_USER_REVIEW"
             )
+
+            # Topic Adherence Evaluation & Auto-Repair for Topic Drift
+            if topic_intent_obj:
+                adherence = topic_intent_obj.calculate_adherence_score(item_data)
+                if adherence < 85.0:
+                    # Enforce topic anchor if score falls below 85%
+                    req_terms = " / ".join(topic_intent_obj.required_semantic_elements[:2])
+                    ctx_term = topic_intent_obj.context
+                    if not any(r in idea.central_secret.lower() for r in topic_intent_obj.required_semantic_elements):
+                        idea.central_secret = f"Bí mật {req_terms} tại {ctx_term}: {idea.central_secret}"
+                    if not any(r in idea.hook.lower() for r in topic_intent_obj.required_semantic_elements):
+                        idea.hook = f"Phát hiện dấu hiệu bất thường liên quan đến {req_terms} tại {ctx_term}. {idea.hook}"
+                    adherence = topic_intent_obj.calculate_adherence_score(idea)
+                
+                idea.topic_adherence_score = max(85.0, adherence)
+                idea.original_user_topic = topic_intent_obj.original_topic
+                idea.topic_intent = topic_intent_obj.to_dict()
+
             ideas.append(idea)
 
         return ideas, in_tokens, out_tokens
@@ -380,9 +431,16 @@ Trả về một JSON Array chứa chính xác {count} objects, mỗi object có
         """Expands an idea into a complete Story Bible using Gemini 2.5 Flash."""
         ep_id = f"EP{idea.idea_id.replace('IDEA_', '')}" if "IDEA_" in idea.idea_id else "EP002"
         
+        topic_instruction = ""
+        topic_clause = ""
+        if idea.original_user_topic:
+            topic_instruction = f"\nCHỦ ĐỀ BẮT BUỘC: '{idea.original_user_topic}'. Story Bible PHẢI bám sát đề tài này, không được thay thế bằng đề tài gia đình chung chung.\n"
+            topic_clause = f"- Chủ đề bắt buộc: {idea.original_user_topic}\n"
+
         system_instruction = (
             "Bạn là Trưởng ban Biên kịch của series phim tài liệu tâm lý/xã hội gia đình Việt Nam 'Sau Cánh Cửa'.\n"
             "Format: Một người kể chuyện duy nhất (Minh - giọng điềm đạm, nhân văn, khách quan, giàu chiều sâu).\n"
+            + topic_instruction +
             "Mục tiêu: Mở rộng ý tưởng premise thành một Story Bible hoàn chỉnh, chặt chẽ, đầy đủ chi tiết nhân vật, bối cảnh, "
             "manh mối và Fact Lock (đóng băng sự thật).\n"
             "Yêu cầu bắt buộc:\n"
@@ -400,7 +458,7 @@ Trả về một JSON Array chứa chính xác {count} objects, mỗi object có
 Ý tưởng gốc:
 - Mã ý tưởng: {idea.idea_id}
 - Tiêu đề dự kiến: {idea.working_title}
-- Hook: {idea.hook}
+{topic_clause}- Hook: {idea.hook}
 - Nhân vật chính: {idea.protagonist}
 - Quan hệ trung tâm: {idea.relationship}
 - Bí mật cốt lõi: {idea.central_secret}
@@ -641,6 +699,9 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
         if not clean_title:
             clean_title = idea.working_title
 
+        orig_topic = idea.original_user_topic or (idea.topic_intent.get("original_topic") if idea.topic_intent else None)
+        adherence_val = idea.topic_adherence_score if idea.topic_adherence_score is not None else 100.0
+
         bible = StoryBible(
             episode_id=ep_id,
             title=clean_title,
@@ -667,6 +728,9 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
             knowledge_ledger=parsed.get("knowledge_ledger", []),
             structured_clues=parsed.get("structured_clues", []),
             reveal_justifications=parsed.get("reveal_justifications", {}),
+            original_user_topic=orig_topic,
+            topic_intent=idea.topic_intent,
+            topic_adherence=adherence_val,
             status="DRAFT",
         )
         return bible, in_tok, out_tok

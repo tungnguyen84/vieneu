@@ -41,7 +41,19 @@ class MockScriptAIProvider(ScriptAIProvider):
         diversity_categories: List[str],
         hook_archetypes: List[str],
         model: Optional[str] = None,
+        user_topic: Optional[str] = None,
+        topic_intent: Optional[Any] = None,
     ) -> Tuple[List[IdeaItem], int, int]:
+        from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
+
+        topic_intent_obj = None
+        if isinstance(topic_intent, TopicIntent):
+            topic_intent_obj = topic_intent
+        elif isinstance(topic_intent, dict):
+            topic_intent_obj = TopicIntent.from_dict(topic_intent)
+        elif user_topic:
+            topic_intent_obj = extract_topic_intent(user_topic)
+
         existing_count = len(existing_ideas)
         ideas: List[IdeaItem] = []
 
@@ -51,15 +63,29 @@ class MockScriptAIProvider(ScriptAIProvider):
             title_base, hook_arch, div_cat, protag, rel, secret = self.SAMPLE_THEMES[theme_idx]
 
             idea_id = f"IDEA_{idx + 1:03d}"
-            title = f"{title_base} #{idx + 1}"
-            hook_text = f"Khi dọn dẹp căn phòng cũ, {protag} bất ngờ tìm thấy một bí mật mà {rel.lower()} đã che giấu suốt nhiều năm..."
+
+            if topic_intent_obj:
+                orig = topic_intent_obj.original_topic
+                req1 = topic_intent_obj.required_semantic_elements[0] if topic_intent_obj.required_semantic_elements else orig
+                ctx = topic_intent_obj.context
+                title = f"{orig} #{idx + 1} - Góc khuất {protag}"
+                hook_text = f"Tại {ctx}, {protag} bất ngờ phát hiện dấu hiệu mờ ám liên quan đến {req1} giữa {rel.lower()}..."
+                secret_text = f"Bí mật {req1} tại {ctx}: {secret}"
+                rev2 = f"Chân tướng sự việc về {req1} tại {ctx} không như định kiến ban đầu: {secret.lower()}"
+                adherence_score = 95.0
+            else:
+                title = f"{title_base} #{idx + 1}"
+                hook_text = f"Khi dọn dẹp căn phòng cũ, {protag} bất ngờ tìm thấy một bí mật mà {rel.lower()} đã che giấu suốt nhiều năm..."
+                secret_text = secret
+                rev2 = f"Bí mật {secret.lower()}"
+                adherence_score = 100.0
+
             clue1 = f"Manh mối 1: Dấu vết chữ viết tay và con dấu đã mờ trên phong bì."
             clue2 = f"Manh mối 2: Lời khai mâu thuẫn của những người hàng xóm lớn tuổi."
             clue3 = f"Manh mối 3: Giấy tờ chứng từ xác thực tại cơ quan lưu trữ địa phương."
-            rev1 = f"Người tưởng như xa lạ thực chất lại là người có quan hệ máu mủ ruột thịt mật thiết."
-            rev2 = f"Bí mật {secret.lower()}"
+            rev1 = f"Người tưởng như xa lạ thực chất lại là người có quan hệ mật thiết."
             payoff = f"{protag} đối thoại trực tiếp trong nước mắt, tháo gỡ hiểu lầm sâu nặng bấy lâu."
-            reflection = f"Đằng sau cánh cửa gia đình, đôi khi sự im lặng không xuất phát từ phản bội mà từ nỗi sợ làm tổn thương người mình yêu thương."
+            reflection = f"Đằng sau cánh cửa đóng kín, sự thật dù bất ngờ nhưng mở ra lối thoát cho những người trong cuộc."
 
             item = IdeaItem(
                 idea_id=idea_id,
@@ -67,9 +93,9 @@ class MockScriptAIProvider(ScriptAIProvider):
                 hook=hook_text,
                 protagonist=protag,
                 relationship=rel,
-                central_secret=secret,
+                central_secret=secret_text,
                 mystery_question=f"Tại sao sự việc lại bị che giấu suốt từng ấy năm?",
-                false_lead=f"Ban đầu {protag} nghi ngờ có sự tham ô hoặc phản bội lợi ích cá nhân.",
+                false_lead=f"Ban đầu {protag} nghi ngờ có sự phản bội lợi ích cá nhân.",
                 clue_1=clue1,
                 clue_2=clue2,
                 clue_3=clue3,
@@ -80,6 +106,10 @@ class MockScriptAIProvider(ScriptAIProvider):
                 hook_archetype=hook_arch,
                 twist_archetype=div_cat,
                 estimated_strength=8.5,
+                novelty_score=8.8,
+                original_user_topic=topic_intent_obj.original_topic if topic_intent_obj else None,
+                topic_intent=topic_intent_obj.to_dict() if topic_intent_obj else None,
+                topic_adherence_score=adherence_score if topic_intent_obj else None,
                 status="DRAFT"
             )
             ideas.append(item)
@@ -221,6 +251,9 @@ class MockScriptAIProvider(ScriptAIProvider):
                     "character_knowledge_support": "Nhất quán với sổ cái nhận thức: chỉ người thân và cán bộ lưu trữ biết.",
                 },
             },
+            original_user_topic=idea.original_user_topic or (idea.topic_intent.get("original_topic") if idea.topic_intent else None),
+            topic_intent=idea.topic_intent,
+            topic_adherence=idea.topic_adherence_score if idea.topic_adherence_score is not None else 100.0,
             status="DRAFT"
         )
         return bible, 350, 750

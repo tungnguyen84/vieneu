@@ -30,12 +30,35 @@ PROJECTS_DIR = BASE_DIR / "projects"
 def get_configured_ai_provider():
     """Builds provider from credentials or falls back to Mock."""
     status = get_public_providers_status()
-    default_p = status.get("default_provider", "gemini")
-    model = status.get("default_model", "gemini-2.5-flash")
+    default_p = (status.get("default_provider") or "gemini").strip().lower()
+    model = (status.get("default_model") or "gemini-2.5-flash").strip()
 
+    if default_p == "gemini":
+        gemini_key = get_active_api_key("gemini")
+        if gemini_key:
+            return GeminiScriptAIProvider(api_key=gemini_key, default_model=model)
+    elif default_p in ("openai", "openai_compatible", "local"):
+        from apps.script_factory.providers.openai_provider import OpenAICompatibleProvider
+        prov_data = status.get("providers", {}).get(default_p, {})
+        key = get_active_api_key(default_p) or ""
+        base_url = prov_data.get("base_url") or ("http://localhost:11434/v1" if default_p == "local" else "https://api.openai.com/v1")
+        if key or default_p == "local":
+            return OpenAICompatibleProvider(
+                api_key=key,
+                default_model=model,
+                base_url=base_url,
+                provider_name=default_p
+            )
+
+    # Secondary checks
     gemini_key = get_active_api_key("gemini")
     if gemini_key:
         return GeminiScriptAIProvider(api_key=gemini_key, default_model=model)
+
+    openai_key = get_active_api_key("openai")
+    if openai_key:
+        from apps.script_factory.providers.openai_provider import OpenAICompatibleProvider
+        return OpenAICompatibleProvider(api_key=openai_key, default_model=model, provider_name="openai")
 
     return MockScriptAIProvider()
 
@@ -53,12 +76,43 @@ class GenerationService:
         count: int = 10,
         direction: str = ""
     ) -> List[Dict[str, Any]]:
-        """Generates structured ideas using Idea Bank and Novelty Engine."""
+        """Generates structured ideas using Idea Bank, TopicIntent and Novelty Engine."""
+        from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
+
+        proj_dir = PROJECTS_DIR / project_id
+        p_json = proj_dir / "project.json"
+        proj_meta = {}
+        if p_json.exists():
+            try:
+                with open(p_json, "r", encoding="utf-8") as f:
+                    proj_meta = json.load(f)
+            except Exception:
+                pass
+
+        user_topic = direction.strip()
+        if not user_topic:
+            user_topic = (proj_meta.get("topic") or proj_meta.get("premise") or "").strip()
+
+        topic_intent_obj = None
+        if user_topic:
+            topic_intent_obj = extract_topic_intent(user_topic)
+            if p_json.exists():
+                try:
+                    proj_meta["topic"] = user_topic
+                    proj_meta["original_user_topic"] = user_topic
+                    proj_meta["topic_intent"] = topic_intent_obj.to_dict()
+                    with open(p_json, "w", encoding="utf-8") as f:
+                        json.dump(proj_meta, f, ensure_ascii=False, indent=2)
+                except Exception:
+                    pass
+
         provider = self.get_provider()
         idea_gen = IdeaGenerator(provider=provider, cost_controller=self.cost_ctrl)
 
         ideas_list = idea_gen.generate_batch(
             count=min(count, 20),
+            user_topic=user_topic if user_topic else None,
+            topic_intent=topic_intent_obj,
         )
 
         results = []
@@ -70,6 +124,7 @@ class GenerationService:
             possible_reveal = getattr(idea, "reveal_1", "") or getattr(idea, "possible_reveal", "")
             emotional_angle = getattr(idea, "emotional_payoff", "") or getattr(idea, "emotional_angle", "")
             n_score = getattr(idea, "novelty_score", None) or 8.5
+            adherence_sc = getattr(idea, "topic_adherence_score", None)
             results.append({
                 "idea_id": idea.idea_id,
                 "title": title,
@@ -92,6 +147,9 @@ class GenerationService:
                 "novelty_score": round(float(n_score), 1),
                 "novelty_status": "APPROVED",
                 "is_duplicate": False,
+                "original_user_topic": getattr(idea, "original_user_topic", user_topic or None),
+                "topic_intent": getattr(idea, "topic_intent", topic_intent_obj.to_dict() if topic_intent_obj else None),
+                "topic_adherence_score": adherence_sc if adherence_sc is not None else (100.0 if user_topic else None),
             })
         return results
 
@@ -166,6 +224,15 @@ class GenerationService:
         except Exception:
             n_score = 8.8
 
+        orig_topic = sel_idea.get("original_user_topic") or proj_meta.get("original_user_topic") or proj_meta.get("topic") or clean_topic
+        top_intent = sel_idea.get("topic_intent") or proj_meta.get("topic_intent")
+        top_score = sel_idea.get("topic_adherence_score")
+        if top_score is not None:
+            try:
+                top_score = float(top_score)
+            except Exception:
+                top_score = 100.0
+
         idea = IdeaItem(
             idea_id=sel_idea.get("idea_id", f"IDEA_{project_id}"),
             working_title=working_title,
@@ -184,7 +251,10 @@ class GenerationService:
             reflection_theme=reflection,
             hook_archetype=hook_arch,
             twist_archetype=twist_arch,
-            novelty_score=n_score
+            novelty_score=n_score,
+            original_user_topic=orig_topic,
+            topic_intent=top_intent,
+            topic_adherence_score=top_score
         )
 
         provider = self.get_provider()
@@ -192,11 +262,20 @@ class GenerationService:
 
         # Generate using provider (StoryPlanner automatically validates & repairs causal/knowledge/clue/reveal logic)
         story_bible = planner.create_story_bible_from_idea(idea=idea, episode_id=project_id)
+        if orig_topic and not story_bible.original_user_topic:
+            story_bible.original_user_topic = orig_topic
+        if top_intent and not story_bible.topic_intent:
+            story_bible.topic_intent = top_intent
+        if top_score is not None and story_bible.topic_adherence is None:
+            story_bible.topic_adherence = top_score
 
         bible_dict = story_bible.to_dict()
         bible_dict["premise"] = clean_topic or story_bible.secret
         bible_dict["characters"] = [story_bible.protagonist, *story_bible.supporting_characters]
         bible_dict["fact_lock"] = [f.to_dict() if hasattr(f, 'to_dict') else f for f in story_bible.critical_facts]
+        bible_dict["original_user_topic"] = story_bible.original_user_topic
+        bible_dict["topic_intent"] = story_bible.topic_intent
+        bible_dict["topic_adherence"] = story_bible.topic_adherence
 
         bible_path = story_dir / "story_bible.json"
         with open(bible_path, "w", encoding="utf-8") as f:
@@ -208,6 +287,9 @@ class GenerationService:
                     p_curr = json.load(f)
                 p_curr["title"] = story_bible.title or working_title
                 p_curr["topic"] = clean_topic
+                p_curr["original_user_topic"] = orig_topic
+                p_curr["topic_intent"] = top_intent
+                p_curr["topic_adherence"] = story_bible.topic_adherence
                 with open(p_json, "w", encoding="utf-8") as f:
                     json.dump(p_curr, f, ensure_ascii=False, indent=2)
             except Exception:

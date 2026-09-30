@@ -25,8 +25,11 @@ export const SettingsView: React.FC = () => {
   // Form states per provider
   const [keysInput, setKeysInput] = useState<Record<string, string>>({});
   const [modelsInput, setModelsInput] = useState<Record<string, string>>({});
+  const [customModelsInput, setCustomModelsInput] = useState<Record<string, string>>({});
   const [baseUrlsInput, setBaseUrlsInput] = useState<Record<string, string>>({});
   const [showKey, setShowKey] = useState<Record<string, boolean>>({});
+  const [availableModelsMap, setAvailableModelsMap] = useState<Record<string, string[]>>({});
+  const [fetchingModels, setFetchingModels] = useState<Record<string, boolean>>({});
 
   // Action status per provider
   const [testing, setTesting] = useState<Record<string, boolean>>({});
@@ -43,12 +46,25 @@ export const SettingsView: React.FC = () => {
         if (data.providers) {
           const m: Record<string, string> = {};
           const b: Record<string, string> = {};
+          const cm: Record<string, string> = {};
+          const am: Record<string, string[]> = {};
           Object.entries(data.providers).forEach(([pName, pInfo]) => {
-            m[pName] = pInfo.model;
+            const avail = pInfo.available_models || [];
+            am[pName] = avail;
+            const chosen = pInfo.model || pInfo.model_id || '';
+            if (chosen && !avail.includes(chosen)) {
+              m[pName] = '__custom__';
+              cm[pName] = chosen;
+            } else {
+              m[pName] = chosen;
+              cm[pName] = '';
+            }
             if (pInfo.base_url) b[pName] = pInfo.base_url;
           });
           setModelsInput(m);
+          setCustomModelsInput(cm);
           setBaseUrlsInput(b);
+          setAvailableModelsMap(am);
         }
         setLoadingProviders(false);
       })
@@ -67,18 +83,42 @@ export const SettingsView: React.FC = () => {
     fetchProviders();
   }, []);
 
+  const getEffectiveModel = (provider: string): string => {
+    if (modelsInput[provider] === '__custom__') {
+      return (customModelsInput[provider] || '').trim();
+    }
+    return modelsInput[provider] || '';
+  };
+
+  const handleFetchModels = async (provider: string) => {
+    setFetchingModels((prev) => ({ ...prev, [provider]: true }));
+    try {
+      const res = await fetch(`/api/ai/providers/${provider}/models`);
+      const data = await res.json();
+      if (data.models && Array.isArray(data.models) && data.models.length > 0) {
+        setAvailableModelsMap((prev) => ({ ...prev, [provider]: data.models }));
+      }
+    } catch (e) {
+      console.error('Fetch models error:', e);
+    } finally {
+      setFetchingModels((prev) => ({ ...prev, [provider]: false }));
+    }
+  };
+
   const handleTestConnection = async (provider: string) => {
     setTesting((prev) => ({ ...prev, [provider]: true }));
     setTestResult((prev) => ({ ...prev, [provider]: null }));
 
     try {
+      const effectiveModel = getEffectiveModel(provider);
       const res = await fetch('/api/ai/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider,
           api_key: keysInput[provider] || undefined,
-          model: modelsInput[provider] || undefined,
+          model: effectiveModel || undefined,
+          model_id: effectiveModel || undefined,
           base_url: baseUrlsInput[provider] || undefined,
         }),
       });
@@ -103,13 +143,15 @@ export const SettingsView: React.FC = () => {
   const handleSaveProvider = async (provider: string) => {
     setSaving((prev) => ({ ...prev, [provider]: true }));
     try {
+      const effectiveModel = getEffectiveModel(provider);
       const res = await fetch('/api/ai/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider,
           api_key: keysInput[provider] || '',
-          model: modelsInput[provider] || undefined,
+          model: effectiveModel || undefined,
+          model_id: effectiveModel || undefined,
           base_url: baseUrlsInput[provider] || undefined,
         }),
       });
@@ -119,7 +161,7 @@ export const SettingsView: React.FC = () => {
         fetchProviders();
         setTestResult((prev) => ({
           ...prev,
-          [provider]: { success: true, message: 'Đã lưu cấu hình an toàn!' },
+          [provider]: { success: true, message: `Đã lưu cấu hình an toàn! (Model: ${effectiveModel || 'mặc định'})` },
         }));
       }
     } catch (e: any) {
@@ -283,8 +325,21 @@ export const SettingsView: React.FC = () => {
                       </div>
 
                       {/* Model Selector */}
-                      <div>
-                        <label className="text-[11px] text-[#64748B] block mb-1">Mô hình AI (Model)</label>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] text-[#64748B] block">Mô hình AI (Model)</label>
+                          <button
+                            type="button"
+                            onClick={() => handleFetchModels(pName)}
+                            disabled={fetchingModels[pName]}
+                            className="text-[10px] text-[#3B82F6] hover:underline flex items-center space-x-1 cursor-pointer"
+                          >
+                            {fetchingModels[pName] ? (
+                              <Loader2 size={10} className="animate-spin" />
+                            ) : null}
+                            <span>Lấy danh sách model</span>
+                          </button>
+                        </div>
                         <select
                           value={modelsInput[pName] || pInfo.model}
                           onChange={(e) =>
@@ -292,12 +347,30 @@ export const SettingsView: React.FC = () => {
                           }
                           className="w-full bg-[#0B0F17] border border-[#28354D] rounded p-2 text-xs text-[#F8FAFC] focus:outline-none focus:border-[#3B82F6]"
                         >
-                          {pInfo.available_models.map((m) => (
+                          {(availableModelsMap[pName] || pInfo.available_models).map((m) => (
                             <option key={m} value={m}>
                               {m}
                             </option>
                           ))}
+                          <option value="__custom__">✏️ Model tùy chỉnh...</option>
                         </select>
+
+                        {modelsInput[pName] === '__custom__' && (
+                          <div className="pt-1">
+                            <input
+                              type="text"
+                              value={customModelsInput[pName] || ''}
+                              onChange={(e) =>
+                                setCustomModelsInput((prev) => ({ ...prev, [pName]: e.target.value }))
+                              }
+                              placeholder="Nhập ID model (vd: gemini-1.5-flash-latest, mistral-large...)"
+                              className="w-full bg-[#0B0F17] border border-[#E11D48]/70 rounded p-2 font-mono-code text-xs text-[#F8FAFC] focus:outline-none focus:border-[#E11D48]"
+                            />
+                            <span className="text-[10px] text-[#94A3B8] block mt-0.5">
+                              Model tùy chỉnh sẽ được gọi trực tiếp không qua fallback tự động.
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Base URL (if applicable) */}

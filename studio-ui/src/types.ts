@@ -166,6 +166,7 @@ export interface ProviderInfo {
   has_key: boolean;
   masked_key: string;
   model: string;
+  model_id?: string;
   available_models: string[];
   base_url?: string;
 }
@@ -188,6 +189,9 @@ export interface IdeaItem {
   novelty_score: number;
   novelty_status: string;
   is_duplicate: boolean;
+  original_user_topic?: string;
+  topic_intent?: any;
+  topic_adherence_score?: number;
 }
 
 export interface ScriptQCReport {

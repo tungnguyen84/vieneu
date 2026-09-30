@@ -118,6 +118,7 @@ def get_public_providers_status() -> Dict[str, Any]:
         if is_connected:
             has_any_connected = True
 
+        curr_m = prov_data.get("model", p["default_model"])
         provider_entry = {
             "id": pid,
             "name": p["name"],
@@ -125,8 +126,9 @@ def get_public_providers_status() -> Dict[str, Any]:
             "is_connected": is_connected,
             "has_key": bool(api_key),
             "is_default": (pid == default_p),
-            "model": prov_data.get("model", p["default_model"]),
-            "current_model": prov_data.get("model", p["default_model"]),
+            "model": curr_m,
+            "current_model": curr_m,
+            "model_id": curr_m,
             "available_models": p["models"],
             "models": p["models"],
             "masked_key": mask_key(api_key) if api_key else "Chưa cấu hình",
@@ -151,6 +153,7 @@ def save_provider_credentials(
     provider_id: Optional[str] = None,
     api_key: str = "",
     model: Optional[str] = None,
+    model_id: Optional[str] = None,
     base_url: Optional[str] = None,
     set_as_default: bool = False,
     provider: Optional[str] = None,
@@ -159,16 +162,20 @@ def save_provider_credentials(
     pid = (provider_id or provider or "gemini").strip().lower()
     prov_def = next((p for p in SUPPORTED_PROVIDERS if p["id"] == pid), None)
     default_m = prov_def["default_model"] if prov_def else "gemini-2.5-flash"
-    chosen_model = (model or default_m).strip()
+    chosen_model = (model_id or model or default_m).strip()
 
     data = _load_raw_secrets()
     if "providers" not in data:
         data["providers"] = {}
 
+    stored_prov = data["providers"].get(pid, {})
+    clean_key = api_key.strip() if api_key else stored_prov.get("api_key", "")
+    clean_base = base_url.strip() if base_url is not None else stored_prov.get("base_url", "")
+
     data["providers"][pid] = {
-        "api_key": api_key.strip(),
+        "api_key": clean_key,
         "model": chosen_model,
-        "base_url": base_url.strip() if base_url else "",
+        "base_url": clean_base,
     }
 
     if set_as_default or not data.get("default_provider"):
@@ -178,8 +185,8 @@ def save_provider_credentials(
     _save_raw_secrets(data)
 
     # Sync to environment variable for existing Script Factory providers
-    if prov_def and prov_def.get("env_var"):
-        os.environ[prov_def["env_var"]] = api_key.strip()
+    if prov_def and prov_def.get("env_var") and clean_key:
+        os.environ[prov_def["env_var"]] = clean_key
 
     return {"status": "saved", "configured": True, **get_public_providers_status()}
 
@@ -223,11 +230,10 @@ def test_provider_connection(
 
     prov_def = next((p for p in SUPPORTED_PROVIDERS if p["id"] == pid), None)
     if not prov_def:
-        return {"success": False, "message": f"Không tìm thấy cấu hình nhà cung cấp {pid}."}
-
+        return {"success": False, "message": f"Không tìm thấy cấu hình nhà cung cấp {pid}.", "model": actual_model}
 
     if prov_def["needs_key"] and not actual_key:
-        return {"success": False, "message": "Vui lòng nhập API Key trước khi kiểm tra."}
+        return {"success": False, "message": "Vui lòng nhập API Key trước khi kiểm tra.", "model": actual_model}
 
     # Test logic
     if pid == "gemini":
@@ -245,14 +251,14 @@ def test_provider_connection(
                     }
         except urllib.error.HTTPError as e:
             if e.code == 400 or e.code == 403:
-                return {"success": False, "message": "API key không hợp lệ hoặc đã bị khóa."}
+                return {"success": False, "message": "API key không hợp lệ hoặc đã bị khóa.", "model": actual_model}
             elif e.code == 429:
-                return {"success": False, "message": "Tài khoản đã hết quota hoặc bị rate limit."}
+                return {"success": False, "message": "Tài khoản đã hết quota hoặc bị rate limit.", "model": actual_model}
             elif e.code == 404:
-                return {"success": False, "message": f"Model '{actual_model}' không tồn tại hoặc chưa được cấp quyền."}
-            return {"success": False, "message": f"Lỗi HTTP {e.code} từ máy chủ Google Gemini."}
+                return {"success": False, "message": f"Model '{actual_model}' không tồn tại hoặc chưa được cấp quyền.", "model": actual_model}
+            return {"success": False, "message": f"Lỗi HTTP {e.code} từ máy chủ Google Gemini.", "model": actual_model}
         except Exception:
-            return {"success": False, "message": "Không thể kết nối mạng đến Google Gemini."}
+            return {"success": False, "message": "Không thể kết nối mạng đến Google Gemini.", "model": actual_model}
 
     elif pid in ["openai", "openai_compatible"]:
         api_base = actual_url or "https://api.openai.com/v1"
@@ -294,3 +300,70 @@ def get_active_api_key(provider_id: str) -> Optional[str]:
     data = _load_raw_secrets()
     prov_data = data.get("providers", {}).get(provider_id, {})
     return prov_data.get("api_key") or os.getenv(f"{provider_id.upper()}_API_KEY")
+
+
+def fetch_available_models(provider_id: Optional[str] = None, provider: Optional[str] = None) -> Dict[str, Any]:
+    """Fetches real model list from provider API if reachable, else returns presets."""
+    pid = (provider_id or provider or "gemini").strip().lower()
+    prov_def = next((p for p in SUPPORTED_PROVIDERS if p["id"] == pid), None)
+    fallback_models = prov_def["models"] if prov_def else []
+
+    data = _load_raw_secrets()
+    stored = data.get("providers", {}).get(pid, {})
+    actual_key = (stored.get("api_key") or os.getenv(f"{pid.upper()}_API_KEY", "")).strip()
+    actual_url = (stored.get("base_url") or "").strip()
+
+    if pid == "gemini":
+        if not actual_key:
+            return {"success": False, "models": fallback_models, "message": "Chưa cấu hình API Key"}
+        try:
+            import urllib.request
+            url = f"https://generativelanguage.googleapis.com/v1beta/models?key={actual_key}"
+            req = urllib.request.Request(url, headers={"User-Agent": "SCC-Studio/1.1"})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                if resp.status == 200:
+                    res_data = json.loads(resp.read().decode("utf-8"))
+                    models = []
+                    for m in res_data.get("models", []):
+                        m_name = m.get("name", "").replace("models/", "")
+                        if "gemini" in m_name:
+                            models.append(m_name)
+                    if models:
+                        return {"success": True, "models": sorted(list(set(models)))}
+        except Exception as e:
+            return {"success": False, "models": fallback_models, "error": str(e)}
+
+    elif pid in ("openai", "openai_compatible"):
+        if prov_def and prov_def.get("needs_key") and not actual_key:
+            return {"success": False, "models": fallback_models, "message": "Chưa cấu hình API Key"}
+        api_base = actual_url or "https://api.openai.com/v1"
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                f"{api_base.rstrip('/')}/models",
+                headers={"Authorization": f"Bearer {actual_key}", "User-Agent": "SCC-Studio/1.1"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                if resp.status == 200:
+                    res_data = json.loads(resp.read().decode("utf-8"))
+                    models = [m.get("id") for m in res_data.get("data", []) if m.get("id")]
+                    if models:
+                        return {"success": True, "models": sorted(list(set(models)))}
+        except Exception as e:
+            return {"success": False, "models": fallback_models, "error": str(e)}
+
+    elif pid == "local":
+        api_base = actual_url or "http://localhost:11434"
+        try:
+            import urllib.request
+            req = urllib.request.Request(f"{api_base.rstrip('/')}/api/tags", headers={"User-Agent": "SCC-Studio/1.1"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                if resp.status == 200:
+                    res_data = json.loads(resp.read().decode("utf-8"))
+                    models = [m.get("name") for m in res_data.get("models", []) if m.get("name")]
+                    if models:
+                        return {"success": True, "models": sorted(list(set(models)))}
+        except Exception as e:
+            return {"success": False, "models": fallback_models, "error": str(e)}
+
+    return {"success": True, "models": fallback_models}

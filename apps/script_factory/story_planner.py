@@ -90,6 +90,13 @@ class StoryPlanner:
                 model=model,
             )
             bible.episode_id = target_ep_id
+            if idea.original_user_topic:
+                bible.original_user_topic = idea.original_user_topic
+            if idea.topic_intent:
+                bible.topic_intent = idea.topic_intent
+            if idea.topic_adherence_score is not None:
+                bible.topic_adherence = idea.topic_adherence_score
+
             # Audit and auto-repair causal gaps, knowledge contradictions, clue jumps, and reveal justifications
             self.validate_story_bible(bible, auto_repair=True)
             lat = time.time() - t0

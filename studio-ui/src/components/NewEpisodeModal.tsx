@@ -19,7 +19,7 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
   const [startMode, setStartMode] = useState<'ideas' | 'topic' | 'script'>('ideas');
 
   // Option A (Ideas) state
-  const [direction, setDirection] = useState<string>('BÍ MẬT GIA ĐÌNH');
+  const [direction, setDirection] = useState<string>('');
   const [generatedIdeas, setGeneratedIdeas] = useState<IdeaItem[]>([]);
   const [selectedIdea, setSelectedIdea] = useState<IdeaItem | null>(null);
   const [loadingIdeas, setLoadingIdeas] = useState<boolean>(false);
@@ -435,7 +435,7 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
                         type="text"
                         value={direction}
                         onChange={(e) => setDirection(e.target.value)}
-                        placeholder="Định hướng câu chuyện (vd: Bí mật người mẹ kế, Cuốn nhật ký cũ)"
+                        placeholder="Chủ đề bắt buộc (vd: Bí mật ngoại tình công sở, Thừa kế đất đai...)"
                         className="flex-1 bg-[#111827] border border-[#28354D] rounded p-2 text-xs text-[#F8FAFC] focus:outline-none focus:border-[#E11D48]"
                       />
                       <button
@@ -493,9 +493,16 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
                                 </div>
 
                                 <div className="text-right shrink-0 flex flex-col items-end justify-between">
-                                  <span className="font-mono-code text-[11px] text-[#10B981] font-semibold bg-[#10B981]/10 px-1.5 py-0.5 rounded">
-                                    Novelty: {idea.novelty_score}/10
-                                  </span>
+                                  <div className="flex flex-col items-end space-y-1">
+                                    <span className="font-mono-code text-[11px] text-[#10B981] font-semibold bg-[#10B981]/10 px-1.5 py-0.5 rounded">
+                                      Novelty: {idea.novelty_score}/10
+                                    </span>
+                                    {idea.topic_adherence_score !== undefined && idea.topic_adherence_score !== null && (
+                                      <span className="font-mono-code text-[10px] text-[#3B82F6] font-semibold bg-[#3B82F6]/15 border border-[#3B82F6]/30 px-1.5 py-0.5 rounded">
+                                        Topic Match: {Math.round(idea.topic_adherence_score)}%
+                                      </span>
+                                    )}
+                                  </div>
                                   <button
                                     type="button"
                                     onClick={(e) => {

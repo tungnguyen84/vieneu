@@ -26,6 +26,7 @@ from studio.backend.models import (
 )
 from studio.backend.credentials import (
     delete_provider_credentials,
+    fetch_available_models,
     get_public_providers_status,
     save_provider_credentials,
     test_provider_connection,
@@ -79,18 +80,22 @@ def get_providers_status():
 
 class SaveProviderRequest(BaseModel):
     provider: str
-    api_key: str
+    api_key: Optional[str] = ""
     model: Optional[str] = None
+    model_id: Optional[str] = None
     base_url: Optional[str] = None
+    set_as_default: Optional[bool] = False
 
 
 @app.post("/api/ai/save")
 def save_provider(req: SaveProviderRequest):
     return save_provider_credentials(
         provider=req.provider,
-        api_key=req.api_key,
-        model=req.model,
-        base_url=req.base_url
+        api_key=req.api_key or "",
+        model=req.model_id or req.model,
+        model_id=req.model_id,
+        base_url=req.base_url,
+        set_as_default=bool(req.set_as_default),
     )
 
 
@@ -107,6 +112,7 @@ class TestProviderRequest(BaseModel):
     provider: str
     api_key: Optional[str] = None
     model: Optional[str] = None
+    model_id: Optional[str] = None
     base_url: Optional[str] = None
 
 
@@ -115,9 +121,14 @@ def test_provider(req: TestProviderRequest):
     return test_provider_connection(
         provider=req.provider,
         api_key=req.api_key,
-        model=req.model,
+        model=req.model_id or req.model,
         base_url=req.base_url
     )
+
+
+@app.get("/api/ai/providers/{provider_id}/models")
+def get_provider_models(provider_id: str):
+    return fetch_available_models(provider_id=provider_id)
 
 
 # ---------------- PROJECT ENDPOINTS ----------------
