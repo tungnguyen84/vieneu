@@ -20,6 +20,10 @@ class MockScriptAIProvider(ScriptAIProvider):
     """High-fidelity deterministic offline provider for Script Factory."""
 
     provider_name: str = "mock"
+    default_model: Optional[str] = None
+
+    def __init__(self, default_model: Optional[str] = None, **kwargs):
+        self.default_model = default_model
 
     SAMPLE_THEMES = [
         ("Bức ảnh trong phong bì niêm phong", "FAMILY_PHOTO", "Family secrets", "Tuấn", "Mẹ và chị gái", "Mẹ giấu con trai việc chị gái thực chất là mẹ ruột sinh anh khi còn vị thành niên."),

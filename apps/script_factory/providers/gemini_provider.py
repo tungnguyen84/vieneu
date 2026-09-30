@@ -51,6 +51,9 @@ def _get_api_key(explicit_key: Optional[str] = None) -> str:
     return ""
 
 
+_EXHAUSTED_MODELS: set[str] = set()
+
+
 class GeminiScriptAIProvider(ScriptAIProvider):
     """Google Gemini AI provider for script generation, ideation, and review."""
 
@@ -89,15 +92,18 @@ class GeminiScriptAIProvider(ScriptAIProvider):
         candidate_models = [primary_model]
 
         standard_known = {
-            "gemini-2.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest",
-            "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash-lite",
-            "gemini-2.5-pro", "gemini-pro-latest"
+            "gemini-2.5-flash", "gemini-3-flash-preview", "gemini-flash-lite-latest",
+            "gemini-flash-latest", "gemini-3.5-flash", "gemini-3.5-flash-lite",
+            "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-pro-latest"
         }
         # Only fallback if allow_fallback=True AND primary model is a standard known preset
         if allow_fallback and primary_model in standard_known:
-            for fb in ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-3.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"]:
+            for fb in ["gemini-3-flash-preview", "gemini-flash-lite-latest", "gemini-flash-latest"]:
                 if fb not in candidate_models:
                     candidate_models.append(fb)
+
+        # Skip models known to be quota-exhausted during current execution
+        candidate_models = [m for m in candidate_models if m not in _EXHAUSTED_MODELS] or candidate_models
 
         last_err = None
         for cur_model in candidate_models:
@@ -164,7 +170,8 @@ class GeminiScriptAIProvider(ScriptAIProvider):
                     last_err = RuntimeError(f"Gemini API ({cur_model}) HTTP {e.code}: {clean_err}")
                     
                     # If daily quota limit exceeded, failover instantly without sleeping
-                    if e.code == 429 and ("perday" in clean_err.lower() or "limit: 20" in clean_err.lower() or "free_tier_requests" in clean_err.lower()):
+                    if e.code == 429 and ("quota" in clean_err.lower() or "perday" in clean_err.lower() or "limit: 20" in clean_err.lower() or "free_tier_requests" in clean_err.lower()):
+                        _EXHAUSTED_MODELS.add(cur_model)
                         logger.warning(f"[GeminiProvider] {cur_model} daily quota limit reached ({clean_err[:100]}). Immediately trying next model...")
                         break
 
@@ -450,7 +457,8 @@ Trả về một JSON Array chứa chính xác {count} objects, mỗi object có
             "2. Nhân vật đa chiều, không hoàn hảo, không có nạn nhân hoàn hảo hay kẻ ác một chiều. Mỗi người đều có nỗi sợ, sự bế tắc hoặc lý do im lặng.\n"
             "3. Logic chặt chẽ: Bước ngoặt 1 (Reveal 1) cần ít nhất 2 manh mối cụ thể hỗ trợ; Bước ngoặt 2 (Reveal 2) phải được gieo mầm manh mối từ trước.\n"
             "4. Thiết lập danh sách Fact Lock (critical_facts) đóng băng chính xác: tuổi tác, mối quan hệ, các năm/mốc thời gian, số tiền/tài sản, địa điểm, người nắm bí mật.\n"
-            "5. Xuất ra định dạng JSON hợp lệ."
+            "5. VÒNG ĐỜI QUAN HỆ & THỜI ĐIỂM (RELATIONSHIP LIFECYCLE & TIMELINE): Timeline phải theo trình tự thời gian tăng dần hợp lý. Nếu câu chuyện có nhiều người con cùng mang huyết thống của người ngoài hôn nhân, dòng thời gian và mối quan hệ BẮT BUỘC phải khớp hoàn toàn: giải thích việc tiếp tục duy trì gặp gỡ/liên lạc bí mật kéo dài đến năm nào bao trùm các lần thụ thai, tuyệt đối KHÔNG tuyên bố cắt đứt liên lạc từ trước mà sau đó vẫn sinh thêm con sinh học của người đó.\n"
+            "6. Xuất ra định dạng JSON hợp lệ."
         )
 
         direction_clause = f"\nCHỈ ĐẠO ĐẶC BIỆT CHO TẬP PHIM NÀY:\n{special_direction}\n" if special_direction else ""
@@ -780,12 +788,22 @@ STORY BIBLE HIỆN TẠI:
 DANH SÁCH LỖI QC CẦN SỬA:
 {issues_summary}
 
-Hãy sửa đổi và hoàn thiện Story Bible, đảm bảo bổ sung đầy đủ và chặt chẽ:
-1. causal_chains (nguyên nhân, quyết định, hành động, hệ quả, lý do giải pháp thông thường bất khả thi)
-2. knowledge_ledger (ai biết gì, khi nào biết, biết bằng cách nào, scope)
-3. structured_clues (clue, what_it_proves, what_it_does_NOT_prove, next_question)
-4. reveal_justifications (reveal_1 và reveal_2 có evidence_support, motivation_support, v.v.)
-5. critical_facts (các sự thật cốt lõi đóng băng)
+HƯỚNG DẪN SỬA CHỮA CỤ THỂ THEO TỪNG LOẠI LỖI:
+1. Nếu có lỗi RELATIONSHIP_TIMELINE_CONTRADICTION:
+   - Kiểm tra và sửa đổi timeline, relationships, secret, reveal_1, reveal_2 hoặc causal_chains.
+   - Nếu nhiều người con sinh ở các năm khác nhau cùng mang huyết thống của người ngoài hôn nhân, BẮT BUỘC phải làm rõ mối quan hệ/gặp gỡ bí mật kéo dài đến năm nào bao trùm các lần thụ thai, thay vì tuyên bố cắt đứt liên lạc từ trước khi các con sau được thụ thai; hoặc điều chỉnh lại chi tiết số lượng con/huyết thống cho logic và nhất quán tuyệt đối.
+2. Nếu có lỗi TIMELINE_FACT_CONTRADICTION:
+   - Sắp xếp timeline theo thứ tự năm tăng dần, đảm bảo không có sự kiện mâu thuẫn sinh học hoặc hành động sau khi qua đời.
+3. Nếu có lỗi CAUSAL_GAP:
+   - Hoàn thiện đầy đủ chuỗi CAUSE -> DECISION -> ACTION -> CONSEQUENCE cho cả reveal_1 và reveal_2, nêu rõ WHY, HOW và MOTIVATION (vì sao giải pháp thông thường là bất khả thi trong hoàn cảnh đó).
+4. Nếu có lỗi CHARACTER_KNOWLEDGE_CONTRADICTION:
+   - Chỉnh sửa câu chữ trong secret, reveal_1, reveal_2 để không mâu thuẫn với knowledge_ledger (không viết 'không ai hay biết' nếu có người thân biết).
+5. Bổ sung đầy đủ và chặt chẽ:
+   - causal_chains (nguyên nhân, quyết định, hành động, hệ quả, lý do giải pháp thông thường bất khả thi)
+   - knowledge_ledger (ai biết gì, khi nào biết, biết bằng cách nào, scope)
+   - structured_clues (clue, what_it_proves, what_it_does_NOT_prove, next_question)
+   - reveal_justifications (reveal_1 và reveal_2 có evidence_support, motivation_support, timeline_support, v.v.)
+   - critical_facts (các sự thật cốt lõi đóng băng)
 
 Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đúng định dạng schema chuẩn."""
 
@@ -813,6 +831,18 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
 
         parsed = _parse_json_safe(raw_text)
         if parsed and isinstance(parsed, dict):
+            if parsed.get("timeline"):
+                story_bible.timeline = parsed.get("timeline")
+            if parsed.get("relationships"):
+                story_bible.relationships = parsed.get("relationships")
+            if parsed.get("supporting_characters"):
+                story_bible.supporting_characters = parsed.get("supporting_characters")
+            if parsed.get("protagonist"):
+                story_bible.protagonist = parsed.get("protagonist")
+            if parsed.get("time_period"):
+                story_bible.time_period = parsed.get("time_period")
+            if parsed.get("locations"):
+                story_bible.locations = parsed.get("locations")
             if parsed.get("causal_chains"):
                 story_bible.causal_chains = parsed.get("causal_chains")
             if parsed.get("knowledge_ledger"):
@@ -821,6 +851,12 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
                 story_bible.structured_clues = parsed.get("structured_clues")
             if parsed.get("reveal_justifications"):
                 story_bible.reveal_justifications = parsed.get("reveal_justifications")
+            if parsed.get("events"):
+                story_bible.events = parsed.get("events")
+            if parsed.get("reveal_proofs"):
+                story_bible.reveal_proofs = parsed.get("reveal_proofs")
+            if parsed.get("narrative_skeleton"):
+                story_bible.narrative_skeleton = parsed.get("narrative_skeleton")
             if parsed.get("critical_facts"):
                 new_cf = []
                 for f_data in parsed.get("critical_facts", []):
@@ -838,8 +874,16 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
                 story_bible.reveal_2 = parsed.get("reveal_2")
             if parsed.get("secret"):
                 story_bible.secret = parsed.get("secret")
+            if parsed.get("false_lead"):
+                story_bible.false_lead = parsed.get("false_lead")
             if parsed.get("clues"):
                 story_bible.clues = parsed.get("clues")
+            if parsed.get("emotional_payoff"):
+                story_bible.emotional_payoff = parsed.get("emotional_payoff")
+            if parsed.get("reflection_theme"):
+                story_bible.reflection_theme = parsed.get("reflection_theme")
+            if parsed.get("ending"):
+                story_bible.ending = parsed.get("ending")
 
         story_bible.generation_request_id = str(uuid.uuid4())
         story_bible.generation_source = "REAL_AI"
@@ -901,7 +945,10 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
             f"6. VĂN PHONG TỰ NHIÊN 'SHOW, DON'T LABEL': Kể bằng hành động, vật thể, ánh mắt, khoảng lặng đời thường. TUYỆT ĐỐI CẤM dùng các cụm từ sáo rỗng AI như: 'bí mật động trời', 'sự thật động trời', 'đòn chí mạng', 'sự thật kinh hoàng', 'cuộc gặp gỡ định mệnh', 'đau đớn đến tận cùng', 'vĩ đại ẩn giấu', 'mê cung không lối thoát', 'nấc nghẹn ngào đến xé lòng', 'cơn địa chấn', 'sét đánh ngang tai', 'bi kịch đẫm nước mắt', 'sự thật rỉ máu', 'chiếc lồng kính ngột ngạt', 'bóng ma vô hình', 'cuộc chiến ngầm khốc liệt'.\n"
             f"7. PHẦN KẾT GỌN GÀNG (5-8%): Không giảng đạo lặp đi lặp lại nhiều đoạn cuối. Chỉ dùng đúng 1 phân đoạn đúc kết chiêm nghiệm duy nhất trước khi chào tạm biệt.\n"
             f"8. Phân loại delivery_profile chính xác theo 6 loại: HOOK, NORMAL, MYSTERY, REVEAL, COMMENT, ENDING. Không đặt câu hỏi khán giả (audience_address: false) trong phân đoạn REVEAL.\n"
-            f"9. TUYỆT ĐỐI KHÔNG DÙNG NHÃN TEMPLATE / DATABASE NỘI BỘ (INTERNAL LABELS): Lời đọc của MC là văn xuôi tự nhiên, TUYỆT ĐỐI KHÔNG chứa các nhãn kỹ thuật như: 'Nhân vật chính', 'Manh mối 1', 'Manh mối 2', 'Manh mối 3', 'Bước ngoặt 1', 'Bước ngoặt 2', 'Reveal 1', 'Reveal 2', 'Fact Lock', 'Story Bible', 'central_conflict', 'topic_intent'. Luôn dùng tên riêng cụ thể của nhân vật (ví dụ: {protag_name}) thay cho cụm danh xưng 'Nhân vật chính'."
+            f"9. TUYỆT ĐỐI KHÔNG DÙNG NHÃN TEMPLATE / DATABASE NỘI BỘ (INTERNAL LABELS): Lời đọc của MC là văn xuôi tự nhiên, TUYỆT ĐỐI KHÔNG chứa các nhãn kỹ thuật như: 'Nhân vật chính', 'Manh mối 1', 'Manh mối 2', 'Manh mối 3', 'Bước ngoặt 1', 'Bước ngoặt 2', 'Reveal 1', 'Reveal 2', 'Fact Lock', 'Story Bible', 'central_conflict', 'topic_intent'. Luôn dùng tên riêng cụ thể của nhân vật (ví dụ: {protag_name}) thay cho cụm danh xưng 'Nhân vật chính'.\n"
+            f"10. TRÁNH VĂN PHONG 'BÁO CÁO KIỂM ĐỊNH': Tuyệt đối không lặp đi lặp lại các câu rào đón như 'chưa đủ căn cứ để kết luận', 'chưa thể khẳng định', 'cần xác minh thêm', 'chưa phải câu trả lời'. Hãy thể hiện sự cẩn trọng qua hành động, suy nghĩ và phản ứng tự nhiên của nhân vật thay vì đọc đi đọc lại câu rào đón.\n"
+            f"11. GỌI TÊN NHÂN VẬT TỰ NHIÊN: Không lặp lại họ tên đầy đủ trong mọi câu. Sau khi giới thiệu ban đầu, hãy dùng đại từ nhân xưng tự nhiên ('anh', 'chị', 'ông', 'bà', 'cô', 'chú' hoặc gọi bằng tên riêng) để tạo sự gần gũi, ấm áp.\n"
+            f"12. PHẦN KẾT CÔ ĐỌNG (5-10%): Không kéo dài bài học luân lý hay lặp lại thông điệp đạo lý nhiều lần. Khép lại câu chuyện bằng hình ảnh đời thường xúc động và lời chào ngắn gọn của MC Minh."
         )
 
         # ---------------- PART 1: ACTS 1 to 5 (~40 to 50 Segments) ----------------

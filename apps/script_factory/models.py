@@ -176,6 +176,8 @@ class StoryBible:
     knowledge_ledger: List[Dict[str, Any]] = field(default_factory=list)
     structured_clues: List[Dict[str, Any]] = field(default_factory=list)
     reveal_justifications: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    events: List[Dict[str, Any]] = field(default_factory=list)
+    reveal_proofs: List[Dict[str, Any]] = field(default_factory=list)
     story_qc_report: Optional[Dict[str, Any]] = None
     original_user_topic: Optional[str] = None
     topic_intent: Optional[Dict[str, Any]] = None

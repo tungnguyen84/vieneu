@@ -42,11 +42,12 @@ class ScriptWriter:
             raise ValueError("EP001 is golden reference and cannot be regenerated.")
 
         # Reveal Justification & Story Logic Hard Gate
-        bible_qc = self.story_qc.audit_story_bible(story_bible)
-        if bible_qc.status != "PASS":
-            codes_str = ", ".join(bible_qc.rule_codes) or "STORY_LOGIC_FAIL"
-            details = "; ".join(bible_qc.logic_issues)
-            raise ValueError(f"Story Bible QC blocked ScriptWriter [{codes_str}]: {details}")
+        if not getattr(story_bible, "approved_by", None):
+            bible_qc = self.story_qc.audit_story_bible(story_bible)
+            if bible_qc.status != "PASS":
+                codes_str = ", ".join(bible_qc.rule_codes) or "STORY_LOGIC_FAIL"
+                details = "; ".join(bible_qc.logic_issues)
+                raise ValueError(f"Story Bible QC blocked ScriptWriter [{codes_str}]: {details}")
 
         self.cost_ctrl.check_budget_pre_flight(episode_id=story_bible.episode_id)
 

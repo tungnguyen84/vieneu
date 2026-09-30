@@ -16,9 +16,12 @@ Implements Sections 8 to 20:
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
+
+logger = logging.getLogger("VieNeu.StoryQC")
 
 from apps.script_factory.models import ApprovalStatus, IdeaItem, StoryBible
 from apps.script_factory.novelty_engine import (
@@ -665,6 +668,20 @@ class StoryQCEngine:
                     target="secret",
                 )
 
+        # ------------------------------------------------------------------
+        # 6. STORY LOGIC QC V3: TEMPORAL FACT GRAPH & RELATIONSHIP LIFECYCLE
+        # ------------------------------------------------------------------
+        from apps.script_factory.story_logic_v3 import StoryLogicV3Validator
+        v3_validator = StoryLogicV3Validator()
+        v3_issues = v3_validator.validate_story_bible(bible)
+        for v3_iss in v3_issues:
+            _add_issue(
+                rule=v3_iss["rule"],
+                message=v3_iss["message"],
+                severity=v3_iss.get("severity", "CRITICAL"),
+                target=v3_iss.get("target", "story_bible"),
+            )
+
         status = "PASS" if not issues else "FAIL"
         if status == "FAIL":
             bible.status = ApprovalStatus.NEEDS_LOGIC_REWRITE.value
@@ -695,13 +712,24 @@ class StoryQCEngine:
 
         active_provider = provider or self.provider
         if active_provider and hasattr(active_provider, "repair_story_bible") and report.issues:
-            try:
-                repaired, _, _ = active_provider.repair_story_bible(bible, report.issues)
-                recheck = self.audit_story_bible(repaired)
-                repaired.story_qc_report = recheck.to_dict()
-                return repaired
-            except Exception as e:
-                logger.warning(f"[StoryQCEngine] Provider repair_story_bible failed: {e}. Falling back to structural normalization.")
+            cur_bible = bible
+            cur_report = report
+            for round_idx in range(3):
+                try:
+                    logger.info(f"[StoryQCEngine] Running AI repair round {round_idx + 1}/3 with {len(cur_report.issues)} issues...")
+                    repaired, _, _ = active_provider.repair_story_bible(cur_bible, cur_report.issues)
+                    recheck = self.audit_story_bible(repaired)
+                    repaired.story_qc_report = recheck.to_dict()
+                    cur_bible = repaired
+                    cur_report = recheck
+                    if recheck.status == "PASS" or not any(iss.get("severity") == "CRITICAL" for iss in recheck.issues):
+                        logger.info(f"[StoryQCEngine] AI repair round {round_idx + 1} passed (status: {recheck.status})!")
+                        return cur_bible
+                except Exception as e:
+                    logger.warning(f"[StoryQCEngine] Provider repair_story_bible round {round_idx + 1} failed: {e}.")
+                    break
+            if cur_bible != bible:
+                return cur_bible
 
         protag_name = (
             bible.protagonist.get("name", "Nhân vật")

@@ -92,6 +92,10 @@ class StoryBibleSection(BaseModel):
     clues: List[str] = Field(default_factory=list)
     reflection_theme: str = ""
     title: str = ""
+    story_qc_report: Optional[Dict[str, Any]] = None
+    causal_chains: List[Dict[str, Any]] = Field(default_factory=list)
+    knowledge_ledger: List[Dict[str, Any]] = Field(default_factory=list)
+    reveal_justifications: Dict[str, Any] = Field(default_factory=dict)
 
 
 class CharacterItem(BaseModel):

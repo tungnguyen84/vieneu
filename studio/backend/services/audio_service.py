@@ -216,6 +216,9 @@ class AudioService:
         has_dry = self.get_audio_stem_path(project_id, "dry") is not None
         has_music = self.get_audio_stem_path(project_id, "music") is not None
 
+        from studio.backend.services.artifact_lineage import validate_full_script
+        lineage = validate_full_script(project_id, PROJECTS_DIR)
+
         if not master:
             return {
                 "available": False,
@@ -229,6 +232,9 @@ class AudioService:
                 "has_bgm": False,
                 "bgm_info": None,
                 "stems": {"final": False, "dry": False, "music": False},
+                "audio_gate_allowed": lineage.get("audio_gate_allowed", False),
+                "audio_gate_reason": lineage.get("audio_gate_reason"),
+                "script_lineage": lineage,
             }
         metadata = self._probe_audio(master)
         duration = metadata["duration_sec"]
@@ -330,6 +336,9 @@ class AudioService:
                 "dry": has_dry,
                 "music": has_music,
             },
+            "audio_gate_allowed": lineage.get("audio_gate_allowed", False),
+            "audio_gate_reason": lineage.get("audio_gate_reason"),
+            "script_lineage": lineage,
         }
 
     def _generate_peaks(self, duration: float, count: int = 120) -> List[float]:

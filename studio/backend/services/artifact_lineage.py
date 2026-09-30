@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import time
 import uuid
@@ -126,12 +127,56 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
     reasons = list(dict.fromkeys(reason for reason in reasons if reason))
     is_current = not reasons
     generated_at = script.get("created_at") or script.get("generated_at") or script.get("updated_at")
+
+    # Audio Gate requirements:
+    # 1. Script is current (is_current)
+    # 2. Stage status is APPROVED (or COMPLETED / LOCKED)
+    # 3. 0 unresolved CRITICAL QC issues in qc_report.json
+    qc_path = project_dir / "script" / "qc_report.json"
+    qc = _read_json(qc_path) if qc_path.exists() else {}
+
+    stage_statuses = project.get("stage_statuses") if isinstance(project.get("stage_statuses"), dict) else {}
+    script_stage_status = stage_statuses.get("03_script") or script.get("status")
+
+    critical_qc_issues: List[str] = []
+    has_critical_failure = bool(qc.get("has_critical_failure") or qc.get("status") == "FAIL")
+
+    for issue in qc.get("evidence_issues", []) + qc.get("fact_conflicts", []) + qc.get("issues", []):
+        if isinstance(issue, dict):
+            rule_code = issue.get("rule") or issue.get("type", "")
+            severity = str(issue.get("severity", "")).upper()
+            if severity == "CRITICAL" or rule_code in [
+                "TIMELINE_FACT_CONTRADICTION", "RELATIONSHIP_TIMELINE_CONTRADICTION", "CAUSAL_GAP",
+                "CHARACTER_KNOWLEDGE_CONTRADICTION", "EVIDENCE_DOES_NOT_PROVE_CLAIM", "REVEAL_UNDERJUSTIFIED",
+                "SCRIPT_FACT_DRIFT", "FINAL_SCRIPT_TOPIC_DRIFT", "INTERNAL_TEMPLATE_LEAKAGE"
+            ]:
+                has_critical_failure = True
+                msg = issue.get("message") or issue.get("rule") or "Lỗi QC nghiêm trọng"
+                critical_qc_issues.append(f"[{rule_code}] {msg}")
+
+    audio_gate_reasons: List[str] = []
+    if not is_current:
+        audio_gate_reasons.append(f"Kịch bản không hợp lệ hoặc lỗi thời ({'; '.join(reasons)})")
+    if has_critical_failure:
+        crit_detail = "; ".join(critical_qc_issues[:2]) if critical_qc_issues else "Báo cáo QC ở trạng thái FAIL"
+        audio_gate_reasons.append(f"Kịch bản có lỗi QC mức CRITICAL chưa được giải quyết ({crit_detail})")
+    if script_stage_status not in ["APPROVED", "COMPLETED", "LOCKED"]:
+        audio_gate_reasons.append(f"Kịch bản chưa được phê duyệt ở bước Script (trạng thái: {script_stage_status or 'DRAFT'})")
+
+    audio_gate_allowed = len(audio_gate_reasons) == 0
+    audio_gate_reason = " | ".join(audio_gate_reasons) if audio_gate_reasons else None
+
     return {
         "project_id": project_id,
         "artifact_status": "CURRENT" if is_current else "STALE",
         "status_label": "CURRENT" if is_current else STALE_LABEL,
         "is_current": is_current,
         "stale_reasons": reasons,
+        "audio_gate_allowed": audio_gate_allowed,
+        "audio_gate_reason": audio_gate_reason,
+        "critical_qc_count": len(critical_qc_issues),
+        "critical_qc_issues": critical_qc_issues,
+        "script_stage_status": script_stage_status,
         "generation_source": script.get("generation_source"),
         "generated_by": "Gemini" if "gemini" in str(script.get("provider_name", "")).lower() else script.get("provider_name"),
         "provider_name": script.get("provider_name"),
@@ -153,11 +198,21 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
     }
 
 
-def require_current_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
+def require_current_full_script(
+    project_id: str,
+    projects_dir: Path,
+    require_approved: bool = True,
+    require_clean_qc: bool = True,
+) -> Dict[str, Any]:
     status = validate_full_script(project_id, projects_dir)
     if not status["is_current"]:
         details = "; ".join(status["stale_reasons"])
         raise ValueError(f"{STALE_LABEL}: {details}")
+    if require_clean_qc and status.get("critical_qc_count", 0) > 0:
+        details = "; ".join(status.get("critical_qc_issues", []))
+        raise ValueError(f"Kịch bản bị chặn do có lỗi QC CRITICAL: {details}")
+    if require_approved and not status.get("audio_gate_allowed", True):
+        raise ValueError(f"Audio Gate: {status.get('audio_gate_reason')}")
     return status
 
 

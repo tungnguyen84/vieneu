@@ -98,20 +98,25 @@ def extract_key_entities_from_text(text: str) -> List[str]:
         "mối", "bí mật", "sự thật", "tiết lộ", "phát hiện", "chứng cứ", "nhân chứng",
         "hồ sơ", "tài liệu", "cơ quan", "địa phương", "nguyên nhân", "bên dưới", "trên",
         "giấu", "chàng", "không", "biết", "hiểu", "thấy", "làm", "tìm", "gặp", "chọn",
-        "nghĩ", "mang", "giữ", "đưa", "nhận", "gửi", "vợ", "chồng", "phụ nữ", "hàng xóm"
+        "nghĩ", "mang", "giữ", "đưa", "nhận", "gửi", "vợ", "chồng", "phụ nữ", "hàng xóm",
+        "động", "cơ", "động cơ", "mục", "đích", "mục đích", "bất", "hành vi", "cốt lõi",
+        "nội dung", "kết quả", "kết luận", "tình tiết", "vấn đề", "đáp án", "dấu vết",
+        "vật chứng", "nghi phạm", "nạn nhân", "hành động", "suy nghĩ", "cảm xúc", "tâm trạng",
+        "thái độ", "người cha", "người mẹ", "người con", "con gái", "con trai", "gia đình",
+        "bố mẹ", "cha mẹ", "người lạ", "người quen", "đồng nghiệp", "bạn bè", "người ngoài",
+        "thực tế", "bảo vệ", "danh dự", "quá cố", "bất động", "khắc khổ", "tự do", "lao động",
+        "vật", "chứng", "tin", "thư", "ảnh", "bằng", "sổ", "nhà", "cửa", "xe", "đất"
     }
 
     proper_nouns = []
     for pn in proper_nouns_raw:
         pn_clean = pn.strip()
         pn_low = pn_clean.lower()
-        if pn_low not in stop_words and len(pn_clean) >= 3:
-            # Don't add generic capitalized words that often appear at start of phrases
-            if pn_low in ("chân", "bước", "manh", "sự", "điều", "người", "giấu", "chàng", "không", "chọn"):
-                continue
-            # For single words, require length >= 4 unless known name
-            if " " not in pn_clean and len(pn_clean) < 4:
-                continue
+        if pn_low not in stop_words:
+            # For single words, require length >= 5 and no common word
+            if " " not in pn_clean:
+                if len(pn_clean) < 5 or pn_low in stop_words:
+                    continue
             proper_nouns.append(pn_clean)
     
     distinctive_terms = []
@@ -237,7 +242,7 @@ def build_information_release_map(
                 forbidden_before = 1
                 sens = "LOW"
 
-        entities = extract_key_entities_from_text(f"{desc} {val}")
+        entities = extract_key_entities_from_text(val)
         rules.append(InformationReleaseRule(
             fact_id=f_id,
             fact_type=f_type,

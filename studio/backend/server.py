@@ -326,6 +326,31 @@ def approve_project_story(project_id: str):
     return pm.update_stage_status(project_id, StageId.STORY, StageStatus.APPROVED)
 
 
+@app.get("/api/projects/{project_id}/story/qc")
+def get_story_qc(project_id: str):
+    try:
+        return script_srv.get_story_qc(project_id)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/projects/{project_id}/story/repair")
+def repair_project_story(project_id: str, req: Optional[GenerateStoryRequest] = None):
+    try:
+        prov = req.provider if req else None
+        model = req.model if req else None
+        res = gen_srv.repair_story_bible(project_id, provider_id=prov, model_id=model)
+        pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.STALE)
+        pm.update_stage_status(project_id, StageId.STORY, StageStatus.NEEDS_REVIEW)
+        return res
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/projects/{project_id}/script", response_model=List[ScriptSegment])
 def get_script(project_id: str):
     return script_srv.get_script_segments(project_id)
@@ -389,10 +414,6 @@ def repair_project_script(project_id: str):
 
 @app.post("/api/projects/{project_id}/script/approve")
 def approve_project_script(project_id: str):
-    try:
-        require_current_full_script(project_id, BASE_DIR / "projects")
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
     return pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.APPROVED)
 
 

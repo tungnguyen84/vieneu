@@ -71,6 +71,10 @@ export interface StoryBibleSection {
   clues?: string[];
   reflection_theme?: string;
   title?: string;
+  story_qc_report?: any;
+  causal_chains?: any[];
+  knowledge_ledger?: any[];
+  reveal_justifications?: Record<string, any>;
 }
 
 export interface CharacterItem {

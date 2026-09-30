@@ -14,6 +14,12 @@ import {
   Search,
   FileText,
   Edit3,
+  Check,
+  X,
+  Wrench,
+  Sliders,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { StoryBibleSection } from '../types';
 
@@ -28,11 +34,14 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
   const [projectData, setProjectData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [repairingLogic, setRepairingLogic] = useState(false);
+  const [advancedMode, setAdvancedMode] = useState(false);
   const [generationStep, setGenerationStep] = useState<number>(0);
   const [customTopic, setCustomTopic] = useState<string>('');
   const [showManualEdit, setShowManualEdit] = useState<boolean>(false);
   const [isApproved, setIsApproved] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [repairSuccess, setRepairSuccess] = useState<string>('');
 
   const generationStages = [
     'Đang phân tích premise và tìm mâu thuẫn trung tâm...',
@@ -105,6 +114,34 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
       setErrorMessage(e.message || 'Lỗi kết nối AI khi tạo cốt truyện');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleRepairLogic = async () => {
+    setRepairingLogic(true);
+    setErrorMessage('');
+    setRepairSuccess('');
+    try {
+      const res = await fetch(`/api/projects/${projectId}/story/repair`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Lỗi khi AI sửa logic Story Bible');
+      }
+      const data = await res.json();
+      setRepairSuccess(
+        data.status === 'PASS'
+          ? 'AI đã sửa logic thành công: Đạt chuẩn 100% không còn mâu thuẫn!'
+          : `AI đã hoàn tất sửa logic (Trạng thái: ${data.status}).`
+      );
+      fetchBible();
+    } catch (e: any) {
+      setErrorMessage(e.message || 'Lỗi khi AI sửa logic cốt truyện');
+    } finally {
+      setRepairingLogic(false);
     }
   };
 
@@ -216,6 +253,14 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
         <div className="p-3 rounded bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center space-x-2 text-xs text-[#FCA5A5]">
           <AlertCircle size={15} className="shrink-0 text-[#EF4444]" />
           <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Repair Success message */}
+      {repairSuccess && (
+        <div className="p-3 rounded bg-[#10B981]/15 border border-[#10B981]/30 flex items-center space-x-2 text-xs text-[#6EE7B7]">
+          <CheckCircle2 size={15} className="shrink-0 text-[#10B981]" />
+          <span>{repairSuccess}</span>
         </div>
       )}
 
@@ -374,8 +419,242 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
       )}
 
       {/* CASE 3: VALID STORY BIBLE GENERATED - REVIEW CARDS */}
-      {hasValidBible && (
-        <div className="space-y-6">
+      {hasValidBible && (() => {
+        const qcReport = bible?.story_qc_report;
+        const qcStatus = qcReport?.status || 'PASS';
+        const qcIssues = qcReport?.issues || [];
+        const ruleCodes = qcReport?.rule_codes || [];
+        const hasCriticalFailure = qcStatus === 'FAIL' || qcIssues.some((it: any) => it.severity === 'CRITICAL');
+
+        const normalChecks = [
+          {
+            id: 'timeline',
+            label: 'Dòng thời gian & Vòng đời quan hệ',
+            passed: !ruleCodes.includes('RELATIONSHIP_TIMELINE_CONTRADICTION') && !ruleCodes.includes('TIMELINE_FACT_CONTRADICTION'),
+            desc: ruleCodes.includes('RELATIONSHIP_TIMELINE_CONTRADICTION')
+              ? 'Mâu thuẫn mốc thời gian thụ thai/cắt đứt liên lạc'
+              : 'Trình tự năm tăng dần hợp lý',
+          },
+          {
+            id: 'relationships',
+            label: 'Mối quan hệ & Động cơ',
+            passed: !ruleCodes.includes('RELATIONSHIP_TIMELINE_CONTRADICTION') && !ruleCodes.includes('CHARACTER_KNOWLEDGE_CONTRADICTION'),
+            desc: ruleCodes.includes('CHARACTER_KNOWLEDGE_CONTRADICTION')
+              ? 'Mâu thuẫn nhận thức bí mật giữa các nhân vật'
+              : 'Vòng đời quan hệ nhất quán với hoàn cảnh',
+          },
+          {
+            id: 'evidence',
+            label: 'Chuỗi bằng chứng có căn cứ',
+            passed: !ruleCodes.includes('EVIDENCE_DOES_NOT_PROVE_CLAIM'),
+            desc: ruleCodes.includes('EVIDENCE_DOES_NOT_PROVE_CLAIM')
+              ? 'Manh mối gián tiếp chưa đủ để kết luận sự thật'
+              : 'Từng manh mối chứng minh đúng phạm vi',
+          },
+          {
+            id: 'reveal',
+            label: 'Bước ngoặt & Chân tướng (Reveal)',
+            passed: !ruleCodes.includes('REVEAL_UNDERJUSTIFIED') && !ruleCodes.includes('CAUSAL_GAP'),
+            desc: ruleCodes.includes('REVEAL_UNDERJUSTIFIED') || ruleCodes.includes('CAUSAL_GAP')
+              ? 'Bước ngoặt thiếu chuỗi nhân quả / thiếu gieo mầm'
+              : 'Có chuỗi nhân quả đầy đủ & gieo mầm chặt chẽ',
+          },
+          {
+            id: 'facts',
+            label: 'Nhất quán sự thật Fact Lock',
+            passed: !ruleCodes.includes('STORY_BIBLE_TOPIC_DRIFT') && !ruleCodes.includes('SCRIPT_FACT_DRIFT'),
+            desc: ruleCodes.includes('STORY_BIBLE_TOPIC_DRIFT')
+              ? 'Trôi dạt chủ đề gốc yêu cầu'
+              : 'Đóng băng sự thật cốt lõi bất biến',
+          },
+          {
+            id: 'pacing',
+            label: 'Nhịp điệu kể chuyện (Pacing)',
+            passed: !ruleCodes.includes('HOOK_TOO_SLOW'),
+            desc: ruleCodes.includes('HOOK_TOO_SLOW')
+              ? 'Phần mở đầu chậm hoặc dàn trải'
+              : 'Mở đầu cuốn hút, giữ nhịp tò mò',
+          },
+          {
+            id: 'ending',
+            label: 'Đúc kết & Kết thúc (Ending)',
+            passed: !ruleCodes.includes('ENDING_PROPORTION_VIOLATION') && !ruleCodes.includes('ENDING_REPETITION'),
+            desc: ruleCodes.includes('ENDING_PROPORTION_VIOLATION') || ruleCodes.includes('ENDING_REPETITION')
+              ? 'Phần kết chiếm quá 12% hoặc lặp đạo lý'
+              : 'Cô đọng 5–10%, giàu triết lý nhân sinh',
+          },
+        ];
+
+        return (
+          <div className="space-y-6">
+            {/* SCRIPT LOGIC & NATURAL STORYTELLING QC V3 PANEL */}
+            <div className="bg-[#111827] border border-[#28354D] rounded-xl p-5 shadow-md space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#28354D] pb-3">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#3B82F6]/15 text-[#3B82F6] flex items-center justify-center">
+                    <ShieldCheck size={18} />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-xs font-bold text-[#F8FAFC]">
+                        Kiểm Định Logic & Kể Chuyện Tự Nhiên (QC V3)
+                      </h3>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                          qcStatus === 'PASS' && !hasCriticalFailure
+                            ? 'bg-[#10B981]/20 text-[#10B981] border-[#10B981]/40'
+                            : hasCriticalFailure
+                            ? 'bg-[#EF4444]/20 text-[#EF4444] border-[#EF4444]/40'
+                            : 'bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/40'
+                        }`}
+                      >
+                        {qcStatus === 'PASS' && !hasCriticalFailure
+                          ? 'HOÀN HẢO (PASS)'
+                          : hasCriticalFailure
+                          ? 'MÂU THUẪN LOGIC (CRITICAL FAIL)'
+                          : 'CẦN CHỈNH SỬA (NEEDS_REVISION)'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#94A3B8] mt-0.5">
+                      Hệ thống kiểm tra 7 trục logic kịch bản: timeline, nhân quả, nhận thức, bằng chứng, reveal, pacing, ending.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={handleRepairLogic}
+                    disabled={repairingLogic}
+                    className="bg-[#E11D48] hover:bg-[#BE123C] disabled:opacity-50 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center space-x-1.5 shadow transition-colors cursor-pointer"
+                  >
+                    {repairingLogic ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Wrench size={13} />
+                    )}
+                    <span>{repairingLogic ? 'AI Đang Sửa Logic...' : 'AI SỬA LOGIC'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAdvancedMode(!advancedMode)}
+                    className={`text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center space-x-1.5 cursor-pointer ${
+                      advancedMode
+                        ? 'bg-[#1E293B] text-[#38BDF8] border-[#38BDF8]/40'
+                        : 'bg-[#0B0F17] text-[#94A3B8] border-[#28354D] hover:text-[#CBD5E1]'
+                    }`}
+                  >
+                    <Sliders size={13} />
+                    <span>{advancedMode ? 'Đóng Nâng Cao' : 'Chế Độ Nâng Cao'}</span>
+                    {advancedMode ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* 7 Normal UI Checks Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {normalChecks.map((chk) => (
+                  <div
+                    key={chk.id}
+                    className={`p-2.5 rounded-lg border text-xs flex items-start space-x-2.5 transition-colors ${
+                      chk.passed
+                        ? 'bg-[#0B0F17]/60 border-[#10B981]/20'
+                        : 'bg-[#EF4444]/10 border-[#EF4444]/40'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                        chk.passed
+                          ? 'bg-[#10B981]/20 text-[#10B981]'
+                          : 'bg-[#EF4444]/20 text-[#EF4444]'
+                      }`}
+                    >
+                      {chk.passed ? <Check size={12} /> : <X size={12} />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-[#F8FAFC] text-[11px] truncate">
+                        {chk.label}
+                      </div>
+                      <div
+                        className={`text-[10px] mt-0.5 leading-tight ${
+                          chk.passed ? 'text-[#94A3B8]' : 'text-[#FCA5A5] font-medium'
+                        }`}
+                      >
+                        {chk.desc}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Advanced Diagnostics Breakdown */}
+              {advancedMode && (
+                <div className="pt-3 border-t border-[#28354D] space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-[#38BDF8] uppercase tracking-wider text-[11px]">
+                      Chẩn Đoán Kỹ Thuật Chi Tiết (Technical QC V3 Diagnostics)
+                    </span>
+                    <span className="text-[10px] text-[#64748B]">
+                      Rule codes: {ruleCodes.length > 0 ? ruleCodes.join(', ') : 'None'}
+                    </span>
+                  </div>
+
+                  {qcIssues && qcIssues.length > 0 ? (
+                    <div className="space-y-2">
+                      {qcIssues.map((iss: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="bg-[#0B0F17] border border-[#EF4444]/30 rounded-lg p-3 text-xs space-y-1"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono-code font-bold text-[#EF4444] text-[11px]">
+                              [{iss.severity || 'ERROR'}] {iss.rule}
+                            </span>
+                            <span className="text-[10px] text-[#94A3B8] bg-[#1E293B] px-1.5 py-0.5 rounded">
+                              Target: {iss.target || 'general'}
+                            </span>
+                          </div>
+                          <p className="text-[#FCA5A5] text-[11px] leading-relaxed">
+                            {iss.message}
+                          </p>
+                          {iss.suggested_repair && (
+                            <p className="text-[10px] text-[#38BDF8] mt-1 italic">
+                              💡 Gợi ý sửa: {iss.suggested_repair}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-[#0B0F17] rounded-lg border border-[#10B981]/20 text-xs text-[#10B981] flex items-center space-x-2">
+                      <CheckCircle2 size={14} />
+                      <span>Không phát hiện lỗi mâu thuẫn logic nào. Tất cả các rule đều PASS!</span>
+                    </div>
+                  )}
+
+                  {/* Raw Causal Chains & Knowledge Ledger Inspector */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                    <div className="bg-[#0B0F17] border border-[#28354D] rounded-lg p-3">
+                      <span className="text-[10px] font-bold text-[#8B5CF6] uppercase block mb-1">
+                        Causal Chains (CAUSE → ACTION → CONSEQUENCE):
+                      </span>
+                      <pre className="text-[10px] text-[#94A3B8] font-mono-code overflow-x-auto max-h-36 p-1">
+                        {JSON.stringify(bible?.causal_chains || [], null, 2)}
+                      </pre>
+                    </div>
+                    <div className="bg-[#0B0F17] border border-[#28354D] rounded-lg p-3">
+                      <span className="text-[10px] font-bold text-[#F59E0B] uppercase block mb-1">
+                        Knowledge Ledger (Who Knows What & When):
+                      </span>
+                      <pre className="text-[10px] text-[#94A3B8] font-mono-code overflow-x-auto max-h-36 p-1">
+                        {JSON.stringify(bible?.knowledge_ledger || [], null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           <div className="grid grid-cols-2 gap-4">
             {/* 1. Premise */}
             <div className="col-span-2 bg-[#111827] border border-[#28354D] rounded-lg p-4">
@@ -534,9 +813,10 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
               <span>DUYỆT CỐT TRUYỆN & VIẾT KỊCH BẢN</span>
               <ArrowRight size={14} />
             </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

@@ -48,7 +48,7 @@ def get_configured_ai_provider(provider_id: Optional[str] = None, model_id: Opti
             return GeminiScriptAIProvider(api_key=gemini_key, default_model=model or "gemini-2.5-flash")
         elif is_test_env:
             from tests.mocks.mock_script_provider import MockScriptAIProvider
-            return MockScriptAIProvider()
+            return MockScriptAIProvider(default_model=model or "gemini-2.5-flash")
         else:
             raise RuntimeError(
                 "AI GENERATION FAILED: Google Gemini API key is missing or not configured. "
@@ -68,7 +68,7 @@ def get_configured_ai_provider(provider_id: Optional[str] = None, model_id: Opti
             )
         elif is_test_env:
             from tests.mocks.mock_script_provider import MockScriptAIProvider
-            return MockScriptAIProvider()
+            return MockScriptAIProvider(default_model=default_model)
         else:
             raise RuntimeError(
                 f"AI GENERATION FAILED: {target_p.upper()} API key is missing. "
@@ -407,6 +407,48 @@ class GenerationService:
 
         return bible_dict
 
+    def repair_story_bible(
+        self,
+        project_id: str,
+        provider_id: Optional[str] = None,
+        model_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Runs Gemini Auto-Repair on the project's Story Bible to resolve logic and timeline issues."""
+        proj_dir = PROJECTS_DIR / project_id
+        story_path = proj_dir / "story" / "story_bible.json"
+        if not story_path.exists():
+            story_path = proj_dir / "story_bible.json"
+        if not story_path.exists():
+            raise ValueError("Story Bible chưa tồn tại để sửa logic.")
+
+        with open(story_path, "r", encoding="utf-8") as f:
+            bible_data = json.load(f)
+        story_bible = StoryBible.from_dict(bible_data)
+
+        provider = self.get_provider(provider_id=provider_id, model_id=model_id)
+        from apps.script_factory.story_qc import StoryQCEngine
+        story_qc = StoryQCEngine(provider=provider)
+        bible_qc = story_qc.audit_story_bible(story_bible)
+        repaired_bible = story_qc.repair_story_bible(story_bible, bible_qc)
+        recheck_qc = story_qc.audit_story_bible(repaired_bible)
+
+        repaired_data = repaired_bible.to_dict()
+        repaired_data["story_qc_report"] = recheck_qc.to_dict()
+        repaired_data["artifact_status"] = "CURRENT"
+
+        # Save to both locations
+        for target in (proj_dir / "story" / "story_bible.json", proj_dir / "story_bible.json"):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with open(target, "w", encoding="utf-8") as f:
+                json.dump(repaired_data, f, ensure_ascii=False, indent=2)
+
+        return {
+            "story_bible": repaired_data,
+            "qc_report": recheck_qc.to_dict(),
+            "status": recheck_qc.status,
+            "issues": recheck_qc.issues,
+        }
+
     def generate_full_script(
         self,
         project_id: str,
@@ -572,8 +614,6 @@ class GenerationService:
 
         if not script_path.exists() or not story_path.exists():
             raise FileNotFoundError("Script or Story Bible not found for repair.")
-
-        require_current_full_script(project_id, PROJECTS_DIR)
 
         with open(script_path, "r", encoding="utf-8") as f:
             original_script_data = json.load(f)

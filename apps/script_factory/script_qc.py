@@ -99,7 +99,14 @@ class ScriptQCEngine:
                     if len(t) >= 3:
                         known_setup.add(t)
 
-        # Include protagonist and supporting characters so character names are not flagged as spoilers
+        # Include characters from story bible so character names are not flagged as spoilers
+        for ch in (getattr(story_bible, "characters", []) or []):
+            ch_name = ch.name if hasattr(ch, "name") else (ch.get("name") if isinstance(ch, dict) else str(ch or ""))
+            if ch_name:
+                known_setup.add(ch_name.lower())
+                for part in re.findall(r"\w+", ch_name.lower()):
+                    if len(part) >= 2:
+                        known_setup.add(part)
         if hasattr(story_bible, "protagonist"):
             p_name = story_bible.protagonist.get("name") if isinstance(story_bible.protagonist, dict) else str(story_bible.protagonist or "")
             if p_name:
@@ -166,7 +173,7 @@ class ScriptQCEngine:
                     if "năm" in fact.description.lower() or "year" in fact.field.lower():
                         if 1900 <= num_val <= 2100:
                             calendar_years = re.findall(r"(?:năm\s+)?(\b(?:19|20)\d{2}\b)", all_text.lower())
-                            if str(num_val) not in calendar_years and str(num_val) not in all_text:
+                            if calendar_years and str(num_val) not in calendar_years and str(num_val) not in all_text:
                                 fact_conflicts.append({
                                     "fact_id": fact.fact_id,
                                     "field": fact.field,
@@ -188,11 +195,26 @@ class ScriptQCEngine:
                                     "description": f"Timeline conflict: Expected {num_val} năm, but found conflicting years: {found_years}."
                                 })
                                 revision_requests.append(f"Correct timeline conflict: change to {num_val} năm.")
-                elif "money" in fact.field.lower() or (("vnd" in val_lower or "triệu" in val_lower or "đồng" in val_lower) and len(val.split()) <= 5):
+                elif "money" in fact.field.lower() or "payment" in fact.field.lower() or (("vnd" in val_lower or "triệu" in val_lower or "đồng" in val_lower) and len(val.split()) <= 5):
                     # Money conflict check
                     clean_money = re.sub(r"[^\d]", "", val)
                     clean_text_digits = re.sub(r"[^\d]", " ", all_text)
-                    if clean_money and clean_money not in clean_text_digits and val_lower not in all_text.lower():
+                    num_words = {"1": "một", "2": "hai", "3": "ba", "4": "bốn", "5": "năm", "6": "sáu", "7": "bảy", "8": "tám", "9": "chín", "10": "mười"}
+                    found_money = False
+                    if clean_money and clean_money in clean_text_digits:
+                        found_money = True
+                    elif val_lower in all_text.lower():
+                        found_money = True
+                    elif clean_money and len(clean_money) >= 7 and clean_money.endswith("000000"):
+                        millions = str(int(clean_money) // 1000000)
+                        if f"{millions} triệu" in all_text.lower() or f"{num_words.get(millions, '')} triệu" in all_text.lower():
+                            found_money = True
+                    elif clean_money and len(clean_money) >= 10 and clean_money.endswith("000000000"):
+                        billions = str(int(clean_money) // 1000000000)
+                        if f"{billions} tỷ" in all_text.lower() or f"{num_words.get(billions, '')} tỷ" in all_text.lower():
+                            found_money = True
+
+                    if not found_money:
                         fact_conflicts.append({
                             "fact_id": fact.fact_id,
                             "field": fact.field,
@@ -203,12 +225,26 @@ class ScriptQCEngine:
                         revision_requests.append(f"Correct money conflict: ensure exact amount {fact.value} is stated.")
                 else:
                     # General fact / relationship check
+                    num_words = {"1": "một", "2": "hai", "3": "ba", "4": "bốn", "5": "năm", "6": "sáu", "7": "bảy", "8": "tám", "9": "chín", "10": "mười"}
                     parts = [p.strip().lower() for p in re.split(r"[;,]", val) if p.strip()]
                     found = any(p in all_text.lower() for p in parts) if parts else (val_lower in all_text.lower())
+                    if not found:
+                        for p in parts:
+                            m = re.match(r"^(\d+)\s+(năm|tháng|ngày|năm\s+trước)$", p)
+                            if m:
+                                d, unit = m.group(1), m.group(2)
+                                word_num = num_words.get(d)
+                                if word_num and f"{word_num} {unit}" in all_text.lower():
+                                    found = True
+                                    break
                     if not found and len(val) > 25:
                         key_words = [w for w in re.findall(r"\b\w{3,}\b", val_lower) if w not in ["người", "những", "trong", "được", "không", "thực", "hiện"]]
                         match_count = sum(1 for kw in key_words if kw in all_text.lower())
                         found = (match_count / max(1, len(key_words))) >= 0.4
+                    if not found and ("năm" in fact.description.lower() or "year" in fact.field.lower() or "timeline" in fact.field.lower()):
+                        desc_years = set(re.findall(r"\b(?:19|20)\d{2}\b", fact.description))
+                        if desc_years and len(desc_years & set(re.findall(r"\b(?:19|20)\d{2}\b", all_text))) >= min(2, len(desc_years)):
+                            found = True
                     if not found:
                         fact_conflicts.append({
                             "fact_id": fact.fact_id,
@@ -503,10 +539,9 @@ class ScriptQCEngine:
                 if s.delivery_profile not in ("HOOK", "REVEAL", "MYSTERY")
             ]
             moral_markers = [
-                "tha thứ", "bao dung", "chữa lành", "sau cánh cửa", "đằng sau cánh cửa",
-                "mặt nạ", "buông bỏ", "bài học", "nhận ra rằng", "tình yêu thương",
-                "tình thân", "sự thật dù", "mái ấm", "lòng người", "chiêm nghiệm",
-                "hóa giải", "vết thương", "im lặng", "khoan dung",
+                "bài học", "đạo lý", "luân lý", "lời cảnh tỉnh", "cuộc sống dạy",
+                "nhắc nhở chúng ta", "chân lý", "triết lý sống", "mặt nạ",
+                "bài học đắt giá", "đúc kết lại", "giảng giải", "quy luật cuộc đời",
             ]
             moral_segs: List[ScriptSegment] = []
             for s in non_reveal_tail:
@@ -651,7 +686,8 @@ class ScriptQCEngine:
             has_strong_necessity=_has_necessity_markers(script_lower),
         )
         if has_bible_causal_gap or has_script_causal_gap:
-            target_seg = next((s for s in script.segments if s.delivery_profile == "REVEAL"), script.segments[-1] if script.segments else ScriptSegment(id="001"))
+            body_segs = [s for s in script.segments if s.delivery_profile not in ("HOOK", "ENDING")]
+            target_seg = next((s for s in script.segments if s.delivery_profile == "REVEAL"), body_segs[0] if body_segs else (script.segments[-1] if script.segments else ScriptSegment(id="001")))
             evidence_issues.append({
                 "segment_id": target_seg.id,
                 "excerpt": target_seg.text[:100],
@@ -668,6 +704,29 @@ class ScriptQCEngine:
             })
             logic_issues.append(f"[{target_seg.id}] CAUSAL_GAP: Missing causal necessity explaining why simpler alternative was impossible.")
             revision_requests.append(f"Repair causal gap in segment {target_seg.id} with explicit necessity and mechanism.")
+
+        # Carry over critical Story Bible V3 logic failures (RELATIONSHIP_TIMELINE_CONTRADICTION, TIMELINE_FACT_CONTRADICTION, REVEAL_UNDERJUSTIFIED)
+        for s_iss in (story_qc_report.issues if hasattr(story_qc_report, "issues") else []):
+            s_rule = s_iss.get("rule")
+            if s_rule in ("RELATIONSHIP_TIMELINE_CONTRADICTION", "TIMELINE_FACT_CONTRADICTION", "REVEAL_UNDERJUSTIFIED"):
+                body_segs = [s for s in script.segments if s.delivery_profile not in ("HOOK", "ENDING")]
+                target_seg = next((s for s in script.segments if s.delivery_profile == "REVEAL"), body_segs[0] if body_segs else (script.segments[-1] if script.segments else ScriptSegment(id="001")))
+                evidence_issues.append({
+                    "segment_id": target_seg.id,
+                    "excerpt": target_seg.text[:100],
+                    "rule": s_rule,
+                    "severity": "CRITICAL",
+                    "recommended_action": s_iss.get("suggested_repair") or "Sửa đổi mâu thuẫn thời gian/quan hệ trong Story Bible trước khi viết kịch bản.",
+                    "message": s_iss.get("message", ""),
+                })
+                fact_conflicts.append({
+                    "fact_id": "STORY_BIBLE_V3_LOGIC",
+                    "segment_id": target_seg.id,
+                    "type": s_rule,
+                    "description": s_iss.get("message", "")
+                })
+                logic_issues.append(f"[{target_seg.id}] {s_rule}: {s_iss.get('message', '')}")
+                revision_requests.append(f"Repair {s_rule} in Story Bible.")
 
         # 15. CHARACTER SECRET KNOWLEDGE CONSISTENCY AUDIT (CHARACTER_KNOWLEDGE_CONTRADICTION)
         knowing_chars: List[str] = []
@@ -843,7 +902,35 @@ class ScriptQCEngine:
                 logic_issues.append(f"[FINAL_SCRIPT_TOPIC_DRIFT] {drift_msg}")
                 revision_requests.append(f"Regenerate/revise script to center on user topic: {orig_topic}.")
 
+        # 20. SCRIPT PROSE & NATURAL STORYTELLING QC V3
+        from apps.script_factory.story_logic_v3 import ScriptProseQCV3Engine
+        prose_v3_engine = ScriptProseQCV3Engine()
+        prose_issues = prose_v3_engine.audit_script_prose(script, story_bible)
+        for p_iss in prose_issues:
+            target_seg = script.segments[0] if script.segments else ScriptSegment(id="001")
+            evidence_issues.append({
+                "segment_id": target_seg.id,
+                "excerpt": "",
+                "rule": p_iss["rule"],
+                "severity": p_iss.get("severity", "HIGH"),
+                "recommended_action": "Chuẩn hóa văn phong theo hướng tự nhiên, không mang giọng báo cáo kiểm định.",
+                "message": p_iss["message"],
+            })
+            if p_iss.get("severity") in ("CRITICAL", "HIGH"):
+                logic_issues.append(f"[{p_iss['rule']}] {p_iss['message']}")
+
         # Compute status
+        critical_rule_set = {
+            "TIMELINE_FACT_CONTRADICTION",
+            "RELATIONSHIP_TIMELINE_CONTRADICTION",
+            "CAUSAL_GAP",
+            "CHARACTER_KNOWLEDGE_CONTRADICTION",
+            "EVIDENCE_DOES_NOT_PROVE_CLAIM",
+            "REVEAL_UNDERJUSTIFIED",
+            "SCRIPT_FACT_DRIFT",
+            "FINAL_SCRIPT_TOPIC_DRIFT",
+            "INTERNAL_TEMPLATE_LEAKAGE",
+        }
         has_critical_failure = (
             any(
                 c.get("type") in [
@@ -860,12 +947,16 @@ class ScriptQCEngine:
                     "INTERNAL_EPISODE_ID_SPOKEN",
                     "FINAL_SCRIPT_TOPIC_DRIFT",
                     "INTERNAL_TEMPLATE_LEAKAGE",
+                    "RELATIONSHIP_TIMELINE_CONTRADICTION",
+                    "TIMELINE_FACT_CONTRADICTION",
+                    "REVEAL_UNDERJUSTIFIED",
+                    "SCRIPT_FACT_DRIFT",
                 ]
                 for c in fact_conflicts
             )
-            or any(iss.get("severity") == "CRITICAL" for iss in evidence_issues)
+            or any(iss.get("severity") == "CRITICAL" or iss.get("rule") in critical_rule_set for iss in evidence_issues)
         )
-        has_hard_fail = any(iss.get("rule") in ("FINAL_SCRIPT_TOPIC_DRIFT", "INTERNAL_TEMPLATE_LEAKAGE") for iss in evidence_issues)
+        has_hard_fail = any(iss.get("rule") in ("FINAL_SCRIPT_TOPIC_DRIFT", "INTERNAL_TEMPLATE_LEAKAGE", "RELATIONSHIP_TIMELINE_CONTRADICTION", "TIMELINE_FACT_CONTRADICTION") for iss in evidence_issues)
         has_issues = bool(fact_conflicts or logic_issues or repetition_issues or evidence_issues)
 
         if has_hard_fail:
@@ -880,10 +971,10 @@ class ScriptQCEngine:
         melodrama_v2_score = max(0.0, 100.0 - len(cliche_hits) * 15.0 - len(severe_v2_hits) * 20.0)
         has_template_leak = any(iss.get("rule") in ("INTERNAL_TEMPLATE_LEAKAGE", "STORY_BIBLE_LEAKAGE", "INTERNAL_EPISODE_ID_SPOKEN", "FAKE_SERIAL_BREAK") for iss in evidence_issues)
         scores = {
-            "hook": 95.0 if has_hook and not any(iss.get("rule") in ("GENERIC_HOOK_OPENING", "HOOK_FACT_CONTRADICTION") for iss in evidence_issues) else 60.0,
+            "hook": 95.0 if has_hook and not any(iss.get("rule") in ("GENERIC_HOOK_OPENING", "HOOK_FACT_CONTRADICTION", "HOOK_TOO_SLOW") for iss in evidence_issues) else 60.0,
             "mystery": 92.0 if not any(iss.get("rule") in ("BLOCKED_PREMATURE_REVEAL", "EVIDENCE_DOES_NOT_PROVE_CLAIM") for iss in evidence_issues) else 50.0,
-            "logic": 90.0 if not logic_issues and not any(iss.get("rule") in ("STORY_BIBLE_LEAKAGE", "INTERNAL_TEMPLATE_LEAKAGE", "CHARACTER_FACT_VIOLATION", "UNGROUNDED_CHARACTER_HALLUCINATION", "CAUSAL_GAP", "CHARACTER_KNOWLEDGE_CONTRADICTION", "EVIDENCE_DOES_NOT_PROVE_CLAIM", "FINAL_SCRIPT_TOPIC_DRIFT") for iss in evidence_issues) else 50.0,
-            "twist": 96.0 if has_reveal and not any(iss.get("rule") == "CAUSAL_GAP" for iss in evidence_issues) else 60.0,
+            "logic": 40.0 if has_critical_failure else (90.0 if not logic_issues and not any(iss.get("rule") in ("STORY_BIBLE_LEAKAGE", "INTERNAL_TEMPLATE_LEAKAGE", "CHARACTER_FACT_VIOLATION", "UNGROUNDED_CHARACTER_HALLUCINATION", "CAUSAL_GAP", "CHARACTER_KNOWLEDGE_CONTRADICTION", "EVIDENCE_DOES_NOT_PROVE_CLAIM", "FINAL_SCRIPT_TOPIC_DRIFT") for iss in evidence_issues) else 50.0),
+            "twist": 96.0 if has_reveal and not any(iss.get("rule") in ("CAUSAL_GAP", "REVEAL_UNDERJUSTIFIED") for iss in evidence_issues) else 60.0,
             "emotion": 93.0 if not any(iss.get("rule") in ("MELODRAMATIC_CLICHE_DENSITY", "MELODRAMA_DENSITY_V2") for iss in evidence_issues) else 68.0,
             "novelty": 94.0 if not repetition_issues else 68.0,
             "tts_readability": 40.0 if (has_hard_fail or has_template_leak) else 98.0,
@@ -968,11 +1059,22 @@ def apply_targeted_repairs(
                 seg.text = seg.text.replace(found_char, "người quen trong câu chuyện")
         elif ctype == "CAUSAL_GAP" and sid in seg_map:
             seg = seg_map[sid]
-            seg.text = (
-                f"Do hồ sơ hành chính thời điểm biến cố bị thất lạc, giấy xác nhận duy nhất còn lại mang tên người đã khuất, "
-                f"cùng nguy cơ cú sốc tâm lý đe dọa tính mạng người thân nếu biết tin dữ ngay lúc đó, việc duy trì thỏa thuận "
-                f"này là phương án bất khả kháng duy nhất để bảo toàn mái ấm."
-            )
+            if seg.delivery_profile != "ENDING":
+                causal_desc = ""
+                for c in (story_bible.causal_chains or []):
+                    if isinstance(c, dict) and c.get("motivation"):
+                        causal_desc = c.get("motivation")
+                        break
+                if causal_desc:
+                    seg.text = (
+                        f"Trong bối cảnh thực tế lúc đó, {causal_desc.lower().rstrip('.')} nên việc giữ im lặng và giải quyết "
+                        f"trong âm thầm là phương án bất khả kháng duy nhất của những người trong cuộc."
+                    )
+                else:
+                    seg.text = (
+                        f"Trước những áp lực và ràng buộc thực tế tại thời điểm đó, việc giữ im lặng và giải quyết vấn đề "
+                        f"trong âm thầm là phương án bất khả kháng duy nhất để hạn chế những tổn thương không đáng có."
+                    )
         elif ctype == "CHARACTER_KNOWLEDGE_CONTRADICTION" and sid in seg_map:
             seg = seg_map[sid]
             seg.text = re.sub(
@@ -1130,6 +1232,21 @@ def apply_targeted_repairs(
         for s in candidates[: 3 - len(aud_segs)]:
             s.audience_address = True
             s.delivery_profile = "COMMENT"
+
+    # 7. Deduplicate adjacent identical or verbatim substring segments
+    cleaned_segments = []
+    for s in script.segments:
+        if cleaned_segments:
+            prev = cleaned_segments[-1]
+            prev_t = prev.text.strip().lower()
+            curr_t = s.text.strip().lower()
+            if prev_t == curr_t or (len(curr_t) > 30 and curr_t in prev_t):
+                continue
+            elif len(prev_t) > 30 and prev_t in curr_t:
+                cleaned_segments[-1] = s
+                continue
+        cleaned_segments.append(s)
+    script.segments = cleaned_segments
 
     script.total_words = sum(len(s.text.split()) for s in script.segments)
     script.updated_at = time.time()

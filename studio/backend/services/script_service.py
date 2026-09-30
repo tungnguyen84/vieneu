@@ -126,12 +126,39 @@ class ScriptService:
             reveal_2=data.get("reveal_2", "") or data.get("twist_2", ""),
             emotional_payoff=data.get("emotional_payoff", ""),
             fact_lock_items=[str(f) for f in fact_locks],
-            has_story_bible=True,
             selected_idea=sel_idea,
             clues=clues_list,
             reflection_theme=str(data.get("reflection_theme", "")),
-            title=str(data.get("title", ""))
+            title=str(data.get("title", "")),
+            story_qc_report=data.get("story_qc_report") or self._compute_story_qc(data),
+            causal_chains=data.get("causal_chains", []),
+            knowledge_ledger=data.get("knowledge_ledger", []),
+            reveal_justifications=data.get("reveal_justifications", {}),
         )
+
+    def _compute_story_qc(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            from apps.script_factory.models import StoryBible
+            from apps.script_factory.story_qc import StoryQCEngine
+            story_bible = StoryBible.from_dict(data)
+            return StoryQCEngine().audit_story_bible(story_bible).to_dict()
+        except Exception:
+            return {}
+
+    def get_story_qc(self, project_id: str) -> Dict[str, Any]:
+        proj_dir = PROJECTS_DIR / project_id
+        story_path = proj_dir / "story" / "story_bible.json"
+        if not story_path.exists():
+            story_path = proj_dir / "story_bible.json"
+        if not story_path.exists():
+            idea_id = self.get_idea_id(project_id)
+            story_path = PILOT_02_SCRIPTS / idea_id / "story_bible.json"
+        if not story_path.exists():
+            raise FileNotFoundError(f"Story Bible không tồn tại cho project {project_id}")
+
+        with open(story_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data.get("story_qc_report") or self._compute_story_qc(data)
 
 
     def get_script_segments(self, project_id: str) -> List[ScriptSegment]:

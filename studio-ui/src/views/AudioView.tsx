@@ -231,13 +231,24 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
         </div>
       )}
 
-      {scriptStatus && !scriptStatus.is_current && (
-        <div className="p-4 rounded border border-[#EF4444]/50 bg-[#EF4444]/10 text-xs text-[#FCA5A5]">
-          <div className="font-extrabold">STALE — REGENERATE REQUIRED</div>
-          <div className="mt-1">Audio bị khóa cho đến khi Full Script REAL_AI khớp Story Bible hiện tại.</div>
-          <ul className="mt-2 list-disc list-inside">
-            {(scriptStatus.stale_reasons || []).map((reason: string) => <li key={reason}>{reason}</li>)}
-          </ul>
+      {scriptStatus && (!scriptStatus.is_current || !scriptStatus.audio_gate_allowed) && (
+        <div className="p-4 rounded border border-[#EF4444]/50 bg-[#EF4444]/10 text-xs text-[#FCA5A5] space-y-1.5">
+          <div className="font-extrabold flex items-center space-x-1.5">
+            <span className="text-[#EF4444]">🔒 AUDIO GATE: KHÓA TẠO AUDIO</span>
+          </div>
+          <div className="text-[11px] leading-relaxed">
+            {scriptStatus.audio_gate_reason || 'Audio bị khóa cho đến khi Full Script REAL_AI đạt chuẩn và được phê duyệt.'}
+          </div>
+          {scriptStatus.stale_reasons && scriptStatus.stale_reasons.length > 0 && (
+            <ul className="mt-1 list-disc list-inside text-[10px] text-[#F87171]">
+              {scriptStatus.stale_reasons.map((reason: string) => <li key={reason}>{reason}</li>)}
+            </ul>
+          )}
+          {scriptStatus.critical_qc_issues && scriptStatus.critical_qc_issues.length > 0 && (
+            <ul className="mt-1 list-disc list-inside text-[10px] text-[#F87171]">
+              {scriptStatus.critical_qc_issues.map((iss: string) => <li key={iss}>{iss}</li>)}
+            </ul>
+          )}
         </div>
       )}
 
@@ -564,8 +575,8 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
 
             <button
               onClick={generateTts}
-              disabled={!!busy || !selectedVoice || !scriptStatus?.is_current}
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded flex items-center gap-2 transition-colors"
+              disabled={!!busy || !selectedVoice || !scriptStatus?.is_current || !scriptStatus?.audio_gate_allowed}
+              className="bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded flex items-center gap-2 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               {busy === 'generate' && <Loader2 size={14} className="animate-spin" />}
               {busy === 'generate'
@@ -574,6 +585,11 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
                 ? 'Bắt đầu tạo TTS & Hòa Âm Nhạc Nền'
                 : 'Bắt đầu tạo TTS Narration (Mộc)'}
             </button>
+            {scriptStatus && (!scriptStatus.is_current || !scriptStatus.audio_gate_allowed) && (
+              <p className="text-[11px] text-[#FCA5A5] italic">
+                🔒 {scriptStatus.audio_gate_reason || 'Kịch bản chưa được phê duyệt hoặc còn lỗi QC'}
+              </p>
+            )}
           </div>
 
           {/* Voice Cloning Box */}
