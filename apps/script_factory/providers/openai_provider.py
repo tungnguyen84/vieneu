@@ -17,6 +17,7 @@ import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 from apps.script_factory.models import FullScript, IdeaItem, LockedFact, QCReport, ScriptSegment, StoryBible
+from apps.script_factory.narrative_continuity import has_repeated_narrative_block
 from apps.script_factory.providers.base import ScriptAIProvider
 from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
 
@@ -69,6 +70,14 @@ def _part_has_closure(segments: List[Dict[str, Any]]) -> bool:
     return any(
         str(segment.get("delivery_profile", "")).upper() == "ENDING"
         or bool(_SCRIPT_SIGNOFF_RE.search(str(segment.get("text", ""))))
+        for segment in segments
+    )
+
+
+def _part_has_premature_reveal(segments: List[Dict[str, Any]]) -> bool:
+    return any(
+        isinstance(segment, dict)
+        and str(segment.get("delivery_profile", "")).upper() == "REVEAL"
         for segment in segments
     )
 
@@ -330,7 +339,10 @@ Trả về JSON object có khóa "ideas": [
             "2. Nhân vật đa chiều, không hoàn hảo, không có nạn nhân hoàn hảo hay kẻ ác một chiều. Mỗi người đều có nỗi sợ, sự bế tắc hoặc lý do im lặng.\n"
             "3. Logic chặt chẽ: Bước ngoặt 1 (Reveal 1) cần ít nhất 2 manh mối cụ thể hỗ trợ; Bước ngoặt 2 (Reveal 2) phải được gieo mầm manh mối từ trước.\n"
             "4. Thiết lập danh sách Fact Lock (critical_facts) đóng băng chính xác: tuổi tác, mối quan hệ, các năm/mốc thời gian, số tiền/tài sản, địa điểm, người nắm bí mật.\n"
-            "5. Xuất ra định dạng JSON hợp lệ."
+            "5. Tên Minh và mã MINH chỉ dành riêng cho MC, tuyệt đối không đặt cho nhân vật trong Story Bible.\n"
+            "6. Với cáo buộc nghiêm trọng, tin nhắn/lịch sử cuộc gọi/lời đồn/lời thú nhận đơn độc chỉ là dấu hiệu; reveal phải có ít nhất một chi tiết độc lập có thể kiểm chứng.\n"
+            "7. Bối cảnh hôn nhân có thể giải thích hoàn cảnh nhưng không được đổ trách nhiệm lựa chọn nói dối/ngoại tình lên người bị phản bội.\n"
+            "8. Xuất ra định dạng JSON hợp lệ."
         )
 
         direction_clause = f"\nCHỈ ĐẠO ĐẶC BIỆT CHO TẬP PHIM NÀY:\n{special_direction}\n" if special_direction else ""
@@ -743,10 +755,14 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
             f"3. CHỈ DÙNG NHÂN VẬT TRONG STORY BIBLE: Tuyệt đối không tự bịa thêm tên riêng nhân vật phụ ngoài danh sách Story Bible.\n"
             f"4. NHẤT QUÁN NHẬN THỨC NHÂN VẬT (KNOWLEDGE LEDGER): Tuân thủ tuyệt đối ai biết bí mật, ai không biết. Nếu trong Story Bible có người thân biết sự thật, tuyệt đối KHÔNG được viết câu mâu thuẫn như 'không một ai hay biết' hay 'không thể sẻ chia cùng ai kể cả người vợ gối chăn'.\n"
             f"5. KỶ LUẬT BẰNG CHỨNG (EVIDENCE CHAIN): Không nhảy cóc từ một manh mối ban đầu sang kết luận cuối cùng. Mỗi manh mối chỉ chứng minh đúng phạm vi của nó và đặt ra câu hỏi tiếp theo.\n"
-            f"6. VĂN PHONG TỰ NHIÊN 'SHOW, DON'T LABEL': Kể bằng hành động, vật thể, ánh mắt, khoảng lặng đời thường. TUYỆT ĐỐI CẤM dùng các cụm từ sáo rỗng AI như: 'bí mật động trời', 'sự thật động trời', 'đòn chí mạng', 'sự thật kinh hoàng', 'cuộc gặp gỡ định mệnh', 'đau đớn đến tận cùng', 'vĩ đại ẩn giấu', 'mê cung không lối thoát', 'nấc nghẹn ngào đến xé lòng', 'cơn địa chấn', 'sét đánh ngang tai', 'bi kịch đẫm nước mắt', 'sự thật rỉ máu', 'chiếc lồng kính ngột ngạt', 'bóng ma vô hình', 'cuộc chiến ngầm khốc liệt'.\n"
+            f"6. VĂN PHONG TỰ NHIÊN 'SHOW, DON'T LABEL': Kể bằng hành động, vật thể, ánh mắt, khoảng lặng đời thường. TUYỆT ĐỐI CẤM dùng các cụm từ sáo rỗng AI như: 'bí mật động trời', 'sự thật động trời', 'đòn chí mạng', 'sự thật kinh hoàng', 'cuộc gặp gỡ định mệnh', 'đau đớn đến tận cùng', 'vĩ đại ẩn giấu', 'mê cung không lối thoát', 'nấc nghẹn ngào đến xé lòng', 'cơn địa chấn', 'sét đánh ngang tai', 'bi kịch đẫm nước mắt', 'sự thật rỉ máu', 'chiếc lồng kính ngột ngạt', 'bóng ma vô hình', 'cuộc chiến ngầm khốc liệt', 'mặt nạ hoàn hảo', 'bức tường phòng thủ cuối cùng sụp đổ', 'đứng lặng như tượng đá', 'tiếng khóc xé lòng', 'vết thương sâu hoắm'.\n"
             f"7. PHẦN KẾT GỌN GÀNG (5-8%): Không giảng đạo lặp đi lặp lại nhiều đoạn cuối. Chỉ dùng đúng 1 phân đoạn đúc kết chiêm nghiệm duy nhất trước khi chào tạm biệt.\n"
             f"8. Phân loại delivery_profile chính xác theo 6 loại: HOOK, NORMAL, MYSTERY, REVEAL, COMMENT, ENDING. Không đặt câu hỏi khán giả (audience_address: false) trong phân đoạn REVEAL.\n"
-            f"9. TUYỆT ĐỐI KHÔNG DÙNG NHÃN TEMPLATE / DATABASE NỘI BỘ (INTERNAL LABELS): Lời đọc của MC là văn xuôi tự nhiên, TUYỆT ĐỐI KHÔNG chứa các nhãn kỹ thuật như: 'Nhân vật chính', 'Manh mối 1', 'Manh mối 2', 'Manh mối 3', 'Bước ngoặt 1', 'Bước ngoặt 2', 'Reveal 1', 'Reveal 2', 'Fact Lock', 'Story Bible', 'central_conflict', 'topic_intent'. Luôn dùng tên riêng cụ thể của nhân vật (ví dụ: {protag_name}) thay cho cụm danh xưng 'Nhân vật chính'."
+            f"9. TUYỆT ĐỐI KHÔNG DÙNG NHÃN TEMPLATE / DATABASE NỘI BỘ (INTERNAL LABELS): Lời đọc của MC là văn xuôi tự nhiên, TUYỆT ĐỐI KHÔNG chứa các nhãn kỹ thuật như: 'Nhân vật chính', 'Manh mối 1', 'Manh mối 2', 'Manh mối 3', 'Bước ngoặt 1', 'Bước ngoặt 2', 'Reveal 1', 'Reveal 2', 'Fact Lock', 'Story Bible', 'central_conflict', 'topic_intent'. Luôn dùng tên riêng cụ thể của nhân vật (ví dụ: {protag_name}) thay cho cụm danh xưng 'Nhân vật chính'.\n"
+            f"10. TÊN MINH CHỈ DÀNH CHO MC: Không đặt tên hoặc mã MINH cho nhân vật trong truyện.\n"
+            f"11. KHÔNG KỂ LẠI: Mỗi hành động điều tra, cuộc gọi, cuộc gặp và phát hiện chỉ được kể một lần. Phần 2 nối thẳng hành động cuối Phần 1.\n"
+            f"12. KỶ LUẬT KẾT LUẬN: Tin nhắn, lịch sử cuộc gọi, lời đồn hoặc lời thú nhận đơn độc chỉ là dấu hiệu; không gọi chúng là chứng cứ không thể chối cãi nếu thiếu chi tiết độc lập có thể kiểm chứng.\n"
+            f"13. TRÁCH NHIỆM NHÂN VẬT: Bối cảnh hôn nhân không biến sự xa cách của người bị phản bội thành lỗi cho lựa chọn nói dối/ngoại tình của người kia."
         )
 
         # ---------------- PART 1: ACTS 1 to 5 (~40 to 50 Segments) ----------------
@@ -782,7 +798,8 @@ Cấu trúc Phân bổ Phần 1 (khoảng 40-50 phân đoạn):
 4. Act 4: ESCALATION (khoảng 8-10 phân đoạn):
    - Giả thuyết sai ban đầu (false lead) xuất hiện từ góc nhìn hạn chế của nhân vật chính (delivery_profile='NORMAL' và 'MYSTERY').
 5. Act 5: INVESTIGATION (khoảng 8-10 phân đoạn):
-   - Nhân vật chính bắt đầu hành động xác minh thực tế, tìm gặp nhân chứng hoặc đối chiếu tài liệu thứ hai.
+   - Nhân vật chính chỉ bắt đầu chuẩn bị hành động xác minh; dừng trước khi nhân chứng trả lời hoặc tài liệu thứ hai được đọc.
+   - Tuyệt đối không dùng REVEAL trong PHẦN 1 và không hoàn tất cuộc gặp/đối thoại sẽ mở đầu PHẦN 2.
 
 ĐIỂM DỪNG BẮT BUỘC CỦA PHẦN 1:
 - Dừng ở một hành động xác minh đang diễn ra hoặc một câu hỏi còn mở để PHẦN 2 tiếp tục trực tiếp.
@@ -808,13 +825,13 @@ Trả về JSON Object có khóa "segments": [
         ]
         raw_p1, in_tok1, out_tok1 = self._call_chat_completion(messages_p1, model=model, response_json=True)
         p1_data = _extract_script_segments(raw_p1)
-        if len(p1_data) < _MIN_SCRIPT_PART_SEGMENTS or _part_has_closure(p1_data):
+        if len(p1_data) < _MIN_SCRIPT_PART_SEGMENTS or _part_has_closure(p1_data) or _part_has_premature_reveal(p1_data):
             retry_messages = [
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": prompt_part1 + """
 
 YÊU CẦU SỬA BẮT BUỘC: Kết quả trước bị thiếu phân đoạn hoặc đã khép lại câu chuyện quá sớm.
-Viết lại TOÀN BỘ PHẦN 1 với ít nhất 30 phân đoạn. Không ENDING, không lời cảm ơn/chào tạm biệt, không giải quyết bí mật.
+Viết lại TOÀN BỘ PHẦN 1 với ít nhất 30 phân đoạn. Không ENDING hoặc REVEAL, không lời cảm ơn/chào tạm biệt, không giải quyết bí mật.
 Phân đoạn cuối phải để một hành động xác minh đang tiếp diễn cho PHẦN 2 nối trực tiếp.
 """},
             ]
@@ -828,8 +845,8 @@ Phân đoạn cuối phải để một hành động xác minh đang tiếp di�
             raise RuntimeError(
                 f"OpenAI-compatible provider returned only {len(p1_data)} valid Part 1 segments after retry; at least {_MIN_SCRIPT_PART_SEGMENTS} are required."
             )
-        if _part_has_closure(p1_data):
-            raise RuntimeError("OpenAI-compatible Part 1 still closes the story after retry; script was rejected.")
+        if _part_has_closure(p1_data) or _part_has_premature_reveal(p1_data):
+            raise RuntimeError("OpenAI-compatible Part 1 still reveals/closes the story after retry; script was rejected.")
 
         time.sleep(1)
 
@@ -909,14 +926,15 @@ Trả về JSON Object có khóa "segments": [
             len(p2_data) < _MIN_SCRIPT_PART_SEGMENTS
             or len(combined_candidate) < _MIN_COMPLETE_SCRIPT_SEGMENTS
             or not _has_valid_final_closure(combined_candidate)
+            or has_repeated_narrative_block(combined_candidate)
         ):
             retry_messages = [
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": prompt_part2 + """
 
-YÊU CẦU SỬA BẮT BUỘC: Kết quả trước bị thiếu phân đoạn, lặp lời chào hoặc đặt ENDING sai vị trí.
+YÊU CẦU SỬA BẮT BUỘC: Kết quả trước bị thiếu phân đoạn, đặt ENDING sai vị trí hoặc kể lại sự kiện đã có trong PHẦN 1.
 Viết lại TOÀN BỘ PHẦN 2 với ít nhất 30 phân đoạn. Chỉ object cuối cùng được dùng delivery_profile='ENDING'
-và chứa đúng lời chào chuẩn. Mọi object trước đó không được cảm ơn thính giả hoặc chào tạm biệt.
+và chứa đúng lời chào chuẩn. Nối trực tiếp hành động cuối PHẦN 1; không lặp cuộc gọi, cuộc gặp, manh mối hay phát hiện cũ.
 """},
             ]
             raw_retry, retry_in, retry_out = self._call_chat_completion(
@@ -937,6 +955,8 @@ và chứa đúng lời chào chuẩn. Mọi object trước đó không đượ
             )
         if not _has_valid_final_closure(combined_candidate):
             raise RuntimeError("OpenAI-compatible script does not contain exactly one final sign-off after retry; script was rejected.")
+        if has_repeated_narrative_block(combined_candidate):
+            raise RuntimeError("OpenAI-compatible Part 2 still repeats a narrative block from Part 1 after retry; script was rejected.")
 
         combined_data = combined_candidate
         segments: List[ScriptSegment] = []
@@ -1012,7 +1032,7 @@ và chứa đúng lời chào chuẩn. Mọi object trước đó không đượ
             total_words=total_words,
             status="DRAFT",
             generation_request_id=str(uuid.uuid4()),
-            prompt_version="script-v3.0",
+            prompt_version="script-v3.1",
             generation_source="REAL_AI",
             model_name=chosen_model_name,
             provider_name=self.provider_name,

@@ -356,6 +356,31 @@ class StoryQCEngine:
             if rule not in rule_codes:
                 rule_codes.append(rule)
 
+        # "Minh" is the fixed on-air host. Reusing that name for a story
+        # character makes narration ambiguous ("Minh nói với Minh") and can
+        # corrupt speaker/voice mapping later in the pipeline.
+        protagonist_name = (
+            str(bible.protagonist.get("name", ""))
+            if isinstance(bible.protagonist, dict)
+            else str(bible.protagonist or "")
+        ).strip()
+        reserved_name_hits: List[str] = []
+        if protagonist_name.casefold() == "minh":
+            reserved_name_hits.append("protagonist")
+        for idx, character in enumerate(bible.supporting_characters or []):
+            if not isinstance(character, dict):
+                continue
+            char_name = str(character.get("name", "")).strip()
+            char_id = str(character.get("char_id", "")).strip()
+            if char_name.casefold() == "minh" or char_id.upper() == "MINH":
+                reserved_name_hits.append(f"supporting_characters[{idx}]")
+        if reserved_name_hits:
+            _add_issue(
+                "HOST_CHARACTER_NAME_COLLISION",
+                "Tên 'Minh' được dành riêng cho MC. Hãy đổi tên nhân vật trong truyện để lời dẫn và ánh xạ giọng không bị nhập nhằng.",
+                target=", ".join(reserved_name_hits),
+            )
+
         # ------------------------------------------------------------------
         # 1. CAUSAL_GAP CHECK (CAUSE -> DECISION -> ACTION -> CONSEQUENCE)
         # ------------------------------------------------------------------
@@ -595,6 +620,44 @@ class StoryQCEngine:
                             f"Reveal 2 không đủ căn cứ tại trường '{req_key}'.",
                             target=f"reveal_2.{req_key}",
                         )
+
+            # A non-empty field is not automatically proof. For high-stakes
+            # accusations, messages, call logs, rumors, and a confession alone
+            # are leads; at least one independently verifiable detail is needed.
+            high_stakes_text = " ".join(
+                str(value or "") for value in (bible.secret, bible.reveal_1, bible.reveal_2)
+            ).lower()
+            high_stakes = any(
+                marker in high_stakes_text
+                for marker in (
+                    "ngoại tình", "vụng trộm", "phản bội", "giết", "huyết thống",
+                    "cha ruột", "mẹ ruột", "chiếm đoạt", "biển thủ",
+                )
+            )
+            if high_stakes:
+                direct_markers = (
+                    "ảnh", "video", "camera", "ghi âm", "đoạn hội thoại", "hóa đơn",
+                    "đặt phòng", "định vị", "giao dịch", "chứng kiến trực tiếp", "bắt gặp",
+                    "xét nghiệm", "adn", "hồ sơ", "chứng từ", "tài liệu gốc",
+                )
+                indirect_markers = (
+                    "tin nhắn", "lịch sử cuộc gọi", "lời đồn", "nghe nói",
+                    "thay đổi ngoại hình", "đi ăn riêng", "lời thú nhận", "thừa nhận",
+                )
+                for reveal_key, reveal_data in (("reveal_1", r1_just), ("reveal_2", r2_just)):
+                    if not isinstance(reveal_data, dict):
+                        continue
+                    evidence = str(reveal_data.get("evidence_support", "") or "").lower()
+                    if (
+                        evidence
+                        and any(marker in evidence for marker in indirect_markers)
+                        and not any(marker in evidence for marker in direct_markers)
+                    ):
+                        _add_issue(
+                            "REVEAL_PROOF_OVERCLAIM",
+                            f"{reveal_key} chỉ dựa vào dấu hiệu gián tiếp/lời thừa nhận nhưng được dùng như kết luận chắc chắn; cần thêm chi tiết có thể kiểm chứng độc lập.",
+                            target=f"{reveal_key}.evidence_support",
+                        )
         else:
             # Even if reveal_justifications dict was not explicitly passed, check whether Reveal 1 / Reveal 2
             # are backed by clues, timeline, and character motivation.
@@ -708,6 +771,36 @@ class StoryQCEngine:
         Delegates creative repair to AI provider when available to prevent template leakage.
         """
         if report is None:
+            report = self.audit_story_bible(bible)
+
+        if "HOST_CHARACTER_NAME_COLLISION" in report.rule_codes:
+            used_names = {
+                str(character.get("name", "")).strip().casefold()
+                for character in (bible.supporting_characters or [])
+                if isinstance(character, dict)
+            }
+            used_names.add(
+                str(bible.protagonist.get("name", "")).strip().casefold()
+                if isinstance(bible.protagonist, dict)
+                else str(bible.protagonist or "").strip().casefold()
+            )
+            replacement = next(
+                name for name in ("Khải", "Quân", "Duy", "Nam")
+                if name.casefold() not in used_names
+            )
+
+            def _rename_reserved_character(value: Any) -> Any:
+                if isinstance(value, dict):
+                    return {key: _rename_reserved_character(item) for key, item in value.items()}
+                if isinstance(value, list):
+                    return [_rename_reserved_character(item) for item in value]
+                if isinstance(value, str):
+                    if value == "MINH":
+                        return replacement.upper()
+                    return re.sub(r"\bMinh\b", replacement, value, flags=re.IGNORECASE)
+                return value
+
+            bible = StoryBible.from_dict(_rename_reserved_character(bible.to_dict()))
             report = self.audit_story_bible(bible)
 
         active_provider = provider or self.provider

@@ -497,6 +497,15 @@ class GenerationService:
                     f"Bị chặn bởi Cross-Stage Topic Gate 2! Vui lòng tạo lại hoặc chỉnh sửa Story Bible."
                 )
             story_bible = story_qc.repair_story_bible(story_bible, bible_qc)
+            repaired_qc = story_qc.audit_story_bible(story_bible)
+            if repaired_qc.status != "PASS":
+                remaining_rules = ", ".join(repaired_qc.rule_codes) or "UNKNOWN_STORY_QC"
+                remaining_details = "; ".join(repaired_qc.logic_issues[:5])
+                raise ValueError(
+                    "Story Bible vẫn chưa đạt sau khi tự sửa "
+                    f"({remaining_rules}): {remaining_details}. "
+                    "Vui lòng tạo lại hoặc sửa Cốt truyện trước khi tạo Kịch bản."
+                )
             repaired_story_data = story_bible.to_dict()
             repaired_story_data["artifact_status"] = "CURRENT"
             for target in (story_path, proj_dir / "story_bible.json"):

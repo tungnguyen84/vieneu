@@ -3,6 +3,7 @@ import json
 import pytest
 
 from apps.script_factory.models import StoryBible
+from apps.script_factory.narrative_continuity import has_repeated_narrative_block
 from apps.script_factory.providers.gemini_provider import GeminiScriptAIProvider
 
 
@@ -90,3 +91,48 @@ def test_gemini_rejects_script_when_second_part_still_has_early_signoff(monkeypa
 
     with pytest.raises(RuntimeError, match="exactly one final sign-off"):
         provider.write_script(_bible(), {}, {})
+
+
+def test_gemini_retries_part_two_when_it_restarts_part_one(monkeypatch):
+    provider = GeminiScriptAIProvider(api_key="fake")
+    investigation = [
+        _segment("005", "Hoàng gọi cho Thảo hỏi lịch công tác cuối tuần và các cuộc họp buổi tối."),
+        _segment("006", "Thảo xem hồ sơ rồi xác nhận công ty không có dự án khẩn trong ngày hôm ấy."),
+        _segment("007", "Cô nói Lan thường đi riêng với cấp trên trực tiếp sau giờ làm tại văn phòng."),
+        _segment("008", "Hoàng ngồi bên bàn chờ Lan về để hỏi thẳng những lần vắng nhà không rõ lý do."),
+    ]
+    part_one = [
+        _segment("001", "Lá thư mở đầu bằng một dấu hiệu bất thường trong gia đình.", "HOOK"),
+        _segment("002", "Hoàng ghi lại từng mốc giờ xuất hiện trong lịch sinh hoạt."),
+        _segment("003", "Anh so sánh lịch đó với những lần Lan báo tăng ca."),
+        _segment("004", "Một khoảng trống cuối tuần khiến anh quyết định kiểm tra."),
+        *investigation,
+        *[_segment(f"{i:03d}", f"Chi tiết độc lập thứ {i} mở ra một hướng xác minh khác trong câu chuyện.") for i in range(9, 21)],
+    ]
+    bad_part_two = [
+        _segment("021", "Hoàng gọi lại cho Thảo để hỏi lịch công tác cuối tuần và cuộc họp buổi tối."),
+        _segment("022", "Sau khi xem hồ sơ, Thảo xác nhận công ty không có dự án khẩn trong ngày đó."),
+        _segment("023", "Lan thường đi riêng với cấp trên trực tiếp sau giờ làm tại văn phòng, cô nói."),
+        _segment("024", "Hoàng ngồi bên bàn đợi Lan về để hỏi những lần vắng nhà không rõ lý do."),
+        *[_segment(f"{i:03d}", f"Diễn biến phần hai riêng biệt thứ {i} đưa sự việc tới kết luận.") for i in range(25, 37)],
+        _segment("037", "Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", "ENDING"),
+    ]
+    good_part_two = [
+        *[_segment(f"{i:03d}", f"Chứng cứ mới riêng biệt thứ {i} nối tiếp trực tiếp hành động cuối phần trước.") for i in range(21, 37)],
+        _segment("037", "Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", "ENDING"),
+    ]
+    responses = iter([part_one, bad_part_two, good_part_two])
+    calls = []
+
+    def fake_call(**kwargs):
+        calls.append(kwargs["prompt"])
+        return json.dumps(next(responses), ensure_ascii=False), 10, 20
+
+    monkeypatch.setattr(provider, "_call_generate_content", fake_call)
+    monkeypatch.setattr("apps.script_factory.providers.gemini_provider.time.sleep", lambda _seconds: None)
+
+    script, _, _ = provider.write_script(_bible(), {}, {})
+
+    assert len(calls) == 3
+    assert "kể lại một chuỗi sự kiện" in calls[-1]
+    assert not has_repeated_narrative_block(script.segments)

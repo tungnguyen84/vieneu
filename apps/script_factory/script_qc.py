@@ -15,6 +15,7 @@ from apps.script_factory.information_release_map import (
 )
 from apps.script_factory.leakage_guard import StoryBibleLeakageGuard
 from apps.script_factory.models import FullScript, QCReport, ScriptSegment, StoryBible
+from apps.script_factory.narrative_continuity import find_repeated_narrative_block
 from apps.script_factory.providers.base import ScriptAIProvider
 from apps.script_factory.spoiler_timing_guard import SpoilerTimingGuard
 
@@ -330,6 +331,39 @@ class ScriptQCEngine:
                         repetition_issues.append(f"Repeated hook detected: opening formula is too similar to {ps.episode_id}.")
                         revision_requests.append(f"Rewrite opening hook to avoid duplicating the hook structure of {ps.episode_id}.")
 
+        # 4.1 INTERNAL NARRATIVE BLOCK REPETITION
+        # Two-pass providers can accidentally restart Part 2 by retelling the
+        # final investigation/confrontation sequence from Part 1. A single clue
+        # callback is valid; four distant segments with high content overlap are not.
+        repeated_block = find_repeated_narrative_block(script.segments)
+        if repeated_block:
+            first_start = repeated_block["first_start"]
+            second_start = repeated_block["second_start"]
+            first_id = script.segments[first_start].id
+            second_id = script.segments[second_start].id
+            score = repeated_block["score"]
+            evidence_issues.append({
+                "segment_id": second_id,
+                "excerpt": script.segments[second_start].text[:100],
+                "rule": "REPEATED_NARRATIVE_BLOCK",
+                "severity": "CRITICAL",
+                "recommended_action": "Xóa vòng kể lại ở phần sau và nối trực tiếp từ hành động cuối phần trước tới chứng cứ/reveal mới.",
+                "message": (
+                    f"Phân đoạn bắt đầu tại [{second_id}] kể lại chuỗi sự kiện đã xuất hiện từ "
+                    f"[{first_id}] (độ tương đồng {score * 100:.1f}%)."
+                ),
+                "first_start": first_start,
+                "first_end": repeated_block["first_end"],
+                "second_start": second_start,
+                "second_end": repeated_block["second_end"],
+            })
+            repetition_issues.append(
+                f"Repeated narrative block: segments {first_id} and {second_id} restart the same event sequence."
+            )
+            revision_requests.append(
+                f"Remove the repeated event sequence beginning at segment {second_id}; continue directly to new evidence or reveal."
+            )
+
         # 5. STRUCTURE AUDIT (Check acts representation)
         has_hook = any(s.delivery_profile == "HOOK" for s in script.segments)
         has_reveal = any(s.delivery_profile == "REVEAL" for s in script.segments)
@@ -516,6 +550,16 @@ class ScriptQCEngine:
             "sự thật rỉ máu",
             "chiếc lồng kính ngột ngạt",
             "bóng ma vô hình",
+            "mặt nạ hoàn hảo",
+            "bức tường phòng thủ cuối cùng sụp đổ",
+            "mảnh vỡ vụn",
+            "đẩy mọi thứ xuống vực sâu",
+            "không gian xung quanh đặc quánh lại",
+            "như một nhát dao đâm thẳng",
+            "đứng lặng như tượng đá",
+            "những giọt nước mắt muộn màng",
+            "tiếng khóc xé lòng",
+            "vết thương sâu hoắm",
         ]
         cliche_hits: List[Tuple[str, str, str]] = []
         severe_v2_hits: List[Tuple[str, str, str]] = []
@@ -973,6 +1017,7 @@ class ScriptQCEngine:
             "PREMATURE_SIGNOFF",
             "DUPLICATE_SIGNOFF",
             "CONTENT_AFTER_SIGNOFF",
+            "REPEATED_NARRATIVE_BLOCK",
         }
         has_critical_failure = (
             any(
@@ -1007,6 +1052,7 @@ class ScriptQCEngine:
             "PREMATURE_SIGNOFF",
             "DUPLICATE_SIGNOFF",
             "CONTENT_AFTER_SIGNOFF",
+            "REPEATED_NARRATIVE_BLOCK",
         }
         has_hard_fail = any(iss.get("rule") in hard_fail_rules for iss in evidence_issues)
         has_issues = bool(fact_conflicts or logic_issues or repetition_issues or evidence_issues)
@@ -1086,6 +1132,30 @@ def apply_targeted_repairs(
         for issue in qc_report.evidence_issues
         if isinstance(issue, dict)
     }
+
+    # A long script is generated in two calls. If the second call restarts the
+    # investigation, keep the original occurrence and cut only the later
+    # duplicate bridge. The first REVEAL after that bridge is preserved.
+    if "REPEATED_NARRATIVE_BLOCK" in issue_rules:
+        repeated = find_repeated_narrative_block(script.segments)
+        if repeated:
+            cut_start = int(repeated["second_start"])
+            reset_pattern = re.compile(
+                r"\b(?:những ngày|vài ngày|một thời gian|thời gian)\s+sau\s+đó\b",
+                re.IGNORECASE,
+            )
+            if cut_start > 0 and reset_pattern.search(script.segments[cut_start - 1].text):
+                cut_start -= 1
+            cut_end = int(repeated["second_end"])
+            for idx in range(cut_end, min(len(script.segments), cut_end + 9)):
+                if script.segments[idx].delivery_profile == "REVEAL":
+                    cut_end = idx
+                    break
+            if cut_end > cut_start:
+                del script.segments[cut_start:cut_end]
+                for index, segment in enumerate(script.segments, start=1):
+                    segment.id = f"{index:03d}"
+                seg_map = {s.id: s for s in script.segments}
 
     # Repair a slow/generic hook using facts that already exist in the Story
     # Bible. This changes presentation only and never invents a new clue.
@@ -1241,6 +1311,16 @@ def apply_targeted_repairs(
         "sự thật rỉ máu": "sự thật đau lòng",
         "chiếc lồng kính ngột ngạt": "không gian tĩnh lặng",
         "bóng ma vô hình": "nỗi ám ảnh vô hình",
+        "mặt nạ hoàn hảo": "vẻ ngoài bình thường",
+        "bức tường phòng thủ cuối cùng sụp đổ": "cô không còn né tránh câu hỏi",
+        "mảnh vỡ vụn": "những điều đã rạn nứt",
+        "đẩy mọi thứ xuống vực sâu": "khiến mọi chuyện trở nên tệ hơn",
+        "không gian xung quanh đặc quánh lại": "căn phòng im hẳn",
+        "như một nhát dao đâm thẳng": "khiến anh đau lòng",
+        "đứng lặng như tượng đá": "đứng lặng, chưa biết nói gì",
+        "những giọt nước mắt muộn màng": "cô bật khóc",
+        "tiếng khóc xé lòng": "tiếng khóc nghẹn lại",
+        "vết thương sâu hoắm": "tổn thương khó nguôi",
     }
     for s in script.segments:
         for bad_phrase, natural_phrase in cliche_replacements.items():
