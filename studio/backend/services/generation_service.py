@@ -28,15 +28,24 @@ PROJECTS_DIR = BASE_DIR / "projects"
 
 
 def get_configured_ai_provider():
-    """Builds provider from credentials or falls back to Mock."""
+    """Builds provider from credentials. NEVER silently falls back to Mock in production."""
     status = get_public_providers_status()
     default_p = (status.get("default_provider") or "gemini").strip().lower()
     model = (status.get("default_model") or "gemini-2.5-flash").strip()
+
+    is_test_env = os.environ.get("APP_ENV") == "test" or os.environ.get("ALLOW_MOCK_AI") == "1"
 
     if default_p == "gemini":
         gemini_key = get_active_api_key("gemini")
         if gemini_key:
             return GeminiScriptAIProvider(api_key=gemini_key, default_model=model)
+        elif is_test_env or default_p == "mock":
+            return MockScriptAIProvider()
+        else:
+            raise RuntimeError(
+                "AI GENERATION FAILED: Google Gemini API key is missing or not configured. "
+                "Please configure a valid GEMINI_API_KEY in Settings."
+            )
     elif default_p in ("openai", "openai_compatible", "local"):
         from apps.script_factory.providers.openai_provider import OpenAICompatibleProvider
         prov_data = status.get("providers", {}).get(default_p, {})
@@ -49,6 +58,13 @@ def get_configured_ai_provider():
                 base_url=base_url,
                 provider_name=default_p
             )
+        elif is_test_env or default_p == "mock":
+            return MockScriptAIProvider()
+        else:
+            raise RuntimeError(
+                f"AI GENERATION FAILED: {default_p.upper()} API key is missing. "
+                "Please configure your provider credentials in Settings."
+            )
 
     # Secondary checks
     gemini_key = get_active_api_key("gemini")
@@ -60,7 +76,13 @@ def get_configured_ai_provider():
         from apps.script_factory.providers.openai_provider import OpenAICompatibleProvider
         return OpenAICompatibleProvider(api_key=openai_key, default_model=model, provider_name="openai")
 
-    return MockScriptAIProvider()
+    if is_test_env or default_p == "mock":
+        return MockScriptAIProvider()
+
+    raise RuntimeError(
+        "AI GENERATION FAILED: No valid AI provider credentials found. "
+        "Silent fallback to mock is forbidden in production."
+    )
 
 
 class GenerationService:
@@ -107,6 +129,11 @@ class GenerationService:
                     pass
 
         provider = self.get_provider()
+        prov_source = "MOCK" if isinstance(provider, MockScriptAIProvider) else "REAL_AI"
+        logger.debug(
+            f"[Lineage Stage=IDEAS] project_id={project_id}, original_user_topic='{user_topic}', "
+            f"provider={provider.provider_name}, model={getattr(provider, 'default_model', 'unknown')}, source={prov_source}"
+        )
         idea_gen = IdeaGenerator(provider=provider, cost_controller=self.cost_ctrl)
 
         ideas_list = idea_gen.generate_batch(
@@ -125,13 +152,16 @@ class GenerationService:
             emotional_angle = getattr(idea, "emotional_payoff", "") or getattr(idea, "emotional_angle", "")
             n_score = getattr(idea, "novelty_score", None) or 8.5
             adherence_sc = getattr(idea, "topic_adherence_score", None)
+            protag = getattr(idea, "protagonist", "Tuấn")
+            if str(protag).strip().lower() in ("nhân vật chính", "protagonist"):
+                protag = "Tuấn"
             results.append({
                 "idea_id": idea.idea_id,
                 "title": title,
                 "working_title": title,
                 "hook": hook,
                 "premise": premise,
-                "protagonist": getattr(idea, "protagonist", "Nhân vật chính"),
+                "protagonist": protag,
                 "relationship": getattr(idea, "relationship", "Gia đình"),
                 "central_secret": getattr(idea, "central_secret", premise),
                 "core_mystery": core_mystery,
@@ -150,6 +180,7 @@ class GenerationService:
                 "original_user_topic": getattr(idea, "original_user_topic", user_topic or None),
                 "topic_intent": getattr(idea, "topic_intent", topic_intent_obj.to_dict() if topic_intent_obj else None),
                 "topic_adherence_score": adherence_sc if adherence_sc is not None else (100.0 if user_topic else None),
+                "generation_source": prov_source,
             })
         return results
 
@@ -202,21 +233,51 @@ class GenerationService:
         if not working_title:
             working_title = "Câu chuyện phía sau cánh cửa"
         hook = sel_idea.get("hook") or sel_idea.get("premise") or clean_topic
-        protag = sel_idea.get("protagonist") or "Nhân vật chính"
-        rel = sel_idea.get("relationship") or "Gia đình"
+        
+        # Helper to clean out internal template prefixes
+        def _clean_scaffold(val: str) -> str:
+            v = re.sub(r"^(?:Manh mối|Bước ngoặt|Reveal)\s*\d*\s*[-:]?\s*", "", str(val or "")).strip()
+            v = re.sub(r"^Chân tướng sự thật về bí mật\s+", "", v).strip()
+            return v
+
+        protag = str(sel_idea.get("protagonist") or "").strip()
+        if protag.lower() in ("nhân vật chính", "protagonist", ""):
+            if any(w in clean_topic.lower() for w in ["cháu", "người cháu"]):
+                protag = "Người cháu"
+            elif any(w in clean_topic.lower() for w in ["công sở", "văn phòng", "công ty", "đồng nghiệp"]):
+                protag = "Hà"
+            else:
+                protag = "Tuấn"
+
+        rel = sel_idea.get("relationship") or ""
+        if not rel:
+            if any(w in clean_topic.lower() for w in ["ông nội", "bà nội", "cha", "mẹ", "gia đình", "cháu", "con", "ruột"]):
+                rel = "Người thân trong gia đình"
+            elif any(w in clean_topic.lower() for w in ["công sở", "văn phòng", "công ty", "đồng nghiệp", "sếp"]):
+                rel = "Đồng nghiệp"
+            else:
+                rel = "Người thân"
+
         secret = sel_idea.get("central_secret") or sel_idea.get("core_mystery") or clean_topic
-        mystery_q = sel_idea.get("mystery_question") or f"Điều gì đã thực sự xảy ra đằng sau bí mật của {protag}?"
+        mystery_q = sel_idea.get("mystery_question") or f"Điều gì đã thực sự xảy ra đằng sau uẩn khúc của {protag}?"
         false_lead = sel_idea.get("false_lead") or "Nghi ngờ ban đầu hướng về người ngoài hoặc sự phản bội."
 
         clues_data = sel_idea.get("clues") or []
-        clue1 = sel_idea.get("clue_1") or (clues_data[0] if isinstance(clues_data, list) and len(clues_data) > 0 else "Manh mối 1: Dấu vết vật chứng bất thường được phát hiện.")
-        clue2 = sel_idea.get("clue_2") or (clues_data[1] if isinstance(clues_data, list) and len(clues_data) > 1 else "Manh mối 2: Lời khai mâu thuẫn của những người liên quan.")
-        clue3 = sel_idea.get("clue_3") or (clues_data[2] if isinstance(clues_data, list) and len(clues_data) > 2 else "Manh mối 3: Chứng từ, hồ sơ xác thực mốc thời gian.")
-
-        rev1 = sel_idea.get("reveal_1") or sel_idea.get("possible_reveal") or "Bước ngoặt 1: Hé lộ nhân chứng hoặc góc nhìn đảo ngược hoàn toàn suy đoán ban đầu."
-        rev2 = sel_idea.get("reveal_2") or f"Bước ngoặt 2: Chân tướng sự thật về bí mật {secret[:80]}."
-        payoff = sel_idea.get("emotional_payoff") or sel_idea.get("emotional_angle") or "Hóa giải hiểu lầm trong nước mắt, sự thấu hiểu và tha thứ giữa những người thân."
-        reflection = sel_idea.get("reflection_theme") or "Đằng sau cánh cửa đóng kín, sự thật dù đau lòng nhưng là nhịp cầu duy nhất để chữa lành."
+        if sel_idea:
+            clue1 = _clean_scaffold(sel_idea.get("clue_1") or (clues_data[0] if isinstance(clues_data, list) and len(clues_data) > 0 else f"Dấu vết vật chứng liên quan đến {clean_topic[:60]}."))
+            clue2 = _clean_scaffold(sel_idea.get("clue_2") or (clues_data[1] if isinstance(clues_data, list) and len(clues_data) > 1 else f"Lời khai mâu thuẫn của những người liên quan đến {clean_topic[:60]}."))
+            clue3 = _clean_scaffold(sel_idea.get("clue_3") or (clues_data[2] if isinstance(clues_data, list) and len(clues_data) > 2 else f"Chứng từ hồ sơ xác thực mốc thời gian liên quan đến {clean_topic[:60]}."))
+            rev1 = _clean_scaffold(sel_idea.get("reveal_1") or sel_idea.get("possible_reveal") or f"Hé lộ nhân chứng hoặc góc nhìn mới đảo ngược suy đoán về {clean_topic[:60]}.")
+            raw_rev2 = sel_idea.get("reveal_2") or f"Chân tướng sự thật liên quan đến {secret[:80]}."
+            rev2 = _clean_scaffold(raw_rev2)
+        else:
+            clue1 = f"Dấu vết và chứng từ liên quan đến {clean_topic[:60]}."
+            clue2 = f"Nhân chứng và mốc thời gian mâu thuẫn xoay quanh {clean_topic[:60]}."
+            clue3 = f"Hồ sơ tài liệu xác thực nguồn cơn {clean_topic[:60]}."
+            rev1 = f"Bước ngoặt ban đầu làm thay đổi nhận thức về {clean_topic[:60]}."
+            rev2 = f"Sự thật cốt lõi về {clean_topic[:60]}."
+        payoff = sel_idea.get("emotional_payoff") or sel_idea.get("emotional_angle") or "Hóa giải hiểu lầm trong nước mắt, sự thấu hiểu và tha thứ giữa những người trong cuộc."
+        reflection = sel_idea.get("reflection_theme") or "Đằng sau cánh cửa đóng kín, sự thật dù bất ngờ nhưng là nhịp cầu duy nhất để chữa lành."
         hook_arch = sel_idea.get("hook_archetype") or "BÍ MẬT GIA ĐÌNH"
         twist_arch = sel_idea.get("twist_archetype") or "BƯỚC NGOẶT KÉP"
         try:
@@ -224,10 +285,12 @@ class GenerationService:
         except Exception:
             n_score = 8.8
 
-        orig_topic = sel_idea.get("original_user_topic") or proj_meta.get("original_user_topic") or proj_meta.get("topic") or clean_topic
-        top_intent = sel_idea.get("topic_intent") or proj_meta.get("topic_intent")
+        orig_topic = sel_idea.get("original_user_topic") or clean_topic or proj_meta.get("original_user_topic") or proj_meta.get("topic")
+        top_intent = sel_idea.get("topic_intent")
         top_score = sel_idea.get("topic_adherence_score")
-        if top_score is not None:
+        if top_score is None:
+            top_score = 100.0
+        else:
             try:
                 top_score = float(top_score)
             except Exception:
@@ -258,6 +321,13 @@ class GenerationService:
         )
 
         provider = self.get_provider()
+        prov_source = "MOCK" if isinstance(provider, MockScriptAIProvider) else "REAL_AI"
+        logger.debug(
+            f"[Lineage Stage=STORY_BIBLE] project_id={project_id}, original_user_topic='{orig_topic}', "
+            f"selected_idea_title='{working_title}', premise='{hook}', secret='{secret}', "
+            f"reveal_1='{rev1}', reveal_2='{rev2}', provider={provider.provider_name}, "
+            f"model={getattr(provider, 'default_model', 'unknown')}, source={prov_source}"
+        )
         planner = StoryPlanner(provider=provider, cost_controller=self.cost_ctrl, episodes_root=PROJECTS_DIR)
 
         # Generate using provider (StoryPlanner automatically validates & repairs causal/knowledge/clue/reveal logic)
@@ -276,9 +346,14 @@ class GenerationService:
         bible_dict["original_user_topic"] = story_bible.original_user_topic
         bible_dict["topic_intent"] = story_bible.topic_intent
         bible_dict["topic_adherence"] = story_bible.topic_adherence
+        bible_dict["generation_source"] = prov_source
 
         bible_path = story_dir / "story_bible.json"
         with open(bible_path, "w", encoding="utf-8") as f:
+            json.dump(bible_dict, f, ensure_ascii=False, indent=2)
+
+        bible_root_path = proj_dir / "story_bible.json"
+        with open(bible_root_path, "w", encoding="utf-8") as f:
             json.dump(bible_dict, f, ensure_ascii=False, indent=2)
 
         if p_json.exists():
@@ -334,6 +409,11 @@ class GenerationService:
             or not story_bible.structured_clues
             or not story_bible.reveal_justifications
         ):
+            if "STORY_BIBLE_TOPIC_DRIFT" in bible_qc.rule_codes:
+                raise ValueError(
+                    f"Story Bible trôi dạt chủ đề: {'; '.join(bible_qc.logic_issues)}. "
+                    f"Bị chặn bởi Cross-Stage Topic Gate 2! Vui lòng tạo lại hoặc chỉnh sửa Story Bible."
+                )
             story_bible = story_qc.repair_story_bible(story_bible, bible_qc)
             with open(story_path, "w", encoding="utf-8") as f:
                 json.dump(story_bible.to_dict(), f, ensure_ascii=False, indent=2)
@@ -345,6 +425,12 @@ class GenerationService:
             time.sleep(0.05)
 
         provider = self.get_provider()
+        prov_source = "MOCK" if isinstance(provider, MockScriptAIProvider) else "REAL_AI"
+        logger.debug(
+            f"[Lineage Stage=SCRIPT] project_id={project_id}, original_user_topic='{story_bible.original_user_topic}', "
+            f"title='{story_bible.title}', provider={provider.provider_name}, "
+            f"model={getattr(provider, 'default_model', 'unknown')}, source={prov_source}"
+        )
         writer = ScriptWriter(provider=provider, cost_controller=self.cost_ctrl, episodes_root=PROJECTS_DIR)
         script = writer.generate_script_from_bible(story_bible)
 
@@ -359,14 +445,19 @@ class GenerationService:
                 qc_report=qc_report,
             )
 
+        # Attach generation_source to script and project metadata
+        script_dict = script.to_dict()
+        script_dict["generation_source"] = prov_source
+
         # Save script
         script_dir = proj_dir / "script"
         script_dir.mkdir(parents=True, exist_ok=True)
         script_path = script_dir / "full_script.json"
         with open(script_path, "w", encoding="utf-8") as f:
-            json.dump(script.to_dict(), f, ensure_ascii=False, indent=2)
+            json.dump(script_dict, f, ensure_ascii=False, indent=2)
 
         qc_dict = asdict(qc_report)
+        qc_dict["generation_source"] = prov_source
         qc_path = script_dir / "qc_report.json"
         with open(qc_path, "w", encoding="utf-8") as f:
             json.dump(qc_dict, f, ensure_ascii=False, indent=2)
@@ -376,18 +467,33 @@ class GenerationService:
         hist_dir.mkdir(parents=True, exist_ok=True)
         hist_file = hist_dir / f"script_{int(time.time())}.json"
         with open(hist_file, "w", encoding="utf-8") as f:
-            json.dump(script.to_dict(), f, ensure_ascii=False, indent=2)
+            json.dump(script_dict, f, ensure_ascii=False, indent=2)
+
+        # Update project.json with generation source
+        p_json = proj_dir / "project.json"
+        if p_json.exists():
+            try:
+                with open(p_json, "r", encoding="utf-8") as f:
+                    p_curr = json.load(f)
+                p_curr["generation_source"] = prov_source
+                p_curr["qc_status"] = qc_report.status
+                with open(p_json, "w", encoding="utf-8") as f:
+                    json.dump(p_curr, f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
 
         total_words = script.total_words or sum(len(s.text.split()) for s in script.segments)
         return {
-            "script": script.to_dict(),
+            "script": script_dict,
             "qc_report": qc_dict,
+            "generation_source": prov_source,
             "stats": {
                 "word_count": total_words,
                 "segment_count": len(script.segments),
                 "estimated_duration_min": round(total_words / 160, 1),
                 "qc_status": qc_report.status,
-                "leakage_count": 0
+                "leakage_count": sum(1 for e in qc_report.evidence_issues if "LEAKAGE" in e.get("rule", "")),
+                "generation_source": prov_source,
             }
         }
 

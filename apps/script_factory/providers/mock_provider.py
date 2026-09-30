@@ -80,9 +80,9 @@ class MockScriptAIProvider(ScriptAIProvider):
                 rev2 = f"Bí mật {secret.lower()}"
                 adherence_score = 100.0
 
-            clue1 = f"Manh mối 1: Dấu vết chữ viết tay và con dấu đã mờ trên phong bì."
-            clue2 = f"Manh mối 2: Lời khai mâu thuẫn của những người hàng xóm lớn tuổi."
-            clue3 = f"Manh mối 3: Giấy tờ chứng từ xác thực tại cơ quan lưu trữ địa phương."
+            clue1 = f"Dấu vết chữ viết tay và con dấu đã mờ trên phong bì cũ."
+            clue2 = f"Lời khai mâu thuẫn của những người hàng xóm lớn tuổi."
+            clue3 = f"Giấy tờ chứng từ xác thực tại cơ quan lưu trữ địa phương."
             rev1 = f"Người tưởng như xa lạ thực chất lại là người có quan hệ mật thiết."
             payoff = f"{protag} đối thoại trực tiếp trong nước mắt, tháo gỡ hiểu lầm sâu nặng bấy lâu."
             reflection = f"Đằng sau cánh cửa đóng kín, sự thật dù bất ngờ nhưng mở ra lối thoát cho những người trong cuộc."
@@ -436,8 +436,8 @@ class MockScriptAIProvider(ScriptAIProvider):
         reflection_lines = [
             f"{story_bible.reflection_theme}",
             f"Còn quý vị thính giả, nếu đứng trước một sự im lặng đầy hy sinh như thế, quý vị sẽ nói điều gì đầu tiên với người thân của mình?", # Seg 086: Audience Address 4
-            f"Cảm ơn {protag} đã tin tưởng gửi lá thư tâm sự này đến với chương trình. Cảm ơn quý thính giả đã dành thời gian lắng nghe.",
-            f"Tôi là Minh. Xin kính chúc quý vị và gia đình một buổi tối an lành. Hẹn gặp lại quý vị trong tập tiếp theo của Sau Cánh Cửa."
+            f"Cảm ơn {protag} đã tin tưởng gửi lá thư tâm sự này đến với chương trình.",
+            f"Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại."
         ]
         for idx, text in enumerate(reflection_lines):
             sid = f"{idx + 85:03d}"
@@ -466,56 +466,8 @@ class MockScriptAIProvider(ScriptAIProvider):
         series_bible: Dict[str, Any],
         model: Optional[str] = None,
     ) -> Tuple[QCReport, int, int]:
-        fact_conflicts = []
-        logic_issues = []
-        repetition_issues = []
-        revision_requests = []
-
-        all_text = " ".join(s.text for s in script.segments)
-
-        # Check Locked Facts
-        for fact in story_bible.critical_facts:
-            if fact.status == "LOCKED":
-                if fact.value.lower() not in all_text.lower():
-                    fact_conflicts.append({
-                        "fact_id": fact.fact_id,
-                        "expected": fact.value,
-                        "description": f"Locked fact '{fact.field}' with value '{fact.value}' missing from script."
-                    })
-                    revision_requests.append(f"Incorporate locked fact {fact.field} ({fact.value}) into script narration.")
-
-        # Check reveal interruption rule
-        reveal_segs = [s for s in script.segments if s.delivery_profile == "REVEAL"]
-        for rs in reveal_segs:
-            if rs.audience_address:
-                logic_issues.append(f"Segment {rs.id} has delivery_profile='REVEAL' but includes audience_address=True.")
-                revision_requests.append(f"Remove audience address from REVEAL segment {rs.id}.")
-
-        # Check audience interactions count (3-6)
-        audience_count = sum(1 for s in script.segments if s.audience_address)
-        if audience_count < 3 or audience_count > 6:
-            repetition_issues.append(f"Audience interaction count is {audience_count} (Target: 3–6).")
-            revision_requests.append("Adjust direct audience interaction count to be strictly between 3 and 6.")
-
-        status = "PASS" if not fact_conflicts and not logic_issues and not revision_requests else "NEEDS_REVISION"
-        report = QCReport(
-            episode_id=script.episode_id,
-            status=status,
-            scores={
-                "hook": 95.0,
-                "mystery": 94.0,
-                "logic": 92.0 if not logic_issues else 70.0,
-                "twist": 96.0,
-                "emotion": 93.0,
-                "novelty": 92.0,
-                "tts_readability": 98.0
-            },
-            fact_conflicts=fact_conflicts,
-            logic_issues=logic_issues,
-            repetition_issues=repetition_issues,
-            revision_requests=revision_requests,
-            checked_at=time.time()
-        )
+        from apps.script_factory.script_qc import ScriptQCEngine
+        report = ScriptQCEngine.audit_script(script, story_bible, story_formula, series_bible)
         return report, 1200, 450
 
     def revise_script(

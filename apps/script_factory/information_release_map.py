@@ -94,13 +94,19 @@ def extract_key_entities_from_text(text: str) -> List[str]:
         "bước ngoặt", "thông tin", "tài sản", "chi tiết", "quan hệ", "giải", "lời", "đáp",
         "thực sự", "bản chất", "lý do", "khoản", "tiền", "khoản tiền", "nợ", "phần",
         "năm", "ngày", "tháng", "đoạn", "trang", "hồi", "tập", "chương", "giấy", "hồ sơ",
-        "chứng từ", "biên bản"
+        "chứng từ", "biên bản", "chân", "tướng", "chân tướng", "bước", "ngoặt", "manh",
+        "mối", "bí mật", "sự thật", "tiết lộ", "phát hiện", "chứng cứ", "nhân chứng",
+        "hồ sơ", "tài liệu", "cơ quan", "địa phương", "nguyên nhân", "bên dưới", "trên"
     }
 
     proper_nouns = []
     for pn in proper_nouns_raw:
-        if pn.lower() not in stop_words and len(pn) >= 3:
-            proper_nouns.append(pn)
+        pn_clean = pn.strip()
+        if pn_clean.lower() not in stop_words and len(pn_clean) >= 3:
+            # Don't add generic capitalized words that often appear at start of phrases
+            if pn_clean.lower() in ("chân", "bước", "manh", "sự", "điều", "người"):
+                continue
+            proper_nouns.append(pn_clean)
     
     distinctive_terms = []
     lower = text.lower()

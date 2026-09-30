@@ -37,6 +37,20 @@ class ScriptQCEngine:
         self.cost_ctrl = cost_controller
         self.episodes_root = Path(episodes_root) if episodes_root else Path("episodes")
 
+    @classmethod
+    def audit_script(
+        cls,
+        script: FullScript,
+        story_bible: StoryBible,
+        story_formula: Optional[Dict[str, Any]] = None,
+        series_bible: Optional[Dict[str, Any]] = None,
+    ) -> QCReport:
+        """Convenience method to execute full QC audit without explicit controller instantiation."""
+        from apps.script_factory.cost_control import CostController
+        from apps.script_factory.providers.mock_provider import MockScriptAIProvider
+        engine = cls(provider=MockScriptAIProvider(), cost_controller=CostController())
+        return engine.run_qc(script=script, story_bible=story_bible)
+
     def run_qc(
         self,
         script: FullScript,
@@ -56,20 +70,20 @@ class ScriptQCEngine:
 
         all_text = " ".join(s.text for s in script.segments)
 
-        # 0. STORY BIBLE LEAKAGE AUDIT (Strict meta/database language elimination)
+        # 0. STORY BIBLE & INTERNAL TEMPLATE LEAKAGE AUDIT
         leakage_guard = StoryBibleLeakageGuard()
         leakage_violations = leakage_guard.audit_script(script)
         for lv in leakage_violations:
             evidence_issues.append({
                 "segment_id": lv.segment_id,
                 "excerpt": lv.excerpt,
-                "rule": "STORY_BIBLE_LEAKAGE",
+                "rule": lv.violation_code,  # "STORY_BIBLE_LEAKAGE" or "INTERNAL_TEMPLATE_LEAKAGE"
                 "severity": lv.severity,
                 "recommended_action": lv.recommended_action,
                 "message": lv.message,
             })
-            logic_issues.append(f"[{lv.segment_id}] Leakage: {lv.message}")
-            revision_requests.append(f"Remove meta phrasing in segment {lv.segment_id}: {lv.matched_pattern}")
+            logic_issues.append(f"[{lv.segment_id}] {lv.violation_code}: {lv.message}")
+            revision_requests.append(f"Remove {lv.violation_code} in segment {lv.segment_id}: {lv.matched_pattern}")
 
         # 0.1 INFORMATION RELEASE & SPOILER TIMING AUDIT (Premature reveal prevention)
         rel_map = release_map or build_information_release_map(story_bible)
@@ -585,22 +599,24 @@ class ScriptQCEngine:
 
         # 13. FAKE SERIAL BREAK AUDIT (FAKE_SERIAL_BREAK)
         serial_break_pat = re.compile(
-            r"(phần\s+tiếp\s+theo|ở\s+phần\s+sau|hãy\s+đón\s+xem|đón\s+xem\s+phần\s+sau|chúng\s+ta\s+sẽ\s+quay\s+lại\s+sau|quay\s+lại\s+sau\s+ít\s+phút)",
+            r"(tập\s+tiếp\s+theo|phần\s+tiếp\s+theo|ở\s+phần\s+sau|hãy\s+đón\s+xem|đón\s+xem|chúng\s+ta\s+sẽ\s+quay\s+lại\s+sau|quay\s+lại\s+sau\s+ít\s+phút|hé\s+lộ\s+ở\s+phần\s+sau)",
             re.IGNORECASE,
         )
         for idx, s in enumerate(script.segments):
             m_serial = serial_break_pat.search(s.text)
-            is_last_seg = (idx == len(script.segments) - 1)
-            m_next_ep = re.search(r"\btập\s+tiếp\s+theo\b", s.text, re.IGNORECASE) if not is_last_seg else None
-            hit_str = m_serial.group(0) if m_serial else (m_next_ep.group(0) if m_next_ep else None)
-            if hit_str:
+            if m_serial:
+                hit_str = m_serial.group(0)
                 evidence_issues.append({
                     "segment_id": s.id,
                     "excerpt": s.text[:100],
                     "rule": "FAKE_SERIAL_BREAK",
                     "severity": "CRITICAL",
-                    "recommended_action": "Xóa bỏ ngôn từ ngắt tập/hẹn phần sau giữa kịch bản; duy trì mạch kể liền mạch của một tập hoàn chỉnh.",
-                    "message": f"Phân đoạn [{s.id}] chứa câu ngắt phần giả tạo ('{hit_str}')."
+                    "recommended_action": (
+                        "Xóa bỏ hoàn toàn ngôn từ ngắt tập/hẹn phần sau giữa kịch bản hoặc ở đoạn kết; "
+                        "mỗi tập là một câu chuyện hoàn chỉnh. Dùng lời chào kết chuẩn: "
+                        "'Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.'"
+                    ),
+                    "message": f"Phân đoạn [{s.id}] chứa cụm từ ngắt tập / hẹn phần tiếp theo ('{hit_str}')."
                 })
                 logic_issues.append(f"[{s.id}] Fake serial break detected: '{hit_str}'.")
                 revision_requests.append(f"Remove fake serial break '{hit_str}' in segment {s.id}.")
@@ -760,6 +776,57 @@ class ScriptQCEngine:
             logic_issues.append("EVIDENCE_DOES_NOT_PROVE_CLAIM: Story Bible clue chain overreaches what single clue can prove.")
             revision_requests.append("Fix evidence-to-claim jump in clue chain.")
 
+        # 15. SCRIPT TOPIC ADHERENCE AUDIT (FINAL_SCRIPT_TOPIC_DRIFT)
+        # Evaluates actual script narration against user topic. Does NOT trust metadata.
+        orig_topic = (
+            getattr(story_bible, "original_user_topic", "")
+            or getattr(story_bible, "topic", "")
+            or ""
+        ).strip()
+        topic_intent_dict = getattr(story_bible, "topic_intent", None)
+        script_topic_score = 100.0
+
+        if orig_topic:
+            from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
+            if isinstance(topic_intent_dict, dict) and topic_intent_dict.get("original_topic"):
+                ti = TopicIntent.from_dict(topic_intent_dict)
+            else:
+                ti = extract_topic_intent(orig_topic)
+
+            topic_eval = ti.evaluate_content_adherence(script, stage="script")
+            script_topic_score = topic_eval["score"]
+            if topic_eval["status"] != "PASS" or script_topic_score < 75.0:
+                first_seg = script.segments[0] if script.segments else ScriptSegment(id="001")
+                drift_msg = (
+                    f"Kịch bản hoàn chỉnh bị trôi dạt chủ đề (FINAL_SCRIPT_TOPIC_DRIFT): "
+                    f"Điểm bám sát chỉ đạt {script_topic_score}/100 "
+                    f"(Centrality: {topic_eval['topic_centrality_score']}, "
+                    f"Evidence: {topic_eval['topic_evidence_coverage']}, "
+                    f"Reveal: {topic_eval['topic_reveal_alignment']}). "
+                    f"Lời dẫn không giữ chủ đề người dùng '{orig_topic}' làm trọng tâm xuyên suốt câu chuyện."
+                )
+                if topic_eval.get("drift_terms"):
+                    drift_msg += f" Phát hiện yếu tố ngoại lai lấn át: {', '.join(topic_eval['drift_terms'][:5])}."
+
+                evidence_issues.append({
+                    "segment_id": first_seg.id,
+                    "excerpt": first_seg.text[:100],
+                    "rule": "FINAL_SCRIPT_TOPIC_DRIFT",
+                    "severity": "CRITICAL",
+                    "recommended_action": f"Viết lại kịch bản bám sát tuyệt đối chủ đề '{orig_topic}'.",
+                    "message": drift_msg,
+                })
+                fact_conflicts.append({
+                    "fact_id": "TOPIC_DRIFT",
+                    "segment_id": first_seg.id,
+                    "type": "FINAL_SCRIPT_TOPIC_DRIFT",
+                    "expected": orig_topic,
+                    "found": f"Score {script_topic_score}/100",
+                    "description": drift_msg,
+                })
+                logic_issues.append(f"[FINAL_SCRIPT_TOPIC_DRIFT] {drift_msg}")
+                revision_requests.append(f"Regenerate/revise script to center on user topic: {orig_topic}.")
+
         # Compute status
         has_critical_failure = (
             any(
@@ -775,14 +842,19 @@ class ScriptQCEngine:
                     "CHARACTER_KNOWLEDGE_CONTRADICTION",
                     "EVIDENCE_DOES_NOT_PROVE_CLAIM",
                     "INTERNAL_EPISODE_ID_SPOKEN",
+                    "FINAL_SCRIPT_TOPIC_DRIFT",
+                    "INTERNAL_TEMPLATE_LEAKAGE",
                 ]
                 for c in fact_conflicts
             )
             or any(iss.get("severity") == "CRITICAL" for iss in evidence_issues)
         )
+        has_hard_fail = any(iss.get("rule") in ("FINAL_SCRIPT_TOPIC_DRIFT", "INTERNAL_TEMPLATE_LEAKAGE") for iss in evidence_issues)
         has_issues = bool(fact_conflicts or logic_issues or repetition_issues or evidence_issues)
 
-        if has_critical_failure or len(logic_issues) > 2 or any(iss.get("severity") == "HIGH" for iss in evidence_issues):
+        if has_hard_fail:
+            status = "FAIL"
+        elif has_critical_failure or len(logic_issues) > 2 or any(iss.get("severity") == "HIGH" for iss in evidence_issues):
             status = "NEEDS_REVISION"
         elif has_issues:
             status = "NEEDS_REVISION"
@@ -790,15 +862,17 @@ class ScriptQCEngine:
             status = "PASS"
 
         melodrama_v2_score = max(0.0, 100.0 - len(cliche_hits) * 15.0 - len(severe_v2_hits) * 20.0)
+        has_template_leak = any(iss.get("rule") in ("INTERNAL_TEMPLATE_LEAKAGE", "STORY_BIBLE_LEAKAGE", "INTERNAL_EPISODE_ID_SPOKEN", "FAKE_SERIAL_BREAK") for iss in evidence_issues)
         scores = {
             "hook": 95.0 if has_hook and not any(iss.get("rule") in ("GENERIC_HOOK_OPENING", "HOOK_FACT_CONTRADICTION") for iss in evidence_issues) else 60.0,
             "mystery": 92.0 if not any(iss.get("rule") in ("BLOCKED_PREMATURE_REVEAL", "EVIDENCE_DOES_NOT_PROVE_CLAIM") for iss in evidence_issues) else 50.0,
-            "logic": 90.0 if not logic_issues and not any(iss.get("rule") in ("STORY_BIBLE_LEAKAGE", "CHARACTER_FACT_VIOLATION", "UNGROUNDED_CHARACTER_HALLUCINATION", "CAUSAL_GAP", "CHARACTER_KNOWLEDGE_CONTRADICTION", "EVIDENCE_DOES_NOT_PROVE_CLAIM") for iss in evidence_issues) else 60.0,
+            "logic": 90.0 if not logic_issues and not any(iss.get("rule") in ("STORY_BIBLE_LEAKAGE", "INTERNAL_TEMPLATE_LEAKAGE", "CHARACTER_FACT_VIOLATION", "UNGROUNDED_CHARACTER_HALLUCINATION", "CAUSAL_GAP", "CHARACTER_KNOWLEDGE_CONTRADICTION", "EVIDENCE_DOES_NOT_PROVE_CLAIM", "FINAL_SCRIPT_TOPIC_DRIFT") for iss in evidence_issues) else 50.0,
             "twist": 96.0 if has_reveal and not any(iss.get("rule") == "CAUSAL_GAP" for iss in evidence_issues) else 60.0,
             "emotion": 93.0 if not any(iss.get("rule") in ("MELODRAMATIC_CLICHE_DENSITY", "MELODRAMA_DENSITY_V2") for iss in evidence_issues) else 68.0,
             "novelty": 94.0 if not repetition_issues else 68.0,
-            "tts_readability": 98.0 if not any(iss.get("rule") in ("INTERNAL_EPISODE_ID_SPOKEN", "FAKE_SERIAL_BREAK") for iss in evidence_issues) else 65.0,
+            "tts_readability": 40.0 if (has_hard_fail or has_template_leak) else 98.0,
             "melodrama_density_v2": melodrama_v2_score,
+            "topic_adherence": script_topic_score,
         }
 
         report = QCReport(
@@ -849,10 +923,10 @@ def apply_targeted_repairs(
         else str(story_bible.protagonist or "nhân vật chính")
     )
 
-    # 1. Clean Story Bible Leakage
+    # 1. Clean Story Bible Leakage & Internal Templates
     leakage_guard = StoryBibleLeakageGuard()
     for s in script.segments:
-        s.text = leakage_guard.clean_text_from_leakage(s.text)
+        s.text = leakage_guard.clean_text_from_leakage(s.text, protagonist_name=protag)
 
     # 2. Repair Fact & Logic Conflicts (Hook, Character, Hallucination, Causal Gap, Knowledge, Evidence, Episode ID)
     from apps.script_factory.story_qc import StoryQCEngine
@@ -924,9 +998,19 @@ def apply_targeted_repairs(
                 s.text = re.sub(r"\s{2,}", " ", s.text).strip()
 
         if serial_break_pat.search(s.text):
-            s.text = serial_break_pat.sub("tiếp nối mạch câu chuyện", s.text)
-        if idx < len(script.segments) - 1 and re.search(r"\btập\s+tiếp\s+theo\b", s.text, re.IGNORECASE):
-            s.text = re.sub(r"\btập\s+tiếp\s+theo\b", "diễn biến tiếp theo của câu chuyện", s.text, flags=re.IGNORECASE)
+            if idx >= len(script.segments) - 2:
+                s.text = serial_break_pat.sub("", s.text)
+                s.text = re.sub(r"\s{2,}", " ", s.text).strip()
+            else:
+                s.text = serial_break_pat.sub("tiếp nối mạch câu chuyện", s.text)
+        if re.search(r"\btập\s+tiếp\s+theo\b", s.text, re.IGNORECASE):
+            if idx >= len(script.segments) - 2:
+                # Ending segment: standard sign-off
+                s.text = re.sub(r"(?:hẹn\s+gặp\s+lại\s+quý\s+vị\s+trong\s+)?tập\s+tiếp\s+theo(?:\s+của\s+sau\s+cánh\s+cửa)?\.?", "Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", s.text, flags=re.IGNORECASE)
+                s.text = re.sub(r"\btập\s+tiếp\s+theo\b", "", s.text, flags=re.IGNORECASE)
+            else:
+                s.text = re.sub(r"\btập\s+tiếp\s+theo\b", "diễn biến tiếp theo của câu chuyện", s.text, flags=re.IGNORECASE)
+            s.text = re.sub(r"\s{2,}", " ", s.text).strip()
 
     # 3. Repair Melodramatic Cliches V2 -> Conversational MC Minh Phrasing (Show, Don't Label)
     cliche_replacements = {

@@ -87,12 +87,13 @@ class GeminiScriptAIProvider(ScriptAIProvider):
         candidate_models = [primary_model]
 
         standard_known = {
-            "gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-pro", "gemini-1.5-flash",
-            "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-lite-latest",
+            "gemini-2.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest",
+            "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash-lite",
+            "gemini-2.5-pro", "gemini-pro-latest"
         }
         # Only fallback if allow_fallback=True AND primary model is a standard known preset
         if allow_fallback and primary_model in standard_known:
-            for fb in ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-3.5-flash"]:
+            for fb in ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-3.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"]:
                 if fb not in candidate_models:
                     candidate_models.append(fb)
 
@@ -762,6 +763,18 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
         causal_summary = json.dumps(story_bible.causal_chains or [], ensure_ascii=False)
 
         clean_title = re.sub(r"^(?:Tập\s+)?EP_?[A-Z0-9_]*\d+\s*[-:]?\s*", "", str(story_bible.title or ""), flags=re.IGNORECASE).strip()
+        protag_name = story_bible.protagonist.get("name", "Tuấn") if isinstance(story_bible.protagonist, dict) else str(story_bible.protagonist or "Tuấn")
+        if protag_name.lower() in ("nhân vật chính", "protagonist"):
+            protag_name = "Tuấn"
+
+        user_topic_constraint = ""
+        if getattr(story_bible, "original_user_topic", ""):
+            user_topic_constraint = (
+                f"\n=== CHỦ ĐỀ BẮT BUỘC TỪ NGƯỜI DÙNG (AUTHORITATIVE TOPIC) ===\n"
+                f"Đề tài cốt lõi: \"{story_bible.original_user_topic}\"\n"
+                f"Toàn bộ diễn biến, xung đột, manh mối và bước ngoặt BẮT BUỘC phải xoay quanh và đào sâu đề tài này.\n"
+                f"Tuyệt đối KHÔNG làm biến tướng câu chuyện sang các bi kịch gia đình/y tế/phẫu thuật/bán đất không liên quan!\n"
+            )
 
         system_instruction = (
             f"Bạn là Người dẫn chuyện và Biên kịch duy nhất của series tâm sự/tài liệu gia đình 'Sau Cánh Cửa'.\n"
@@ -769,21 +782,22 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
             f"Định dạng nội dung: Một lá thư/câu chuyện tâm sự của nhân vật gửi về cho chương trình. MC Minh là người đọc toàn bộ kịch bản.\n"
             f"QUY TẮC CỨNG BẮT BUỘC:\n"
             f"1. KHÔNG ĐỌC MÃ TẬP / SỐ TẬP NỘI BỘ: Tuyệt đối KHÔNG viết hoặc đọc các mã như 'EP1005', 'EP002', 'IDEA_...', và KHÔNG đọc số thứ tự tập bằng chữ hay số (như 'tập 1005', 'tập một nghìn không trăm linh năm'). Khi chào mở đầu ở phân đoạn 004, MC Minh CHỈ nói: 'Chào mừng quý vị và các bạn đến với Sau Cánh Cửa.'\n"
-            f"2. KHÔNG NGẮT TẬP GIẢ TẠO: Đây là một tập phim hoàn chỉnh liền mạch. Tuyệt đối KHÔNG dùng các cụm từ 'phần tiếp theo', 'ở phần sau', 'hãy đón xem', 'chúng ta sẽ quay lại sau', 'tập tiếp theo' ở giữa kịch bản (chỉ được chào hẹn gặp lại ở phân đoạn 090 cuối cùng).\n"
+            f"2. KHÔNG NGẮT TẬP GIẢ TẠO: Đây là một tập phim hoàn chỉnh liền mạch. Tuyệt đối KHÔNG dùng các cụm từ 'phần tiếp theo', 'ở phần sau', 'hãy đón xem', 'chúng ta sẽ quay lại sau', 'tập tiếp theo' ở bất kỳ đâu trong kịch bản. Ở phân đoạn 090 cuối cùng, lời chào kết thúc chuẩn của MC Minh BẮT BUỘC là: 'Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.' (TUYỆT ĐỐI KHÔNG nói 'hẹn gặp lại trong tập tiếp theo').\n"
             f"3. CHỈ DÙNG NHÂN VẬT TRONG STORY BIBLE: Tuyệt đối không tự bịa thêm tên riêng nhân vật phụ ngoài danh sách Story Bible.\n"
             f"4. NHẤT QUÁN NHẬN THỨC NHÂN VẬT (KNOWLEDGE LEDGER): Tuân thủ tuyệt đối ai biết bí mật, ai không biết. Nếu trong Story Bible có người thân (như vợ/mẹ/nhân chứng) biết sự thật, tuyệt đối KHÔNG được viết câu mâu thuẫn như 'không một ai hay biết' hay 'không thể sẻ chia cùng ai kể cả người vợ gối chăn'.\n"
             f"5. KỶ LUẬT BẰNG CHỨNG (EVIDENCE CHAIN): Không nhảy cóc từ một manh mối ban đầu sang kết luận cuối cùng. Mỗi manh mối chỉ chứng minh đúng phạm vi của nó và đặt ra câu hỏi tiếp theo.\n"
             f"6. VĂN PHONG TỰ NHIÊN 'SHOW, DON'T LABEL': Kể bằng hành động, vật thể, ánh mắt, khoảng lặng đời thường. TUYỆT ĐỐI CẤM dùng các cụm từ sáo rỗng AI như: 'bí mật động trời', 'sự thật động trời', 'đòn chí mạng', 'sự thật kinh hoàng', 'cuộc gặp gỡ định mệnh', 'đau đớn đến tận cùng', 'vĩ đại ẩn giấu', 'mê cung không lối thoát', 'nấc nghẹn ngào đến xé lòng', 'cơn địa chấn', 'sét đánh ngang tai', 'bi kịch đẫm nước mắt', 'sự thật rỉ máu', 'chiếc lồng kính ngột ngạt', 'bóng ma vô hình', 'cuộc chiến ngầm khốc liệt'.\n"
             f"7. PHẦN KẾT GỌN GÀNG (5-8%): Không giảng đạo lặp đi lặp lại nhiều đoạn cuối. Chỉ dùng đúng 1 phân đoạn đúc kết chiêm nghiệm duy nhất trước khi chào tạm biệt.\n"
-            f"8. Phân loại delivery_profile chính xác theo 6 loại: HOOK, NORMAL, MYSTERY, REVEAL, COMMENT, ENDING. Không đặt câu hỏi khán giả (audience_address: false) trong phân đoạn REVEAL."
+            f"8. Phân loại delivery_profile chính xác theo 6 loại: HOOK, NORMAL, MYSTERY, REVEAL, COMMENT, ENDING. Không đặt câu hỏi khán giả (audience_address: false) trong phân đoạn REVEAL.\n"
+            f"9. TUYỆT ĐỐI KHÔNG DÙNG NHÃN TEMPLATE / DATABASE NỘI BỘ (INTERNAL LABELS): Lời đọc của MC là văn xuôi tự nhiên, TUYỆT ĐỐI KHÔNG chứa các nhãn kỹ thuật như: 'Nhân vật chính', 'Manh mối 1', 'Manh mối 2', 'Manh mối 3', 'Bước ngoặt 1', 'Bước ngoặt 2', 'Reveal 1', 'Reveal 2', 'Fact Lock', 'Story Bible', 'central_conflict', 'topic_intent'. Luôn dùng tên riêng cụ thể của nhân vật (ví dụ: {protag_name}) thay cho cụm danh xưng 'Nhân vật chính'."
         )
 
         # ---------------- PART 1: ACTS 1 to 5 (Segments 001 to 045) ----------------
         prompt_part1 = f"""Hãy viết PHẦN 1 (Phân đoạn 001 đến 045) cho kịch bản câu chuyện: '{clean_title}'.
 Mục tiêu độ dài Phần 1: Khoảng 1.300 - 1.500 từ tiếng Việt, chia thành chính xác 45 phân đoạn.
-
+{user_topic_constraint}
 Thông tin Story Bible:
-- Nhân vật chính: {story_bible.protagonist.get('name')} ({story_bible.protagonist.get('age', 30)} tuổi) - {story_bible.protagonist.get('description', '')}
+- Nhân vật chính: {protag_name} ({story_bible.protagonist.get('age', 30) if isinstance(story_bible.protagonist, dict) else 30} tuổi) - {story_bible.protagonist.get('description', '') if isinstance(story_bible.protagonist, dict) else ''}
 - Nhân vật phụ (CHỈ ĐƯỢC DÙNG CÁC TÊN NÀY):
 {supporting_summary}
 - Quan hệ: {story_bible.relationships}
@@ -999,9 +1013,9 @@ Trả về JSON Array gồm đúng 45 objects từ id '046' đến '090':
         series_bible: Dict[str, Any],
         model: Optional[str] = None,
     ) -> Tuple[QCReport, int, int]:
-        from apps.script_factory.providers.mock_provider import MockScriptAIProvider
-        mock = MockScriptAIProvider()
-        return mock.review_script(script, story_bible, story_formula, series_bible, model)
+        from apps.script_factory.script_qc import ScriptQCEngine
+        report = ScriptQCEngine.audit_script(script, story_bible, story_formula, series_bible)
+        return report, 100, 100
 
     def revise_script(
         self,

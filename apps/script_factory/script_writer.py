@@ -60,6 +60,14 @@ class ScriptWriter:
             with open(STORY_FORMULA_PATH, "r", encoding="utf-8") as f:
                 story_formula = json.load(f)
 
+        # Ensure protagonist has a real Vietnamese name, never internal role placeholder "Nhân vật chính"
+        if isinstance(story_bible.protagonist, dict):
+            curr_name = str(story_bible.protagonist.get("name", "")).strip()
+            if not curr_name or curr_name.lower() in ("nhân vật chính", "người", "protagonist"):
+                story_bible.protagonist["name"] = "Tuấn"
+        elif not story_bible.protagonist or str(story_bible.protagonist).strip().lower() in ("nhân vật chính", "người", "protagonist"):
+            story_bible.protagonist = {"name": "Tuấn", "age": 32, "description": "Người đàn ông điềm đạm, gửi lá thư tâm sự về chương trình"}
+
         t0 = time.time()
         try:
             script, in_tokens, out_tokens = self.provider.write_script(
@@ -68,6 +76,13 @@ class ScriptWriter:
                 series_bible=series_bible,
                 model=model,
             )
+            # Post-generation sanitize to ensure 0 template labels leak into narration
+            from apps.script_factory.leakage_guard import StoryBibleLeakageGuard
+            lg = StoryBibleLeakageGuard()
+            protag_name = story_bible.protagonist.get("name", "Tuấn") if isinstance(story_bible.protagonist, dict) else str(story_bible.protagonist or "Tuấn")
+            for s in script.segments:
+                s.text = lg.clean_text_from_leakage(s.text, protagonist_name=protag_name)
+
             lat = time.time() - t0
             self.cost_ctrl.record_operation(
                 operation="write_script",

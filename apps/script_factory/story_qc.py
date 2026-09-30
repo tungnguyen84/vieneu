@@ -631,6 +631,38 @@ class StoryQCEngine:
                                 f"{rev_label} đưa ra tình tiết hoàn toàn mới ('{str(rev_text)[:60]}') không có bất kỳ liên kết ngữ nghĩa hay manh mối nào với hệ thống clues/timeline.",
                                 target=rev_label,
                             )
+        # ------------------------------------------------------------------
+        # 5. STORY_BIBLE_TOPIC_DRIFT AUDIT (Topic Gate 2)
+        # ------------------------------------------------------------------
+        orig_topic = (
+            getattr(bible, "original_user_topic", "")
+            or getattr(bible, "topic", "")
+            or ""
+        ).strip()
+        topic_intent_dict = getattr(bible, "topic_intent", None)
+
+        if orig_topic:
+            from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
+            if isinstance(topic_intent_dict, dict) and topic_intent_dict.get("original_topic"):
+                ti = TopicIntent.from_dict(topic_intent_dict)
+            else:
+                ti = extract_topic_intent(orig_topic)
+
+            topic_eval = ti.evaluate_content_adherence(bible, stage="story_bible")
+            bible_topic_score = topic_eval["score"]
+            if bible_topic_score < 75.0 or getattr(bible, "topic_adherence", None) is None:
+                bible.topic_adherence = bible_topic_score
+            if topic_eval["status"] != "PASS" or bible_topic_score < 75.0:
+                _add_issue(
+                    "STORY_BIBLE_TOPIC_DRIFT",
+                    f"Story Bible trôi dạt chủ đề: Điểm bám sát chỉ đạt {bible_topic_score}/100 "
+                    f"(Centrality: {topic_eval['topic_centrality_score']}, "
+                    f"Evidence: {topic_eval['topic_evidence_coverage']}, "
+                    f"Reveal: {topic_eval['topic_reveal_alignment']}). "
+                    f"Story Bible không duy trì chủ đề gốc '{orig_topic}' làm trọng tâm câu chuyện.",
+                    severity="CRITICAL",
+                    target="secret",
+                )
 
         status = "PASS" if not issues else "FAIL"
         if status == "FAIL":

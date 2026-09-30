@@ -74,6 +74,20 @@ class StoryPlanner:
         if target_ep_id == "EP001":
             raise ValueError("EP001 is reserved for Golden Reference and cannot be created or overwritten.")
 
+        # Topic Gate 1: Check Idea Adherence before creating Story Bible
+        if idea.original_user_topic:
+            from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
+            if isinstance(idea.topic_intent, dict) and idea.topic_intent.get("original_topic"):
+                ti = TopicIntent.from_dict(idea.topic_intent)
+            else:
+                ti = extract_topic_intent(idea.original_user_topic)
+            idea_eval = ti.evaluate_content_adherence(idea, stage="idea")
+            if idea_eval["status"] != "PASS" or idea_eval["score"] < 75.0:
+                raise ValueError(
+                    f"Idea failed Topic Gate 1: Adherence score {idea_eval['score']}/100 < 75.0. "
+                    f"Idea has drifted away from authoritative topic '{idea.original_user_topic}'."
+                )
+
         self.cost_ctrl.check_budget_pre_flight(episode_id=target_ep_id)
 
         # Load series bible
@@ -90,6 +104,7 @@ class StoryPlanner:
                 model=model,
             )
             bible.episode_id = target_ep_id
+            bible.generation_source = "MOCK" if "mock" in self.provider.provider_name.lower() else "REAL_AI"
             if idea.original_user_topic:
                 bible.original_user_topic = idea.original_user_topic
             if idea.topic_intent:

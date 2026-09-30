@@ -176,6 +176,7 @@ class StoryBible:
     topic_intent: Optional[Dict[str, Any]] = None
     topic_adherence: Optional[Dict[str, Any] | float] = None
     status: str = "DRAFT"
+    generation_source: Optional[str] = None
     approved_by: Optional[str] = None
     approved_at: Optional[float] = None
     last_modified_at: float = field(default_factory=time.time)

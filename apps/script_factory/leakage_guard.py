@@ -40,10 +40,28 @@ LEAKAGE_PATTERNS = [
     r"bí mật được xác định là",
 ]
 
+# Strict blacklist of internal template/scaffold labels that must NEVER leak into narration
+INTERNAL_TEMPLATE_PATTERNS = [
+    r"\bnhân\s+vật\s+chính\b",
+    r"\bmanh\s+mối\s+\d+[:\s]",
+    r"\bmanh\s+mối\s+[123]\b",
+    r"\bbước\s+ngoặt\s+[12][:\s]",
+    r"\bbước\s+ngoặt\s+\d+[:\s]",
+    r"\breveal\s+[12][:\s]",
+    r"\breveal\s+\d+\b",
+    r"\bstory\s+bible\b",
+    r"\bfact\s+lock\b",
+    r"\bcentral_conflict\b",
+    r"\btopic_intent\b",
+    r"\brequired_semantic_elements\b",
+    r"\bscene\s+\d+\b",
+    r"\bsegment\s+\d+\b",
+]
+
 
 @dataclass
 class LeakageViolation:
-    violation_code: str  # "STORY_BIBLE_LEAKAGE"
+    violation_code: str  # "STORY_BIBLE_LEAKAGE" or "INTERNAL_TEMPLATE_LEAKAGE"
     segment_id: str
     matched_pattern: str
     excerpt: str
@@ -56,18 +74,43 @@ class LeakageViolation:
 
 
 class StoryBibleLeakageGuard:
-    """Audits script segments for database/prompt leakage contamination."""
+    """Audits script segments for database/prompt leakage contamination and internal template labels."""
 
-    def __init__(self, patterns: Optional[List[str]] = None):
+    def __init__(self, patterns: Optional[List[str]] = None, template_patterns: Optional[List[str]] = None):
         self.patterns = patterns or LEAKAGE_PATTERNS
-        self._compiled = [re.compile(p, re.IGNORECASE) for p in self.patterns]
+        self.template_patterns = template_patterns or INTERNAL_TEMPLATE_PATTERNS
+        self._compiled_leakage = [re.compile(p, re.IGNORECASE) for p in self.patterns]
+        self._compiled_template = [re.compile(p, re.IGNORECASE) for p in self.template_patterns]
 
     def check_segment(self, segment: ScriptSegment) -> List[LeakageViolation]:
-        """Checks a single segment text for leakage patterns."""
+        """Checks a single segment text for leakage patterns and template labels."""
         text = segment.text.strip()
         violations: List[LeakageViolation] = []
 
-        for pattern, regex in zip(self.patterns, self._compiled):
+        # 1. Check internal template leakage (CRITICAL FAIL)
+        for pattern, regex in zip(self.template_patterns, self._compiled_template):
+            match = regex.search(text)
+            if match:
+                matched_str = match.group(0)
+                excerpt = self._extract_excerpt(text, match.start(), match.end())
+                violations.append(LeakageViolation(
+                    violation_code="INTERNAL_TEMPLATE_LEAKAGE",
+                    segment_id=segment.id,
+                    matched_pattern=pattern,
+                    excerpt=excerpt,
+                    severity="CRITICAL",
+                    message=(
+                        f"Phát hiện rò rỉ nhãn kỹ thuật / template nội bộ ('{matched_str}') "
+                        f"tại phân đoạn [{segment.id}]. Nhãn nội bộ tuyệt đối không được xuất hiện trong lời dẫn."
+                    ),
+                    recommended_action=(
+                        "Thay thế bằng tên nhân vật thực tế hoặc diễn đạt câu tự nhiên, "
+                        "loại bỏ hoàn toàn các tiền tố phân cảnh, nhãn manh mối hoặc bước ngoặt."
+                    ),
+                ))
+
+        # 2. Check general story bible database/prompt leakage
+        for pattern, regex in zip(self.patterns, self._compiled_leakage):
             match = regex.search(text)
             if match:
                 matched_str = match.group(0)
@@ -98,9 +141,24 @@ class StoryBibleLeakageGuard:
             all_violations.extend(v_list)
         return all_violations
 
-    def clean_text_from_leakage(self, text: str) -> str:
-        """Removes known mechanical injection clauses from text while preserving narrative context."""
+    def clean_text_from_leakage(self, text: str, protagonist_name: Optional[str] = None) -> str:
+        """Removes known mechanical injection clauses and template labels from text."""
         cleaned = text
+        protag_replacement = protagonist_name.strip() if protagonist_name else "anh"
+        if protag_replacement.lower() in ("nhân vật chính", "người"):
+            protag_replacement = "anh"
+
+        # Replace 'Nhân vật chính' with actual protagonist name
+        cleaned = re.sub(r"\bnhân\s+vật\s+chính\b", protag_replacement, cleaned, flags=re.IGNORECASE)
+
+        # Strip internal template prefixes
+        cleaned = re.sub(r"Manh mối\s+\d+:\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"Bước ngoặt\s+\d+:\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"Reveal\s+\d+:\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"Scene\s+\d+:\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"Segment\s+\d+:\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"Chân tướng sự thật về bí mật\s+", "", cleaned, flags=re.IGNORECASE)
+
         # If segment contains appended 'Đáng chú ý, chi tiết liên quan đến', strip to end
         cleaned = re.sub(r"\s*Đáng chú ý,?\s*chi tiết liên quan đến.*$", "", cleaned, flags=re.IGNORECASE | re.DOTALL)
         cleaned = re.sub(r"\s*Mối quan hệ giữa hai người chính là.*$", "", cleaned, flags=re.IGNORECASE)
@@ -128,3 +186,34 @@ class StoryBibleLeakageGuard:
         prefix = "..." if start > 0 else ""
         suffix = "..." if end < len(full_text) else ""
         return f"{prefix}{full_text[start:end]}{suffix}"
+
+
+_default_guard = StoryBibleLeakageGuard()
+
+
+def clean_text_from_leakage(text: str, protagonist_name: Optional[str] = None) -> str:
+    """Module-level helper to clean text from leakage."""
+    return _default_guard.clean_text_from_leakage(text, protagonist_name=protagonist_name)
+
+
+def detect_internal_template_leakage(text: str, segment_id: str = "001") -> List[Dict[str, Any]]:
+    """Module-level helper to detect internal template leakage in a string."""
+    seg = ScriptSegment(id=segment_id, speaker="MINH", text=text)
+    violations = _default_guard.check_segment(seg)
+    return [
+        {
+            "code": v.violation_code,
+            "segment_id": v.segment_id,
+            "matched_pattern": v.matched_pattern,
+            "excerpt": v.excerpt,
+            "severity": v.severity,
+            "message": v.message,
+        }
+        for v in violations
+        if v.violation_code == "INTERNAL_TEMPLATE_LEAKAGE"
+    ]
+
+
+def validate_script_segments_for_leakage(script: FullScript) -> List[LeakageViolation]:
+    """Module-level helper to audit all segments in a script for leakage."""
+    return _default_guard.audit_script(script)

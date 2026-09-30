@@ -227,6 +227,12 @@ Trả về JSON object có khóa "ideas": [
         series_bible: Dict[str, Any],
         model: Optional[str] = None,
     ) -> Tuple[FullScript, int, int]:
+        is_test = os.getenv("APP_ENV") == "test" or os.getenv("PYTEST_CURRENT_TEST")
+        if not is_test:
+            raise RuntimeError(
+                "AI GENERATION FAILED: OpenAICompatibleProvider write_script is not implemented for production. "
+                "Production must use GeminiProvider. Silent mock fallback is strictly forbidden."
+            )
         from apps.script_factory.providers.mock_provider import MockScriptAIProvider
         mock = MockScriptAIProvider()
         return mock.write_script(story_bible, story_formula, series_bible, model)
@@ -242,9 +248,9 @@ Trả về JSON object có khóa "ideas": [
         series_bible: Dict[str, Any],
         model: Optional[str] = None,
     ) -> Tuple[QCReport, int, int]:
-        from apps.script_factory.providers.mock_provider import MockScriptAIProvider
-        mock = MockScriptAIProvider()
-        return mock.review_script(script, story_bible, story_formula, series_bible, model)
+        from apps.script_factory.script_qc import ScriptQCEngine
+        report = ScriptQCEngine.audit_script(script, story_bible, story_formula, series_bible)
+        return report, 100, 100
 
     def revise_script(
         self,
@@ -254,6 +260,7 @@ Trả về JSON object có khóa "ideas": [
         series_bible: Dict[str, Any],
         model: Optional[str] = None,
     ) -> Tuple[FullScript, int, int]:
-        from apps.script_factory.providers.mock_provider import MockScriptAIProvider
-        mock = MockScriptAIProvider()
-        return mock.revise_script(script, audit_report, story_bible, series_bible, model)
+        from apps.script_factory.script_qc import apply_targeted_repairs
+        script.revision_round += 1
+        repaired = apply_targeted_repairs(script, story_bible, audit_report)
+        return repaired, 100, 100

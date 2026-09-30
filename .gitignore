@@ -22,6 +22,9 @@ merged_models_cache/
 
 # Production Story Projects
 projects/
+scratch/
+episodes/*
+!episodes/EP001/
 
 # Music Library Backups
 music_library/backups/

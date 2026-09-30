@@ -78,85 +78,303 @@ class TopicIntent:
             f"================================================================"
         )
 
-    def calculate_adherence_score(self, idea_or_text: Any) -> float:
-        """Calculates adherence score (0-100) of an idea against this TopicIntent."""
+    def evaluate_content_adherence(self, idea_or_text: Any, stage: str = "auto") -> Dict[str, Any]:
+        """
+        Deeply evaluates content adherence against this TopicIntent.
+        Scores CENTRALITY, EVIDENCE COVERAGE, and REVEAL ALIGNMENT on actual generated content.
+        Does NOT trust metadata or single keyword occurrences.
+        """
         if not self.original_topic.strip():
-            return 100.0
+            return {
+                "score": 100.0,
+                "topic_centrality_score": 100.0,
+                "topic_evidence_coverage": 100.0,
+                "topic_reveal_alignment": 100.0,
+                "drift_detected": False,
+                "drift_terms": [],
+                "status": "PASS",
+                "details": "No specific user topic constraint applied.",
+            }
+
+        # Extract text blocks depending on object type
+        title_text = ""
+        premise_text = ""
+        clues_text = ""
+        reveals_text = ""
+        full_text = ""
+        segments_texts: List[str] = []
 
         if isinstance(idea_or_text, dict):
-            text_blocks = [
-                idea_or_text.get("title", ""),
-                idea_or_text.get("working_title", ""),
-                idea_or_text.get("hook", ""),
-                idea_or_text.get("premise", ""),
-                idea_or_text.get("central_secret", ""),
-                idea_or_text.get("core_mystery", ""),
-                idea_or_text.get("mystery_question", ""),
-                idea_or_text.get("false_lead", ""),
-                idea_or_text.get("reveal_1", ""),
-                idea_or_text.get("reveal_2", ""),
-                idea_or_text.get("possible_reveal", ""),
-                idea_or_text.get("emotional_payoff", ""),
-            ]
-            full_text = " ".join(t for t in text_blocks if isinstance(t, str)).lower()
+            title_text = str(idea_or_text.get("title") or idea_or_text.get("working_title") or "")
+            premise_text = " ".join(str(idea_or_text.get(k) or "") for k in ("hook", "premise", "central_secret", "core_mystery", "mystery_question", "secret"))
+            clues_val = idea_or_text.get("clues") or []
+            if isinstance(clues_val, list):
+                clues_text = " ".join(str(c.get("clue", "") if isinstance(c, dict) else c) for c in clues_val)
+            else:
+                clues_text = str(clues_val)
+            clues_text += " " + " ".join(str(idea_or_text.get(f"clue_{i}") or "") for i in range(1, 4))
+            reveals_text = " ".join(str(idea_or_text.get(k) or "") for k in ("reveal_1", "reveal_2", "possible_reveal", "emotional_payoff", "reflection_theme"))
+            
+            # If dict represents FullScript with segments
+            if "segments" in idea_or_text and isinstance(idea_or_text["segments"], list):
+                segments_texts = [str(s.get("text", "")) for s in idea_or_text["segments"] if isinstance(s, dict)]
+                full_text = " ".join(segments_texts)
+                n_seg = len(segments_texts)
+                if n_seg > 0:
+                    premise_text = " ".join(segments_texts[:max(1, int(n_seg * 0.25))])
+                    clues_text = " ".join(segments_texts[int(n_seg * 0.25):int(n_seg * 0.65)])
+                    reveals_text = " ".join(segments_texts[int(n_seg * 0.65):])
+            else:
+                full_text = f"{title_text} {premise_text} {clues_text} {reveals_text}"
+
+        elif hasattr(idea_or_text, "segments"):  # FullScript
+            segments_texts = [s.text for s in getattr(idea_or_text, "segments", [])]
+            full_text = " ".join(segments_texts)
+            title_text = getattr(idea_or_text, "title", "")
+            # Split roughly into acts if segments exist
+            n_seg = len(segments_texts)
+            if n_seg > 0:
+                premise_text = " ".join(segments_texts[:max(1, int(n_seg * 0.25))])
+                clues_text = " ".join(segments_texts[int(n_seg * 0.25):int(n_seg * 0.65)])
+                reveals_text = " ".join(segments_texts[int(n_seg * 0.65):])
+
+        elif hasattr(idea_or_text, "secret"):  # StoryBible
+            title_text = getattr(idea_or_text, "title", "")
+            premise_text = f"{getattr(idea_or_text, 'hook', '')} {getattr(idea_or_text, 'secret', '')} {getattr(idea_or_text, 'mystery_question', '')}"
+            clues_data = getattr(idea_or_text, "structured_clues", []) or getattr(idea_or_text, "clues", []) or []
+            clues_text = " ".join(str(c.get("clue", "") if isinstance(c, dict) else c) for c in clues_data)
+            reveals_text = f"{getattr(idea_or_text, 'reveal_1', '')} {getattr(idea_or_text, 'reveal_2', '')} {getattr(idea_or_text, 'emotional_payoff', '')}"
+            full_text = f"{title_text} {premise_text} {clues_text} {reveals_text}"
+
         elif hasattr(idea_or_text, "to_dict"):
             d = idea_or_text.to_dict()
-            full_text = " ".join(str(v) for v in d.values() if isinstance(v, str)).lower()
+            return self.evaluate_content_adherence(d, stage=stage)
         else:
-            full_text = str(idea_or_text).lower()
+            full_text = str(idea_or_text)
+            premise_text = full_text[:len(full_text)//3]
+            clues_text = full_text[len(full_text)//3: 2*len(full_text)//3]
+            reveals_text = full_text[2*len(full_text)//3:]
 
-        score = 70.0  # Base starting score
+        full_lower = full_text.lower()
+        title_lower = title_text.lower()
+        premise_lower = premise_text.lower()
+        clues_lower = clues_text.lower()
+        reveals_lower = reveals_text.lower()
 
-        # 1. Primary theme presence (+15)
-        if self.primary_theme:
-            theme_phrases = [w.strip() for w in re.split(r"[,/|;]|\bvà\b", self.primary_theme.lower()) if len(w.strip()) >= 3]
-            theme_kw = [w.strip() for w in re.split(r"[^\w]+", self.primary_theme.lower()) if len(w.strip()) >= 3]
-            theme_matches = sum(1 for tw in set(theme_phrases + theme_kw) if tw in full_text)
-            if theme_matches > 0:
-                score += min(15.0, 10.0 + theme_matches * 2.0)
+        # Keywords for Primary Theme (require meaningful compound terms >= 4 chars or specific key terms)
+        primary_phrases = [w.strip() for w in re.split(r"[,/|;]|\bvà\b", self.primary_theme.lower()) if len(w.strip()) >= 4]
+        # Specific core keywords for theme
+        primary_core = [w for w in [
+            "ngoại tình", "tiểu tam", "người thứ ba", "bồ nhí", "phản bội", "vụng trộm", "gian dâm",
+            "hai lòng", "người tình", "nhân tình", "lén lút qua lại", "bắt gian", "đánh ghen",
+        ] if w in self.primary_theme.lower() or w in self.original_topic.lower()]
+        if not primary_core:
+            primary_core = [w.strip() for w in re.split(r"[,/|;]", self.primary_theme.lower()) if len(w.strip()) >= 4]
+        primary_tokens = list(dict.fromkeys(primary_phrases + primary_core))
+
+        # Keywords for Context (require meaningful compound terms)
+        context_phrases = [w.strip() for w in re.split(r"[,/|;]|\bvà\b", self.context.lower()) if len(w.strip()) >= 4]
+        # Include optional elements specified by topic intent (e.g. tin nhắn bí mật, đồng nghiệp, chuyến công tác)
+        opt_tokens = [w.strip().lower() for w in self.optional_elements if len(w.strip()) >= 4]
+        # Common workplace context terms if workplace is in context/topic
+        workplace_terms = []
+        if any(w in self.context.lower() or w in self.original_topic.lower() for w in ["công sở", "văn phòng", "công ty", "đồng nghiệp", "làm việc"]):
+            workplace_terms = [
+                "công sở", "văn phòng", "công ty", "đồng nghiệp", "sếp", "cấp trên", "cấp dưới",
+                "nơi làm việc", "tăng ca", "làm thêm giờ", "công tác", "đối tác", "họp hành",
+                "tin nhắn", "điện thoại", "khách sạn", "hẹn hò", "hợp đồng", "phòng làm việc",
+                "ảnh", "chụp lén", "lịch họp", "sao kê", "tài chính", "dữ liệu", "camera", "máy tính",
+                "báo cáo", "bảo vệ bí mật", "thương mại", "gián điệp", "mối quan hệ", "quan hệ"
+            ]
+        # Common family context terms if family is in context/topic
+        family_terms = []
+        if any(w in self.context.lower() or w in self.original_topic.lower() for w in ["gia đình", "người thân", "dòng họ", "bố mẹ", "vợ chồng", "con cái"]):
+            family_terms = [
+                "gia đình", "người thân", "bố", "mẹ", "ông", "bà", "con", "cháu", "hàng xóm",
+                "quê", "nhà cũ", "căn nhà", "kỷ vật", "di vật", "thư từ", "ảnh cũ", "nhật ký", "cuốn sổ"
+            ]
+        # Core investigative evidence terms across Sau Cánh Cửa mystery stories
+        investigative_terms = [
+            "chứng từ", "hồ sơ", "giấy tờ", "phong bì", "chữ viết", "con dấu", "bức ảnh",
+            "cuốn sổ", "nhật ký", "kỷ vật", "di vật", "nhân chứng", "hàng xóm", "tin nhắn",
+            "cuộc gọi", "chìa khóa", "lưu trữ", "xác minh", "bằng chứng", "vật chứng", "lời khai", "biên bản"
+        ]
+        context_tokens = list(dict.fromkeys(context_phrases + opt_tokens + workplace_terms + family_terms + investigative_terms))
+
+        # Required semantic tokens - keep as compound concepts
+        req_tokens: List[str] = []
+        for r in self.required_semantic_elements:
+            r_lower = r.lower().strip()
+            if len(r_lower) >= 4:
+                req_tokens.append(r_lower)
+        # Extract meaningful multi-word terms from required elements
+        for r in self.required_semantic_elements:
+            for term in ["ngoại tình", "vụng trộm", "tiểu tam", "người thứ ba", "đồng nghiệp", "công sở", "gian dâm", "phản bội"]:
+                if term in r.lower():
+                    req_tokens.append(term)
+        req_tokens = list(dict.fromkeys(req_tokens))
+
+        # ----------------------------------------------------
+        # 1. TOPIC CENTRALITY SCORE (0 - 100)
+        # Does the primary theme dominate throughout the story?
+        # ----------------------------------------------------
+        # Primary theme specific terms (exclude generic single words like 'phản bội' which can appear in non-infidelity contexts)
+        is_infidelity = any(k in self.original_topic.lower() for k in ["ngoại tình", "tiểu tam", "người thứ ba", "bồ nhí", "vụng trộm"])
+        is_family = any(k in self.original_topic.lower() or k in self.primary_theme.lower() for k in ["gia đình", "người thân", "dòng họ", "cha mẹ", "bố mẹ", "con cái", "ruột thịt"])
+        if is_infidelity:
+            strict_theme_tokens = ["ngoại tình", "tiểu tam", "người thứ ba", "bồ nhí", "vụng trộm", "gian dâm", "nhân tình", "người tình", "lén lút qua lại"]
+        elif is_family:
+            strict_theme_tokens = list(dict.fromkeys(primary_tokens + ["gia đình", "người thân", "ruột thịt", "máu mủ", "mái ấm", "bố mẹ", "cha mẹ", "con cái", "ông bà", "anh em", "vợ chồng", "bí mật gia đình"]))
+        else:
+            strict_theme_tokens = primary_tokens
+
+        if segments_texts:
+            # Multi-segment script evaluation
+            # Count segments genuinely discussing the primary theme
+            theme_hit_segments = 0
+            for st in segments_texts:
+                st_low = st.lower()
+                # Exclude purely template leakage hits from counting towards valid theme presence
+                cleaned_st = re.sub(r"bước ngoặt [12]:.*", "", st_low)
+                cleaned_st = re.sub(r"manh mối [123]:.*", "", cleaned_st)
+                if any(pt in cleaned_st for pt in strict_theme_tokens):
+                    theme_hit_segments += 1
+            
+            seg_ratio = theme_hit_segments / max(1, len(segments_texts))
+            # In a genuine story about this topic, theme compound terms should appear in at least 5-10+ segments
+            if seg_ratio >= 0.08:
+                centrality = 95.0
+            elif seg_ratio >= 0.05:
+                centrality = 80.0
+            elif seg_ratio >= 0.03:
+                centrality = 60.0
+            elif theme_hit_segments >= 2:
+                centrality = 30.0
+            elif theme_hit_segments == 1:
+                centrality = 10.0
             else:
-                score -= 25.0
-
-        # 2. Context presence (+10)
-        if self.context:
-            context_phrases = [w.strip() for w in re.split(r"[,/|;]|\bvà\b", self.context.lower()) if len(w.strip()) >= 3]
-            context_kw = [w.strip() for w in re.split(r"[^\w]+", self.context.lower()) if len(w.strip()) >= 3]
-            context_matches = sum(1 for cw in set(context_phrases + context_kw) if cw in full_text)
-            if context_matches > 0:
-                score += min(10.0, 7.0 + context_matches * 1.5)
+                centrality = 0.0
+        else:
+            # Idea / StoryBible evaluation: check across title, premise, and secret
+            premise_occurrences = sum(premise_lower.count(pt) for pt in strict_theme_tokens)
+            title_occurrences = sum(title_lower.count(pt) for pt in strict_theme_tokens)
+            if premise_occurrences >= 2 or (premise_occurrences >= 1 and title_occurrences >= 1):
+                centrality = 95.0
+            elif premise_occurrences >= 1 or title_occurrences >= 1:
+                centrality = 85.0
             else:
-                score -= 15.0
+                centrality = 10.0
 
-        # 3. Required semantic elements (+15 max)
-        if self.required_semantic_elements:
-            matched_req = 0
-            for req in self.required_semantic_elements:
-                req_lower = req.lower()
-                kw_list = [w for w in re.split(r"[^\w]+", req_lower) if len(w) >= 3]
-                if any(w in full_text for w in kw_list) or req_lower in full_text:
-                    matched_req += 1
-            ratio = matched_req / max(1, len(self.required_semantic_elements))
-            score += ratio * 15.0
-            if ratio < 0.5:
-                score -= 15.0
+        # ----------------------------------------------------
+        # 2. TOPIC EVIDENCE COVERAGE (0 - 100)
+        # Are clues / investigation scenes tied to the topic context?
+        # ----------------------------------------------------
+        context_hits = sum(1 for ct in context_tokens if ct in clues_lower)
+        theme_hits_clues = sum(1 for st in strict_theme_tokens if st in clues_lower)
+        
+        if not clues_text.strip():
+            evidence_cov = centrality
+        elif context_hits >= 2 and theme_hits_clues >= 1:
+            evidence_cov = 95.0
+        elif context_hits >= 1 and theme_hits_clues >= 1:
+            evidence_cov = 80.0
+        elif context_hits >= 2:
+            evidence_cov = 85.0 if stage in ("idea", "story_bible") else 65.0
+        elif context_hits >= 1:
+            evidence_cov = 80.0 if stage in ("idea", "story_bible") else 40.0
+        elif any(ct in clues_lower for ct in context_tokens):
+            evidence_cov = 75.0 if stage in ("idea", "story_bible") else 25.0
+        else:
+            evidence_cov = 0.0
 
-        # 4. Optional context elements bonus (+5 max)
-        if self.optional_elements:
-            matched_opt = sum(1 for opt in self.optional_elements if opt.lower() in full_text)
-            score += min(5.0, matched_opt * 1.5)
+        # ----------------------------------------------------
+        # 3. TOPIC REVEAL ALIGNMENT (0 - 100)
+        # Do the reveals resolve or develop the central topic?
+        # ----------------------------------------------------
+        # Clean template leakage from reveals_lower to prevent false credit
+        cleaned_reveals = re.sub(r"bước ngoặt [12]:.*?(?=\.|$)", "", reveals_lower)
+        cleaned_reveals = re.sub(r"chân tướng sự thật về bí mật.*?(?=\.|$)", "", cleaned_reveals)
 
-        # 5. Forbidden drift penalty (up to -40)
-        drift_hits = []
+        reveal_theme_hits = sum(1 for pt in strict_theme_tokens if pt in cleaned_reveals)
+        reveal_context_hits = sum(1 for ct in context_tokens if ct in cleaned_reveals)
+
+        # Check if reveals are hijacked by foreign medical/land tropes
+        has_hijacked_reveals = any(tr in cleaned_reveals for tr in ["phẫu thuật", "bệnh viện", "bán mảnh đất", "đất hương hỏa", "viện phí", "100.000.000", "bệnh án"])
+
+        if has_hijacked_reveals and is_infidelity:
+            reveal_align = 0.0
+        elif not reveals_text.strip():
+            reveal_align = centrality
+        elif reveal_theme_hits >= 1 and reveal_context_hits >= 1:
+            reveal_align = 95.0
+        elif reveal_theme_hits >= 1:
+            reveal_align = 85.0
+        elif reveal_context_hits >= 1:
+            reveal_align = 80.0 if stage in ("idea", "story_bible") else 35.0
+        else:
+            reveal_align = 0.0
+
+        # ----------------------------------------------------
+        # 4. FORBIDDEN DRIFT PENALTY
+        # Checks for completely unrelated dominant narrative tropes
+        # (e.g. medical surgery/100M VND/selling land when topic is workplace infidelity)
+        # ----------------------------------------------------
+        drift_hits: List[str] = []
         for drift in self.forbidden_drift:
             drift_lower = drift.lower().strip()
-            if drift_lower and drift_lower in full_text:
+            if drift_lower and drift_lower in full_lower:
                 drift_hits.append(drift_lower)
 
-        if drift_hits:
-            score -= min(40.0, len(drift_hits) * 20.0)
+        # Domain-specific severe foreign tropes:
+        # If user topic is about infidelity / workplace affair, medical surgery / ancestral land / orphanage debt are severe foreign tropes
+        is_infidelity_topic = any(k in self.original_topic.lower() for k in ["ngoại tình", "tiểu tam", "người thứ ba", "bồ nhí", "phản bội tình cảm", "vụng trộm"])
+        if is_infidelity_topic:
+            foreign_tropes = [
+                ("phẫu thuật", 25.0),
+                ("bệnh viện", 15.0),
+                ("bán mảnh đất", 25.0),
+                ("đất hương hỏa", 25.0),
+                ("viện phí", 20.0),
+                ("100.000.000", 25.0),
+                ("100 triệu", 25.0),
+                ("trại trẻ mồ côi", 25.0),
+                ("hồ sơ bệnh án", 20.0),
+                ("hoãn lại ca phẫu thuật", 30.0),
+            ]
+            for trope, pen in foreign_tropes:
+                if trope in full_lower:
+                    drift_hits.append(f"foreign_trope:{trope}")
 
-        # Ensure within 0.0 - 100.0
-        return max(0.0, min(100.0, round(score, 1)))
+        drift_penalty = min(70.0, len(drift_hits) * 15.0)
+
+        # ----------------------------------------------------
+        # 5. OVERALL COMPOSITE ADHERENCE SCORE
+        # ----------------------------------------------------
+        base_composite = (
+            centrality * 0.40
+            + evidence_cov * 0.30
+            + reveal_align * 0.30
+        )
+        final_score = max(0.0, min(100.0, round(base_composite - drift_penalty, 1)))
+
+        # Pass condition: score >= 75.0 AND centrality >= 50.0 AND reveal_align >= 40.0
+        status = "PASS" if (final_score >= 75.0 and centrality >= 50.0 and reveal_align >= 40.0) else "FAIL"
+
+        return {
+            "score": final_score,
+            "topic_centrality_score": centrality,
+            "topic_evidence_coverage": evidence_cov,
+            "topic_reveal_alignment": reveal_align,
+            "drift_detected": bool(drift_hits),
+            "drift_terms": drift_hits,
+            "status": status,
+            "details": f"Centrality: {centrality}, Evidence: {evidence_cov}, Reveal: {reveal_align}, Drift penalty: -{drift_penalty}",
+        }
+
+    def calculate_adherence_score(self, idea_or_text: Any) -> float:
+        """Calculates adherence score (0-100) of an idea or script against this TopicIntent."""
+        res = self.evaluate_content_adherence(idea_or_text)
+        return res["score"]
 
 
 def extract_topic_intent(topic_text: str, provider: Optional[Any] = None) -> TopicIntent:
