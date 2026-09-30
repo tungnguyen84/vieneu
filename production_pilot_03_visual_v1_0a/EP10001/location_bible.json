@@ -1,0 +1,47 @@
+[
+  {
+    "location_id": "LOC_CAN_HO_CUA_HUNG_VA_MAI_CHUNG_CU_CAO_CAP_TAI_TP_HCM",
+    "name": "CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM)",
+    "city_region": "Vietnam",
+    "type": "INTERIOR",
+    "architecture": "CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM)",
+    "story_function": "CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM)",
+    "reference_prompt": "Cinematic Vietnamese location reference: CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM). Natural light, realistic documentary style, no text."
+  },
+  {
+    "location_id": "LOC_VAN_PHONG_KIEN_TRUC_CUA_HUNG",
+    "name": "VĂN PHÒNG KIẾN TRÚC CỦA HÙNG",
+    "city_region": "Vietnam",
+    "type": "INTERIOR",
+    "architecture": "VĂN PHÒNG KIẾN TRÚC CỦA HÙNG",
+    "story_function": "VĂN PHÒNG KIẾN TRÚC CỦA HÙNG",
+    "reference_prompt": "Cinematic Vietnamese location reference: VĂN PHÒNG KIẾN TRÚC CỦA HÙNG. Natural light, realistic documentary style, no text."
+  },
+  {
+    "location_id": "LOC_CONG_TY_THIET_KE_NOI_THAT_CUA_MAI",
+    "name": "CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI",
+    "city_region": "Vietnam",
+    "type": "INTERIOR",
+    "architecture": "CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI",
+    "story_function": "CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI",
+    "reference_prompt": "Cinematic Vietnamese location reference: CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI. Natural light, realistic documentary style, no text."
+  },
+  {
+    "location_id": "LOC_KHACH_SAN_RESORT_O_VUNG_TAU_IA_IEM_MAI_CONG_TAC",
+    "name": "KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác')",
+    "city_region": "Vietnam",
+    "type": "INTERIOR",
+    "architecture": "KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác')",
+    "story_function": "KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác')",
+    "reference_prompt": "Cinematic Vietnamese location reference: KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác'). Natural light, realistic documentary style, no text."
+  },
+  {
+    "location_id": "LOC_QUAN_CA_PHE_GAP_GO_GIUA_MAI_VA_LAM",
+    "name": "QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM",
+    "city_region": "Vietnam",
+    "type": "INTERIOR",
+    "architecture": "QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM",
+    "story_function": "QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM",
+    "reference_prompt": "Cinematic Vietnamese location reference: QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM. Natural light, realistic documentary style, no text."
+  }
+]

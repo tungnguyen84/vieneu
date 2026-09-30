@@ -1,0 +1,1212 @@
+{
+  "episode_id": "EP10001",
+  "title": "Vị Khách Không Mời Lúc Nửa Đêm",
+  "audio_duration_sec": 792.396,
+  "scenes": [
+    {
+      "scene_id": "SC_001",
+      "order": 1,
+      "start_time": 0.0,
+      "end_time": 26.348,
+      "duration": 26.348,
+      "source_segments": [
+        "001",
+        "002"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Có những cánh cửa mà ta tin rằng đã khép lại an toàn, che chở cho mái ấm, cho những bí mật riêng tư. Nhưng đôi khi, chỉ một tiếng gõ cửa bất ngờ lúc nửa đêm cũng đủ sức vén màn mọi sự thật, phơi bày những điều ta chưa từ",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM). Story beat: Có những cánh cửa mà ta tin rằng đã khép lại an toàn, che chở cho mái ấm, cho những bí mật riêng tư. Nhưng đôi khi, chỉ một tiếng gõ cửa bất ngờ lúc nửa đêm cũng đủ sức vén màn mọi sự thật, phơi bày những điều ta chưa từng dám nghĩ tới. Bức thư Hùng gửi về chương trình 'Sau Cánh Cửa' hôm nay không chỉ là lời tâm sự, mà còn là một chuỗi những sự kiện đã xô đổ hoàn toàn niềm tin của anh vào người vợ đầu ấp tay gối, vào cuộc hôn nhân kéo dài bảy năm.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG"
+      ],
+      "location_id": "LOC_CAN_HO_CUA_HUNG_VA_MAI_CHUNG_CU_CAO_CAP_TAI_TP_HCM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_002",
+      "order": 2,
+      "start_time": 26.348,
+      "end_time": 47.642,
+      "duration": 21.294,
+      "source_segments": [
+        "003",
+        "004"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Đêm định mệnh ấy, một người phụ nữ lạ mặt đã đứng trước ngưỡng cửa nhà Hùng, mang theo một bí mật mà anh không hề hay biết, một bí mật liên quan trực tiếp đến Mai, vợ anh. Chào mừng quý vị và các bạn đến với Sau Cánh Cửa",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: VĂN PHÒNG KIẾN TRÚC CỦA HÙNG. Story beat: Đêm định mệnh ấy, một người phụ nữ lạ mặt đã đứng trước ngưỡng cửa nhà Hùng, mang theo một bí mật mà anh không hề hay biết, một bí mật liên quan trực tiếp đến Mai, vợ anh. Chào mừng quý vị và các bạn đến với Sau Cánh Cửa. Tôi là Minh, và hôm nay, chúng ta sẽ cùng lắng nghe câu chuyện đầy bão tố của Hùng, một kiến trúc sư trẻ, về đêm mà cuộc sống của anh hoàn toàn thay đổi.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_VAN_PHONG_KIEN_TRUC_CUA_HUNG",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_003",
+      "order": 3,
+      "start_time": 47.642,
+      "end_time": 66.725,
+      "duration": 19.083,
+      "source_segments": [
+        "005",
+        "006"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Hùng, 32 tuổi, là một kiến trúc sư tài năng. Sự nghiệp của anh đang trên đà phát triển, với nhiều dự án lớn trải dài từ thành phố đến các khu nghỉ dưỡng ven biển. Anh luôn tự hào về gia đình nhỏ của mình: một người vợ xi",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI. Story beat: Hùng, 32 tuổi, là một kiến trúc sư tài năng. Sự nghiệp của anh đang trên đà phát triển, với nhiều dự án lớn trải dài từ thành phố đến các khu nghỉ dưỡng ven biển. Anh luôn tự hào về gia đình nhỏ của mình: một người vợ xinh đẹp, khéo léo tên Mai, và một cậu con trai kháu khỉnh. Hùng tin rằng mình đã có tất cả những gì một người đàn ông mong muốn.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_CONG_TY_THIET_KE_NOI_THAT_CUA_MAI",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_004",
+      "order": 4,
+      "start_time": 66.725,
+      "end_time": 76.027,
+      "duration": 9.302,
+      "source_segments": [
+        "007"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Mai, vợ anh, 30 tuổi, làm trong ngành thiết kế nội thất. Cô luôn xuất hiện với vẻ ngoài chỉn chu, tươi tắn, là niềm tự hào của Hùng trong mỗi buổi gặp mặt bạn bè, đối tác.",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác'). Story beat: Mai, vợ anh, 30 tuổi, làm trong ngành thiết kế nội thất. Cô luôn xuất hiện với vẻ ngoài chỉn chu, tươi tắn, là niềm tự hào của Hùng trong mỗi buổi gặp mặt bạn bè, đối tác.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_KHACH_SAN_RESORT_O_VUNG_TAU_IA_IEM_MAI_CONG_TAC",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_005",
+      "order": 5,
+      "start_time": 76.027,
+      "end_time": 97.755,
+      "duration": 21.728,
+      "source_segments": [
+        "008",
+        "009"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Cuộc hôn nhân của họ đã trải qua bảy năm, êm đềm và ổn định. Hùng thường bận rộn với công việc, nhưng luôn cố gắng bù đắp cho vợ con bằng những chuyến đi chơi cuối tuần, những món quà nhỏ hay chỉ đơn giản là sự hiện diện",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM. Story beat: Cuộc hôn nhân của họ đã trải qua bảy năm, êm đềm và ổn định. Hùng thường bận rộn với công việc, nhưng luôn cố gắng bù đắp cho vợ con bằng những chuyến đi chơi cuối tuần, những món quà nhỏ hay chỉ đơn giản là sự hiện diện. Anh vẫn nhớ rõ cái cảm giác bình yên mỗi tối trở về nhà, thấy ánh đèn vàng ấm áp hắt ra từ cửa sổ, nghe tiếng con trẻ bi bô và mùi thức ăn thoang thoảng từ bếp.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG"
+      ],
+      "location_id": "LOC_QUAN_CA_PHE_GAP_GO_GIUA_MAI_VA_LAM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_006",
+      "order": 6,
+      "start_time": 97.755,
+      "end_time": 117.079,
+      "duration": 19.324,
+      "source_segments": [
+        "010",
+        "011"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Với Hùng, Mai là người phụ nữ của gia đình, là hậu phương vững chắc để anh yên tâm phát triển sự nghiệp. Anh tin tưởng vợ tuyệt đối, chưa từng một lần nghi ngờ lòng chung thủy của cô. Tuy nhiên, trong khoảng vài tháng gầ",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM). Story beat: Với Hùng, Mai là người phụ nữ của gia đình, là hậu phương vững chắc để anh yên tâm phát triển sự nghiệp. Anh tin tưởng vợ tuyệt đối, chưa từng một lần nghi ngờ lòng chung thủy của cô. Tuy nhiên, trong khoảng vài tháng gần đây, Hùng bắt đầu nhận thấy một vài thay đổi nhỏ trong nếp sống của Mai, những thay đổi mà anh ban đầu cho là do áp lực công việc của vợ.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_CAN_HO_CUA_HUNG_VA_MAI_CHUNG_CU_CAO_CAP_TAI_TP_HCM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_007",
+      "order": 7,
+      "start_time": 117.079,
+      "end_time": 136.675,
+      "duration": 19.596,
+      "source_segments": [
+        "012",
+        "013"
+      ],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "visual_mode_reason": "Mai thường xuyên về nhà muộn hơn, đôi khi là những cuộc điện thoại lén lút trong phòng tắm, hay những tin nhắn đến vào lúc nửa đêm mà cô vội vàng tắt màn hình khi Hùng tình cờ nhìn thấy. Hùng đã cố gắng gạt bỏ những suy ",
+      "video_value_scores": {
+        "total_score": 75
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: VĂN PHÒNG KIẾN TRÚC CỦA HÙNG. Story beat: Mai thường xuyên về nhà muộn hơn, đôi khi là những cuộc điện thoại lén lút trong phòng tắm, hay những tin nhắn đến vào lúc nửa đêm mà cô vội vàng tắt màn hình khi Hùng tình cờ nhìn thấy. Hùng đã cố gắng gạt bỏ những suy nghĩ tiêu cực, tự nhủ rằng đó chỉ là những dấu hiệu của một người phụ nữ bận rộn, có nhiều mối quan hệ xã giao trong công việc.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": "Start: preserve the exact subjects, clothing and environment from the approved keyframe. Action: subtle natural movement matching the story beat with restrained Vietnamese drama acting. Camera: slow cinematic push-in or gentle lateral drift, stable 24fps. End: hold the same composition and identity, no new people or objects.",
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_VAN_PHONG_KIEN_TRUC_CUA_HUNG",
+      "props": [],
+      "image_motion": {
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "scene_id": "SC_008",
+      "order": 8,
+      "start_time": 136.675,
+      "end_time": 157.494,
+      "duration": 20.819,
+      "source_segments": [
+        "014",
+        "015"
+      ],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "visual_mode_reason": "Nhưng rồi, một tối muộn, khi Mai đang ngủ say, điện thoại của cô bỗng rung lên liên hồi với một số lạ. Hùng vô tình liếc nhìn, màn hình sáng lên dòng tin nhắn: 'Anh đang đợi em ở Vũng Tàu'. Một cảm giác bất an len lỏi, k",
+      "video_value_scores": {
+        "total_score": 75
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI. Story beat: Nhưng rồi, một tối muộn, khi Mai đang ngủ say, điện thoại của cô bỗng rung lên liên hồi với một số lạ. Hùng vô tình liếc nhìn, màn hình sáng lên dòng tin nhắn: 'Anh đang đợi em ở Vũng Tàu'. Một cảm giác bất an len lỏi, khó hiểu. Vũng Tàu? Mai chưa từng nói về việc có chuyến công tác nào ở đó. Và ai là 'anh' trong tin nhắn này? \"Anh đang đợi em ở Vũng Tàu\".. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": "Start: preserve the exact subjects, clothing and environment from the approved keyframe. Action: subtle natural movement matching the story beat with restrained Vietnamese drama acting. Camera: slow cinematic push-in or gentle lateral drift, stable 24fps. End: hold the same composition and identity, no new people or objects.",
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_CONG_TY_THIET_KE_NOI_THAT_CUA_MAI",
+      "props": [],
+      "image_motion": {
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "scene_id": "SC_009",
+      "order": 9,
+      "start_time": 157.494,
+      "end_time": 176.054,
+      "duration": 18.56,
+      "source_segments": [
+        "016",
+        "017"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Hùng cố gắng trấn tĩnh. Có lẽ là tin nhắn nhầm? Hoặc một trò đùa của bạn bè? Anh không muốn đánh thức Mai dậy để hỏi, sợ làm cô khó chịu vì những suy diễn vô căn cứ. Nhưng rồi, một tin nhắn khác lại đến, hiển thị rõ ràng",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác'). Story beat: Hùng cố gắng trấn tĩnh. Có lẽ là tin nhắn nhầm? Hoặc một trò đùa của bạn bè? Anh không muốn đánh thức Mai dậy để hỏi, sợ làm cô khó chịu vì những suy diễn vô căn cứ. Nhưng rồi, một tin nhắn khác lại đến, hiển thị rõ ràng hơn: 'Em có nhớ lời hứa của chúng ta không? Anh nhớ em nhiều'. Lần này, Hùng không thể phớt lờ được nữa.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_KHACH_SAN_RESORT_O_VUNG_TAU_IA_IEM_MAI_CONG_TAC",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_010",
+      "order": 10,
+      "start_time": 176.054,
+      "end_time": 194.24,
+      "duration": 18.186,
+      "source_segments": [
+        "018",
+        "019"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Lời hứa? Anh nhớ em? Những từ ngữ đó không giống như tin nhắn công việc hay từ một người bạn bình thường. Chúng mang một sắc thái riêng tư, thân mật hơn rất nhiều. Quý vị nghĩ sao về những tin nhắn này? Liệu đây có phải ",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM. Story beat: Lời hứa? Anh nhớ em? Những từ ngữ đó không giống như tin nhắn công việc hay từ một người bạn bình thường. Chúng mang một sắc thái riêng tư, thân mật hơn rất nhiều. Quý vị nghĩ sao về những tin nhắn này? Liệu đây có phải là khởi đầu của một mối quan hệ bí mật, hay chỉ là sự hiểu lầm nào đó mà Hùng đang tự làm quá lên?. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG"
+      ],
+      "location_id": "LOC_QUAN_CA_PHE_GAP_GO_GIUA_MAI_VA_LAM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_011",
+      "order": 11,
+      "start_time": 194.24,
+      "end_time": 217.082,
+      "duration": 22.842,
+      "source_segments": [
+        "020",
+        "021"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Manh mối đầu tiên này đã gieo vào lòng Hùng một hạt mầm nghi ngờ. Anh bắt đầu để ý hơn đến những thay đổi của Mai, và nhận ra nhiều điều bất thường khác. Mai bắt đầu xuất hiện với những món đồ xa xỉ mới: một chiếc túi xá",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM). Story beat: Manh mối đầu tiên này đã gieo vào lòng Hùng một hạt mầm nghi ngờ. Anh bắt đầu để ý hơn đến những thay đổi của Mai, và nhận ra nhiều điều bất thường khác. Mai bắt đầu xuất hiện với những món đồ xa xỉ mới: một chiếc túi xách Chanel mà Hùng chưa từng thấy, một chiếc đồng hồ hiệu Dior lấp lánh trên cổ tay. Anh biết rõ, tài chính gia đình họ chưa đủ để chi trả cho những món đồ đắt tiền như vậy.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_CAN_HO_CUA_HUNG_VA_MAI_CHUNG_CU_CAO_CAP_TAI_TP_HCM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_012",
+      "order": 12,
+      "start_time": 217.082,
+      "end_time": 227.826,
+      "duration": 10.744,
+      "source_segments": [
+        "022"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Khi Hùng hỏi, Mai giải thích rằng đó là 'quà tặng từ một khách hàng VIP' cho dự án lớn cô vừa hoàn thành. Cô nói với vẻ tự hào, nhưng không đưa ra bất kỳ hóa đơn hay bằng chứng cụ thể nào.",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: VĂN PHÒNG KIẾN TRÚC CỦA HÙNG. Story beat: Khi Hùng hỏi, Mai giải thích rằng đó là 'quà tặng từ một khách hàng VIP' cho dự án lớn cô vừa hoàn thành. Cô nói với vẻ tự hào, nhưng không đưa ra bất kỳ hóa đơn hay bằng chứng cụ thể nào.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_VAN_PHONG_KIEN_TRUC_CUA_HUNG",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_013",
+      "order": 13,
+      "start_time": 227.826,
+      "end_time": 249.151,
+      "duration": 21.325,
+      "source_segments": [
+        "023",
+        "024"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Hùng là một kiến trúc sư, anh hiểu về giá trị của các dự án và mức độ 'khủng' của những món quà như vậy. Một khách hàng VIP có thể tặng quà, nhưng đến mức hàng trăm triệu đồng? Anh nhớ lại những lần Mai hào hứng kể về cá",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI. Story beat: Hùng là một kiến trúc sư, anh hiểu về giá trị của các dự án và mức độ 'khủng' của những món quà như vậy. Một khách hàng VIP có thể tặng quà, nhưng đến mức hàng trăm triệu đồng? Anh nhớ lại những lần Mai hào hứng kể về các dự án, nhưng chưa bao giờ có khách hàng nào lại hào phóng đến thế. Sự việc này càng khiến anh băn khoăn về nguồn gốc thực sự của những món đồ.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_CONG_TY_THIET_KE_NOI_THAT_CUA_MAI",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_014",
+      "order": 14,
+      "start_time": 249.151,
+      "end_time": 268.452,
+      "duration": 19.301,
+      "source_segments": [
+        "025",
+        "026"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Những nghi vấn cứ thế lớn dần trong lòng Hùng. Anh bắt đầu xâu chuỗi các sự kiện: tin nhắn lạ, những món quà đắt tiền không rõ nguồn gốc, và giờ là những chuyến 'công tác đột xuất' của Mai. Mai thường xuyên có những chuy",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác'). Story beat: Những nghi vấn cứ thế lớn dần trong lòng Hùng. Anh bắt đầu xâu chuỗi các sự kiện: tin nhắn lạ, những món quà đắt tiền không rõ nguồn gốc, và giờ là những chuyến 'công tác đột xuất' của Mai. Mai thường xuyên có những chuyến đi vào cuối tuần, nói là để 'gặp gỡ khách hàng ở tỉnh' hoặc 'khảo sát dự án mới'. Địa điểm cô thường nhắc đến là Vũng Tàu.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_KHACH_SAN_RESORT_O_VUNG_TAU_IA_IEM_MAI_CONG_TAC",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_015",
+      "order": 15,
+      "start_time": 268.452,
+      "end_time": 286.994,
+      "duration": 18.542,
+      "source_segments": [
+        "027",
+        "028"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Vũng Tàu. Cái tên này lập tức gợi nhắc đến dòng tin nhắn đêm hôm đó: 'Anh đang đợi em ở Vũng Tàu'. Sự trùng hợp này khiến Hùng lạnh gáy. Anh cũng tình cờ biết được rằng Lâm, một đối tác kinh doanh quan trọng của anh, ngư",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM. Story beat: Vũng Tàu. Cái tên này lập tức gợi nhắc đến dòng tin nhắn đêm hôm đó: 'Anh đang đợi em ở Vũng Tàu'. Sự trùng hợp này khiến Hùng lạnh gáy. Anh cũng tình cờ biết được rằng Lâm, một đối tác kinh doanh quan trọng của anh, người mà Hùng rất tin tưởng, cũng thường xuyên có lịch trình công tác đến Vũng Tàu vào những dịp cuối tuần tương tự.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "LÂM"
+      ],
+      "location_id": "LOC_QUAN_CA_PHE_GAP_GO_GIUA_MAI_VA_LAM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_016",
+      "order": 16,
+      "start_time": 286.994,
+      "end_time": 306.043,
+      "duration": 19.049,
+      "source_segments": [
+        "029",
+        "030"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Hùng đã cố gắng hỏi Mai về những chuyến đi này, về những đồng nghiệp đi cùng. Nhưng Mai tỏ ra né tránh, thậm chí cáu kỉnh khi anh đào sâu chi tiết. Cô nói anh 'đa nghi vô cớ'. Những biểu hiện này của Mai, cùng với sự trù",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM). Story beat: Hùng đã cố gắng hỏi Mai về những chuyến đi này, về những đồng nghiệp đi cùng. Nhưng Mai tỏ ra né tránh, thậm chí cáu kỉnh khi anh đào sâu chi tiết. Cô nói anh 'đa nghi vô cớ'. Những biểu hiện này của Mai, cùng với sự trùng hợp khó hiểu trong lịch trình của Lâm, dần vẽ nên một bức tranh mờ ảo, nhưng đầy ám ảnh trong tâm trí Hùng.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI",
+        "LÂM"
+      ],
+      "location_id": "LOC_CAN_HO_CUA_HUNG_VA_MAI_CHUNG_CU_CAO_CAP_TAI_TP_HCM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_017",
+      "order": 17,
+      "start_time": 306.043,
+      "end_time": 328.828,
+      "duration": 22.785,
+      "source_segments": [
+        "031",
+        "032"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Anh cố gắng thuyết phục bản thân rằng có thể chỉ là sự trùng hợp ngẫu nhiên về công việc, rằng Mai không thể nào phản bội anh. Nhưng một giọng nói nhỏ trong đầu cứ thì thầm, rằng có điều gì đó không ổn. Hùng nhớ lại một ",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: VĂN PHÒNG KIẾN TRÚC CỦA HÙNG. Story beat: Anh cố gắng thuyết phục bản thân rằng có thể chỉ là sự trùng hợp ngẫu nhiên về công việc, rằng Mai không thể nào phản bội anh. Nhưng một giọng nói nhỏ trong đầu cứ thì thầm, rằng có điều gì đó không ổn. Hùng nhớ lại một đêm, khi Mai vừa trở về sau chuyến 'công tác' ở Vũng Tàu. Trên người cô thoảng mùi nước hoa lạ, không phải mùi cô thường dùng. Khi anh hỏi, Mai chỉ cười trừ, nói 'là mùi từ đồng nghiệp thôi anh'.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_VAN_PHONG_KIEN_TRUC_CUA_HUNG",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_018",
+      "order": 18,
+      "start_time": 328.828,
+      "end_time": 346.704,
+      "duration": 17.876,
+      "source_segments": [
+        "033",
+        "034"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Sự việc ngày càng trở nên khó hiểu. Hùng bắt đầu cảm thấy lạc lõng trong chính ngôi nhà của mình, trong mối quan hệ mà anh từng tin là vững chắc nhất. Anh băn khoăn, liệu có phải Mai đang có một mối quan hệ vụng trộm? Ng",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI. Story beat: Sự việc ngày càng trở nên khó hiểu. Hùng bắt đầu cảm thấy lạc lõng trong chính ngôi nhà của mình, trong mối quan hệ mà anh từng tin là vững chắc nhất. Anh băn khoăn, liệu có phải Mai đang có một mối quan hệ vụng trộm? Người đàn ông đó là ai? Và tại sao cô ấy lại phải che giấu mọi thứ một cách tỉ mỉ đến vậy?. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_CONG_TY_THIET_KE_NOI_THAT_CUA_MAI",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_019",
+      "order": 19,
+      "start_time": 346.704,
+      "end_time": 357.207,
+      "duration": 10.503,
+      "source_segments": [
+        "035"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Hùng đã cân nhắc việc đối mặt trực tiếp với Mai, nhưng lại sợ rằng nếu mình sai, anh sẽ làm tổn thương tình cảm vợ chồng. Hơn nữa, anh không có bằng chứng cụ thể nào ngoài những dấu hiệu mơ hồ.",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác'). Story beat: Hùng đã cân nhắc việc đối mặt trực tiếp với Mai, nhưng lại sợ rằng nếu mình sai, anh sẽ làm tổn thương tình cảm vợ chồng. Hơn nữa, anh không có bằng chứng cụ thể nào ngoài những dấu hiệu mơ hồ.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_KHACH_SAN_RESORT_O_VUNG_TAU_IA_IEM_MAI_CONG_TAC",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_020",
+      "order": 20,
+      "start_time": 357.207,
+      "end_time": 377.773,
+      "duration": 20.566,
+      "source_segments": [
+        "036",
+        "037"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Anh bắt đầu tự tìm kiếm câu trả lời. Anh lén kiểm tra lịch sử cuộc gọi, tin nhắn của Mai khi cô ngủ, nhưng điện thoại của cô luôn được khóa cẩn thận, hoặc những tin nhắn đáng ngờ đã bị xóa. Hùng cũng thử tìm kiếm thông t",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM. Story beat: Anh bắt đầu tự tìm kiếm câu trả lời. Anh lén kiểm tra lịch sử cuộc gọi, tin nhắn của Mai khi cô ngủ, nhưng điện thoại của cô luôn được khóa cẩn thận, hoặc những tin nhắn đáng ngờ đã bị xóa. Hùng cũng thử tìm kiếm thông tin về các dự án 'VIP' mà Mai nhắc đến, nhưng không có bất kỳ dấu vết nào trên các trang web hay thông tin nội bộ của công ty cô.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_QUAN_CA_PHE_GAP_GO_GIUA_MAI_VA_LAM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_021",
+      "order": 21,
+      "start_time": 377.773,
+      "end_time": 399.546,
+      "duration": 21.773,
+      "source_segments": [
+        "038",
+        "039"
+      ],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "visual_mode_reason": "Mọi thứ dường như đang được sắp đặt một cách tinh vi để che giấu một bí mật nào đó. Hùng cảm thấy mình như đang đi lạc vào một mê cung, với những manh mối rời rạc, không thể ráp nối. Anh tự hỏi, liệu có phải mình đã quá ",
+      "video_value_scores": {
+        "total_score": 75
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM). Story beat: Mọi thứ dường như đang được sắp đặt một cách tinh vi để che giấu một bí mật nào đó. Hùng cảm thấy mình như đang đi lạc vào một mê cung, với những manh mối rời rạc, không thể ráp nối. Anh tự hỏi, liệu có phải mình đã quá vô tâm, quá bận rộn với công việc mà bỏ lỡ điều gì đó quan trọng trong cuộc sống của Mai? Liệu cô ấy có đang tìm kiếm điều gì mà anh không thể mang lại?. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": "Start: preserve the exact subjects, clothing and environment from the approved keyframe. Action: subtle natural movement matching the story beat with restrained Vietnamese drama acting. Camera: slow cinematic push-in or gentle lateral drift, stable 24fps. End: hold the same composition and identity, no new people or objects.",
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_CAN_HO_CUA_HUNG_VA_MAI_CHUNG_CU_CAO_CAP_TAI_TP_HCM",
+      "props": [],
+      "image_motion": {
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "scene_id": "SC_022",
+      "order": 22,
+      "start_time": 399.546,
+      "end_time": 420.143,
+      "duration": 20.597,
+      "source_segments": [
+        "040",
+        "041"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Những câu hỏi cứ lởn vởn trong đầu Hùng, dày vò anh mỗi đêm. Anh không thể tập trung vào công việc, sự bình yên trong gia đình đã bị phá vỡ bởi những nghi ngờ không tên. Và rồi, cái đêm định mệnh ấy đã đến, mang theo một",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: VĂN PHÒNG KIẾN TRÚC CỦA HÙNG. Story beat: Những câu hỏi cứ lởn vởn trong đầu Hùng, dày vò anh mỗi đêm. Anh không thể tập trung vào công việc, sự bình yên trong gia đình đã bị phá vỡ bởi những nghi ngờ không tên. Và rồi, cái đêm định mệnh ấy đã đến, mang theo một vị khách không mời, một sự kiện đã xé toạc tấm màn che giấu bấy lâu nay, phơi bày một sự thật nặng nề mà Hùng chưa bao giờ dám đối mặt.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG"
+      ],
+      "location_id": "LOC_VAN_PHONG_KIEN_TRUC_CUA_HUNG",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_023",
+      "order": 23,
+      "start_time": 420.143,
+      "end_time": 436.661,
+      "duration": 16.518,
+      "source_segments": [
+        "042",
+        "043"
+      ],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "visual_mode_reason": "Đêm đó, Hùng đang ngồi làm việc trong phòng khách thì một tiếng chuông cửa bất ngờ vang lên. Đồng hồ điểm đúng nửa đêm. Ai có thể đến vào giờ này? Anh nhìn sang chiếc ghế sofa, Mai đang ngủ say, dường như không hề hay bi",
+      "video_value_scores": {
+        "total_score": 75
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI. Story beat: Đêm đó, Hùng đang ngồi làm việc trong phòng khách thì một tiếng chuông cửa bất ngờ vang lên. Đồng hồ điểm đúng nửa đêm. Ai có thể đến vào giờ này? Anh nhìn sang chiếc ghế sofa, Mai đang ngủ say, dường như không hề hay biết. Hùng khẽ đứng dậy, bước ra cửa, trong lòng dâng lên một dự cảm không lành.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": "Start: preserve the exact subjects, clothing and environment from the approved keyframe. Action: subtle natural movement matching the story beat with restrained Vietnamese drama acting. Camera: slow cinematic push-in or gentle lateral drift, stable 24fps. End: hold the same composition and identity, no new people or objects.",
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_CONG_TY_THIET_KE_NOI_THAT_CUA_MAI",
+      "props": [],
+      "image_motion": {
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "scene_id": "SC_024",
+      "order": 24,
+      "start_time": 436.661,
+      "end_time": 454.95,
+      "duration": 18.289,
+      "source_segments": [
+        "044",
+        "045"
+      ],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "visual_mode_reason": "Qua mắt thần, anh thấy một người phụ nữ lạ mặt đứng dưới ánh đèn đường lờ mờ. Cô ta mặc bộ đồ tối màu, mái tóc búi gọn gàng, khuôn mặt có vẻ căng thẳng. Hùng do dự một lúc, rồi cũng mở chốt. Cánh cửa vừa hé, người phụ nữ",
+      "video_value_scores": {
+        "total_score": 75
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác'). Story beat: Qua mắt thần, anh thấy một người phụ nữ lạ mặt đứng dưới ánh đèn đường lờ mờ. Cô ta mặc bộ đồ tối màu, mái tóc búi gọn gàng, khuôn mặt có vẻ căng thẳng. Hùng do dự một lúc, rồi cũng mở chốt. Cánh cửa vừa hé, người phụ nữ kia lập tức đẩy mạnh, bước thẳng vào trong, ánh mắt sắc lạnh quét qua không gian phòng khách.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": "Start: preserve the exact subjects, clothing and environment from the approved keyframe. Action: subtle natural movement matching the story beat with restrained Vietnamese drama acting. Camera: slow cinematic push-in or gentle lateral drift, stable 24fps. End: hold the same composition and identity, no new people or objects.",
+      "visible_characters": [
+        "HÙNG"
+      ],
+      "location_id": "LOC_KHACH_SAN_RESORT_O_VUNG_TAU_IA_IEM_MAI_CONG_TAC",
+      "props": [],
+      "image_motion": {
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "scene_id": "SC_025",
+      "order": 25,
+      "start_time": 454.95,
+      "end_time": 471.975,
+      "duration": 17.025,
+      "source_segments": [
+        "046",
+        "047"
+      ],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "visual_mode_reason": "Hùng chưa kịp phản ứng, người phụ nữ đã dừng lại trước Mai, người vẫn đang mơ màng trên ghế sofa. Một tiếng gằn nhẹ vang lên, đủ để Mai choàng tỉnh. Mai mở mắt, nhìn thấy người phụ nữ lạ mặt, khuôn mặt cô trắng bệch, đôi",
+      "video_value_scores": {
+        "total_score": 75
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM. Story beat: Hùng chưa kịp phản ứng, người phụ nữ đã dừng lại trước Mai, người vẫn đang mơ màng trên ghế sofa. Một tiếng gằn nhẹ vang lên, đủ để Mai choàng tỉnh. Mai mở mắt, nhìn thấy người phụ nữ lạ mặt, khuôn mặt cô trắng bệch, đôi mắt giãn ra vì kinh ngạc và sợ hãi. Hùng chưa từng thấy Mai có vẻ mặt đó.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": "Start: preserve the exact subjects, clothing and environment from the approved keyframe. Action: subtle natural movement matching the story beat with restrained Vietnamese drama acting. Camera: slow cinematic push-in or gentle lateral drift, stable 24fps. End: hold the same composition and identity, no new people or objects.",
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_QUAN_CA_PHE_GAP_GO_GIUA_MAI_VA_LAM",
+      "props": [],
+      "image_motion": {
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "scene_id": "SC_026",
+      "order": 26,
+      "start_time": 471.975,
+      "end_time": 490.517,
+      "duration": 18.542,
+      "source_segments": [
+        "048",
+        "049"
+      ],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "visual_mode_reason": "Người phụ nữ lạ mặt không nói gì, chỉ từ từ đưa ra một chiếc điện thoại. Trên màn hình là một loạt tin nhắn và hình ảnh chụp lén. Mai nhìn vào, cả người run rẩy. Hùng đứng cạnh, cố gắng hiểu chuyện gì đang xảy ra. Anh li",
+      "video_value_scores": {
+        "total_score": 75
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM). Story beat: Người phụ nữ lạ mặt không nói gì, chỉ từ từ đưa ra một chiếc điện thoại. Trên màn hình là một loạt tin nhắn và hình ảnh chụp lén. Mai nhìn vào, cả người run rẩy. Hùng đứng cạnh, cố gắng hiểu chuyện gì đang xảy ra. Anh liếc nhìn qua vai người phụ nữ, nhưng không kịp đọc rõ nội dung. Chỉ thấy một cái tên quen thuộc hiện lên.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": "Start: preserve the exact subjects, clothing and environment from the approved keyframe. Action: subtle natural movement matching the story beat with restrained Vietnamese drama acting. Camera: slow cinematic push-in or gentle lateral drift, stable 24fps. End: hold the same composition and identity, no new people or objects.",
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_CAN_HO_CUA_HUNG_VA_MAI_CHUNG_CU_CAO_CAP_TAI_TP_HCM",
+      "props": [],
+      "image_motion": {
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "scene_id": "SC_027",
+      "order": 27,
+      "start_time": 490.517,
+      "end_time": 498.776,
+      "duration": 8.259,
+      "source_segments": [
+        "050"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Lâm. Đó là tên của Lâm, đối tác làm ăn thân thiết của anh. Tim Hùng như thắt lại. Một cảm giác lạnh lẽo bắt đầu lan tỏa khắp cơ thể anh.",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: VĂN PHÒNG KIẾN TRÚC CỦA HÙNG. Story beat: Lâm. Đó là tên của Lâm, đối tác làm ăn thân thiết của anh. Tim Hùng như thắt lại. Một cảm giác lạnh lẽo bắt đầu lan tỏa khắp cơ thể anh.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "LÂM"
+      ],
+      "location_id": "LOC_VAN_PHONG_KIEN_TRUC_CUA_HUNG",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_028",
+      "order": 28,
+      "start_time": 498.776,
+      "end_time": 515.294,
+      "duration": 16.518,
+      "source_segments": [
+        "051",
+        "052"
+      ],
+      "visual_mode": "VIDEO_RECOMMENDED",
+      "visual_mode_reason": "Người phụ nữ cất điện thoại, giọng nói trầm và đầy phẫn nộ vang lên, xé tan sự tĩnh lặng của đêm khuya: “Cô Mai, chúng ta cần nói chuyện rõ ràng.” Hùng nhìn sang Mai. Vợ anh không dám ngẩng đầu. Cô co rúm lại, như một đứ",
+      "video_value_scores": {
+        "total_score": 75
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI. Story beat: Người phụ nữ cất điện thoại, giọng nói trầm và đầy phẫn nộ vang lên, xé tan sự tĩnh lặng của đêm khuya: “Cô Mai, chúng ta cần nói chuyện rõ ràng.” Hùng nhìn sang Mai. Vợ anh không dám ngẩng đầu. Cô co rúm lại, như một đứa trẻ bị bắt quả tang. Sự im lặng của Mai đã nói lên tất cả.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": "Start: preserve the exact subjects, clothing and environment from the approved keyframe. Action: subtle natural movement matching the story beat with restrained Vietnamese drama acting. Camera: slow cinematic push-in or gentle lateral drift, stable 24fps. End: hold the same composition and identity, no new people or objects.",
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_CONG_TY_THIET_KE_NOI_THAT_CUA_MAI",
+      "props": [],
+      "image_motion": {
+        "type": "SLOW_PUSH_IN"
+      }
+    },
+    {
+      "scene_id": "SC_029",
+      "order": 29,
+      "start_time": 515.294,
+      "end_time": 531.92,
+      "duration": 16.626,
+      "source_segments": [
+        "053",
+        "054"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Người phụ nữ quay sang Hùng, ánh mắt cô ta chứa đựng sự tuyệt vọng và một nỗi đau sâu sắc. “Anh Hùng, tôi là Thanh, vợ của Lâm.” Cả thế giới của Hùng như sụp đổ. Thanh, vợ của Lâm. Cái tên đó, cùng với những hình ảnh trê",
+      "video_value_scores": {
+        "total_score": 55
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác'). Story beat: Người phụ nữ quay sang Hùng, ánh mắt cô ta chứa đựng sự tuyệt vọng và một nỗi đau sâu sắc. “Anh Hùng, tôi là Thanh, vợ của Lâm.” Cả thế giới của Hùng như sụp đổ. Thanh, vợ của Lâm. Cái tên đó, cùng với những hình ảnh trên điện thoại, đã kết nối mọi mảnh ghép rời rạc.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "THANH",
+        "LÂM"
+      ],
+      "location_id": "LOC_KHACH_SAN_RESORT_O_VUNG_TAU_IA_IEM_MAI_CONG_TAC",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_030",
+      "order": 30,
+      "start_time": 531.92,
+      "end_time": 553.033,
+      "duration": 21.113,
+      "source_segments": [
+        "055",
+        "056"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Cô Thanh tiếp tục, giọng cô run rẩy nhưng kiên quyết: “Tôi đã theo dõi chồng tôi và cô Mai suốt nhiều tháng qua. Tôi đã cố gắng nói chuyện riêng với cô Mai, khuyên nhủ cô ấy chấm dứt, nhưng vô ích.” Thanh đã cố gắng giải",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM. Story beat: Cô Thanh tiếp tục, giọng cô run rẩy nhưng kiên quyết: “Tôi đã theo dõi chồng tôi và cô Mai suốt nhiều tháng qua. Tôi đã cố gắng nói chuyện riêng với cô Mai, khuyên nhủ cô ấy chấm dứt, nhưng vô ích.” Thanh đã cố gắng giải quyết nội bộ, tìm cách bảo vệ gia đình mình khỏi sự tan vỡ. Nhưng Lâm liên tục phủ nhận, còn Mai thì vẫn tiếp tục mối quan hệ.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "MAI",
+        "THANH",
+        "LÂM"
+      ],
+      "location_id": "LOC_QUAN_CA_PHE_GAP_GO_GIUA_MAI_VA_LAM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_031",
+      "order": 31,
+      "start_time": 553.033,
+      "end_time": 574.146,
+      "duration": 21.113,
+      "source_segments": [
+        "057",
+        "058"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Cô Thanh cảm thấy mình bị dồn vào đường cùng. Cô biết rằng chỉ có cách vạch trần sự thật công khai, đối mặt trực tiếp như thế này, mới có thể khiến Mai và Lâm phải đối diện với hậu quả. Hùng nhìn Mai, đôi mắt anh đỏ ngầu",
+      "video_value_scores": {
+        "total_score": 55
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM). Story beat: Cô Thanh cảm thấy mình bị dồn vào đường cùng. Cô biết rằng chỉ có cách vạch trần sự thật công khai, đối mặt trực tiếp như thế này, mới có thể khiến Mai và Lâm phải đối diện với hậu quả. Hùng nhìn Mai, đôi mắt anh đỏ ngầu. Vợ anh, người đã cùng anh xây dựng tổ ấm suốt 7 năm, lại đang phản bội anh cùng với chính đối tác làm ăn của anh.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI",
+        "THANH",
+        "LÂM"
+      ],
+      "location_id": "LOC_CAN_HO_CUA_HUNG_VA_MAI_CHUNG_CU_CAO_CAP_TAI_TP_HCM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_032",
+      "order": 32,
+      "start_time": 574.146,
+      "end_time": 592.883,
+      "duration": 18.737,
+      "source_segments": [
+        "059",
+        "060"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Mai ngước lên, đôi mắt ngấn lệ. Cô biết mình không thể chối cãi. Tất cả những dấu hiệu lạ lùng, những chuyến công tác bất thường, những món đồ xa xỉ. Tất cả đều có lời giải đáp. Hàng trăm triệu đồng đã được đổ vào những ",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: VĂN PHÒNG KIẾN TRÚC CỦA HÙNG. Story beat: Mai ngước lên, đôi mắt ngấn lệ. Cô biết mình không thể chối cãi. Tất cả những dấu hiệu lạ lùng, những chuyến công tác bất thường, những món đồ xa xỉ. Tất cả đều có lời giải đáp. Hàng trăm triệu đồng đã được đổ vào những món quà để che đậy mối quan hệ vụng trộm này. Mai bắt đầu thú nhận, giọng cô lí nhí.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "MAI"
+      ],
+      "location_id": "LOC_VAN_PHONG_KIEN_TRUC_CUA_HUNG",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_033",
+      "order": 33,
+      "start_time": 592.883,
+      "end_time": 611.966,
+      "duration": 19.083,
+      "source_segments": [
+        "061",
+        "062"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Mai kể về sự cô đơn, về cảm giác thiếu thấu hiểu và lãng mạn trong cuộc hôn nhân với Hùng. Cô cảm thấy anh quá bận rộn, vô tâm, không còn dành thời gian cho cô như trước. Cô khao khát được khẳng định bản thân, cả trong s",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI. Story beat: Mai kể về sự cô đơn, về cảm giác thiếu thấu hiểu và lãng mạn trong cuộc hôn nhân với Hùng. Cô cảm thấy anh quá bận rộn, vô tâm, không còn dành thời gian cho cô như trước. Cô khao khát được khẳng định bản thân, cả trong sự nghiệp lẫn tình cảm. Và rồi, Lâm xuất hiện. Anh ta lấp đầy những khoảng trống đó bằng những lời nói ngọt ngào, sự quan tâm giả tạo.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI",
+        "LÂM"
+      ],
+      "location_id": "LOC_CONG_TY_THIET_KE_NOI_THAT_CUA_MAI",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_034",
+      "order": 34,
+      "start_time": 611.966,
+      "end_time": 623.447,
+      "duration": 11.481,
+      "source_segments": [
+        "063"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Lâm vẽ ra một tương lai màu hồng, hứa sẽ ly hôn vợ để đến với Mai. Anh ta lợi dụng sự cả tin và khát vọng được yêu thương của cô. Mai đã tin rằng đó là tình yêu đích thực.",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác'). Story beat: Lâm vẽ ra một tương lai màu hồng, hứa sẽ ly hôn vợ để đến với Mai. Anh ta lợi dụng sự cả tin và khát vọng được yêu thương của cô. Mai đã tin rằng đó là tình yêu đích thực.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "MAI",
+        "LÂM"
+      ],
+      "location_id": "LOC_KHACH_SAN_RESORT_O_VUNG_TAU_IA_IEM_MAI_CONG_TAC",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_035",
+      "order": 35,
+      "start_time": 623.447,
+      "end_time": 643.011,
+      "duration": 19.564,
+      "source_segments": [
+        "064",
+        "065"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Cô tin rằng đó là cơ hội để cô thoát khỏi cuộc sống hôn nhân tẻ nhạt, cảm giác bị bỏ rơi trong sự nghiệp và tình cảm. Cô không thể nói thật với Hùng vì sợ làm tổn thương anh. Mai không muốn mất đi gia đình, nhưng cô cũng",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM. Story beat: Cô tin rằng đó là cơ hội để cô thoát khỏi cuộc sống hôn nhân tẻ nhạt, cảm giác bị bỏ rơi trong sự nghiệp và tình cảm. Cô không thể nói thật với Hùng vì sợ làm tổn thương anh. Mai không muốn mất đi gia đình, nhưng cô cũng không thể từ bỏ những ảo tưởng mà Lâm đã vẽ ra. Cô sử dụng điện thoại phụ, tin nhắn mã hóa, tạo cớ công tác để gặp Lâm.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI",
+        "LÂM"
+      ],
+      "location_id": "LOC_QUAN_CA_PHE_GAP_GO_GIUA_MAI_VA_LAM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_036",
+      "order": 36,
+      "start_time": 643.011,
+      "end_time": 660.411,
+      "duration": 17.4,
+      "source_segments": [
+        "066",
+        "067"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Cô che giấu các món quà, tránh né những câu hỏi của Hùng về lịch trình và tài chính. Mai đã tạo ra một vỏ bọc hoàn hảo để duy trì bí mật này, cho đến đêm nay. Hùng nghe Mai nói, trái tim anh tan nát. Không chỉ là sự phản",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM). Story beat: Cô che giấu các món quà, tránh né những câu hỏi của Hùng về lịch trình và tài chính. Mai đã tạo ra một vỏ bọc hoàn hảo để duy trì bí mật này, cho đến đêm nay. Hùng nghe Mai nói, trái tim anh tan nát. Không chỉ là sự phản bội của vợ, mà còn là sự lừa dối từ chính người đối tác mà anh đã tin tưởng.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_CAN_HO_CUA_HUNG_VA_MAI_CHUNG_CU_CAO_CAP_TAI_TP_HCM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_037",
+      "order": 37,
+      "start_time": 660.411,
+      "end_time": 675.166,
+      "duration": 14.755,
+      "source_segments": [
+        "068",
+        "069"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Cô Thanh đứng đó, khuôn mặt đẫm nước mắt, nhưng ánh mắt kiên định. Cô đã đến đây để vạch trần sự thật, và cô đã làm được. Không khí trong phòng trở nên nặng nề. Ba người, ba số phận, cùng đối mặt với một sự thật đau lòng",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: VĂN PHÒNG KIẾN TRÚC CỦA HÙNG. Story beat: Cô Thanh đứng đó, khuôn mặt đẫm nước mắt, nhưng ánh mắt kiên định. Cô đã đến đây để vạch trần sự thật, và cô đã làm được. Không khí trong phòng trở nên nặng nề. Ba người, ba số phận, cùng đối mặt với một sự thật đau lòng. Hùng cảm thấy mình như đang đứng trên vực thẳm.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "THANH"
+      ],
+      "location_id": "LOC_VAN_PHONG_KIEN_TRUC_CUA_HUNG",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_038",
+      "order": 38,
+      "start_time": 675.166,
+      "end_time": 690.402,
+      "duration": 15.236,
+      "source_segments": [
+        "070",
+        "071"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Sau một hồi im lặng, Hùng quay sang Thanh, giọng anh khàn đặc: “Cảm ơn cô, Thanh. Tôi. tôi không biết nói gì hơn.” Thanh gật đầu nhẹ, không nói thêm lời nào. Cô đã hoàn thành mục đích của mình. Cô quay lưng, bước ra khỏi",
+      "video_value_scores": {
+        "total_score": 55
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI. Story beat: Sau một hồi im lặng, Hùng quay sang Thanh, giọng anh khàn đặc: “Cảm ơn cô, Thanh. Tôi. tôi không biết nói gì hơn.” Thanh gật đầu nhẹ, không nói thêm lời nào. Cô đã hoàn thành mục đích của mình. Cô quay lưng, bước ra khỏi căn nhà, để lại Hùng và Mai trong màn đêm đầy rẫy những mảnh vỡ.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI",
+        "THANH"
+      ],
+      "location_id": "LOC_CONG_TY_THIET_KE_NOI_THAT_CUA_MAI",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_039",
+      "order": 39,
+      "start_time": 690.402,
+      "end_time": 705.638,
+      "duration": 15.236,
+      "source_segments": [
+        "072",
+        "073"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Hùng nhìn Mai, người vẫn đang gục mặt vào lòng bàn tay. Anh không còn cảm thấy tức giận, chỉ còn lại sự trống rỗng và nỗi đau khó tả. Cuộc hôn nhân 7 năm của họ, những ước mơ, những kỷ niệm, tất cả dường như đang tan thà",
+      "video_value_scores": {
+        "total_score": 55
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác'). Story beat: Hùng nhìn Mai, người vẫn đang gục mặt vào lòng bàn tay. Anh không còn cảm thấy tức giận, chỉ còn lại sự trống rỗng và nỗi đau khó tả. Cuộc hôn nhân 7 năm của họ, những ước mơ, những kỷ niệm, tất cả dường như đang tan thành mây khói. Anh phải đối mặt với sự thật cay đắng này.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_KHACH_SAN_RESORT_O_VUNG_TAU_IA_IEM_MAI_CONG_TAC",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_040",
+      "order": 40,
+      "start_time": 705.638,
+      "end_time": 723.759,
+      "duration": 18.121,
+      "source_segments": [
+        "074",
+        "075"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Hùng biết, việc giữ gìn gia đình đổ vỡ này là bất khả thi. Anh phải chấp nhận sự thật, dù nó đau đớn đến nhường nào. Anh phải đối diện với những hệ lụy trong công việc. Mai, đối mặt với sự xấu hổ tột độ, sự sụp đổ của ảo",
+      "video_value_scores": {
+        "total_score": 55
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM. Story beat: Hùng biết, việc giữ gìn gia đình đổ vỡ này là bất khả thi. Anh phải chấp nhận sự thật, dù nó đau đớn đến nhường nào. Anh phải đối diện với những hệ lụy trong công việc. Mai, đối mặt với sự xấu hổ tột độ, sự sụp đổ của ảo mộng về 'tình yêu đích thực' và hậu quả nặng nề đối với cuộc sống gia đình, danh dự và sự nghiệp.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_QUAN_CA_PHE_GAP_GO_GIUA_MAI_VA_LAM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_041",
+      "order": 41,
+      "start_time": 723.759,
+      "end_time": 740.078,
+      "duration": 16.319,
+      "source_segments": [
+        "076",
+        "077"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Cả hai đều phải đối diện với sự thật cay đắng và tìm cách vượt qua khủng hoảng. Nhưng có lẽ, con đường phía trước sẽ không còn có thể đi cùng nhau. Sự cô đơn và khao khát được công nhận đôi khi có thể dẫn chúng ta vào nh",
+      "video_value_scores": {
+        "total_score": 55
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CĂN HỘ CỦA HÙNG VÀ MAI (chung cư cao cấp tại TP.HCM). Story beat: Cả hai đều phải đối diện với sự thật cay đắng và tìm cách vượt qua khủng hoảng. Nhưng có lẽ, con đường phía trước sẽ không còn có thể đi cùng nhau. Sự cô đơn và khao khát được công nhận đôi khi có thể dẫn chúng ta vào những cạm bẫy khó lường, đẩy ta ra xa khỏi giá trị cốt lõi của hạnh phúc.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [],
+      "location_id": "LOC_CAN_HO_CUA_HUNG_VA_MAI_CHUNG_CU_CAO_CAP_TAI_TP_HCM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_042",
+      "order": 42,
+      "start_time": 740.078,
+      "end_time": 747.696,
+      "duration": 7.618,
+      "source_segments": [
+        "078"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Hùng và Mai đã quyết định ly hôn. Quyết định này, dù đau đớn, nhưng là cần thiết để cả hai có thể tìm lại sự bình yên cho riêng mình.",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: VĂN PHÒNG KIẾN TRÚC CỦA HÙNG. Story beat: Hùng và Mai đã quyết định ly hôn. Quyết định này, dù đau đớn, nhưng là cần thiết để cả hai có thể tìm lại sự bình yên cho riêng mình.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI"
+      ],
+      "location_id": "LOC_VAN_PHONG_KIEN_TRUC_CUA_HUNG",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_043",
+      "order": 43,
+      "start_time": 747.696,
+      "end_time": 764.134,
+      "duration": 16.438,
+      "source_segments": [
+        "079",
+        "080"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Hùng cũng quyết định cắt đứt hợp tác với Lâm, chấp nhận những thiệt hại ban đầu để giữ vững nguyên tắc và danh dự của bản thân. Mai phải đối mặt với sự phán xét của xã hội và gia đình, mất đi sự nghiệp mà cô đã gây dựng ",
+      "video_value_scores": {
+        "total_score": 55
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: CÔNG TY THIẾT KẾ NỘI THẤT CỦA MAI. Story beat: Hùng cũng quyết định cắt đứt hợp tác với Lâm, chấp nhận những thiệt hại ban đầu để giữ vững nguyên tắc và danh dự của bản thân. Mai phải đối mặt với sự phán xét của xã hội và gia đình, mất đi sự nghiệp mà cô đã gây dựng bấy lâu. Cô rời đi, mang theo bài học về sự lựa chọn và hậu quả.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG",
+        "MAI",
+        "LÂM"
+      ],
+      "location_id": "LOC_CONG_TY_THIET_KE_NOI_THAT_CUA_MAI",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_044",
+      "order": 44,
+      "start_time": 764.134,
+      "end_time": 780.697,
+      "duration": 16.563,
+      "source_segments": [
+        "081",
+        "082"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Hùng bắt đầu một cuộc sống mới, một mình chăm sóc con. Dù đau đớn, nhưng anh mạnh mẽ hơn, sau khi chấp nhận sự thật và buông bỏ những gì không thuộc về mình. Cuộc sống hôn nhân cần sự vun đắp, thấu hiểu và chia sẻ chân t",
+      "video_value_scores": {
+        "total_score": 30
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: KHÁCH SẠN/RESORT Ở VŨNG TÀU (địa điểm Mai 'công tác'). Story beat: Hùng bắt đầu một cuộc sống mới, một mình chăm sóc con. Dù đau đớn, nhưng anh mạnh mẽ hơn, sau khi chấp nhận sự thật và buông bỏ những gì không thuộc về mình. Cuộc sống hôn nhân cần sự vun đắp, thấu hiểu và chia sẻ chân thành. Nếu không, nó sẽ tạo ra những kẽ hở cho các mối quan hệ ngoài luồng lợi dụng.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [
+        "HÙNG"
+      ],
+      "location_id": "LOC_KHACH_SAN_RESORT_O_VUNG_TAU_IA_IEM_MAI_CONG_TAC",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    },
+    {
+      "scene_id": "SC_045",
+      "order": 45,
+      "start_time": 780.697,
+      "end_time": 792.396,
+      "duration": 11.699,
+      "source_segments": [
+        "083",
+        "084"
+      ],
+      "visual_mode": "IMAGE_ONLY",
+      "visual_mode_reason": "Vậy, làm thế nào để chúng ta có thể giữ cho ngọn lửa yêu thương luôn cháy, ngay cả khi cuộc sống bộn bề và những cám dỗ luôn rình rập? Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.",
+      "video_value_scores": {
+        "total_score": 50
+      },
+      "image_prompt": "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, authentic setting: QUÁN CÀ PHÊ GẶP GỠ GIỮA MAI VÀ LÂM. Story beat: Vậy, làm thế nào để chúng ta có thể giữ cho ngọn lửa yêu thương luôn cháy, ngay cả khi cuộc sống bộn bề và những cám dỗ luôn rình rập? Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.. Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark.",
+      "video_prompt": null,
+      "visible_characters": [],
+      "location_id": "LOC_QUAN_CA_PHE_GAP_GO_GIUA_MAI_VA_LAM",
+      "props": [],
+      "image_motion": {
+        "type": "KEN_BURNS_SLOW_PAN"
+      }
+    }
+  ]
+}
