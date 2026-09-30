@@ -215,3 +215,290 @@ def test_audio_schema_normalization_and_voice_alias_mapping():
     voices_info = srv.list_voices()
     assert voices_info["voices"][0]["voice_id"] == "020"
     assert "MC Minh" in voices_info["voices"][0]["label"]
+
+
+def test_causal_gap_detection(qc_env):
+    """Tests that StoryQCEngine and ScriptQCEngine detect CAUSAL_GAP when a minor request jumps to an extreme lifelong action without causal necessity."""
+    from apps.script_factory.story_qc import StoryQCEngine
+
+    story_qc = StoryQCEngine()
+    qc: ScriptQCEngine = qc_env["qc"]
+
+    bible = StoryBible(
+        episode_id="EP_CAUSAL",
+        title="Chiếc thẻ bài cũ",
+        protagonist={"name": "Nam", "char_id": "NAM"},
+        clues=["Tấm thẻ bài kim loại trong hộp gỗ.", "Bức thư gửi về quê.", "Sổ hộ khẩu cũ."],
+        timeline=["52 năm trước: Biến cố xảy ra.", "Hiện tại: Phát hiện hộp gỗ."],
+        reveal_1="Người đồng đội đã hy sinh.",
+        reveal_2="Trước khi mất, người bạn nhờ mang hộ thẻ bài về quê và chăm sóc mẹ già, nên nhân vật đổi luôn danh tính và sống 52 năm dưới danh tính người đã khuất.",
+    )
+
+    bible_report = story_qc.audit_story_bible(bible)
+    assert bible_report.status == "FAIL"
+    assert "CAUSAL_GAP" in bible_report.rule_codes
+
+    segs = _base_valid_segments()
+    segs[5] = ScriptSegment(
+        id="006",
+        speaker="MINH",
+        text="Người bạn chỉ nhờ mang hộ thẻ bài và chăm sóc mẹ già, thế nên ông quyết định đổi luôn danh tính và sống suốt 52 năm dưới danh tính người đã khuất.",
+        delivery_profile="REVEAL",
+        importance="critical",
+    )
+    script = FullScript(episode_id="EP_CAUSAL", title="Chiếc thẻ bài cũ", host={"id": "MINH", "voice": "Binh"}, segments=segs)
+    script_report = qc.run_qc(script, bible)
+    assert script_report.status == "NEEDS_REVISION"
+    assert any(iss.get("rule") == "CAUSAL_GAP" for iss in script_report.evidence_issues)
+
+
+def test_character_secret_knowledge_consistency(qc_env):
+    """Tests that CHARACTER_KNOWLEDGE_CONTRADICTION is caught when a character knows the secret in StoryBible/segment while another segment claims nobody knew / could not tell spouse."""
+    from apps.script_factory.story_qc import StoryQCEngine
+
+    story_qc = StoryQCEngine()
+    qc: ScriptQCEngine = qc_env["qc"]
+
+    bible = StoryBible(
+        episode_id="EP_KNOWLEDGE",
+        title="Sự im lặng",
+        protagonist={"name": "Nam", "char_id": "NAM"},
+        supporting_characters=[
+            {
+                "name": "Bà Mai",
+                "char_id": "MAI",
+                "role": "Người vợ",
+                "description": "Biết toàn bộ câu chuyện ngay từ đầu nhưng chọn cách câm lặng.",
+            }
+        ],
+        clues=["Manh mối 1", "Manh mối 2"],
+        timeline=["Mốc 1", "Mốc 2"],
+        secret="Một bí mật cô độc không thể sẻ chia cùng ai kể cả với người vợ gối chăn.",
+        reveal_1="Sự thật 1.",
+        reveal_2="Sự thật 2.",
+    )
+
+    bible_report = story_qc.audit_story_bible(bible)
+    assert bible_report.status == "FAIL"
+    assert "CHARACTER_KNOWLEDGE_CONTRADICTION" in bible_report.rule_codes
+
+    segs = _base_valid_segments()
+    segs[1] = ScriptSegment(
+        id="002",
+        speaker="MINH",
+        text="Suốt nửa thế kỷ, ông mang theo một bí mật cô độc không thể sẻ chia cùng ai kể cả với người vợ gối chăn.",
+        delivery_profile="NORMAL",
+    )
+    script = FullScript(episode_id="EP_KNOWLEDGE", title="Sự im lặng", host={"id": "MINH", "voice": "Binh"}, segments=segs)
+    script_report = qc.run_qc(script, bible)
+    assert script_report.status == "NEEDS_REVISION"
+    assert any(iss.get("rule") == "CHARACTER_KNOWLEDGE_CONTRADICTION" for iss in script_report.evidence_issues)
+
+
+def test_evidence_does_not_prove_claim(qc_env):
+    """Tests that EVIDENCE_DOES_NOT_PROVE_CLAIM catches jumping from a single initial clue directly to a final extreme claim without intermediate evidence."""
+    from apps.script_factory.story_qc import StoryQCEngine
+
+    story_qc = StoryQCEngine()
+    qc: ScriptQCEngine = qc_env["qc"]
+
+    bible = StoryBible(
+        episode_id="EP_EVIDENCE",
+        title="Bằng chứng",
+        protagonist={"name": "Tuấn", "char_id": "TUAN"},
+        clues=["Tấm thẻ bài kim loại."],
+        timeline=["10 năm trước"],
+        structured_clues=[
+            {
+                "clue": "Tấm thẻ bài kim loại khắc tên người khác trong hộp gỗ.",
+                "what_it_proves": "Chứng minh ông đã đánh tráo danh tính và chính là kẻ giả mạo suốt 50 năm.",
+                "what_it_does_NOT_prove": "Chưa chứng minh được ông không phải là ông nội thật.",
+                "next_question": "Chiếc thẻ bài này của ai?",
+            }
+        ],
+    )
+
+    bible_report = story_qc.audit_story_bible(bible)
+    assert bible_report.status == "FAIL"
+    assert "EVIDENCE_DOES_NOT_PROVE_CLAIM" in bible_report.rule_codes
+
+    segs = _base_valid_segments()
+    segs[1] = ScriptSegment(
+        id="002",
+        speaker="MINH",
+        text="Ngay khi nhìn thấy tấm thẻ bài kim loại, vật chứng này đã chứng minh hoàn toàn rằng ông chính là kẻ giả mạo đã đánh tráo danh tính.",
+        delivery_profile="MYSTERY",
+    )
+    script = FullScript(episode_id="EP_EVIDENCE", title="Bằng chứng", host={"id": "MINH", "voice": "Binh"}, segments=segs)
+    script_report = qc.run_qc(script, bible)
+    assert script_report.status == "NEEDS_REVISION"
+    assert any(iss.get("rule") == "EVIDENCE_DOES_NOT_PROVE_CLAIM" for iss in script_report.evidence_issues)
+
+
+def test_unsupported_reveal_blocked(tmp_path: Path):
+    """Tests that Reveal Justification Gate fails with UNSUPPORTED_REVEAL and blocks ScriptWriter until repaired."""
+    from apps.script_factory.script_writer import ScriptWriter
+    from apps.script_factory.story_qc import StoryQCEngine
+
+    cost_ctrl = CostController(log_file=tmp_path / "usage.jsonl")
+    provider = MockScriptAIProvider()
+    writer = ScriptWriter(provider=provider, cost_controller=cost_ctrl, episodes_root=tmp_path / "episodes")
+    story_qc = StoryQCEngine()
+
+    unsupported_bible = StoryBible(
+        episode_id="EP_UNSUPPORTED",
+        title="Bước ngoặt thiếu căn cứ",
+        protagonist={"name": "Tuấn", "char_id": "TUAN"},
+        clues=[],
+        timeline=[],
+        reveal_1="Người hàng xóm thực ra là tỷ phú ẩn danh.",
+        reveal_2="Toàn bộ ngôi làng là một phim trường.",
+        reveal_justifications={
+            "reveal_1": {
+                "evidence_support": "",
+                "motivation_support": "unsupported",
+                "timeline_support": "",
+            },
+            "reveal_2": {
+                "evidence_support": "",
+                "motivation_support": "",
+                "character_knowledge_support": "none",
+            },
+        },
+    )
+
+    qc_res = story_qc.audit_story_bible(unsupported_bible)
+    assert qc_res.status == "FAIL"
+    assert "UNSUPPORTED_REVEAL" in qc_res.rule_codes
+
+    with pytest.raises(ValueError, match="UNSUPPORTED_REVEAL"):
+        writer.generate_script_from_bible(unsupported_bible)
+
+    # After repair, ScriptWriter succeeds
+    repaired_bible = story_qc.repair_story_bible(unsupported_bible, qc_res)
+    recheck = story_qc.audit_story_bible(repaired_bible)
+    assert recheck.status == "PASS"
+    script = writer.generate_script_from_bible(repaired_bible)
+    assert len(script.segments) > 0
+
+
+def test_internal_episode_id_not_spoken(qc_env):
+    """Tests that INTERNAL_EPISODE_ID_SPOKEN catches EP1005, EP_TEST_005, 'tập 1005', and 'tập một nghìn không trăm linh năm'."""
+    qc: ScriptQCEngine = qc_env["qc"]
+    rev: AutoRevisionManager = qc_env["rev"]
+    bible = StoryBible(
+        episode_id="EP1005",
+        title="Sau Vỏ Bọc",
+        protagonist={"name": "Tuấn", "char_id": "TUAN"},
+        public_episode_number=None,
+    )
+
+    for bad_greeting in [
+        "Chào mừng quý vị và các bạn đến với tập một nghìn không trăm linh năm của series Sau Cánh Cửa.",
+        "Chào mừng quý vị đến với tập 1005 mang mã số EP1005 của chương trình.",
+        "Câu chuyện thuộc dự án EP_TEST_005 xin được bắt đầu.",
+    ]:
+        segs = _base_valid_segments()
+        segs[1] = ScriptSegment(id="002", speaker="MINH", text=bad_greeting, delivery_profile="NORMAL")
+        script = FullScript(episode_id="EP1005", title="Sau Vỏ Bọc", host={"id": "MINH", "voice": "Binh"}, segments=segs)
+
+        report = qc.run_qc(script, bible)
+        assert report.status == "NEEDS_REVISION"
+        assert any(iss.get("rule") == "INTERNAL_EPISODE_ID_SPOKEN" for iss in report.evidence_issues)
+
+        revised, final_rep = rev.auto_revise_and_recheck(script, bible, report)
+        assert final_rep.status == "PASS"
+        assert "một nghìn không trăm linh năm" not in revised.segments[1].text.lower()
+        assert "1005" not in revised.segments[1].text.lower()
+        assert "ep_test_005" not in revised.segments[1].text.lower()
+
+
+def test_fake_serial_break_detection(qc_env):
+    """Tests that FAKE_SERIAL_BREAK detects 'phần tiếp theo', 'ở phần sau', 'hãy đón xem', 'chúng ta sẽ quay lại sau', and mid-script 'tập tiếp theo'."""
+    qc: ScriptQCEngine = qc_env["qc"]
+    rev: AutoRevisionManager = qc_env["rev"]
+    bible = StoryBible(
+        episode_id="EP_SERIAL",
+        title="Mạch truyện liền mạch",
+        protagonist={"name": "Tuấn", "char_id": "TUAN"},
+    )
+    segs = _base_valid_segments()
+    segs[1] = ScriptSegment(
+        id="002",
+        speaker="MINH",
+        text="Chuyện gì sẽ xảy ra khi chiếc hộp mở ra, hãy đón xem ở phần tiếp theo sau ít phút nữa.",
+        delivery_profile="NORMAL",
+    )
+    script = FullScript(episode_id="EP_SERIAL", title="Mạch truyện liền mạch", host={"id": "MINH", "voice": "Binh"}, segments=segs)
+
+    report = qc.run_qc(script, bible)
+    assert report.status == "NEEDS_REVISION"
+    assert any(iss.get("rule") == "FAKE_SERIAL_BREAK" for iss in report.evidence_issues)
+
+    revised, final_rep = rev.auto_revise_and_recheck(script, bible, report)
+    assert final_rep.status == "PASS"
+    assert "phần tiếp theo" not in revised.segments[1].text.lower()
+    assert "hãy đón xem" not in revised.segments[1].text.lower()
+
+
+def test_melodrama_density_v2(qc_env):
+    """Tests that MELODRAMA_DENSITY_V2 catches AI-labeled melodramatic prose ('bí mật động trời', 'đòn chí mạng', 'cuộc gặp gỡ định mệnh', etc.) and repairs it."""
+    qc: ScriptQCEngine = qc_env["qc"]
+    rev: AutoRevisionManager = qc_env["rev"]
+    bible = StoryBible(
+        episode_id="EP_MELO_V2",
+        title="Tiết chế cảm xúc",
+        protagonist={"name": "Tuấn", "char_id": "TUAN"},
+    )
+    segs = _base_valid_segments()
+    segs[1] = ScriptSegment(
+        id="002",
+        speaker="MINH",
+        text="Cuộc gặp gỡ định mệnh ấy đã hé lộ một bí mật động trời giáng xuống như một đòn chí mạng khiến anh đau đớn đến tận cùng.",
+        delivery_profile="NORMAL",
+    )
+    script = FullScript(episode_id="EP_MELO_V2", title="Tiết chế cảm xúc", host={"id": "MINH", "voice": "Binh"}, segments=segs)
+
+    report = qc.run_qc(script, bible)
+    assert report.status == "NEEDS_REVISION"
+    assert any(iss.get("rule") == "MELODRAMA_DENSITY_V2" for iss in report.evidence_issues)
+    assert report.scores.get("melodrama_density_v2", 100.0) < 70.0
+
+    revised, final_rep = rev.auto_revise_and_recheck(script, bible, report)
+    assert final_rep.status == "PASS"
+    assert "bí mật động trời" not in revised.segments[1].text.lower()
+    assert "đòn chí mạng" not in revised.segments[1].text.lower()
+
+
+def test_ending_semantic_repetition(qc_env):
+    """Tests that ENDING_SEMANTIC_REPETITION catches consecutive closing segments repeating the same moral lesson in different words and compresses them."""
+    qc: ScriptQCEngine = qc_env["qc"]
+    rev: AutoRevisionManager = qc_env["rev"]
+    bible = StoryBible(
+        episode_id="EP_END_REP",
+        title="Kết thúc gọn gàng",
+        protagonist={"name": "Tuấn", "char_id": "TUAN"},
+        reflection_theme="Đằng sau cánh cửa gia đình, sự thấu hiểu bắt đầu từ lòng bao dung.",
+    )
+    segs = [
+        ScriptSegment(id="001", speaker="MINH", text="Lá thư của Tuấn kể về biến cố gia đình suốt 10 năm qua.", delivery_profile="HOOK"),
+        ScriptSegment(id="002", speaker="MINH", text="Quý vị sẽ làm gì khi đối diện với bí mật?", delivery_profile="COMMENT", audience_address=True),
+        ScriptSegment(id="003", speaker="MINH", text="Quý vị có chọn cách lắng nghe người thân?", delivery_profile="COMMENT", audience_address=True),
+        ScriptSegment(id="004", speaker="MINH", text="Hãy cùng theo dõi hành trình của Tuấn.", delivery_profile="COMMENT", audience_address=True),
+        ScriptSegment(id="005", speaker="MINH", text="Sự thật được mở ra từ tập hồ sơ lưu trữ.", delivery_profile="REVEAL", importance="critical"),
+        # 5 repetitive moralizing segments in the closing window
+        ScriptSegment(id="006", speaker="MINH", text="Đằng sau cánh cửa gia đình, sự tha thứ và lòng bao dung sẽ chữa lành mọi vết thương và tháo bỏ chiếc mặt nạ.", delivery_profile="NORMAL"),
+        ScriptSegment(id="007", speaker="MINH", text="Bài học lớn nhất đằng sau cánh cửa là tình yêu thương, sự tha thứ và lòng bao dung giúp chữa lành vết thương.", delivery_profile="NORMAL"),
+        ScriptSegment(id="008", speaker="MINH", text="Khi chiếc mặt nạ rơi xuống đằng sau cánh cửa, chỉ có sự tha thứ và lòng bao dung mới chữa lành mái ấm.", delivery_profile="COMMENT"),
+        ScriptSegment(id="009", speaker="MINH", text="Nhận ra rằng đằng sau cánh cửa ấy, sự tha thứ và bao dung chính là chìa khóa hóa giải và chữa lành.", delivery_profile="COMMENT"),
+        ScriptSegment(id="010", speaker="MINH", text="Tôi là Minh. Cảm ơn quý vị đã lắng nghe. Hẹn gặp lại quý vị trong tập tiếp theo.", delivery_profile="ENDING"),
+    ]
+    script = FullScript(episode_id="EP_END_REP", title="Kết thúc gọn gàng", host={"id": "MINH", "voice": "Binh"}, segments=segs)
+
+    report = qc.run_qc(script, bible)
+    assert report.status == "NEEDS_REVISION"
+    assert any(iss.get("rule") == "ENDING_SEMANTIC_REPETITION" for iss in report.evidence_issues)
+
+    revised, final_rep = rev.auto_revise_and_recheck(script, bible, report)
+    assert final_rep.status == "PASS"
+

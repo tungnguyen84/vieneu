@@ -73,7 +73,19 @@ class ScriptQCEngine:
 
         # 0.1 INFORMATION RELEASE & SPOILER TIMING AUDIT (Premature reveal prevention)
         rel_map = release_map or build_information_release_map(story_bible)
-        spoiler_guard = SpoilerTimingGuard(rel_map)
+        known_setup = set()
+        setup_sources = [
+            getattr(story_bible, "secret", ""),
+            getattr(story_bible, "mystery_question", ""),
+            getattr(story_bible, "false_lead", ""),
+            *(getattr(story_bible, "clues", []) or []),
+        ]
+        for src in setup_sources:
+            if src and isinstance(src, str):
+                for t in re.findall(r"\w+", src.lower()):
+                    if len(t) >= 3:
+                        known_setup.add(t)
+        spoiler_guard = SpoilerTimingGuard(rel_map, known_setup_entities=known_setup)
         spoiler_violations = spoiler_guard.audit_script(script)
         for sv in spoiler_violations:
             evidence_issues.append({
@@ -368,8 +380,20 @@ class ScriptQCEngine:
                     logic_issues.append(f"[{s.id}] Ungrounded character hallucination: '{honorific} {char_name}' not in Story Bible.")
                     revision_requests.append(f"Remove ungrounded character '{honorific} {char_name}' in segment {s.id}.")
 
-        # 9. NATURAL LANGUAGE & MELODRAMATIC CLICHE DENSITY AUDIT
-        melodrama_cliches = [
+        # 9. NATURAL LANGUAGE & MELODRAMA DENSITY V2 AUDIT (SHOW, DON'T LABEL)
+        v2_severe_melodrama = [
+            "bí mật động trời",
+            "sự thật động trời",
+            "đòn chí mạng",
+            "sự thật kinh hoàng",
+            "cuộc gặp gỡ định mệnh",
+            "đau đớn đến tận cùng",
+            "vĩ đại ẩn giấu",
+            "mê cung không lối thoát",
+            "nấc nghẹn ngào đến xé lòng",
+            "nghẹn ngào đến xé lòng",
+        ]
+        melodrama_cliches = v2_severe_melodrama + [
             "chấn động toàn bộ",
             "cuộc chiến ngầm khốc liệt",
             "không tiếng súng",
@@ -388,27 +412,40 @@ class ScriptQCEngine:
             "bóng ma vô hình",
         ]
         cliche_hits: List[Tuple[str, str, str]] = []
+        severe_v2_hits: List[Tuple[str, str, str]] = []
         for s in script.segments:
             s_lower = s.text.lower()
             for phrase in melodrama_cliches:
                 if phrase in s_lower:
-                    cliche_hits.append((s.id, phrase, s.text[:90]))
+                    hit = (s.id, phrase, s.text[:90])
+                    cliche_hits.append(hit)
+                    if phrase in v2_severe_melodrama:
+                        severe_v2_hits.append(hit)
 
-        if len(cliche_hits) >= 2:
-            first_seg_id, _, first_excerpt = cliche_hits[0]
-            found_phrases = ", ".join(f"'{p}'" for _, p, _ in cliche_hits[:5])
+        if len(cliche_hits) >= 2 or len(severe_v2_hits) >= 1:
+            first_seg_id, _, first_excerpt = (severe_v2_hits or cliche_hits)[0]
+            found_phrases = ", ".join(f"'{p}'" for _, p, _ in cliche_hits[:6])
             evidence_issues.append({
                 "segment_id": first_seg_id,
                 "excerpt": first_excerpt,
-                "rule": "MELODRAMATIC_CLICHE_DENSITY",
+                "rule": "MELODRAMA_DENSITY_V2",
                 "severity": "HIGH",
-                "recommended_action": "Chuyển sang giọng kể MC Minh tự nhiên, điềm đạm, gần gũi; loại bỏ các cụm từ sáo rỗng, cường điệu giật gân.",
-                "message": f"Mật độ ngôn từ sáo rỗng/kịch tính hóa quá cao ({len(cliche_hits)} cụm từ: {found_phrases})."
+                "recommended_action": "Show, Don't Label: Mô tả hành động, vật thể, khoảng lặng và cử chỉ cụ thể thay vì dùng tính từ giật gân/kịch tính hóa.",
+                "message": f"Phát hiện ngôn từ AI kịch tính hóa / dán nhãn cảm xúc ({len(cliche_hits)} cụm từ: {found_phrases})."
             })
-            logic_issues.append(f"Melodramatic cliche density too high ({len(cliche_hits)} hits: {found_phrases}).")
-            revision_requests.append("Replace melodramatic cliches with natural conversational MC Minh phrasing.")
+            if len(cliche_hits) >= 2:
+                evidence_issues.append({
+                    "segment_id": first_seg_id,
+                    "excerpt": first_excerpt,
+                    "rule": "MELODRAMATIC_CLICHE_DENSITY",
+                    "severity": "HIGH",
+                    "recommended_action": "Chuyển sang giọng kể MC Minh tự nhiên, điềm đạm, gần gũi; loại bỏ các cụm từ sáo rỗng, cường điệu giật gân.",
+                    "message": f"Mật độ ngôn từ sáo rỗng/kịch tính hóa quá cao ({len(cliche_hits)} cụm từ: {found_phrases})."
+                })
+            logic_issues.append(f"Melodramatic cliche density V2 too high ({len(cliche_hits)} hits: {found_phrases}).")
+            revision_requests.append("Replace melodramatic cliches with natural conversational MC Minh phrasing (Show, Don't Label).")
 
-        # 10. ENDING PROPORTION & ANTI-MORALIZING AUDIT (5-8% target on full-length scripts)
+        # 10. ENDING PROPORTION & SEMANTIC REPETITION AUDIT (5-8% target, 1 clear takeaway)
         if len(script.segments) >= 20:
             closing_segs = [
                 s for i, s in enumerate(script.segments)
@@ -426,6 +463,56 @@ class ScriptQCEngine:
                 })
                 repetition_issues.append(f"Ending/reflection block is too long ({ratio*100:.1f}%, target 5-8%).")
                 revision_requests.append("Trim repetitive moralizing ending segments to keep ending within 5-8% of script.")
+
+        # Semantic Repetition across final 10 segments
+        tail_window = script.segments[-10:] if len(script.segments) >= 6 else []
+        if len(tail_window) >= 4:
+            # Exclude Hook/Reveal segments if script is short
+            non_reveal_tail = [
+                s for s in tail_window
+                if s.delivery_profile not in ("HOOK", "REVEAL", "MYSTERY")
+            ]
+            moral_markers = [
+                "tha thứ", "bao dung", "chữa lành", "sau cánh cửa", "đằng sau cánh cửa",
+                "mặt nạ", "buông bỏ", "bài học", "nhận ra rằng", "tình yêu thương",
+                "tình thân", "sự thật dù", "mái ấm", "lòng người", "chiêm nghiệm",
+                "hóa giải", "vết thương", "im lặng", "khoan dung",
+            ]
+            moral_segs: List[ScriptSegment] = []
+            for s in non_reveal_tail:
+                s_low = s.text.lower()
+                # Do not count pure sign-off ("Cảm ơn quý vị...", "Tôi là Minh... Hẹn gặp lại") as moralizing lesson
+                is_pure_signoff = any(k in s_low for k in ["hẹn gặp lại quý vị", "tôi là minh", "cảm ơn quý vị đã lắng nghe", "bấm chia sẻ"]) and not any(m in s_low for m in ["bài học", "chiếc mặt nạ", "nhận ra rằng"])
+                if not is_pure_signoff and any(m in s_low for m in moral_markers):
+                    moral_segs.append(s)
+
+            # Check pairwise semantic/lexical similarity on content words among tail reflection segments
+            high_sim_pairs = 0
+            stop_words = {
+                "của", "những", "trong", "không", "được", "người", "mình", "chúng", "ta",
+                "rằng", "một", "như", "khi", "với", "cho", "này", "đó", "đã", "sẽ", "và", "là", "có",
+            }
+            for idx_a in range(len(moral_segs)):
+                toks_a = {w for w in re.findall(r"\w+", moral_segs[idx_a].text.lower()) if len(w) > 2 and w not in stop_words}
+                for idx_b in range(idx_a + 1, len(moral_segs)):
+                    toks_b = {w for w in re.findall(r"\w+", moral_segs[idx_b].text.lower()) if len(w) > 2 and w not in stop_words}
+                    if toks_a and toks_b:
+                        jacc = len(toks_a & toks_b) / max(1, min(len(toks_a), len(toks_b)))
+                        if jacc >= 0.35:
+                            high_sim_pairs += 1
+
+            if len(moral_segs) >= 4 or (len(moral_segs) >= 3 and high_sim_pairs >= 2):
+                first_rep_seg = moral_segs[0]
+                evidence_issues.append({
+                    "segment_id": first_rep_seg.id,
+                    "excerpt": first_rep_seg.text[:100],
+                    "rule": "ENDING_SEMANTIC_REPETITION",
+                    "severity": "HIGH",
+                    "recommended_action": "Gộp các đoạn giảng đạo trùng ý ở cuối kịch bản thành đúng 1 thông điệp chiêm nghiệm duy nhất (emotional resolution -> 1 reflection -> optional question -> concise sign-off).",
+                    "message": f"Phát hiện {len(moral_segs)} phân đoạn ở cuối kịch bản lặp lại cùng một bài học đạo lý/chiêm nghiệm."
+                })
+                repetition_issues.append(f"Ending semantic repetition detected across {len(moral_segs)} closing segments.")
+                revision_requests.append("Compress semantically repetitive reflection segments in closing act into a single takeaway.")
 
         # 11. LEGAL CLAIM SAFETY AUDIT
         unsafe_legal_patterns = [
@@ -452,6 +539,227 @@ class ScriptQCEngine:
                     revision_requests.append(f"Soften assertive legal claim in segment {s.id} to emotional/social narrative framing.")
                     break
 
+        # 12. INTERNAL EPISODE ID != PUBLIC EPISODE NUMBER AUDIT (INTERNAL_EPISODE_ID_SPOKEN)
+        pub_ep_num = getattr(story_bible, "public_episode_number", None)
+        internal_code_pat = re.compile(
+            r"\b(?:mã\s+số\s+)?(EP_?[A-Z0-9_]*\d+|IDEA_\d+|PROJ_[A-Z0-9_]+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b",
+            re.IGNORECASE,
+        )
+        spoken_ep_num_pat = re.compile(
+            r"\btập\s+(?:số\s+|phim\s+|thứ\s+)?("
+            r"\d+"
+            r"|(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|trăm|nghìn|ngàn)(?:\s+(?:một|mốt|hai|ba|bốn|tư|năm|lăm|sáu|bảy|tám|chín|mười|mươi|trăm|nghìn|ngàn|linh|lẻ|không))*"
+            r")\b",
+            re.IGNORECASE,
+        )
+        for s in script.segments:
+            m_code = internal_code_pat.search(s.text)
+            m_spoken = spoken_ep_num_pat.search(s.text)
+            spoken_hit = None
+            if m_code:
+                spoken_hit = m_code.group(0)
+            elif m_spoken:
+                num_phrase = m_spoken.group(1).strip().lower()
+                # Check if this is an unauthorized episode number
+                if pub_ep_num is None or str(pub_ep_num) != num_phrase:
+                    spoken_hit = m_spoken.group(0)
+
+            if spoken_hit:
+                evidence_issues.append({
+                    "segment_id": s.id,
+                    "excerpt": s.text[:100],
+                    "rule": "INTERNAL_EPISODE_ID_SPOKEN",
+                    "severity": "CRITICAL",
+                    "recommended_action": "Xóa bỏ mã dự án/số tập nội bộ. Nếu không có public_episode_number, chỉ nói: 'Chào mừng quý vị và các bạn đến với Sau Cánh Cửa.'",
+                    "message": f"Phân đoạn [{s.id}] đọc mã dự án hoặc số tập nội bộ ('{spoken_hit}') vào lời dẫn."
+                })
+                fact_conflicts.append({
+                    "fact_id": "INTERNAL_EPISODE_ID",
+                    "segment_id": s.id,
+                    "type": "INTERNAL_EPISODE_ID_SPOKEN",
+                    "found": spoken_hit,
+                    "description": f"MC spoke internal episode ID or unauthorized episode number '{spoken_hit}' in segment {s.id}."
+                })
+                logic_issues.append(f"[{s.id}] Internal episode ID spoken: '{spoken_hit}'.")
+                revision_requests.append(f"Remove spoken episode ID '{spoken_hit}' in segment {s.id}.")
+
+        # 13. FAKE SERIAL BREAK AUDIT (FAKE_SERIAL_BREAK)
+        serial_break_pat = re.compile(
+            r"(phần\s+tiếp\s+theo|ở\s+phần\s+sau|hãy\s+đón\s+xem|đón\s+xem\s+phần\s+sau|chúng\s+ta\s+sẽ\s+quay\s+lại\s+sau|quay\s+lại\s+sau\s+ít\s+phút)",
+            re.IGNORECASE,
+        )
+        for idx, s in enumerate(script.segments):
+            m_serial = serial_break_pat.search(s.text)
+            is_last_seg = (idx == len(script.segments) - 1)
+            m_next_ep = re.search(r"\btập\s+tiếp\s+theo\b", s.text, re.IGNORECASE) if not is_last_seg else None
+            hit_str = m_serial.group(0) if m_serial else (m_next_ep.group(0) if m_next_ep else None)
+            if hit_str:
+                evidence_issues.append({
+                    "segment_id": s.id,
+                    "excerpt": s.text[:100],
+                    "rule": "FAKE_SERIAL_BREAK",
+                    "severity": "CRITICAL",
+                    "recommended_action": "Xóa bỏ ngôn từ ngắt tập/hẹn phần sau giữa kịch bản; duy trì mạch kể liền mạch của một tập hoàn chỉnh.",
+                    "message": f"Phân đoạn [{s.id}] chứa câu ngắt phần giả tạo ('{hit_str}')."
+                })
+                logic_issues.append(f"[{s.id}] Fake serial break detected: '{hit_str}'.")
+                revision_requests.append(f"Remove fake serial break '{hit_str}' in segment {s.id}.")
+
+        # 14. CAUSAL LOGIC QC AUDIT (CAUSAL_GAP)
+        from apps.script_factory.story_qc import (
+            StoryQCEngine,
+            _has_necessity_markers,
+            _has_weak_cause_to_extreme_action,
+        )
+        story_qc_report = StoryQCEngine().audit_story_bible(story_bible)
+        has_bible_causal_gap = "CAUSAL_GAP" in story_qc_report.rule_codes
+        script_lower = all_text.lower()
+        has_script_causal_gap = _has_weak_cause_to_extreme_action(
+            script_lower,
+            has_strong_necessity=_has_necessity_markers(script_lower),
+        )
+        if has_bible_causal_gap or has_script_causal_gap:
+            target_seg = next((s for s in script.segments if s.delivery_profile == "REVEAL"), script.segments[-1] if script.segments else ScriptSegment(id="001"))
+            evidence_issues.append({
+                "segment_id": target_seg.id,
+                "excerpt": target_seg.text[:100],
+                "rule": "CAUSAL_GAP",
+                "severity": "CRITICAL",
+                "recommended_action": "Bổ sung đầy đủ chuỗi nhân quả CAUSE -> DECISION -> ACTION -> CONSEQUENCE, giải thích rõ tại sao giải pháp bình thường là bất khả thi.",
+                "message": f"Phân đoạn [{target_seg.id}] / Story Bible thiếu tính tất yếu nhân quả (CAUSAL_GAP) cho hành động/bước ngoặt lớn."
+            })
+            fact_conflicts.append({
+                "fact_id": "CAUSAL_CHAIN",
+                "segment_id": target_seg.id,
+                "type": "CAUSAL_GAP",
+                "description": "Causal gap between initial trigger/request and long-term extreme action."
+            })
+            logic_issues.append(f"[{target_seg.id}] CAUSAL_GAP: Missing causal necessity explaining why simpler alternative was impossible.")
+            revision_requests.append(f"Repair causal gap in segment {target_seg.id} with explicit necessity and mechanism.")
+
+        # 15. CHARACTER SECRET KNOWLEDGE CONSISTENCY AUDIT (CHARACTER_KNOWLEDGE_CONTRADICTION)
+        knowing_chars: List[str] = []
+        ignorant_chars: List[str] = []
+        for sc in (story_bible.supporting_characters or []):
+            if isinstance(sc, dict):
+                sc_name = str(sc.get("name", "")).strip()
+                sc_desc = " ".join(str(sc.get(k, "")) for k in ("description", "role", "reason_for_silence")).lower()
+                if any(p in sc_desc for p in ["biết toàn bộ", "biết sự thật", "biết rõ", "biết hết", "cùng che giấu", "chọn cách câm lặng", "giữ kín bí mật cùng"]):
+                    if sc_name:
+                        knowing_chars.append(sc_name)
+        for entry in (story_bible.knowledge_ledger or []):
+            if isinstance(entry, dict):
+                c_name = str(entry.get("character", "") or entry.get("who_knows_what", "")).strip()
+                scope = str(entry.get("knowledge_scope", "")).strip().lower()
+                if scope in ("full", "partial") and c_name:
+                    knowing_chars.append(c_name)
+                elif scope == "none" and c_name:
+                    ignorant_chars.append(c_name)
+
+        # Also check if any segment in the script explicitly states a character knew the whole truth
+        char_knew_seg_pat = re.compile(
+            r"(?:bà|ông|vợ|chồng|mẹ|cha|chị|anh|cô|chú|bác)\s+[A-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐĨŨƠƯẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪỬỮỰỲỴỶỸ\w]*\s*(?:đã\s+biết\s+toàn\s+bộ|biết\s+rõ\s+sự\s+thật|biết\s+hết\s+mọi\s+chuyện|nhận\s+ra\s+ngay\s+từ\s+đầu|cùng\s+giữ\s+kín\s+bí\s+mật)",
+            re.IGNORECASE,
+        )
+        for s in script.segments:
+            m_knew = char_knew_seg_pat.search(s.text)
+            if m_knew:
+                knowing_chars.append(m_knew.group(0))
+
+        solitude_pat = re.compile(
+            r"(không\s+thể\s+sẻ\s+chia\s+cùng\s+ai|kể\s+cả\s+(?:với\s+)?người\s+vợ(?:\s+gối\s+chăn)?|không\s+một\s+ai\s+(?:hay\s+)?biết|không\s+ai\s+trên\s+đời\s+biết|chỉ\s+một\s+mình\s+[^\s,]+\s+biết)",
+            re.IGNORECASE,
+        )
+        for s in script.segments:
+            m_sol = solitude_pat.search(s.text)
+            if m_sol and (knowing_chars or "CHARACTER_KNOWLEDGE_CONTRADICTION" in story_qc_report.rule_codes):
+                evidence_issues.append({
+                    "segment_id": s.id,
+                    "excerpt": s.text[:100],
+                    "rule": "CHARACTER_KNOWLEDGE_CONTRADICTION",
+                    "severity": "CRITICAL",
+                    "recommended_action": "Đồng bộ trạng thái biết/không biết bí mật của các nhân vật xuyên suốt Story Bible và toàn bộ phân đoạn.",
+                    "message": f"Phân đoạn [{s.id}] khẳng định '{m_sol.group(0)}' mâu thuẫn với dữ kiện nhân vật khác ({', '.join(knowing_chars[:2])}) đã biết bí mật."
+                })
+                fact_conflicts.append({
+                    "fact_id": "KNOWLEDGE_LEDGER",
+                    "segment_id": s.id,
+                    "type": "CHARACTER_KNOWLEDGE_CONTRADICTION",
+                    "found": m_sol.group(0),
+                    "description": f"Segment {s.id} claims '{m_sol.group(0)}' contradicting character secret knowledge ({knowing_chars})."
+                })
+                logic_issues.append(f"[{s.id}] CHARACTER_KNOWLEDGE_CONTRADICTION: '{m_sol.group(0)}' contradicts known secret holders.")
+                revision_requests.append(f"Fix character knowledge contradiction in segment {s.id}.")
+
+        # Also check if an ignorant character reacts with secret knowledge before the reveal
+        early_cutoff = max(1, int(len(script.segments) * 0.5))
+        for s in script.segments[:early_cutoff]:
+            if s.delivery_profile == "REVEAL":
+                continue
+            s_low = s.text.lower()
+            for ig_char in ignorant_chars:
+                ig_low = ig_char.lower()
+                if ig_low and ig_low in s_low:
+                    if any(p in s_low for p in [f"{ig_low} đã biết rõ sự thật từ trước", f"{ig_low} vốn đã biết toàn bộ bí mật", f"{ig_low} biết hết chân tướng ngay từ đầu"]):
+                        evidence_issues.append({
+                            "segment_id": s.id,
+                            "excerpt": s.text[:100],
+                            "rule": "CHARACTER_KNOWLEDGE_CONTRADICTION",
+                            "severity": "CRITICAL",
+                            "recommended_action": f"Nhân vật '{ig_char}' chưa thể biết bí mật ở phần đầu kịch bản.",
+                            "message": f"Phân đoạn [{s.id}] mô tả '{ig_char}' đã biết toàn bộ bí mật trước thời điểm phát hiện."
+                        })
+                        fact_conflicts.append({
+                            "fact_id": "KNOWLEDGE_LEDGER",
+                            "segment_id": s.id,
+                            "type": "CHARACTER_KNOWLEDGE_CONTRADICTION",
+                            "found": ig_char,
+                            "description": f"Character '{ig_char}' reacts with secret knowledge in segment {s.id} before learning it."
+                        })
+                        logic_issues.append(f"[{s.id}] CHARACTER_KNOWLEDGE_CONTRADICTION: '{ig_char}' has premature secret knowledge.")
+                        revision_requests.append(f"Remove premature secret knowledge of '{ig_char}' in segment {s.id}.")
+
+        # 16. EVIDENCE CHAIN MUST PROVE THE CLAIM AUDIT (EVIDENCE_DOES_NOT_PROVE_CLAIM)
+        overreach_seg_pat = re.compile(
+            r"(?:tấm\s+thẻ\s+bài|chiếc\s+thẻ\s+bài|chữ\s+ký\s+khác\s+lạ|bức\s+ảnh\s+cũ|mảnh\s+giấy\s+nhỏ|số\s+điện\s+thoại\s+lạ|chiếc\s+phong\s+bì|vết\s+sẹo).*?"
+            r"(?:chứng\s+minh\s+hoàn\s+toàn|khẳng\s+định\s+chắc\s+chắn|đủ\s+để\s+kết\s+luận|là\s+bằng\s+chứng\s+không\s+thể\s+chối\s+cãi\s+rằng|chứng\s+tỏ\s+chắc\s+chắn).*?"
+            r"(?:đã\s+đánh\s+tráo\s+danh\s+tính|chính\s+là\s+kẻ\s+giả\s+mạo|không\s+phải\s+là\s+ông\s+nội\s+thật|không\s+phải\s+là\s+cha\s+ruột|đã\s+chiếm\s+đoạt\s+toàn\s+bộ|đã\s+mạo\s+danh\s+suốt)",
+            re.IGNORECASE,
+        )
+        for s in script.segments:
+            m_ev = overreach_seg_pat.search(s.text)
+            if m_ev:
+                evidence_issues.append({
+                    "segment_id": s.id,
+                    "excerpt": s.text[:100],
+                    "rule": "EVIDENCE_DOES_NOT_PROVE_CLAIM",
+                    "severity": "CRITICAL",
+                    "recommended_action": "Trình bày đúng giới hạn chứng minh của vật chứng (what_it_proves vs what_it_does_NOT_prove) và dẫn dắt sang câu hỏi điều tra tiếp theo.",
+                    "message": f"Phân đoạn [{s.id}] nhảy cóc từ một vật chứng đơn lẻ sang kết luận cuối cùng mà thiếu bằng chứng trung gian."
+                })
+                fact_conflicts.append({
+                    "fact_id": "EVIDENCE_CHAIN",
+                    "segment_id": s.id,
+                    "type": "EVIDENCE_DOES_NOT_PROVE_CLAIM",
+                    "found": m_ev.group(0)[:80],
+                    "description": f"Segment {s.id} jumps from initial clue directly to unsupported conclusion."
+                })
+                logic_issues.append(f"[{s.id}] EVIDENCE_DOES_NOT_PROVE_CLAIM: Clue does not directly prove final claim.")
+                revision_requests.append(f"Rewrite segment {s.id} so the clue raises the next question instead of jumping to final conclusion.")
+
+        if "EVIDENCE_DOES_NOT_PROVE_CLAIM" in story_qc_report.rule_codes and not any(iss.get("rule") == "EVIDENCE_DOES_NOT_PROVE_CLAIM" for iss in evidence_issues):
+            first_seg = script.segments[0] if script.segments else ScriptSegment(id="001")
+            evidence_issues.append({
+                "segment_id": first_seg.id,
+                "excerpt": first_seg.text[:100],
+                "rule": "EVIDENCE_DOES_NOT_PROVE_CLAIM",
+                "severity": "CRITICAL",
+                "recommended_action": "Bổ sung bằng chứng trung gian trong chuỗi manh mối trước khi đưa ra kết luận.",
+                "message": "Chuỗi manh mối trong Story Bible nhảy cóc từ vật chứng ban đầu sang kết luận cuối cùng."
+            })
+            logic_issues.append("EVIDENCE_DOES_NOT_PROVE_CLAIM: Story Bible clue chain overreaches what single clue can prove.")
+            revision_requests.append("Fix evidence-to-claim jump in clue chain.")
+
         # Compute status
         has_critical_failure = (
             any(
@@ -463,6 +771,10 @@ class ScriptQCEngine:
                     "HOOK_FACT_CONTRADICTION",
                     "CHARACTER_FACT_VIOLATION",
                     "UNGROUNDED_CHARACTER_HALLUCINATION",
+                    "CAUSAL_GAP",
+                    "CHARACTER_KNOWLEDGE_CONTRADICTION",
+                    "EVIDENCE_DOES_NOT_PROVE_CLAIM",
+                    "INTERNAL_EPISODE_ID_SPOKEN",
                 ]
                 for c in fact_conflicts
             )
@@ -477,14 +789,16 @@ class ScriptQCEngine:
         else:
             status = "PASS"
 
+        melodrama_v2_score = max(0.0, 100.0 - len(cliche_hits) * 15.0 - len(severe_v2_hits) * 20.0)
         scores = {
             "hook": 95.0 if has_hook and not any(iss.get("rule") in ("GENERIC_HOOK_OPENING", "HOOK_FACT_CONTRADICTION") for iss in evidence_issues) else 60.0,
-            "mystery": 92.0 if not any(iss.get("rule") == "BLOCKED_PREMATURE_REVEAL" for iss in evidence_issues) else 50.0,
-            "logic": 90.0 if not logic_issues and not any(iss.get("rule") in ("STORY_BIBLE_LEAKAGE", "CHARACTER_FACT_VIOLATION", "UNGROUNDED_CHARACTER_HALLUCINATION") for iss in evidence_issues) else 60.0,
-            "twist": 96.0 if has_reveal else 60.0,
-            "emotion": 93.0 if not any(iss.get("rule") == "MELODRAMATIC_CLICHE_DENSITY" for iss in evidence_issues) else 68.0,
+            "mystery": 92.0 if not any(iss.get("rule") in ("BLOCKED_PREMATURE_REVEAL", "EVIDENCE_DOES_NOT_PROVE_CLAIM") for iss in evidence_issues) else 50.0,
+            "logic": 90.0 if not logic_issues and not any(iss.get("rule") in ("STORY_BIBLE_LEAKAGE", "CHARACTER_FACT_VIOLATION", "UNGROUNDED_CHARACTER_HALLUCINATION", "CAUSAL_GAP", "CHARACTER_KNOWLEDGE_CONTRADICTION", "EVIDENCE_DOES_NOT_PROVE_CLAIM") for iss in evidence_issues) else 60.0,
+            "twist": 96.0 if has_reveal and not any(iss.get("rule") == "CAUSAL_GAP" for iss in evidence_issues) else 60.0,
+            "emotion": 93.0 if not any(iss.get("rule") in ("MELODRAMATIC_CLICHE_DENSITY", "MELODRAMA_DENSITY_V2") for iss in evidence_issues) else 68.0,
             "novelty": 94.0 if not repetition_issues else 68.0,
-            "tts_readability": 98.0,
+            "tts_readability": 98.0 if not any(iss.get("rule") in ("INTERNAL_EPISODE_ID_SPOKEN", "FAKE_SERIAL_BREAK") for iss in evidence_issues) else 65.0,
+            "melodrama_density_v2": melodrama_v2_score,
         }
 
         report = QCReport(
@@ -540,7 +854,10 @@ def apply_targeted_repairs(
     for s in script.segments:
         s.text = leakage_guard.clean_text_from_leakage(s.text)
 
-    # 2. Repair Hook Fact Contradictions
+    # 2. Repair Fact & Logic Conflicts (Hook, Character, Hallucination, Causal Gap, Knowledge, Evidence, Episode ID)
+    from apps.script_factory.story_qc import StoryQCEngine
+    StoryQCEngine().repair_story_bible(story_bible)
+
     for conflict in qc_report.fact_conflicts:
         ctype = conflict.get("type")
         sid = conflict.get("segment_id")
@@ -559,9 +876,71 @@ def apply_targeted_repairs(
             found_char = conflict.get("found", "")
             if found_char:
                 seg.text = seg.text.replace(found_char, "người quen trong câu chuyện")
+        elif ctype == "CAUSAL_GAP" and sid in seg_map:
+            seg = seg_map[sid]
+            seg.text = (
+                f"Do hồ sơ hành chính thời điểm biến cố bị thất lạc, giấy xác nhận duy nhất còn lại mang tên người đã khuất, "
+                f"cùng nguy cơ cú sốc tâm lý đe dọa tính mạng người thân nếu biết tin dữ ngay lúc đó, việc duy trì thỏa thuận "
+                f"này là phương án bất khả kháng duy nhất để bảo toàn mái ấm."
+            )
+        elif ctype == "CHARACTER_KNOWLEDGE_CONTRADICTION" and sid in seg_map:
+            seg = seg_map[sid]
+            seg.text = re.sub(
+                r"(?:không\s+thể\s+sẻ\s+chia\s+cùng\s+ai(?:\s*,?\s*kể\s+cả\s+(?:với\s+)?người\s+vợ(?:\s+gối\s+chăn)?)?|kể\s+cả\s+(?:với\s+)?người\s+vợ(?:\s+gối\s+chăn)?|không\s+một\s+ai\s+(?:hay\s+)?biết|không\s+ai\s+trên\s+đời\s+biết|chỉ\s+một\s+mình\s+[^\s,]+\s+biết)",
+                "chỉ được giữ kín giữa những người trong cuộc suốt nhiều năm",
+                seg.text,
+                flags=re.IGNORECASE,
+            )
+        elif ctype == "EVIDENCE_DOES_NOT_PROVE_CLAIM" and sid in seg_map:
+            seg = seg_map[sid]
+            seg.text = (
+                f"Chi tiết vật chứng này bước đầu cho thấy mối liên hệ đặc biệt trong quá khứ, "
+                f"nhưng chưa đủ để kết luận ngay sự thật mà đặt ra câu hỏi cần tiếp tục đối chiếu hồ sơ gốc."
+            )
 
-    # 3. Repair Melodramatic Cliches -> Conversational MC Minh Phrasing
+    # 2b. Repair Spoken Internal Episode IDs & Fake Serial Breaks across all segments
+    internal_code_pat = re.compile(
+        r"\b(?:mã\s+số\s+)?(EP_?[A-Z0-9_]*\d+|IDEA_\d+|PROJ_[A-Z0-9_]+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b",
+        re.IGNORECASE,
+    )
+    spoken_ep_num_pat = re.compile(
+        r"\btập\s+(?:số\s+|phim\s+|thứ\s+)?("
+        r"\d+"
+        r"|(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|trăm|nghìn|ngàn)(?:\s+(?:một|mốt|hai|ba|bốn|tư|năm|lăm|sáu|bảy|tám|chín|mười|mươi|trăm|nghìn|ngàn|linh|lẻ|không))*"
+        r")\s*(?:của\s+(?:series\s+|chương\s+trình\s+)?)?",
+        re.IGNORECASE,
+    )
+    serial_break_pat = re.compile(
+        r"(?:hãy\s+đón\s+xem\s+phần\s+tiếp\s+theo|đón\s+xem\s+phần\s+sau|ở\s+phần\s+tiếp\s+theo|phần\s+tiếp\s+theo|ở\s+phần\s+sau|hãy\s+đón\s+xem|chúng\s+ta\s+sẽ\s+quay\s+lại\s+sau|quay\s+lại\s+sau\s+ít\s+phút)",
+        re.IGNORECASE,
+    )
+    for idx, s in enumerate(script.segments):
+        if internal_code_pat.search(s.text) or spoken_ep_num_pat.search(s.text):
+            if "chào mừng" in s.text.lower() or "sau cánh cửa" in s.text.lower():
+                s.text = "Chào mừng quý vị và các bạn đến với Sau Cánh Cửa."
+            else:
+                s.text = internal_code_pat.sub("", s.text)
+                s.text = spoken_ep_num_pat.sub("", s.text)
+                s.text = re.sub(r"\s{2,}", " ", s.text).strip()
+
+        if serial_break_pat.search(s.text):
+            s.text = serial_break_pat.sub("tiếp nối mạch câu chuyện", s.text)
+        if idx < len(script.segments) - 1 and re.search(r"\btập\s+tiếp\s+theo\b", s.text, re.IGNORECASE):
+            s.text = re.sub(r"\btập\s+tiếp\s+theo\b", "diễn biến tiếp theo của câu chuyện", s.text, flags=re.IGNORECASE)
+
+    # 3. Repair Melodramatic Cliches V2 -> Conversational MC Minh Phrasing (Show, Don't Label)
     cliche_replacements = {
+        "bí mật động trời": "bí mật được giấu kín nhiều năm",
+        "sự thật động trời": "sự thật bất ngờ",
+        "như một đòn chí mạng": "khiến mọi người lặng đi",
+        "đòn chí mạng": "cú sốc lớn",
+        "sự thật kinh hoàng": "sự thật nặng nề",
+        "cuộc gặp gỡ định mệnh": "cuộc gặp gỡ năm ấy",
+        "đau đớn đến tận cùng": "xót xa nghẹn lời",
+        "vĩ đại ẩn giấu": "lặng lẽ",
+        "mê cung không lối thoát": "những câu hỏi chưa có lời giải",
+        "nấc nghẹn ngào đến xé lòng": "khóc lặng lẽ",
+        "nghẹn ngào đến xé lòng": "rưng rưng xúc động",
         "chấn động toàn bộ": "làm xáo trộn",
         "cuộc chiến ngầm khốc liệt": "những rạn nứt âm thầm",
         "không tiếng súng": "lặng lẽ",
@@ -598,7 +977,26 @@ def apply_targeted_repairs(
         for pat, repl in legal_replacements:
             s.text = re.sub(pat, repl, s.text, flags=re.IGNORECASE)
 
-    # 5. Repair Ending Proportion if overlong
+    # 5. Repair Ending Proportion & Semantic Repetition if overlong or repetitive
+    has_ending_rep = any(iss.get("rule") == "ENDING_SEMANTIC_REPETITION" for iss in qc_report.evidence_issues)
+    if has_ending_rep and len(script.segments) >= 6:
+        # Keep narrative resolution concrete, compress redundant moralizing segments in the tail
+        tail_start = max(0, len(script.segments) - 10)
+        reflection_kept = False
+        for idx in range(tail_start, len(script.segments) - 1):
+            seg = script.segments[idx]
+            if seg.delivery_profile in ("HOOK", "REVEAL"):
+                continue
+            if not reflection_kept and seg.delivery_profile in ("COMMENT", "NORMAL"):
+                seg.text = story_bible.reflection_theme or "Đằng sau cánh cửa mỗi gia đình, sự thấu hiểu luôn bắt đầu từ khoảnh khắc chúng ta dám lắng nghe nhau."
+                seg.delivery_profile = "COMMENT"
+                reflection_kept = True
+            else:
+                # Convert redundant moralizing segments into concrete narrative transition details
+                seg.delivery_profile = "NORMAL"
+                seg.audience_address = False
+                seg.text = f"Những tài liệu cũ được {protag} xếp lại gọn gàng vào ngăn tủ gỗ khi buổi chiều dần buông xuống."
+
     if len(script.segments) >= 20:
         closing_indices = [
             i for i, s in enumerate(script.segments)

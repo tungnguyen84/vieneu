@@ -514,6 +514,76 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
     "reveal_mechanism": "Cơ chế đưa Bước ngoặt 1 ra ánh sáng",
     "second_reveal_mechanism": "Cơ chế hé lộ Bước ngoặt 2",
     "emotional_resolution": "Cách hóa giải cảm xúc cuối cùng"
+  }},
+  "causal_chains": [
+    {{
+      "target": "reveal_1",
+      "cause": "Nguyên nhân thực tế khởi phát biến cố",
+      "decision": "Quyết định cụ thể của nhân vật tại thời điểm đó",
+      "action": "Hành động thực hiện",
+      "consequence": "Hệ quả kéo dài đến hiện tại",
+      "why": "Lý do bắt buộc phải hành động như vậy",
+      "motivation": "Tại sao giải pháp thông thường/đơn giản hơn là bất khả thi trong hoàn cảnh đó",
+      "how": "Cơ chế thực tế để duy trì việc này suốt khoảng thời gian đã nêu"
+    }},
+    {{
+      "target": "reveal_2",
+      "cause": "Nguyên nhân gốc rễ sâu xa của Bước ngoặt 2",
+      "decision": "Quyết định giữ im lặng hoặc hy sinh",
+      "action": "Hành động cụ thể",
+      "consequence": "Ai bị ảnh hưởng và vì sao họ giữ im lặng",
+      "why": "Động lực nhân văn sâu nhất",
+      "motivation": "Tại sao không thể nói thật hoặc giải quyết bằng cách bình thường",
+      "how": "Cách thức thực hiện nhất quán trong đời thực"
+    }}
+  ],
+  "knowledge_ledger": [
+    {{
+      "character": "{idea.protagonist}",
+      "who_knows_what": "Ban đầu hoàn toàn chưa biết bí mật, chỉ phát hiện dấu hiệu bất thường",
+      "when_they_learned_it": "Chỉ biết sự thật ở Hồi 6 - Hồi 7 khi mở hồ sơ/nghe nhân chứng",
+      "how_they_learned_it": "Qua chuỗi 3 manh mối và cuộc đối thoại trực tiếp",
+      "knowledge_scope": "none"
+    }},
+    {{
+      "character": "Tên nhân vật phụ nắm bí mật",
+      "who_knows_what": "Nắm rõ toàn bộ nguyên nhân và quá trình che giấu",
+      "when_they_learned_it": "Từ thời điểm biến cố xảy ra trong quá khứ",
+      "how_they_learned_it": "Trực tiếp trải qua và thực hiện thỏa thuận",
+      "knowledge_scope": "full"
+    }}
+  ],
+  "structured_clues": [
+    {{
+      "clue": "Manh mối 1 cụ thể",
+      "what_it_proves": "Điều thực tế mà manh mối 1 chứng minh được ngay lúc đó",
+      "what_it_does_NOT_prove": "Điều manh mối 1 CHƯA đủ căn cứ để kết luận (tránh nhảy cóc)",
+      "next_question": "Câu hỏi điều tra tiếp theo nảy sinh từ manh mối 1"
+    }},
+    {{
+      "clue": "Manh mối 2 cụ thể",
+      "what_it_proves": "Điều manh mối 2 chứng minh sâu hơn về mốc thời gian/con người",
+      "what_it_does_NOT_prove": "Điều vẫn còn thiếu cần manh mối 3 làm rõ",
+      "next_question": "Câu hỏi dẫn tới cuộc xác minh cuối cùng"
+    }},
+    {{
+      "clue": "Manh mối 3 cụ thể",
+      "what_it_proves": "Chứng cứ đầy đủ xác nhận Bước ngoặt 1 và bác bỏ giả thuyết sai",
+      "what_it_does_NOT_prove": "Không phải sự phản bội như nghi ngờ ban đầu",
+      "next_question": "Tại sao người trong cuộc phải âm thầm chịu đựng suốt ngần ấy năm?"
+    }}
+  ],
+  "reveal_justifications": {{
+    "reveal_1": {{
+      "evidence_support": "Manh mối 1, 2, 3 kết hợp chứng minh Bước ngoặt 1 như thế nào",
+      "motivation_support": "Động cơ tâm lý và hoàn cảnh thực tế hỗ trợ Bước ngoặt 1",
+      "timeline_support": "Sự khớp nối chính xác với các mốc năm/thời gian trong timeline"
+    }},
+    "reveal_2": {{
+      "evidence_support": "Vật chứng/lời kể nhân chứng chứng minh Bước ngoặt 2",
+      "motivation_support": "Lý do bất khả kháng khiến nhân vật không thể chọn cách đơn giản hơn",
+      "character_knowledge_support": "Sự nhất quán với knowledge_ledger (ai biết, ai không biết)"
+    }}
   }}
 }}
 """
@@ -567,9 +637,13 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
                 status="LOCKED",
             ))
 
+        clean_title = re.sub(r"^(?:Tập\s+)?EP_?[A-Z0-9_]*\d+\s*[-:]?\s*", "", str(parsed.get("title", idea.working_title)), flags=re.IGNORECASE).strip()
+        if not clean_title:
+            clean_title = idea.working_title
+
         bible = StoryBible(
             episode_id=ep_id,
-            title=parsed.get("title", idea.working_title),
+            title=clean_title,
             protagonist=parsed.get("protagonist", {"name": idea.protagonist, "age": 30}),
             supporting_characters=parsed.get("supporting_characters", []),
             relationships=parsed.get("relationships", []),
@@ -589,6 +663,10 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
             time_period=parsed.get("time_period", "Hiện tại"),
             mystery_question=parsed.get("mystery_question", idea.mystery_question),
             narrative_skeleton=parsed.get("narrative_skeleton", {}),
+            causal_chains=parsed.get("causal_chains", []),
+            knowledge_ledger=parsed.get("knowledge_ledger", []),
+            structured_clues=parsed.get("structured_clues", []),
+            reveal_justifications=parsed.get("reveal_justifications", {}),
             status="DRAFT",
         )
         return bible, in_tok, out_tok
@@ -611,49 +689,65 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
         facts_summary = "\n".join(
             f"- {f.field}: {f.value} ({f.description})" for f in story_bible.critical_facts
         )
+        supporting_summary = "\n".join(
+            f"- {sc.get('name', 'Nhân vật phụ')} ({sc.get('role', 'Người thân')}, {sc.get('age', '')} tuổi): {sc.get('description', '')} | Lý do im lặng: {sc.get('reason_for_silence', '')}"
+            for sc in (story_bible.supporting_characters or []) if isinstance(sc, dict)
+        )
+        knowledge_summary = json.dumps(story_bible.knowledge_ledger or [], ensure_ascii=False)
+        clues_summary = json.dumps(story_bible.structured_clues or story_bible.clues or [], ensure_ascii=False)
+        causal_summary = json.dumps(story_bible.causal_chains or [], ensure_ascii=False)
+
+        clean_title = re.sub(r"^(?:Tập\s+)?EP_?[A-Z0-9_]*\d+\s*[-:]?\s*", "", str(story_bible.title or ""), flags=re.IGNORECASE).strip()
 
         system_instruction = (
             f"Bạn là Người dẫn chuyện và Biên kịch duy nhất của series tâm sự/tài liệu gia đình 'Sau Cánh Cửa'.\n"
-            f"Người dẫn chuyện: MC {host_name} ({host_id}) - giọng đọc TTS độc quyền, điềm đạm, nhân văn, sâu sắc, quan sát tinh tế.\n"
+            f"Người dẫn chuyện: MC {host_name} ({host_id}) - giọng đọc TTS độc quyền, điềm đạm, trưởng thành, nhân văn, quan sát tinh tế.\n"
             f"Định dạng nội dung: Một lá thư/câu chuyện tâm sự của nhân vật gửi về cho chương trình. MC Minh là người đọc toàn bộ kịch bản.\n"
-            f"MC Minh dẫn dắt và trích dẫn lời nhân vật tự nhiên (ví dụ: 'Lan viết trong thư gửi về: \"...\"', 'Theo lời anh Nam kể lại...'), tuyệt đối KHÔNG tạo speaker riêng biệt cho các nhân vật khác.\n"
-            f"Mở đầu đa dạng: Không dùng cùng một câu mở đầu rập khuôn cho mọi tập. Mở đầu bằng phong cách thư tâm sự linh hoạt, chân thực.\n"
-            f"Phong cách viết: Tiếng Việt văn nói truyền cảm, giàu hình ảnh, nhịp nhàng cho diễn đọc TTS, không sáo rỗng hay giật gân rẻ tiền.\n"
-            f"Phân loại delivery_profile chính xác theo 6 loại: HOOK, NORMAL, MYSTERY, REVEAL, COMMENT, ENDING.\n"
-            f"Quy tắc Bước ngoặt (REVEAL): Không đặt câu hỏi giao lưu khán giả (audience_address: false) trong các phân đoạn REVEAL.\n"
-            f"Mỗi phân đoạn (segment) dài khoảng 28-42 từ, nhịp nhàng cho diễn đọc TTS. Tổng độ dài đạt chuẩn 2.500 - 3.200 từ."
+            f"QUY TẮC CỨNG BẮT BUỘC:\n"
+            f"1. KHÔNG ĐỌC MÃ TẬP / SỐ TẬP NỘI BỘ: Tuyệt đối KHÔNG viết hoặc đọc các mã như 'EP1005', 'EP002', 'IDEA_...', và KHÔNG đọc số thứ tự tập bằng chữ hay số (như 'tập 1005', 'tập một nghìn không trăm linh năm'). Khi chào mở đầu ở phân đoạn 004, MC Minh CHỈ nói: 'Chào mừng quý vị và các bạn đến với Sau Cánh Cửa.'\n"
+            f"2. KHÔNG NGẮT TẬP GIẢ TẠO: Đây là một tập phim hoàn chỉnh liền mạch. Tuyệt đối KHÔNG dùng các cụm từ 'phần tiếp theo', 'ở phần sau', 'hãy đón xem', 'chúng ta sẽ quay lại sau', 'tập tiếp theo' ở giữa kịch bản (chỉ được chào hẹn gặp lại ở phân đoạn 090 cuối cùng).\n"
+            f"3. CHỈ DÙNG NHÂN VẬT TRONG STORY BIBLE: Tuyệt đối không tự bịa thêm tên riêng nhân vật phụ ngoài danh sách Story Bible.\n"
+            f"4. NHẤT QUÁN NHẬN THỨC NHÂN VẬT (KNOWLEDGE LEDGER): Tuân thủ tuyệt đối ai biết bí mật, ai không biết. Nếu trong Story Bible có người thân (như vợ/mẹ/nhân chứng) biết sự thật, tuyệt đối KHÔNG được viết câu mâu thuẫn như 'không một ai hay biết' hay 'không thể sẻ chia cùng ai kể cả người vợ gối chăn'.\n"
+            f"5. KỶ LUẬT BẰNG CHỨNG (EVIDENCE CHAIN): Không nhảy cóc từ một manh mối ban đầu sang kết luận cuối cùng. Mỗi manh mối chỉ chứng minh đúng phạm vi của nó và đặt ra câu hỏi tiếp theo.\n"
+            f"6. VĂN PHONG TỰ NHIÊN 'SHOW, DON'T LABEL': Kể bằng hành động, vật thể, ánh mắt, khoảng lặng đời thường. TUYỆT ĐỐI CẤM dùng các cụm từ sáo rỗng AI như: 'bí mật động trời', 'sự thật động trời', 'đòn chí mạng', 'sự thật kinh hoàng', 'cuộc gặp gỡ định mệnh', 'đau đớn đến tận cùng', 'vĩ đại ẩn giấu', 'mê cung không lối thoát', 'nấc nghẹn ngào đến xé lòng', 'cơn địa chấn', 'sét đánh ngang tai', 'bi kịch đẫm nước mắt', 'sự thật rỉ máu', 'chiếc lồng kính ngột ngạt', 'bóng ma vô hình', 'cuộc chiến ngầm khốc liệt'.\n"
+            f"7. PHẦN KẾT GỌN GÀNG (5-8%): Không giảng đạo lặp đi lặp lại nhiều đoạn cuối. Chỉ dùng đúng 1 phân đoạn đúc kết chiêm nghiệm duy nhất trước khi chào tạm biệt.\n"
+            f"8. Phân loại delivery_profile chính xác theo 6 loại: HOOK, NORMAL, MYSTERY, REVEAL, COMMENT, ENDING. Không đặt câu hỏi khán giả (audience_address: false) trong phân đoạn REVEAL."
         )
 
         # ---------------- PART 1: ACTS 1 to 5 (Segments 001 to 045) ----------------
-        prompt_part1 = f"""Hãy viết PHẦN 1 (Phân đoạn 001 đến 045) cho kịch bản tập phim {story_bible.episode_id}: '{story_bible.title}'.
+        prompt_part1 = f"""Hãy viết PHẦN 1 (Phân đoạn 001 đến 045) cho kịch bản câu chuyện: '{clean_title}'.
 Mục tiêu độ dài Phần 1: Khoảng 1.300 - 1.500 từ tiếng Việt, chia thành chính xác 45 phân đoạn.
 
 Thông tin Story Bible:
-- Nhân vật chính: {story_bible.protagonist.get('name')} ({story_bible.protagonist.get('age', 30)} tuổi)
+- Nhân vật chính: {story_bible.protagonist.get('name')} ({story_bible.protagonist.get('age', 30)} tuổi) - {story_bible.protagonist.get('description', '')}
+- Nhân vật phụ (CHỈ ĐƯỢC DÙNG CÁC TÊN NÀY):
+{supporting_summary}
 - Quan hệ: {story_bible.relationships}
 - Bí mật cốt lõi: {story_bible.secret}
 - Câu hỏi bí ẩn: {story_bible.mystery_question}
 - Giả thuyết sai ban đầu: {story_bible.false_lead}
-- Manh mối điều tra: {story_bible.clues}
+- Chuỗi manh mối có cấu trúc (CHỈ chứng minh trong giới hạn what_it_proves, KHÔNG nhảy cóc sang kết luận cuối):
+{clues_summary}
+- Sổ cái nhận thức nhân vật (Knowledge Ledger):
+{knowledge_summary}
 - Các sự thật đóng băng (Fact Lock - TUYỆT ĐỐI TUÂN THỦ, KHÔNG SỬA ĐỔI):
 {facts_summary}
 
 Cấu trúc Phân bổ Phần 1 (tổng cộng 45 phân đoạn):
 1. Act 1: HOOK (Phân đoạn 001 - 006):
-   - 001-003: Hook trực diện vào chi tiết bất thường, tạo sự tò mò ngay giây đầu tiên (delivery_profile='HOOK', speed=0.98).
-   - 004-006: Lời chào mở đầu chương trình của {host_name} và giới thiệu bước vào câu chuyện (delivery_profile='NORMAL', speed=1.01).
+   - 001-003: Mở đầu bằng chi tiết cụ thể trong lá thư và dấu hiệu bất thường đầu tiên dưới dạng nghi vấn (delivery_profile='HOOK', speed=0.98). Tuyệt đối không kết luận trước sự thật ở Reveal.
+   - 004: Lời chào mở đầu chương trình của {host_name}: BẮT BUỘC mở đầu bằng "Chào mừng quý vị và các bạn đến với Sau Cánh Cửa." (KHÔNG đọc số tập hay mã tập, delivery_profile='NORMAL', speed=1.01).
+   - 005-006: Giới thiệu nhân vật gửi thư và bước vào bối cảnh câu chuyện (delivery_profile='NORMAL', speed=1.01).
 2. Act 2: SETUP (Phân đoạn 007 - 017):
-   - Đời sống thường nhật, bối cảnh gia đình, vị trí xã hội và trật tự vốn có trước khi phát hiện bất thường.
+   - Đời sống thường nhật, bối cảnh gia đình, những chi tiết quan sát cụ thể trước khi phát hiện bất thường.
    - Chứa đúng 1 phân đoạn giao lưu khán giả gợi mở (audience_address=true, delivery_profile='COMMENT').
 3. Act 3: MYSTERY / FIRST ANOMALY (Phân đoạn 018 - 028):
-   - Manh mối đầu tiên xuất hiện (vật thể, dòng giao dịch, cuộc gọi, giấy tờ).
-   - Sự hoài nghi nảy sinh, nhân vật chính bắt đầu chú ý (delivery_profile='MYSTERY' và 'NORMAL').
+   - Manh mối 1 xuất hiện. Chỉ mô tả đúng những gì Manh mối 1 cho thấy và đặt câu hỏi tiếp theo, không nhảy cóc kết luận (delivery_profile='MYSTERY' và 'NORMAL').
    - Chứa đúng 1 phân đoạn giao lưu khán giả đặt câu hỏi giả thuyết (audience_address=true, delivery_profile='COMMENT').
 4. Act 4: ESCALATION (Phân đoạn 029 - 037):
-   - Giả thuyết sai ban đầu (false lead) xuất hiện và kéo căng tâm lý nghi ngờ.
-   - Nhân vật chính đối diện với sự mâu thuẫn giữa niềm tin và chứng cứ ban đầu (delivery_profile='NORMAL' và 'MYSTERY').
+   - Giả thuyết sai ban đầu (false lead) xuất hiện từ góc nhìn hạn chế của nhân vật chính (delivery_profile='NORMAL' và 'MYSTERY').
 5. Act 5: INVESTIGATION (Phân đoạn 038 - 045):
-   - Nhân vật chính bắt đầu chuyến đi hoặc hành động điều tra thực tế, tìm gặp nhân chứng hoặc cơ quan chức năng.
+   - Nhân vật chính bắt đầu hành động xác minh thực tế, tìm gặp nhân chứng hoặc đối chiếu tài liệu thứ hai.
 
 Yêu cầu định dạng JSON:
 Trả về JSON Array gồm đúng 45 objects từ id '001' đến '045':
@@ -661,7 +755,7 @@ Trả về JSON Array gồm đúng 45 objects từ id '001' đến '045':
   {{
     "id": "001",
     "speaker": "{host_id}",
-    "text": "Lời dẫn tiếng Việt tự nhiên, giàu cảm xúc, khoảng 25-45 từ...",
+    "text": "Lời dẫn tiếng Việt tự nhiên, điềm đạm, cụ thể, khoảng 28-42 từ...",
     "delivery_profile": "HOOK",
     "importance": "high",
     "audience_address": false,
@@ -689,15 +783,19 @@ Trả về JSON Array gồm đúng 45 objects từ id '001' đến '045':
         # ---------------- PART 2: ACTS 5 (cont) to 9 (Segments 046 to 090) ----------------
         p1_context = "\n".join(f"[{s.get('id')}] {s.get('text')[:80]}..." for s in p1_data[-5:]) if p1_data else ""
 
-        prompt_part2 = f"""Hãy viết tiếp PHẦN 2 (Phân đoạn 046 đến 090) cho kịch bản tập phim {story_bible.episode_id}: '{story_bible.title}'.
+        prompt_part2 = f"""Hãy viết tiếp PHẦN 2 (Phân đoạn 046 đến 090) cho kịch bản câu chuyện: '{clean_title}'.
 Mục tiêu độ dài Phần 2: Khoảng 1.300 - 1.600 từ tiếng Việt, chia thành chính xác 45 phân đoạn.
 
 Bối cảnh cuối Phần 1 vừa kết thúc ở phân đoạn 045:
 {p1_context}
 
-Nội dung Bước ngoặt & Hóa giải cảm xúc của Story Bible:
+Nội dung Bước ngoặt, Chuỗi Nhân Quả & Hóa giải cảm xúc của Story Bible:
 - Bước ngoặt 1 (Reveal 1): {story_bible.reveal_1}
 - Bước ngoặt 2 (Reveal 2): {story_bible.reveal_2}
+- Chuỗi nhân quả bắt buộc (CAUSE -> DECISION -> ACTION -> CONSEQUENCE - giải thích rõ tại sao giải pháp thông thường là bất khả thi):
+{causal_summary}
+- Sổ cái nhận thức nhân vật (Knowledge Ledger - TUYỆT ĐỐI KHÔNG MÂU THUẪN):
+{knowledge_summary}
 - Cao trào cảm xúc: {story_bible.emotional_payoff}
 - Đúc kết nhân sinh: {story_bible.reflection_theme}
 - Kết thúc: {story_bible.ending}
@@ -706,21 +804,22 @@ Nội dung Bước ngoặt & Hóa giải cảm xúc của Story Bible:
 
 Cấu trúc Phân bổ Phần 2 (tổng cộng 45 phân đoạn từ 046 đến 090):
 1. Act 5 (tiếp tục): EVIDENCE CHAIN (Phân đoạn 046 - 055):
-   - Manh mối thứ 2 và thứ 3 xuất hiện cụ thể (giấy tờ, tài liệu đối chiếu, lời thú nhận ban đầu).
-   - Mọi giả thuyết sai ban đầu bị lung lay dữ dội (delivery_profile='MYSTERY' và 'NORMAL').
-2. Act 6: MAJOR REVEAL (Phân đoạn 056 - 064):
-   - Sự thật Bước ngoặt 1 được phơi bày rõ ràng trước chứng cứ không thể chối cãi.
+   - Manh mối thứ 2 và thứ 3 xuất hiện cụ thể, từng bước dẫn tới sự thật (delivery_profile='MYSTERY' và 'NORMAL').
+2. Act 6: MAJOR REVEAL (Phân đoạn 056 - 063):
+   - Sự thật Bước ngoặt 1 được mở ra rõ ràng qua chứng cứ xác thực.
    - BẮT BUỘC: delivery_profile='REVEAL', importance='critical', audience_address=false (KHÔNG hỏi khán giả).
-   - Nhịp điệu: Chứng cứ -> Dừng -> Sự thật then chốt -> Dừng -> Tác động tâm lý (speed=0.92).
-3. Act 7: SECOND REVEAL / EXPLANATION (Phân đoạn 065 - 074):
-   - Bước ngoặt 2 hé mở gốc rễ động cơ, sự hy sinh, uẩn khúc thật sự hoặc gánh nặng tâm lý mà nhân vật đã âm thầm chịu đựng.
-   - BẮT BUỘC: audience_address=false. Phân đoạn then chốt dùng delivery_profile='REVEAL' (speed=0.92).
-4. Act 8: EMOTIONAL PAYOFF (Phân đoạn 075 - 082):
-   - Cuộc đối thoại trực tiếp, đối mặt giữa các nhân vật, sự thấu hiểu, giải tỏa u uất bấy lâu (delivery_profile='NORMAL').
-   - Chứa đúng 1 phân đoạn giao lưu khán giả về sự bao dung/thấu hiểu (audience_address=true, delivery_profile='COMMENT').
-5. Act 9: REFLECTION + ENDING (Phân đoạn 083 - 090):
-   - 083-087: Lời đúc kết triết lý nhân sinh về tình thân, sự chân thành và ranh giới đằng sau cánh cửa (delivery_profile='COMMENT', 30-50 giây, chứa 1 phân đoạn audience_address=true).
-   - 088-090: Lời chào kết nhẹ nhàng, cảm ơn, hẹn gặp lại của {host_name} (delivery_profile='ENDING', speed=0.965).
+3. Act 7: SECOND REVEAL / CAUSAL EXPLANATION (Phân đoạn 064 - 074):
+   - Bước ngoặt 2 giải thích đầy đủ chuỗi nhân quả: Nguyên nhân (WHY) -> Lý do không thể làm cách bình thường (MOTIVATION) -> Cơ chế thực hiện thực tế (HOW) -> Hệ quả (CONSEQUENCE).
+   - Tuân thủ chặt chẽ Knowledge Ledger: không viết "không ai biết / kể cả người vợ" nếu trong truyện có người thân biết sự thật.
+   - BẮT BUỘC: audience_address=false. Các phân đoạn mở nút thắt chính dùng delivery_profile='REVEAL' (speed=0.92), các phân đoạn giải thích hoàn cảnh dùng delivery_profile='NORMAL'.
+4. Act 8: EMOTIONAL PAYOFF & RESOLUTION (Phân đoạn 075 - 085):
+   - Cuộc đối thoại trực tiếp, hành động cụ thể, cử chỉ đời thường khi các nhân vật đối diện và tháo gỡ khúc mắc (delivery_profile='NORMAL').
+   - Chứa đúng 1 phân đoạn giao lưu khán giả (audience_address=true, delivery_profile='COMMENT').
+5. Act 9: CONCISE REFLECTION + SIGN-OFF (Phân đoạn 086 - 090 — CHỈ 5 PHÂN ĐOẠN, KHÔNG LẶP Ý):
+   - 086: Hình ảnh khép lại câu chuyện của gia đình nhân vật bằng chi tiết đời thực lắng đọng (delivery_profile='NORMAL', audience_address=false).
+   - 087: ĐÚNG 1 phân đoạn duy nhất đúc kết bài học chiêm nghiệm từ câu chuyện (delivery_profile='COMMENT', audience_address=false).
+   - 088: ĐÚNG 1 câu hỏi gợi suy ngẫm gửi tới thính giả (delivery_profile='COMMENT', audience_address=true).
+   - 089-090: Lời cảm ơn người gửi thư, cảm ơn thính giả và lời chào tạm biệt ngắn gọn của {host_name} (delivery_profile='ENDING', speed=0.965, audience_address=false).
 
 Yêu cầu định dạng JSON:
 Trả về JSON Array gồm đúng 45 objects từ id '046' đến '090':
@@ -728,7 +827,7 @@ Trả về JSON Array gồm đúng 45 objects từ id '046' đến '090':
   {{
     "id": "046",
     "speaker": "{host_id}",
-    "text": "Lời dẫn tiếng Việt tự nhiên, giàu cảm xúc, khoảng 25-45 từ...",
+    "text": "Lời dẫn tiếng Việt tự nhiên, điềm đạm, khoảng 28-42 từ...",
     "delivery_profile": "MYSTERY",
     "importance": "normal",
     "audience_address": false,
@@ -807,9 +906,9 @@ Trả về JSON Array gồm đúng 45 objects từ id '046' đến '090':
             if len(segments) > 40 and not segments[40].audience_address and segments[40].delivery_profile != "REVEAL":
                 segments[40].audience_address = True
                 segments[40].delivery_profile = "COMMENT"
-            if len(segments) > 85 and not segments[85].audience_address and segments[85].delivery_profile != "REVEAL":
-                segments[85].audience_address = True
-                segments[85].delivery_profile = "COMMENT"
+            if len(segments) > 87 and not segments[87].audience_address and segments[87].delivery_profile != "REVEAL":
+                segments[87].audience_address = True
+                segments[87].delivery_profile = "COMMENT"
         elif len(aud_indices) > 6:
             for i in aud_indices[6:]:
                 segments[i].audience_address = False
@@ -819,7 +918,7 @@ Trả về JSON Array gồm đúng 45 objects từ id '046' đến '090':
         total_words = sum(len(s.text.split()) for s in segments)
         script = FullScript(
             episode_id=story_bible.episode_id,
-            title=story_bible.title,
+            title=clean_title or story_bible.title,
             host={"id": host_id, "name": host_name, "voice": "Binh"},
             segments=segments,
             total_segments=len(segments),
@@ -855,7 +954,16 @@ Trả về JSON Array gồm đúng 45 objects từ id '046' đến '090':
 
         for conflict in qc_report.fact_conflicts:
             ctype = conflict.get("type", "") if isinstance(conflict, dict) else ""
-            if ctype in ("HOOK_FACT_CONTRADICTION", "CHARACTER_FACT_VIOLATION", "UNGROUNDED_CHARACTER_HALLUCINATION", "BLOCKED_PREMATURE_REVEAL"):
+            if ctype in (
+                "HOOK_FACT_CONTRADICTION",
+                "CHARACTER_FACT_VIOLATION",
+                "UNGROUNDED_CHARACTER_HALLUCINATION",
+                "BLOCKED_PREMATURE_REVEAL",
+                "CAUSAL_GAP",
+                "CHARACTER_KNOWLEDGE_CONTRADICTION",
+                "EVIDENCE_DOES_NOT_PROVE_CLAIM",
+                "INTERNAL_EPISODE_ID_SPOKEN",
+            ):
                 continue
             val = (conflict.get("expected") or conflict.get("value")) if isinstance(conflict, dict) else str(conflict)
             if script.segments and val and isinstance(val, str):

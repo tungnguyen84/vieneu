@@ -41,6 +41,10 @@ class EditorialIssue:
     def rule_id(self) -> str:
         return self.rule
 
+    @property
+    def description(self) -> str:
+        return self.reason
+
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
         d["rule_id"] = self.rule
@@ -125,33 +129,59 @@ class EditorialQCEngine:
                     ))
                     break
 
-        # 3. EPISODE_CODE_IN_NARRATION (Rule 3 - BLOCKER)
+        # 3. EPISODE_CODE_IN_NARRATION / INTERNAL_EPISODE_ID_SPOKEN (Rule 3 - BLOCKER)
+        pub_ep_num = getattr(story_bible, "public_episode_number", None)
+        spoken_ep_num_pat = re.compile(
+            r"\btập\s+(?:số\s+|phim\s+|thứ\s+)?("
+            r"\d+"
+            r"|(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|trăm|nghìn|ngàn)(?:\s+(?:một|mốt|hai|ba|bốn|tư|năm|lăm|sáu|bảy|tám|chín|mười|mươi|trăm|nghìn|ngàn|linh|lẻ|không))*"
+            r")\b",
+            re.IGNORECASE,
+        )
         for seg in script.segments:
             txt = seg.text
-            match = re.search(r"\b(?:mã\s+số\s+)?(EP\d{3}|IDEA_\d{3})\b", txt, re.IGNORECASE)
+            match = re.search(
+                r"\b(?:mã\s+số\s+)?(EP_?[A-Z0-9_]*\d+|IDEA_\d+|PROJ_[A-Z0-9_]+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b",
+                txt,
+                re.IGNORECASE,
+            )
+            m_spoken = spoken_ep_num_pat.search(txt)
+            hit_val = None
             if match:
+                hit_val = match.group(0)
+            elif m_spoken:
+                num_phrase = m_spoken.group(1).strip().lower()
+                if pub_ep_num is None or str(pub_ep_num) != num_phrase:
+                    hit_val = m_spoken.group(0)
+            if hit_val:
                 issues.append(EditorialIssue(
                     episode_id=ep_id,
                     segment_id=seg.id,
                     rule="EPISODE_CODE_IN_NARRATION",
                     severity="BLOCKER",
-                    excerpt=self._excerpt(txt, match.group(0)),
-                    reason=f"Đọc mã định danh database ('{match.group(0)}') vào lời dẫn TTS.",
+                    excerpt=self._excerpt(txt, re.escape(hit_val)),
+                    reason=f"Đọc mã định danh hoặc số tập nội bộ ('{hit_val}') vào lời dẫn TTS.",
                     suggested_fix="Xóa bỏ mã số kỹ thuật, chỉ giới thiệu tên câu chuyện tự nhiên.",
                 ))
 
-        # 4. FAKE_CONTINUATION_LANGUAGE (Rule 4 - FAIL)
-        for seg in script.segments:
+        # 4. FAKE_CONTINUATION_LANGUAGE / FAKE_SERIAL_BREAK (Rule 4 - FAIL)
+        for idx, seg in enumerate(script.segments):
             txt = seg.text
-            match = re.search(r"(phần\s+tiếp\s+theo|ở\s+phần\s+sau|đón\s+xem\s+phần\s+sau)", txt, re.IGNORECASE)
+            match = re.search(
+                r"(phần\s+tiếp\s+theo|ở\s+phần\s+sau|hãy\s+đón\s+xem|đón\s+xem\s+phần\s+sau|chúng\s+ta\s+sẽ\s+quay\s+lại\s+sau)",
+                txt,
+                re.IGNORECASE,
+            )
+            if not match and idx < len(script.segments) - 1:
+                match = re.search(r"\btập\s+tiếp\s+theo\b", txt, re.IGNORECASE)
             if match:
                 issues.append(EditorialIssue(
                     episode_id=ep_id,
                     segment_id=seg.id,
                     rule="FAKE_CONTINUATION_LANGUAGE",
                     severity="FAIL",
-                    excerpt=self._excerpt(txt, match.group(0)),
-                    reason="Chứa ngôn từ phân mảnh clip YouTube giả tạo ('phần tiếp theo', 'phần sau').",
+                    excerpt=self._excerpt(txt, re.escape(match.group(0))),
+                    reason=f"Chứa ngôn từ phân mảnh clip YouTube giả tạo ('{match.group(0)}').",
                     suggested_fix="Sử dụng câu chuyển tiếp tự nhiên trong một tập hoàn chỉnh liền mạch.",
                 ))
 
@@ -227,7 +257,7 @@ class EditorialQCEngine:
                         ))
                         break
 
-        # 8. MELODRAMA_DENSITY (Rule 8 - WARN/FAIL)
+        # 8. MELODRAMA_DENSITY / MELODRAMA_DENSITY_V2 (Rule 8 - WARN/FAIL)
         melodrama_patterns = [
             r"bóng\s+ma\s+vô\s+hình",
             r"chiếc\s+lồng\s+kính\s+ngột\s+ngạt",
@@ -236,6 +266,15 @@ class EditorialQCEngine:
             r"vết\s+cắt\s+rỉ\s+máu",
             r"nhát\s+dao\s+vô\s+hình",
             r"ngột\s+ngạt\s+đến\s+nghẹt\s+thở",
+            r"bí\s+mật\s+động\s+trời",
+            r"sự\s+thật\s+động\s+trời",
+            r"đòn\s+chí\s+mạng",
+            r"sự\s+thật\s+kinh\s+hoàng",
+            r"cuộc\s+gặp\s+gỡ\s+định\s+mệnh",
+            r"đau\s+đớn\s+đến\s+tận\s+cùng",
+            r"vĩ\s+đại\s+ẩn\s+giấu",
+            r"mê\s+cung\s+không\s+lối\s+thoát",
+            r"nấc\s+nghẹn\s+ngào\s+đến\s+xé\s+lòng",
         ]
         melodrama_found = []
         for seg in script.segments:
@@ -245,12 +284,13 @@ class EditorialQCEngine:
                     melodrama_found.append((seg.id, m.group(0), seg.text))
 
         if len(melodrama_found) >= 1:
+            severity = "FAIL" if len(melodrama_found) >= 2 else "WARN"
             for s_id, term, full in melodrama_found:
                 issues.append(EditorialIssue(
                     episode_id=ep_id,
                     segment_id=s_id,
                     rule="MELODRAMA_DENSITY",
-                    severity="FAIL",
+                    severity=severity,
                     excerpt=self._excerpt(full, term),
                     reason=f"Mật độ ẩn dụ bi kịch hóa cao ('{term}'), làm mất đi tính điềm đạm của phim tài liệu xã hội.",
                     suggested_fix="Thay bằng hành động, chi tiết đời thường và diễn biến tâm lý chân thực.",

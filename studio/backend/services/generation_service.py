@@ -138,7 +138,11 @@ class GenerationService:
         if not clean_topic:
             clean_topic = sel_idea.get("premise") or sel_idea.get("hook") or proj_meta.get("topic") or "Bí mật gia đình được giấu kín."
 
-        working_title = sel_idea.get("title") or sel_idea.get("working_title") or proj_meta.get("title") or f"Tập {project_id}"
+        import re
+        raw_title = sel_idea.get("title") or sel_idea.get("working_title") or proj_meta.get("title") or ""
+        working_title = re.sub(r"^(?:Tập\s+)?EP_?[A-Z0-9_]*\d+\s*[-:]?\s*", "", str(raw_title), flags=re.IGNORECASE).strip()
+        if not working_title:
+            working_title = "Câu chuyện phía sau cánh cửa"
         hook = sel_idea.get("hook") or sel_idea.get("premise") or clean_topic
         protag = sel_idea.get("protagonist") or "Nhân vật chính"
         rel = sel_idea.get("relationship") or "Gia đình"
@@ -186,7 +190,7 @@ class GenerationService:
         provider = self.get_provider()
         planner = StoryPlanner(provider=provider, cost_controller=self.cost_ctrl, episodes_root=PROJECTS_DIR)
 
-        # Generate using provider
+        # Generate using provider (StoryPlanner automatically validates & repairs causal/knowledge/clue/reveal logic)
         story_bible = planner.create_story_bible_from_idea(idea=idea, episode_id=project_id)
 
         bible_dict = story_bible.to_dict()
@@ -202,7 +206,7 @@ class GenerationService:
             try:
                 with open(p_json, "r", encoding="utf-8") as f:
                     p_curr = json.load(f)
-                p_curr["title"] = working_title
+                p_curr["title"] = story_bible.title or working_title
                 p_curr["topic"] = clean_topic
                 with open(p_json, "w", encoding="utf-8") as f:
                     json.dump(p_curr, f, ensure_ascii=False, indent=2)
@@ -216,16 +220,16 @@ class GenerationService:
         project_id: str,
         stage_callback: Optional[Callable[[str, int], None]] = None
     ) -> Dict[str, Any]:
-        """Writes full script using Script Factory V1.3.1a and runs Script QC."""
+        """Writes full script using Script Factory V1.3.1a and runs Script QC + Auto-Repair."""
         stages = [
-            ("Đang viết Hook mở màn cuốn hút...", 10),
-            ("Đang phát triển bí ẩn và thiết lập tình huống ban đầu...", 25),
-            ("Đang xây dựng manh mối và quá trình tìm kiếm sự thật...", 45),
-            ("Đang viết Reveal 1 (Bước ngoặt lớn đầu tiên)...", 60),
-            ("Đang viết Reveal 2 (Lật mở chân tướng sự thật)...", 75),
-            ("Đang hoàn thiện cảm xúc và đoạn kết chiêm nghiệm...", 85),
-            ("Đang kiểm tra Fact Lock & Spoiler Leakage Guard...", 95),
-            ("Đang kiểm định QC và tính toán độ dài lời dẫn...", 100),
+            ("Đang kiểm tra Story Logic & Reveal Justification Gate...", 10),
+            ("Đang viết Hook mở màn cuốn hút...", 20),
+            ("Đang phát triển bí ẩn và thiết lập tình huống ban đầu...", 35),
+            ("Đang xây dựng manh mối và quá trình tìm kiếm sự thật...", 50),
+            ("Đang viết Reveal 1 (Bước ngoặt lớn đầu tiên)...", 65),
+            ("Đang viết Reveal 2 (Lật mở chân tướng sự thật)...", 80),
+            ("Đang hoàn thiện cảm xúc và đoạn kết chiêm nghiệm...", 90),
+            ("Đang kiểm định QC và tự động chuẩn hóa văn phong...", 100),
         ]
 
         proj_dir = PROJECTS_DIR / project_id
@@ -237,6 +241,21 @@ class GenerationService:
             bible_data = json.load(f)
         story_bible = StoryBible.from_dict(bible_data)
 
+        # Ensure Story Bible passes Story Logic & Reveal Justification Gate before ScriptWriter runs
+        from apps.script_factory.story_qc import StoryQCEngine
+        story_qc = StoryQCEngine()
+        bible_qc = story_qc.audit_story_bible(story_bible)
+        if (
+            bible_qc.status != "PASS"
+            or not story_bible.causal_chains
+            or not story_bible.knowledge_ledger
+            or not story_bible.structured_clues
+            or not story_bible.reveal_justifications
+        ):
+            story_bible = story_qc.repair_story_bible(story_bible, bible_qc)
+            with open(story_path, "w", encoding="utf-8") as f:
+                json.dump(story_bible.to_dict(), f, ensure_ascii=False, indent=2)
+
         # Progress simulation
         for label, pct in stages:
             if stage_callback:
@@ -247,6 +266,17 @@ class GenerationService:
         writer = ScriptWriter(provider=provider, cost_controller=self.cost_ctrl, episodes_root=PROJECTS_DIR)
         script = writer.generate_script_from_bible(story_bible)
 
+        # Run automated QC and auto-repair if any issue is found
+        qc_engine = ScriptQCEngine(provider=provider, cost_controller=self.cost_ctrl, episodes_root=PROJECTS_DIR)
+        qc_report = qc_engine.run_qc(script=script, story_bible=story_bible)
+        if qc_report.status != "PASS":
+            rev_manager = AutoRevisionManager(provider=provider, cost_controller=self.cost_ctrl, qc_engine=qc_engine)
+            script, qc_report = rev_manager.auto_revise_and_recheck(
+                script=script,
+                story_bible=story_bible,
+                qc_report=qc_report,
+            )
+
         # Save script
         script_dir = proj_dir / "script"
         script_dir.mkdir(parents=True, exist_ok=True)
@@ -254,9 +284,6 @@ class GenerationService:
         with open(script_path, "w", encoding="utf-8") as f:
             json.dump(script.to_dict(), f, ensure_ascii=False, indent=2)
 
-        # Run automated QC
-        qc_engine = ScriptQCEngine(provider=provider, cost_controller=self.cost_ctrl)
-        qc_report = qc_engine.run_qc(script=script, story_bible=story_bible)
         qc_dict = asdict(qc_report)
         qc_path = script_dir / "qc_report.json"
         with open(qc_path, "w", encoding="utf-8") as f:

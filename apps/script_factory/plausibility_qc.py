@@ -108,7 +108,37 @@ class PlausibilityEngine:
                 issues.append("Cần bổ sung chi tiết cách nhân vật che giấu sự việc trong sinh hoạt gia đình hàng ngày.")
                 base_score -= 7.0
 
-        # 6. Default skeptical questions if list is still small
+        # 6. Causal Necessity Check (CAUSAL_GAP: Weak Cause -> Extreme Long-Term Action)
+        extreme_actions = [
+            r"đổi\s+(?:luôn\s+)?danh\s+tính",
+            r"sống\s+(?:suốt\s+)?(?:\d+\s+năm\s+)?dưới\s+danh\s+tính",
+            r"sống\s+dưới\s+tên",
+            r"mang\s+danh\s+tính\s+của",
+            r"giả\s+danh\s+người\s+đã\s+khuất",
+            r"mạo\s+danh\s+suốt",
+            r"xóa\s+bỏ\s+tên\s+thật",
+        ]
+        weak_causes = [
+            r"nhờ\s+.*mang\s+(?:hộ\s+)?thẻ\s+bài",
+            r"mang\s+thẻ\s+bài.*chăm\s+sóc\s+mẹ",
+            r"nhờ\s+chăm\s+sóc\s+mẹ\s+già",
+            r"nhờ\s+gửi\s+lại\s+kỷ\s+vật",
+            r"nhờ\s+mang\s+giấy\s+tờ\s+về\s+quê",
+            r"chỉ\s+vì\s+lời\s+nhờ\s+vả",
+        ]
+        necessity_markers = [
+            "bất khả kháng", "không còn cách nào khác", "phương án duy nhất", "cách duy nhất",
+            "giấy báo tử ghi nhầm", "thất lạc hồ sơ", "hồ sơ duy nhất", "nguy kịch tính mạng",
+            "đe dọa tính mạng", "ràng buộc pháp lý",
+        ]
+        if any(re.search(p, full_text) for p in extreme_actions) and any(re.search(p, full_text) for p in weak_causes):
+            if not any(m in full_text for m in necessity_markers):
+                issues.append("CAUSAL_GAP: Nguyên nhân/lời nhờ vả ban đầu không đủ sức nặng bắt buộc nhân vật đánh đổi danh tính suốt nhiều năm khi chưa giải thích tại sao không thể giúp đỡ dưới tên thật.")
+                required_explanations.append("Giải thích rõ hoàn cảnh bất khả kháng khiến nhân vật không thể giữ tên thật hoặc giải pháp bình thường.")
+                skeptical_questions.append("Tại sao chỉ vì lời nhờ mang kỷ vật và chăm sóc người thân mà nhân vật lại phải xóa bỏ tên thật để sống dưới danh tính người đã khuất?")
+                base_score -= 25.0
+
+        # 7. Default skeptical questions if list is still small
         if len(skeptical_questions) < 3:
             skeptical_questions.append("Tại sao nhân vật chính không thẳng thắn đối chất ngay từ manh mối đầu tiên?")
             skeptical_questions.append("Liệu bằng chứng này có thể bị làm giả hoặc hiểu lầm không?")

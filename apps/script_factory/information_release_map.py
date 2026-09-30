@@ -92,7 +92,9 @@ def extract_key_entities_from_text(text: str) -> List[str]:
         "bạn", "hai", "ba", "bà", "ông", "anh", "chị", "em", "cô", "chú", "bác", "mẹ",
         "bố", "cha", "con", "chiếc", "cuộc", "sự", "việc", "điều", "đáng", "được",
         "bước ngoặt", "thông tin", "tài sản", "chi tiết", "quan hệ", "giải", "lời", "đáp",
-        "thực sự", "bản chất", "lý do"
+        "thực sự", "bản chất", "lý do", "khoản", "tiền", "khoản tiền", "nợ", "phần",
+        "năm", "ngày", "tháng", "đoạn", "trang", "hồi", "tập", "chương", "giấy", "hồ sơ",
+        "chứng từ", "biên bản"
     }
 
     proper_nouns = []
@@ -105,8 +107,8 @@ def extract_key_entities_from_text(text: str) -> List[str]:
     distinctive_keywords = [
         "nhà tình thương", "trẻ mồ côi", "viện dưỡng lão", "con nuôi", "di chúc",
         "hồ sơ bệnh án", "tiết kiệm", "bảo lộc", "lâm đồng", "đổi tên", "giả giọng",
-        "thân phận thật", "cha ruột", "mẹ ruột", "anh em sinh đôi", "khoản nợ",
-        "quỹ chung", "tai nạn", "bồi thường", "bị lừa", "danh tính", "bể dầu",
+        "thân phận thật", "cha ruột", "mẹ ruột", "anh em sinh đôi",
+        "quỹ chung", "bị lừa", "bể dầu",
         "cây khế", "gốc cây khế", "mộc lan", "nam định", "hải dương"
     ]
     for kw in distinctive_keywords:

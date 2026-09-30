@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional
 from apps.script_factory.cost_control import CostController
 from apps.script_factory.models import ApprovalStatus, FullScript, StoryBible
 from apps.script_factory.providers.base import ScriptAIProvider
+from apps.script_factory.story_qc import StoryQCEngine
 
 logger = logging.getLogger("VieNeu.ScriptWriter")
 
@@ -29,6 +30,7 @@ class ScriptWriter:
         self.provider = provider
         self.cost_ctrl = cost_controller
         self.episodes_root = Path(episodes_root) if episodes_root else Path("episodes")
+        self.story_qc = StoryQCEngine()
 
     def generate_script_from_bible(
         self,
@@ -38,6 +40,13 @@ class ScriptWriter:
         """Writes full episodic script from Story Bible."""
         if story_bible.episode_id == "EP001":
             raise ValueError("EP001 is golden reference and cannot be regenerated.")
+
+        # Reveal Justification & Story Logic Hard Gate
+        bible_qc = self.story_qc.audit_story_bible(story_bible)
+        if bible_qc.status != "PASS":
+            codes_str = ", ".join(bible_qc.rule_codes) or "STORY_LOGIC_FAIL"
+            details = "; ".join(bible_qc.logic_issues)
+            raise ValueError(f"Story Bible QC blocked ScriptWriter [{codes_str}]: {details}")
 
         self.cost_ctrl.check_budget_pre_flight(episode_id=story_bible.episode_id)
 

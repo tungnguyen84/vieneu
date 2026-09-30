@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from apps.script_factory.cost_control import CostController
 from apps.script_factory.models import ApprovalStatus, IdeaItem, LockedFact, StoryBible
 from apps.script_factory.providers.base import ScriptAIProvider
+from apps.script_factory.story_qc import StoryBibleQCReport, StoryQCEngine
 
 logger = logging.getLogger("VieNeu.StoryPlanner")
 
@@ -29,6 +30,25 @@ class StoryPlanner:
         self.cost_ctrl = cost_controller
         self.episodes_root = Path(episodes_root) if episodes_root else Path("episodes")
         self.episodes_root.mkdir(parents=True, exist_ok=True)
+        self.story_qc = StoryQCEngine()
+
+    def validate_story_bible(
+        self,
+        bible: StoryBible,
+        auto_repair: bool = False,
+    ) -> StoryBibleQCReport:
+        """Validates Story Bible against causal, knowledge, clue, and reveal justification gates."""
+        report = self.story_qc.audit_story_bible(bible)
+        if auto_repair and (
+            report.status != "PASS"
+            or not bible.causal_chains
+            or not bible.knowledge_ledger
+            or not bible.structured_clues
+            or not bible.reveal_justifications
+        ):
+            self.story_qc.repair_story_bible(bible, report)
+            report = self.story_qc.audit_story_bible(bible)
+        return report
 
     def get_next_episode_id(self) -> str:
         """Determines the next sequential episode ID (EP002, EP003...). EP001 is reserved."""
@@ -70,6 +90,8 @@ class StoryPlanner:
                 model=model,
             )
             bible.episode_id = target_ep_id
+            # Audit and auto-repair causal gaps, knowledge contradictions, clue jumps, and reveal justifications
+            self.validate_story_bible(bible, auto_repair=True)
             lat = time.time() - t0
             self.cost_ctrl.record_operation(
                 operation="create_story_bible",

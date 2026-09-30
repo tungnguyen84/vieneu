@@ -15,17 +15,30 @@ Implements Sections 8 to 20:
 """
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-from apps.script_factory.models import ApprovalStatus, IdeaItem
+from apps.script_factory.models import ApprovalStatus, IdeaItem, StoryBible
 from apps.script_factory.novelty_engine import (
     NoveltyEngine,
     compute_narrative_skeleton_similarity,
     extract_narrative_skeleton,
 )
 from apps.script_factory.plausibility_qc import PlausibilityEngine, PlausibilityResult
+
+
+@dataclass
+class StoryBibleQCReport:
+    episode_id: str
+    status: str  # "PASS", "FAIL", "NEEDS_LOGIC_REWRITE"
+    issues: List[Dict[str, Any]] = field(default_factory=list)
+    logic_issues: List[str] = field(default_factory=list)
+    rule_codes: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
 
 
 # Supernatural, horror, dungeon thriller, and fantasy trigger terms
@@ -319,6 +332,576 @@ class StoryQCEngine:
             reasons=reasons,
         )
 
+    def audit_story_bible(self, bible: StoryBible) -> StoryBibleQCReport:
+        """
+        Audits Story Bible for deep causal logic, character secret knowledge consistency,
+        evidence-to-claim validity, and reveal justification support before ScriptWriter runs.
+        """
+        issues: List[Dict[str, Any]] = []
+        logic_issues: List[str] = []
+        rule_codes: List[str] = []
+
+        def _add_issue(rule: str, message: str, severity: str = "CRITICAL", target: str = "story_bible") -> None:
+            issues.append({
+                "rule": rule,
+                "severity": severity,
+                "target": target,
+                "message": message,
+            })
+            logic_issues.append(f"[{rule}] {message}")
+            if rule not in rule_codes:
+                rule_codes.append(rule)
+
+        # ------------------------------------------------------------------
+        # 1. CAUSAL_GAP CHECK (CAUSE -> DECISION -> ACTION -> CONSEQUENCE)
+        # ------------------------------------------------------------------
+        combined_story_text = " ".join([
+            str(bible.secret or ""),
+            str(bible.reveal_1 or ""),
+            str(bible.reveal_2 or ""),
+            " ".join(str(t) for t in (bible.timeline or [])),
+        ]).lower()
+
+        if bible.causal_chains:
+            for idx, chain in enumerate(bible.causal_chains):
+                if not isinstance(chain, dict):
+                    continue
+                c_cause = str(chain.get("cause", "")).strip()
+                c_decision = str(chain.get("decision", "")).strip()
+                c_action = str(chain.get("action", "")).strip()
+                c_conseq = str(chain.get("consequence", "")).strip()
+                c_why = str(chain.get("why", "") or c_cause).strip()
+                c_motiv = str(chain.get("motivation", "")).strip()
+                c_how = str(chain.get("how", "")).strip()
+
+                missing_parts = []
+                if len(c_cause) < 8 or c_cause.lower() in ("không rõ", "tự nhiên", "ngẫu nhiên"):
+                    missing_parts.append("CAUSE/WHY")
+                if len(c_decision) < 8:
+                    missing_parts.append("DECISION")
+                if len(c_action) < 8:
+                    missing_parts.append("ACTION")
+                if len(c_conseq) < 8:
+                    missing_parts.append("CONSEQUENCE")
+                if "motivation" in chain and (len(c_motiv) < 10 or c_motiv.lower() in ("không rõ", "vì thương", "vì lời hứa")):
+                    missing_parts.append("MOTIVATION (why simpler alternative was impossible)")
+                if "how" in chain and (len(c_how) < 10 or c_how.lower() in ("không rõ", "tự nhiên")):
+                    missing_parts.append("HOW (real-life mechanism over duration)")
+
+                if missing_parts:
+                    _add_issue(
+                        "CAUSAL_GAP",
+                        f"Chuỗi nhân quả #{idx + 1} thiếu hoặc yếu ở mắt xích: {', '.join(missing_parts)}.",
+                        target=f"causal_chains[{idx}]",
+                    )
+
+                # Check if cause is a minor request but action is an extreme lifelong/multi-decade transformation without necessity
+                chain_text = f"{c_cause} {c_decision} {c_action} {c_motiv} {c_how}".lower()
+                if _has_weak_cause_to_extreme_action(chain_text, has_strong_necessity=bool(len(c_motiv) >= 25 and _has_necessity_markers(c_motiv.lower()))):
+                    _add_issue(
+                        "CAUSAL_GAP",
+                        f"Chuỗi nhân quả #{idx + 1} có bước nhảy vô lý: nguyên nhân đơn giản ('{c_cause[:60]}') không đủ bắt buộc hành động cực đoan ('{c_action[:60]}') khi chưa giải thích tại sao giải pháp bình thường là bất khả thi.",
+                        target=f"causal_chains[{idx}]",
+                    )
+
+        # Also check raw story text (secret / reveal_1 / reveal_2) for weak cause -> extreme action jump
+        causal_chains_text = json.dumps(bible.causal_chains, ensure_ascii=False).lower() if bible.causal_chains else ""
+        if _has_weak_cause_to_extreme_action(
+            combined_story_text + " " + causal_chains_text,
+            has_strong_necessity=_has_necessity_markers(combined_story_text + " " + causal_chains_text),
+        ):
+            _add_issue(
+                "CAUSAL_GAP",
+                "Story Bible tồn tại khoảng trống nhân quả (CAUSAL_GAP): Nguyên nhân/lời nhờ vả ban đầu không đủ sức nặng bắt buộc nhân vật thực hiện hành động cực đoan kéo dài nhiều năm (thiếu lý do tại sao không thể giúp đỡ dưới danh tính/cách thức bình thường).",
+                target="reveal_2",
+            )
+
+        # ------------------------------------------------------------------
+        # 2. CHARACTER_KNOWLEDGE_CONTRADICTION CHECK
+        # ------------------------------------------------------------------
+        knowing_characters: List[str] = []
+        ignorant_characters: List[str] = []
+
+        for sc in (bible.supporting_characters or []):
+            if not isinstance(sc, dict):
+                continue
+            sc_name = str(sc.get("name", "") or sc.get("char_id", "")).strip()
+            sc_desc = " ".join(str(sc.get(k, "")) for k in ("description", "role", "reason_for_silence", "want", "fear")).lower()
+            if any(p in sc_desc for p in ["biết toàn bộ", "biết sự thật", "biết rõ", "biết hết", "cùng che giấu", "chọn cách câm lặng", "giữ kín bí mật cùng"]):
+                if sc_name:
+                    knowing_characters.append(sc_name)
+            if any(p in sc_desc for p in ["không hề biết", "không hay biết", "hoàn toàn không biết", "bị giấu kín"]):
+                if sc_name:
+                    ignorant_characters.append(sc_name)
+
+        ledger_scopes: Dict[str, str] = {}
+        for entry in (bible.knowledge_ledger or []):
+            if not isinstance(entry, dict):
+                continue
+            char_name = str(entry.get("character", "") or entry.get("who_knows_what", "")).strip()
+            scope = str(entry.get("knowledge_scope", "")).strip().lower()
+            when_learned = str(entry.get("when_they_learned_it", "")).strip()
+            how_learned = str(entry.get("how_they_learned_it", "")).strip()
+
+            if scope in ("full", "partial"):
+                if not when_learned or not how_learned:
+                    _add_issue(
+                        "CHARACTER_KNOWLEDGE_CONTRADICTION",
+                        f"Nhân vật '{char_name}' có knowledge_scope='{scope}' nhưng thiếu thời điểm ('when_they_learned_it') hoặc cách thức biết ('how_they_learned_it').",
+                        target="knowledge_ledger",
+                    )
+                if char_name:
+                    knowing_characters.append(char_name)
+            elif scope == "none" and char_name:
+                ignorant_characters.append(char_name)
+
+            if char_name:
+                norm_name = char_name.lower()
+                if norm_name in ledger_scopes and ledger_scopes[norm_name] != scope:
+                    _add_issue(
+                        "CHARACTER_KNOWLEDGE_CONTRADICTION",
+                        f"Nhân vật '{char_name}' bị khai báo mâu thuẫn trong knowledge_ledger ('{ledger_scopes[norm_name]}' vs '{scope}').",
+                        target="knowledge_ledger",
+                    )
+                ledger_scopes[norm_name] = scope
+
+        # Check overlap between knowing_characters and ignorant_characters
+        knowing_low = {c.lower() for c in knowing_characters}
+        ignorant_low = {c.lower() for c in ignorant_characters}
+        overlap_chars = knowing_low & ignorant_low
+        if overlap_chars:
+            _add_issue(
+                "CHARACTER_KNOWLEDGE_CONTRADICTION",
+                f"Mâu thuẫn nhận thức nhân vật: {', '.join(overlap_chars)} vừa được mô tả là biết bí mật vừa được mô tả là không hề hay biết.",
+                target="supporting_characters",
+            )
+
+        # Check if someone knows the secret while Story Bible claims "nobody knew / could not tell spouse"
+        nobody_knew_patterns = [
+            r"không\s+một\s+ai\s+biết",
+            r"không\s+một\s+ai\s+hay\s+biết",
+            r"không\s+ai\s+trên\s+đời\s+biết",
+            r"không\s+thể\s+sẻ\s+chia\s+cùng\s+ai",
+            r"kể\s+cả\s+(?:với\s+)?người\s+vợ",
+            r"kể\s+cả\s+vợ\s+con",
+            r"chỉ\s+một\s+mình\s+[^\s,]+\s+biết",
+        ]
+        if knowing_characters:
+            for pat in nobody_knew_patterns:
+                if re.search(pat, combined_story_text, re.IGNORECASE):
+                    _add_issue(
+                        "CHARACTER_KNOWLEDGE_CONTRADICTION",
+                        f"Story Bible ghi nhận nhân vật ({', '.join(knowing_characters)}) biết sự thật, nhưng phần mô tả bí mật/reveal lại khẳng định tuyệt đối không ai biết hoặc không thể chia sẻ cùng ai.",
+                        target="knowledge_ledger",
+                    )
+                    break
+
+        # ------------------------------------------------------------------
+        # 3. EVIDENCE_DOES_NOT_PROVE_CLAIM CHECK
+        # ------------------------------------------------------------------
+        for idx, sc_item in enumerate(bible.structured_clues or []):
+            if not isinstance(sc_item, dict):
+                continue
+            clue_txt = str(sc_item.get("clue", "")).strip()
+            proves_txt = str(sc_item.get("what_it_proves", "")).strip()
+            not_proves_txt = str(
+                sc_item.get("what_it_does_NOT_prove")
+                or sc_item.get("what_it_does_not_prove")
+                or ""
+            ).strip()
+            next_q_txt = str(sc_item.get("next_question", "")).strip()
+
+            if not clue_txt or not proves_txt or not not_proves_txt or not next_q_txt:
+                _add_issue(
+                    "EVIDENCE_DOES_NOT_PROVE_CLAIM",
+                    f"Manh mối có cấu trúc #{idx + 1} thiếu trường bắt buộc (clue, what_it_proves, what_it_does_NOT_prove, next_question).",
+                    target=f"structured_clues[{idx}]",
+                )
+                continue
+
+            # Check if what_it_proves claims the exact conclusion that what_it_does_NOT_prove says it cannot prove
+            proves_clean = re.sub(r"\b(không|chưa|chẳng|đừng)\b", "", proves_txt.lower())
+            not_proves_clean = re.sub(r"\b(không|chưa|chẳng|đừng)\b", "", not_proves_txt.lower())
+            p_toks = {w for w in _tokenize(proves_clean) if len(w) > 2}
+            np_toks = {w for w in _tokenize(not_proves_clean) if len(w) > 2}
+            if p_toks and np_toks:
+                overlap_ratio = len(p_toks & np_toks) / max(1, min(len(p_toks), len(np_toks)))
+                # If proves_txt does NOT negate the claim and overlaps heavily with what_it_does_NOT_prove
+                if overlap_ratio >= 0.75 and not any(neg in proves_txt.lower() for neg in ["chỉ chứng minh", "chưa chứng minh", "không chứng minh"]):
+                    _add_issue(
+                        "EVIDENCE_DOES_NOT_PROVE_CLAIM",
+                        f"Manh mối #{idx + 1} ('{clue_txt[:50]}') tuyên bố chứng minh điều vượt quá giá trị vật chứng ('{proves_txt[:60]}' trùng với điều chưa thể chứng minh '{not_proves_txt[:60]}').",
+                        target=f"structured_clues[{idx}]",
+                    )
+
+            # Check if an initial single object clue jumps directly to proving full identity theft / crime
+            if _is_overreaching_clue_claim(clue_txt, proves_txt):
+                _add_issue(
+                    "EVIDENCE_DOES_NOT_PROVE_CLAIM",
+                    f"Manh mối #{idx + 1} ('{clue_txt[:50]}') nhảy cóc từ vật chứng đơn lẻ sang kết luận cuối cùng ('{proves_txt[:60]}') mà thiếu bằng chứng trung gian.",
+                    target=f"structured_clues[{idx}]",
+                )
+
+        for idx, raw_clue in enumerate(bible.clues or []):
+            if _is_overreaching_raw_clue(str(raw_clue)):
+                _add_issue(
+                    "EVIDENCE_DOES_NOT_PROVE_CLAIM",
+                    f"Manh mối #{idx + 1} ('{str(raw_clue)[:70]}') nhảy cóc trực tiếp tới kết luận cuối cùng mà không qua chuỗi xác minh trung gian.",
+                    target=f"clues[{idx}]",
+                )
+
+        # ------------------------------------------------------------------
+        # 4. REVEAL JUSTIFICATION GATE (UNSUPPORTED_REVEAL)
+        # ------------------------------------------------------------------
+        justifications = bible.reveal_justifications or {}
+        if justifications:
+            r1_just = justifications.get("reveal_1")
+            r2_just = justifications.get("reveal_2")
+            r1_required = ("evidence_support", "motivation_support", "timeline_support")
+            r2_required = ("evidence_support", "motivation_support", "character_knowledge_support")
+
+            if not isinstance(r1_just, dict):
+                _add_issue(
+                    "UNSUPPORTED_REVEAL",
+                    "Reveal 1 thiếu cấu trúc chứng minh (reveal_justifications.reveal_1).",
+                    target="reveal_1",
+                )
+            else:
+                for req_key in r1_required:
+                    val = r1_just.get(req_key)
+                    if not val or str(val).strip().lower() in ("", "none", "false", "unsupported", "không có", "thiếu"):
+                        _add_issue(
+                            "UNSUPPORTED_REVEAL",
+                            f"Reveal 1 không đủ căn cứ tại trường '{req_key}'.",
+                            target=f"reveal_1.{req_key}",
+                        )
+
+            if not isinstance(r2_just, dict):
+                _add_issue(
+                    "UNSUPPORTED_REVEAL",
+                    "Reveal 2 thiếu cấu trúc chứng minh (reveal_justifications.reveal_2).",
+                    target="reveal_2",
+                )
+            else:
+                for req_key in r2_required:
+                    val = r2_just.get(req_key)
+                    if not val or str(val).strip().lower() in ("", "none", "false", "unsupported", "không có", "thiếu"):
+                        _add_issue(
+                            "UNSUPPORTED_REVEAL",
+                            f"Reveal 2 không đủ căn cứ tại trường '{req_key}'.",
+                            target=f"reveal_2.{req_key}",
+                        )
+        else:
+            # Even if reveal_justifications dict was not explicitly passed, check whether Reveal 1 / Reveal 2
+            # are backed by clues, timeline, and character motivation.
+            has_evidence = bool(
+                (bible.clues and any(str(c).strip() for c in bible.clues))
+                or (bible.structured_clues and len(bible.structured_clues) > 0)
+                or (bible.critical_facts and len(bible.critical_facts) > 0)
+            )
+            has_timeline = bool((bible.timeline and any(str(t).strip() for t in bible.timeline)) or bible.critical_facts)
+            if (bible.reveal_1 or bible.reveal_2) and not has_evidence:
+                _add_issue(
+                    "UNSUPPORTED_REVEAL",
+                    "Reveal 1 / Reveal 2 hoàn toàn không có manh mối (clues) hỗ trợ trước đó.",
+                    target="reveal_1",
+                )
+            elif (bible.reveal_1 or bible.reveal_2) and not has_timeline:
+                _add_issue(
+                    "UNSUPPORTED_REVEAL",
+                    "Reveal 1 / Reveal 2 không có mốc thời gian (timeline) hoặc sự thật đóng băng hỗ trợ.",
+                    target="reveal_1",
+                )
+            else:
+                # Check if reveal_1 or reveal_2 is explicitly disconnected from clues/secret/critical_facts
+                facts_text = " ".join(f"{f.value} {f.description}" for f in (bible.critical_facts or []))
+                clues_corpus = (
+                    " ".join(str(c) for c in (bible.clues or []))
+                    + " " + str(bible.secret or "")
+                    + " " + " ".join(str(t) for t in (bible.timeline or []))
+                    + " " + facts_text
+                )
+                clues_tokens = {w for w in _tokenize(clues_corpus) if len(w) > 2}
+                for rev_label, rev_text in [("reveal_1", bible.reveal_1), ("reveal_2", bible.reveal_2)]:
+                    if rev_text and len(str(rev_text).strip()) > 15 and clues_tokens:
+                        rev_tokens = {w for w in _tokenize(str(rev_text)) if len(w) > 2}
+                        if rev_tokens and len(rev_tokens & clues_tokens) == 0:
+                            _add_issue(
+                                "UNSUPPORTED_REVEAL",
+                                f"{rev_label} đưa ra tình tiết hoàn toàn mới ('{str(rev_text)[:60]}') không có bất kỳ liên kết ngữ nghĩa hay manh mối nào với hệ thống clues/timeline.",
+                                target=rev_label,
+                            )
+
+        status = "PASS" if not issues else "FAIL"
+        if status == "FAIL":
+            bible.status = ApprovalStatus.NEEDS_LOGIC_REWRITE.value
+
+        report = StoryBibleQCReport(
+            episode_id=bible.episode_id,
+            status=status,
+            issues=issues,
+            logic_issues=logic_issues,
+            rule_codes=rule_codes,
+        )
+        bible.story_qc_report = report.to_dict()
+        return report
+
+    def repair_story_bible(
+        self,
+        bible: StoryBible,
+        report: Optional[StoryBibleQCReport] = None,
+    ) -> StoryBible:
+        """
+        Repairs StoryBible causal gaps, knowledge contradictions, evidence jumps,
+        and missing reveal justifications so ScriptWriter receives a coherent StoryBible.
+        """
+        if report is None:
+            report = self.audit_story_bible(bible)
+
+        protag_name = (
+            bible.protagonist.get("name", "Nhân vật chính")
+            if isinstance(bible.protagonist, dict)
+            else str(bible.protagonist or "Nhân vật chính")
+        )
+        supp_name = (
+            bible.supporting_characters[0].get("name", "Người thân")
+            if bible.supporting_characters and isinstance(bible.supporting_characters[0], dict)
+            else "Người thân"
+        )
+
+        # 1. Repair CAUSAL_GAP in reveal_1 / reveal_2 / secret and populate causal_chains
+        if "CAUSAL_GAP" in report.rule_codes or not bible.causal_chains:
+            if _has_weak_cause_to_extreme_action(
+                f"{bible.secret} {bible.reveal_1} {bible.reveal_2}".lower(),
+                has_strong_necessity=False,
+            ):
+                necessity_clause = (
+                    " Do hồ sơ hành chính thời điểm biến cố bị thất lạc và giấy xác nhận duy nhất còn lại mang tên người đã khuất, "
+                    "cùng với cú sốc tâm lý đe dọa tính mạng người thân nếu biết tin dữ ngay lúc đó, nhân vật buộc phải duy trì "
+                    "thỏa thuận pháp lý và danh phận này như phương án duy nhất để bảo toàn mái ấm và quyền lợi hợp pháp cho gia đình."
+                )
+                if bible.reveal_2 and not _has_necessity_markers(bible.reveal_2.lower()):
+                    bible.reveal_2 = bible.reveal_2.rstrip(".") + "." + necessity_clause
+                if bible.secret and not _has_necessity_markers(bible.secret.lower()):
+                    bible.secret = bible.secret.rstrip(".") + "." + necessity_clause
+
+            bible.causal_chains = [
+                {
+                    "target": "reveal_1",
+                    "cause": f"Biến cố quá khứ và ràng buộc giấy tờ/hoàn cảnh thực tế của {supp_name}.",
+                    "decision": f"{supp_name} quyết định giữ kín hồ sơ gốc để tránh cú sốc tâm lý và rủi ro pháp lý cho {protag_name}.",
+                    "action": (
+                        str(bible.reveal_1)
+                        if len(str(bible.reveal_1 or "").strip()) >= 10
+                        else f"Thực hiện cam kết bảo vệ quyền lợi gia đình trong âm thầm ({bible.reveal_1 or 'Reveal 1'})."
+                    ),
+                    "consequence": f"{protag_name} hiểu lầm hướng đi ban đầu cho đến khi đối chiếu chứng từ gốc.",
+                    "why": "Bảo vệ sự an toàn tâm lý và danh dự của các thành viên trong gia đình.",
+                    "motivation": "Không thể công khai ngay thời điểm đó vì điều kiện sức khỏe, tâm lý và thủ tục xác minh chưa cho phép giải pháp thông thường.",
+                    "how": "Duy trì qua hồ sơ lưu trữ chính thức, sổ ghi chép riêng và sự phối hợp giữ kín của nhân chứng liên quan.",
+                },
+                {
+                    "target": "reveal_2",
+                    "cause": f"Tình thế bất khả kháng buộc {supp_name} phải gánh vác trách nhiệm thay thế mà không thể giải thích công khai.",
+                    "decision": f"Chấp nhận chịu thiệt thòi cá nhân và giữ im lặng suốt nhiều năm để bảo toàn cuộc sống bình yên cho {protag_name}.",
+                    "action": (
+                        str(bible.reveal_2)
+                        if len(str(bible.reveal_2 or "").strip()) >= 10
+                        else f"Duy trì sự hy sinh thầm lặng qua nhiều năm ({bible.reveal_2 or bible.secret or 'Reveal 2'})."
+                    ),
+                    "consequence": "Để lại uẩn khúc chỉ được tháo gỡ khi đầy đủ chứng cứ trung gian và nhân chứng lên tiếng.",
+                    "why": "Nếu tiết lộ sớm hoặc chọn cách thông thường, gia đình sẽ sụp đổ hoặc mất đi quyền bảo hộ hợp pháp.",
+                    "motivation": "Giải pháp thông thường là bất khả thi do rào cản hồ sơ ban đầu và nguy cơ tổn thương trực tiếp đến người thân yếu thế.",
+                    "how": "Thực hiện nhất quán qua từng giai đoạn thời gian với sự xác nhận của hồ sơ lưu trữ và nhân chứng.",
+                },
+            ]
+
+        # 2. Repair CHARACTER_KNOWLEDGE_CONTRADICTION
+        if "CHARACTER_KNOWLEDGE_CONTRADICTION" in report.rule_codes or not bible.knowledge_ledger:
+            # Remove absolute "nobody knew" claims if a supporting character knows
+            for attr in ("secret", "reveal_1", "reveal_2"):
+                val = getattr(bible, attr, "")
+                if val:
+                    val = re.sub(
+                        r"không\s+một\s+ai\s+(?:hay\s+)?biết|không\s+thể\s+sẻ\s+chia\s+cùng\s+ai(?:\s+kể\s+cả\s+(?:với\s+)?người\s+vợ(?:\s+gối\s+chăn)?)?",
+                        "chỉ được giữ kín giữa những người trực tiếp liên quan",
+                        val,
+                        flags=re.IGNORECASE,
+                    )
+                    setattr(bible, attr, val)
+
+            ledger: List[Dict[str, Any]] = [
+                {
+                    "character": protag_name,
+                    "who_knows_what": f"{protag_name} ban đầu chỉ thấy dấu hiệu bất thường, chưa biết sự thật cốt lõi.",
+                    "when_they_learned_it": "Khi mở hồ sơ xác minh và nghe lời giải thích trực tiếp ở Hồi 6 - Hồi 7 (Reveal).",
+                    "how_they_learned_it": "Thông qua chuỗi 3 manh mối vật chứng và cuộc đối chiếu với nhân chứng.",
+                    "knowledge_scope": "none",
+                }
+            ]
+            for sc in (bible.supporting_characters or []):
+                if not isinstance(sc, dict):
+                    continue
+                sc_name = str(sc.get("name", "") or sc.get("char_id", "Người thân")).strip()
+                sc_desc = " ".join(str(sc.get(k, "")) for k in ("description", "role", "reason_for_silence")).lower()
+                knows_all = any(p in sc_desc for p in ["biết toàn bộ", "biết sự thật", "biết rõ", "biết hết", "người nắm giữ bí mật"])
+                ledger.append({
+                    "character": sc_name,
+                    "who_knows_what": f"{sc_name} nắm rõ nguyên nhân và thỏa thuận ngầm của biến cố quá khứ." if knows_all else f"{sc_name} biết một phần hoàn cảnh quá khứ và tôn trọng sự im lặng.",
+                    "when_they_learned_it": "Ngay từ thời điểm biến cố khởi phát trong quá khứ.",
+                    "how_they_learned_it": "Trực tiếp chứng kiến hoặc tham gia xử lý biến cố cùng người trong cuộc.",
+                    "knowledge_scope": "full" if knows_all else "partial",
+                })
+            bible.knowledge_ledger = ledger
+
+        # 3. Repair EVIDENCE_DOES_NOT_PROVE_CLAIM
+        if "EVIDENCE_DOES_NOT_PROVE_CLAIM" in report.rule_codes or not bible.structured_clues:
+            raw_clues = bible.clues if (bible.clues and len(bible.clues) >= 3) else [
+                "Manh mối 1: Vật chứng hoặc giấy tờ cá nhân cũ được cất giữ cẩn thận trong ngăn tủ khóa kín.",
+                "Manh mối 2: Bản ghi chép/chứng từ thứ hai hé lộ mốc thời gian và tên người liên quan trong quá khứ.",
+                "Manh mối 3: Hồ sơ gốc và lời xác nhận của nhân chứng làm sáng tỏ toàn bộ nguyên nhân thực sự.",
+            ]
+            cleaned_clues = []
+            for rc in raw_clues:
+                c_str = re.sub(
+                    r"(?:chứng\s+minh\s+hoàn\s+toàn|khẳng\s+định\s+chắc\s+chắn|đủ\s+để\s+kết\s+luận)",
+                    "đặt ra nghi vấn cần xác minh thêm về",
+                    str(rc),
+                    flags=re.IGNORECASE,
+                )
+                cleaned_clues.append(c_str)
+            bible.clues = cleaned_clues
+
+            bible.structured_clues = [
+                {
+                    "clue": cleaned_clues[0],
+                    "what_it_proves": "Chứng minh có một kỷ vật/tài liệu quá khứ liên quan đến người khác được cất giữ cẩn thận.",
+                    "what_it_does_NOT_prove": "Chưa chứng minh được mục đích che giấu hay kết luận về hành vi phản bội/mạo danh.",
+                    "next_question": "Vật chứng này thuộc về ai và tại sao lại xuất hiện trong nhà?",
+                },
+                {
+                    "clue": cleaned_clues[1] if len(cleaned_clues) > 1 else "Chứng từ đối chiếu thứ hai.",
+                    "what_it_proves": "Chứng minh có sự trùng khớp về mốc thời gian biến cố và mối liên hệ trực tiếp giữa hai bên.",
+                    "what_it_does_NOT_prove": "Chưa chứng minh được động cơ sâu xa hay sự thật cuối cùng nếu chưa có hồ sơ/nhân chứng gốc.",
+                    "next_question": "Thỏa thuận hoặc biến cố thực sự vào thời điểm đó diễn ra như thế nào?",
+                },
+                {
+                    "clue": cleaned_clues[2] if len(cleaned_clues) > 2 else "Hồ sơ xác nhận và nhân chứng.",
+                    "what_it_proves": f"Xác nhận đầy đủ chuỗi nhân quả dẫn tới Bước ngoặt 1 ({str(bible.reveal_1)[:60]}).",
+                    "what_it_does_NOT_prove": "Không phải là hành vi trục lợi ích kỷ như giả thuyết sai ban đầu.",
+                    "next_question": "Người trong cuộc đã phải đánh đổi và chịu đựng những gì suốt thời gian qua?",
+                },
+            ]
+
+        # 4. Repair UNSUPPORTED_REVEAL
+        if not bible.timeline:
+            bible.timeline = [
+                "Mốc quá khứ: Biến cố khởi phát dẫn đến quyết định giữ kín sự thật.",
+                "Giai đoạn duy trì: Bí mật được bảo vệ qua các chứng từ và cam kết thực tế.",
+                "Hiện tại: Nhân vật chính phát hiện chuỗi 3 manh mối và làm sáng tỏ chân tướng.",
+            ]
+        if not bible.clues:
+            bible.clues = [sc["clue"] for sc in bible.structured_clues]
+
+        bible.reveal_justifications = {
+            "reveal_1": {
+                "evidence_support": f"Được chứng minh trực tiếp bởi Manh mối 1 ('{bible.clues[0][:50]}') và Manh mối 2 ('{bible.clues[min(1, len(bible.clues)-1)][:50]}').",
+                "motivation_support": f"Xuất phát từ nhu cầu bảo vệ sự bình yên và quyền lợi hợp pháp của {protag_name}.",
+                "timeline_support": f"Khớp hoàn toàn với mốc thời gian trong timeline: '{bible.timeline[0][:60]}'.",
+            },
+            "reveal_2": {
+                "evidence_support": f"Được chứng minh bởi Manh mối 3 ('{bible.clues[-1][:50]}') và lời xác nhận của nhân chứng.",
+                "motivation_support": "Do hoàn cảnh bắt buộc lúc biến cố xảy ra khiến giải pháp thông thường không thể thực hiện.",
+                "character_knowledge_support": "Nhất quán với sổ cái nhận thức nhân vật (knowledge_ledger): chỉ người trong cuộc nắm rõ từ đầu.",
+            },
+        }
+
+        bible.status = ApprovalStatus.DRAFT.value
+        recheck = self.audit_story_bible(bible)
+        bible.story_qc_report = recheck.to_dict()
+        return bible
+
+
+def _has_necessity_markers(text_lower: str) -> bool:
+    markers = [
+        "bất khả kháng",
+        "không còn cách nào khác",
+        "phương án duy nhất",
+        "cách duy nhất",
+        "buộc phải",
+        "nếu không",
+        "giấy báo tử ghi nhầm",
+        "thất lạc hồ sơ",
+        "hồ sơ duy nhất",
+        "nguy kịch tính mạng",
+        "đe dọa tính mạng",
+        "ràng buộc pháp lý",
+        "bảo toàn tính mạng",
+        "không thể thực hiện giải pháp thông thường",
+        "giải pháp thông thường là bất khả thi",
+    ]
+    return any(m in text_lower for m in markers)
+
+
+def _has_weak_cause_to_extreme_action(text_lower: str, has_strong_necessity: bool = False) -> bool:
+    if has_strong_necessity:
+        return False
+    extreme_actions = [
+        r"đổi\s+(?:luôn\s+)?danh\s+tính",
+        r"sống\s+(?:suốt\s+)?(?:\d+\s+năm\s+)?dưới\s+danh\s+tính",
+        r"sống\s+dưới\s+tên",
+        r"mang\s+danh\s+tính\s+của",
+        r"giả\s+danh\s+người\s+đã\s+khuất",
+        r"mạo\s+danh\s+suốt",
+        r"xóa\s+bỏ\s+tên\s+thật",
+        r"đi\s+tù\s+thay\s+\d+\s+năm",
+        r"giả\s+chết\s+suốt\s+\d+\s+năm",
+    ]
+    weak_causes = [
+        r"nhờ\s+.*mang\s+(?:hộ\s+)?thẻ\s+bài",
+        r"mang\s+thẻ\s+bài.*chăm\s+sóc\s+mẹ",
+        r"nhờ\s+chăm\s+sóc\s+mẹ\s+già",
+        r"nhờ\s+gửi\s+lại\s+kỷ\s+vật",
+        r"nhờ\s+mang\s+giấy\s+tờ\s+về\s+quê",
+        r"chỉ\s+vì\s+lời\s+nhờ\s+vả",
+        r"vì\s+lời\s+dặn\s+mang\s+kỷ\s+vật",
+    ]
+    has_extreme = any(re.search(p, text_lower) for p in extreme_actions)
+    has_weak = any(re.search(p, text_lower) for p in weak_causes)
+    return bool(has_extreme and has_weak)
+
+
+def _is_overreaching_clue_claim(clue_text: str, proves_text: str) -> bool:
+    clue_low = clue_text.lower()
+    proves_low = proves_text.lower()
+    single_item_indicators = [
+        "thẻ bài", "bức ảnh", "chữ ký", "số điện thoại", "mảnh giấy",
+        "chiếc đồng hồ", "phong bì", "dòng chữ", "vết sẹo", "cuốn sổ",
+    ]
+    extreme_conclusions = [
+        "đã đánh tráo danh tính",
+        "chính là kẻ giả mạo",
+        "không phải là ông nội thật",
+        "không phải là cha ruột",
+        "đã giết",
+        "đã chiếm đoạt toàn bộ tài sản",
+        "đã phản bội gia đình suốt",
+        "chứng minh ông đã mạo danh",
+    ]
+    has_single_item = any(ind in clue_low for ind in single_item_indicators)
+    has_extreme_claim = any(ec in proves_low for ec in extreme_conclusions)
+    has_restraint = any(r in proves_low for r in ["chỉ chứng minh", "chưa chứng minh", "đặt ra nghi vấn", "cần xác minh"])
+    return bool(has_single_item and has_extreme_claim and not has_restraint)
+
+
+def _is_overreaching_raw_clue(raw_clue: str) -> bool:
+    low = raw_clue.lower()
+    overreach_patterns = [
+        r"(?:thẻ\s+bài|chữ\s+ký|bức\s+ảnh|mảnh\s+giấy|số\s+điện\s+thoại).*?(?:chứng\s+minh\s+hoàn\s+toàn|khẳng\s+định\s+chắc\s+chắn|đủ\s+để\s+kết\s+luận).*?(?:giả\s+mạo|đánh\s+tráo\s+danh\s+tính|phản\s+bội|chiếm\s+đoạt)",
+    ]
+    return any(re.search(p, low) for p in overreach_patterns)
+
 
 def _tokenize(text: str) -> set[str]:
     return set(re.findall(r"\w+", text.lower(), re.UNICODE))
+

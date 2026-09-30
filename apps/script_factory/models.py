@@ -163,6 +163,12 @@ class StoryBible:
     time_period: str = ""
     mystery_question: str = ""
     narrative_skeleton: Optional[Dict[str, Any]] = None
+    public_episode_number: Optional[int] = None
+    causal_chains: List[Dict[str, Any]] = field(default_factory=list)
+    knowledge_ledger: List[Dict[str, Any]] = field(default_factory=list)
+    structured_clues: List[Dict[str, Any]] = field(default_factory=list)
+    reveal_justifications: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    story_qc_report: Optional[Dict[str, Any]] = None
     status: str = "DRAFT"
     approved_by: Optional[str] = None
     approved_at: Optional[float] = None

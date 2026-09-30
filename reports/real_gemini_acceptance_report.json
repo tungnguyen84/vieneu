@@ -1,0 +1,15 @@
+{
+  "project_id": "EP1006",
+  "title": "Món Nợ Từ Bức Ảnh Cũ",
+  "segments_count": 90,
+  "words_count": 2507,
+  "qc_status": "PASS",
+  "has_internal_id_spoken": false,
+  "has_fake_serial_break": false,
+  "has_causal_chains": true,
+  "has_secret_contradiction": false,
+  "has_overreaching_clue": false,
+  "melodrama_hits": [],
+  "ending_proportion": 0.067,
+  "pass_all_v2_criteria": true
+}
