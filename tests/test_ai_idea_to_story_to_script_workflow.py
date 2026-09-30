@@ -18,7 +18,7 @@ PROJECTS_DIR = BASE_DIR / "projects"
 
 @pytest.fixture(autouse=True)
 def cleanup_test_project():
-    pid = "EP1005"
+    pid = "EPTESTIDEAFLOW"
     pdir = PROJECTS_DIR / pid
     if pdir.exists():
         shutil.rmtree(pdir, ignore_errors=True)
@@ -28,13 +28,13 @@ def cleanup_test_project():
 
 
 def test_ai_idea_to_story_to_script_e2e():
-    pid = "EP1005"
+    pid = "EPTESTIDEAFLOW"
 
     with patch.object(GenerationService, "get_provider", return_value=MockScriptAIProvider()):
         # 1. Create project
         create_resp = client.post("/api/projects/create", json={
             "episode_id": pid,
-            "title": "Bí Ẩn EP1005",
+            "title": "Bí Ẩn Test Idea Flow",
             "premise": "Khởi tạo từ AI Idea",
             "target_duration": 1200,
             "category": "Gia đình / Bí ẩn"

@@ -51,6 +51,24 @@ def make_mock_script(segments_text, title="Test Episode"):
     )
 
 
+def test_infidelity_topic_accepts_natural_relationship_wording():
+    intent = extract_topic_intent(
+        "Linh đã ngoại tình với một đồng nghiệp cùng cơ quan và che giấu mối quan hệ vụng trộm bằng lý do tăng ca."
+    )
+    segments = [
+        {"text": f"Hoàng đối chiếu lịch tăng ca và tin nhắn công việc bất thường thứ {index}."}
+        for index in range(40)
+    ]
+    segments[4]["text"] = "Linh thừa nhận đã có một mối quan hệ tình cảm bí mật với đồng nghiệp."
+    segments[18]["text"] = "Quan hệ tình cảm bí mật ấy bắt đầu từ những lần cùng làm dự án muộn."
+    segments[30]["text"] = "Linh nói họ đã vượt qua ranh giới đồng nghiệp và che giấu mối quan hệ."
+
+    result = intent.evaluate_content_adherence({"segments": segments}, stage="script")
+
+    assert result["status"] == "PASS"
+    assert result["topic_centrality_score"] >= 80.0
+
+
 def test_real_script_topic_adherence_not_metadata():
     """1. Topic QC evaluates actual narration text, NOT metadata."""
     topic = "Bí mật ngoại tình công sở"

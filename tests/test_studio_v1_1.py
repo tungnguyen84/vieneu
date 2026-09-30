@@ -32,7 +32,8 @@ from studio.backend.services.generation_service import GenerationService
 client = TestClient(app)
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECTS_DIR = BASE_DIR / "projects"
-TEST_EP_ID = "EP999"
+# Reserved non-numeric ID so test cleanup can never delete a real Studio episode.
+TEST_EP_ID = "EPTESTSTUDIOV11"
 
 
 @pytest.fixture(autouse=True)

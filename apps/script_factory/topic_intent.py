@@ -235,7 +235,9 @@ class TopicIntent:
         if is_infidelity:
             strict_theme_tokens = [
                 "ngoại tình", "tiểu tam", "người thứ ba", "bồ nhí", "vụng trộm", "gian dâm",
-                "nhân tình", "người tình", "lén lút", "lừa dối", "phản bội", "ly hôn", "ngoài luồng"
+                "nhân tình", "người tình", "lén lút", "lừa dối", "phản bội", "ly hôn", "ngoài luồng",
+                "mối quan hệ tình cảm", "quan hệ tình cảm bí mật", "mối quan hệ bí mật",
+                "vượt qua ranh giới đồng nghiệp", "không chung thủy", "che giấu mối quan hệ",
             ]
         elif is_family and not any(k in self.original_topic.lower() for k in ["gửi tiền", "cuộc gọi", "đã mất", "8 năm", "5 năm"]):
             strict_theme_tokens = list(dict.fromkeys(primary_tokens + ["gia đình", "người thân", "ruột thịt", "máu mủ", "mái ấm", "bố mẹ", "cha mẹ", "con cái", "ông bà", "anh em", "vợ chồng", "bí mật gia đình"]))

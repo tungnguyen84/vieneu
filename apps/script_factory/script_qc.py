@@ -1081,6 +1081,36 @@ def apply_targeted_repairs(
         if isinstance(story_bible.protagonist, dict)
         else str(story_bible.protagonist or "nhân vật chính")
     )
+    issue_rules = {
+        str(issue.get("rule", ""))
+        for issue in qc_report.evidence_issues
+        if isinstance(issue, dict)
+    }
+
+    # Repair a slow/generic hook using facts that already exist in the Story
+    # Bible. This changes presentation only and never invents a new clue.
+    if "HOOK_TOO_SLOW" in issue_rules and script.segments:
+        clue_source = story_bible.structured_clues or story_bible.clues or []
+        first_clue = ""
+        if clue_source:
+            raw_clue = clue_source[0]
+            if isinstance(raw_clue, dict):
+                first_clue = str(
+                    raw_clue.get("clue")
+                    or raw_clue.get("description")
+                    or raw_clue.get("text")
+                    or ""
+                ).strip()
+            else:
+                first_clue = str(raw_clue).strip()
+        mystery = str(story_bible.mystery_question or "Điều gì thực sự đang bị che giấu?").strip()
+        concrete_detail = first_clue or str(story_bible.secret or "một chi tiết không khớp").strip()
+        script.segments[0].text = (
+            f"Trong lá thư gửi về chương trình, {protag} kể về một dấu hiệu bất thường: "
+            f"{concrete_detail.rstrip('.')}. {mystery}"
+        )
+        script.segments[0].delivery_profile = "HOOK"
+        script.segments[0].audience_address = False
 
     # 1. Clean Story Bible Leakage & Internal Templates
     leakage_guard = StoryBibleLeakageGuard()
@@ -1267,6 +1297,49 @@ def apply_targeted_repairs(
             for idx in closing_indices[:-max_allowed]:
                 script.segments[idx].delivery_profile = "NORMAL"
                 script.segments[idx].audience_address = False
+
+    # Normalize the broadcast close deterministically. A provider sometimes
+    # emits a thank-you to the letter sender as ENDING, or repeats the canonical
+    # station sign-off in the penultimate segment. Neither requires rewriting
+    # the narrative body.
+    signoff_pattern = re.compile(
+        r"(?:cảm\s+ơn\s+quý\s+vị\s+đã\s+lắng\s+nghe|"
+        r"xin\s+chào\s+và\s+hẹn\s+gặp\s+lại|"
+        r"tôi\s+là\s+minh[^.]{0,80}hẹn\s+gặp\s+lại)",
+        re.IGNORECASE,
+    )
+    if script.segments:
+        normalized_segments = []
+        for segment in script.segments[:-1]:
+            if signoff_pattern.search(segment.text):
+                continue
+            if segment.delivery_profile == "ENDING":
+                segment.delivery_profile = "COMMENT"
+            normalized_segments.append(segment)
+
+        final_segment = script.segments[-1]
+        if not signoff_pattern.search(final_segment.text):
+            penultimate = script.segments[-1]
+            if penultimate.delivery_profile == "ENDING":
+                penultimate.delivery_profile = "COMMENT"
+            normalized_segments.append(penultimate)
+            final_segment = ScriptSegment(
+                id="",
+                speaker=script.host.get("id", "MINH") if isinstance(script.host, dict) else "MINH",
+                text="Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.",
+                delivery_profile="ENDING",
+                importance="normal",
+                audience_address=False,
+                speed=0.965,
+                pause_before=0.05,
+                pause_after=0.25,
+            )
+        final_segment.delivery_profile = "ENDING"
+        final_segment.audience_address = False
+        normalized_segments.append(final_segment)
+        script.segments = normalized_segments
+        for index, segment in enumerate(script.segments, start=1):
+            segment.id = f"{index:03d}"
 
     # 6. Repair Reveal Audience Restraint & Audience Frequency
     for s in script.segments:

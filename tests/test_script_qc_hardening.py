@@ -6,9 +6,9 @@ import pytest
 
 from apps.script_factory.auto_revision import AutoRevisionManager
 from apps.script_factory.cost_control import CostController
-from apps.script_factory.models import FullScript, LockedFact, ScriptSegment, StoryBible
+from apps.script_factory.models import FullScript, LockedFact, QCReport, ScriptSegment, StoryBible
 from apps.script_factory.providers.mock_provider import MockScriptAIProvider
-from apps.script_factory.script_qc import ScriptQCEngine
+from apps.script_factory.script_qc import ScriptQCEngine, apply_targeted_repairs
 from apps.script_factory.story_logic_v3 import ScriptProseQCV3Engine
 from studio.backend.services.audio_service import (
     AudioService,
@@ -99,6 +99,44 @@ def test_qc_accepts_single_signoff_only_at_final_segment():
         "ENDING_PROFILE_PLACEMENT",
     }
     assert not any(issue.get("rule") in ending_rules for issue in issues)
+
+
+def test_targeted_repair_fixes_slow_hook_and_duplicate_ending_without_new_story_facts():
+    bible = StoryBible(
+        episode_id="EP_QC_REPAIR_STRUCTURE",
+        title="Những ca tăng không có trong lịch",
+        protagonist={"name": "Hoàng", "char_id": "HOANG"},
+        secret="Linh che giấu một mối quan hệ tình cảm bí mật.",
+        mystery_question="Những ca tăng của Linh đang che giấu điều gì?",
+        clues=["Một tin nhắn thân mật xuất hiện trên máy tính làm việc của Linh."],
+    )
+    script = FullScript(
+        episode_id=bible.episode_id,
+        title=bible.title,
+        host={"id": "MINH", "voice": "Binh"},
+        segments=[
+            ScriptSegment(id="001", speaker="MINH", text="Hoàng bắt đầu nhìn lại mọi chuyện.", delivery_profile="HOOK"),
+            ScriptSegment(id="002", speaker="MINH", text="Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", delivery_profile="ENDING"),
+            ScriptSegment(id="003", speaker="MINH", text="Câu chuyện của Hoàng khép lại trong một khoảng lặng.", delivery_profile="ENDING"),
+        ],
+    )
+    report = QCReport(
+        episode_id=bible.episode_id,
+        status="FAIL",
+        evidence_issues=[
+            {"rule": "HOOK_TOO_SLOW", "severity": "HIGH"},
+            {"rule": "PREMATURE_SIGNOFF", "severity": "CRITICAL"},
+            {"rule": "ENDING_PROFILE_PLACEMENT", "severity": "HIGH"},
+        ],
+    )
+
+    repaired = apply_targeted_repairs(script, bible, report)
+
+    assert "dấu hiệu bất thường" in repaired.segments[0].text
+    assert "tin nhắn thân mật" in repaired.segments[0].text
+    assert sum("xin chào và hẹn gặp lại" in s.text.lower() for s in repaired.segments) == 1
+    assert [s.delivery_profile for s in repaired.segments].count("ENDING") == 1
+    assert repaired.segments[-1].delivery_profile == "ENDING"
 
 
 def test_qc_matches_locked_numbers_written_naturally_in_vietnamese(qc_env):

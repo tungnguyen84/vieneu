@@ -48,6 +48,60 @@ def _parse_json_safe(text: str) -> Optional[Any]:
     return None
 
 
+_SCRIPT_SIGNOFF_RE = re.compile(
+    r"(?:cảm\s+ơn\s+quý\s+vị\s+đã\s+lắng\s+nghe|"
+    r"xin\s+chào\s+và\s+hẹn\s+gặp\s+lại|"
+    r"tôi\s+là\s+minh[^.]{0,80}hẹn\s+gặp\s+lại)",
+    re.IGNORECASE,
+)
+_MIN_SCRIPT_PART_SEGMENTS = 30
+_MIN_COMPLETE_SCRIPT_SEGMENTS = 70
+
+
+def _extract_script_segments(raw_text: str) -> List[Dict[str, Any]]:
+    parsed = _parse_json_safe(raw_text)
+    if isinstance(parsed, dict):
+        parsed = parsed.get("segments", [])
+    return [item for item in parsed if isinstance(item, dict)] if isinstance(parsed, list) else []
+
+
+def _part_has_closure(segments: List[Dict[str, Any]]) -> bool:
+    return any(
+        str(segment.get("delivery_profile", "")).upper() == "ENDING"
+        or bool(_SCRIPT_SIGNOFF_RE.search(str(segment.get("text", ""))))
+        for segment in segments
+    )
+
+
+def _normalize_final_closure(segments: List[Dict[str, Any]]) -> None:
+    """Correct harmless profile mistakes without hiding an actual early sign-off."""
+    if not segments:
+        return
+    for segment in segments[:-1]:
+        if (
+            str(segment.get("delivery_profile", "")).upper() == "ENDING"
+            and not _SCRIPT_SIGNOFF_RE.search(str(segment.get("text", "")))
+        ):
+            segment["delivery_profile"] = "COMMENT"
+    if _SCRIPT_SIGNOFF_RE.search(str(segments[-1].get("text", ""))):
+        segments[-1]["delivery_profile"] = "ENDING"
+
+
+def _has_valid_final_closure(segments: List[Dict[str, Any]]) -> bool:
+    if not segments:
+        return False
+    final_index = len(segments) - 1
+    signoff_indices = [
+        index for index, segment in enumerate(segments)
+        if _SCRIPT_SIGNOFF_RE.search(str(segment.get("text", "")))
+    ]
+    ending_indices = [
+        index for index, segment in enumerate(segments)
+        if str(segment.get("delivery_profile", "")).upper() == "ENDING"
+    ]
+    return signoff_indices == [final_index] and ending_indices == [final_index]
+
+
 class OpenAICompatibleProvider(ScriptAIProvider):
     """OpenAI / OpenAI-Compatible client for ideation, story bible, and scriptwriting."""
 
@@ -685,7 +739,7 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
             f"Định dạng nội dung: Một lá thư/câu chuyện tâm sự của nhân vật gửi về cho chương trình. MC Minh là người đọc toàn bộ kịch bản.\n"
             f"QUY TẮC CỨNG BẮT BUỘC:\n"
             f"1. KHÔNG ĐỌC MÃ TẬP / SỐ TẬP NỘI BỘ: Tuyệt đối KHÔNG viết hoặc đọc các mã như 'EP1005', 'EP002', 'IDEA_...', và KHÔNG đọc số thứ tự tập bằng chữ hay số. Khi chào mở đầu ở phân đoạn 004, MC Minh CHỈ nói: 'Chào mừng quý vị và các bạn đến với Sau Cánh Cửa.'\n"
-            f"2. KHÔNG NGẮT TẬP GIẢ TẠO: Đây là một tập phim hoàn chỉnh liền mạch. Tuyệt đối KHÔNG dùng các cụm từ 'phần tiếp theo', 'ở phần sau', 'hãy đón xem', 'chúng ta sẽ quay lại sau', 'tập tiếp theo' ở bất kỳ đâu trong kịch bản. Ở phân đoạn cuối cùng, lời chào kết thúc chuẩn của MC Minh BẮT BUỘC là: 'Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.' (TUYỆT ĐỐI KHÔNG nói 'hẹn gặp lại trong tập tiếp theo').\n"
+            f"2. KHÔNG NGẮT TẬP GIẢ TẠO: Đây là một tập phim hoàn chỉnh liền mạch. Tuyệt đối KHÔNG dùng các cụm từ 'phần tiếp theo', 'ở phần sau', 'hãy đón xem', 'chúng ta sẽ quay lại sau', 'tập tiếp theo' ở bất kỳ đâu trong kịch bản. Lời chào kết chuẩn chỉ được xuất hiện ĐÚNG MỘT LẦN trong object cuối cùng của PHẦN 2: 'Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.' PHẦN 1 tuyệt đối không được khép lại câu chuyện, cảm ơn thính giả, chào tạm biệt hoặc dùng delivery_profile='ENDING'.\n"
             f"3. CHỈ DÙNG NHÂN VẬT TRONG STORY BIBLE: Tuyệt đối không tự bịa thêm tên riêng nhân vật phụ ngoài danh sách Story Bible.\n"
             f"4. NHẤT QUÁN NHẬN THỨC NHÂN VẬT (KNOWLEDGE LEDGER): Tuân thủ tuyệt đối ai biết bí mật, ai không biết. Nếu trong Story Bible có người thân biết sự thật, tuyệt đối KHÔNG được viết câu mâu thuẫn như 'không một ai hay biết' hay 'không thể sẻ chia cùng ai kể cả người vợ gối chăn'.\n"
             f"5. KỶ LUẬT BẰNG CHỨNG (EVIDENCE CHAIN): Không nhảy cóc từ một manh mối ban đầu sang kết luận cuối cùng. Mỗi manh mối chỉ chứng minh đúng phạm vi của nó và đặt ra câu hỏi tiếp theo.\n"
@@ -716,7 +770,7 @@ Thông tin Story Bible:
 
 Cấu trúc Phân bổ Phần 1 (khoảng 40-50 phân đoạn):
 1. Act 1: HOOK (khoảng 5-6 phân đoạn đầu):
-   - Mở đầu bằng chi tiết cụ thể trong lá thư và dấu hiệu bất thường đầu tiên dưới dạng nghi vấn (delivery_profile='HOOK', speed=0.98). Tuyệt đối không kết luận trước sự thật ở Reveal.
+   - Hai phân đoạn đầu phải mở ngay bằng một vật thể, tin nhắn, thời điểm hoặc hành động bất thường cụ thể trong lá thư; phải có từ "bất thường", "dấu hiệu", "nghi vấn", "bí mật", "lá thư" hoặc một câu hỏi trực tiếp (delivery_profile='HOOK', speed=0.98). Tuyệt đối không kết luận trước sự thật ở Reveal.
    - Lời chào mở đầu chương trình của {host_name}: BẮT BUỘC mở đầu bằng "Chào mừng quý vị và các bạn đến với Sau Cánh Cửa." (KHÔNG đọc số tập hay mã tập, delivery_profile='NORMAL', speed=1.01).
    - Giới thiệu nhân vật gửi thư và bước vào bối cảnh câu chuyện (delivery_profile='NORMAL', speed=1.01).
 2. Act 2: SETUP (khoảng 10-12 phân đoạn):
@@ -729,6 +783,11 @@ Cấu trúc Phân bổ Phần 1 (khoảng 40-50 phân đoạn):
    - Giả thuyết sai ban đầu (false lead) xuất hiện từ góc nhìn hạn chế của nhân vật chính (delivery_profile='NORMAL' và 'MYSTERY').
 5. Act 5: INVESTIGATION (khoảng 8-10 phân đoạn):
    - Nhân vật chính bắt đầu hành động xác minh thực tế, tìm gặp nhân chứng hoặc đối chiếu tài liệu thứ hai.
+
+ĐIỂM DỪNG BẮT BUỘC CỦA PHẦN 1:
+- Dừng ở một hành động xác minh đang diễn ra hoặc một câu hỏi còn mở để PHẦN 2 tiếp tục trực tiếp.
+- KHÔNG tiết lộ đáp án cuối, KHÔNG giải quyết xung đột, KHÔNG đúc kết bài học, KHÔNG cảm ơn và KHÔNG chào tạm biệt.
+- Không object nào trong PHẦN 1 được dùng delivery_profile='ENDING'.
 
 Yêu cầu định dạng JSON:
 Trả về JSON Object có khóa "segments": [
@@ -748,25 +807,50 @@ Trả về JSON Object có khóa "segments": [
             {"role": "user", "content": prompt_part1},
         ]
         raw_p1, in_tok1, out_tok1 = self._call_chat_completion(messages_p1, model=model, response_json=True)
-        parsed_p1 = _parse_json_safe(raw_p1)
-        p1_data = []
-        if isinstance(parsed_p1, dict):
-            p1_data = parsed_p1.get("segments", [])
-        elif isinstance(parsed_p1, list):
-            p1_data = parsed_p1
+        p1_data = _extract_script_segments(raw_p1)
+        if len(p1_data) < _MIN_SCRIPT_PART_SEGMENTS or _part_has_closure(p1_data):
+            retry_messages = [
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": prompt_part1 + """
+
+YÊU CẦU SỬA BẮT BUỘC: Kết quả trước bị thiếu phân đoạn hoặc đã khép lại câu chuyện quá sớm.
+Viết lại TOÀN BỘ PHẦN 1 với ít nhất 30 phân đoạn. Không ENDING, không lời cảm ơn/chào tạm biệt, không giải quyết bí mật.
+Phân đoạn cuối phải để một hành động xác minh đang tiếp diễn cho PHẦN 2 nối trực tiếp.
+"""},
+            ]
+            raw_retry, retry_in, retry_out = self._call_chat_completion(
+                retry_messages, model=model, response_json=True
+            )
+            in_tok1 += retry_in
+            out_tok1 += retry_out
+            p1_data = _extract_script_segments(raw_retry)
+        if len(p1_data) < _MIN_SCRIPT_PART_SEGMENTS:
+            raise RuntimeError(
+                f"OpenAI-compatible provider returned only {len(p1_data)} valid Part 1 segments after retry; at least {_MIN_SCRIPT_PART_SEGMENTS} are required."
+            )
+        if _part_has_closure(p1_data):
+            raise RuntimeError("OpenAI-compatible Part 1 still closes the story after retry; script was rejected.")
 
         time.sleep(1)
 
         # ---------------- PART 2: ACTS 5 (cont) to 9 (~40 to 50 Segments) ----------------
-        p1_context = "\n".join(f"[{s.get('id')}] {s.get('text')[:80]}..." for s in p1_data[-5:]) if p1_data else ""
+        p1_context = "\n".join(
+            f"[{s.get('id')}] {str(s.get('text', ''))[:180]}"
+            for s in p1_data
+        )
         p1_count = len(p1_data)
         next_start_id = p1_count + 1
 
         prompt_part2 = f"""Hãy viết tiếp PHẦN 2 cho kịch bản câu chuyện: '{clean_title}'.
 Mục tiêu độ dài Phần 2: Khoảng 1.200 - 1.600 từ tiếng Việt, triển khai tự nhiên khoảng 40 - 50 phân đoạn tiếp theo.
 
-Bối cảnh cuối Phần 1 vừa kết thúc (tổng cộng {p1_count} phân đoạn):
+BẢN ĐỒ TOÀN BỘ NỘI DUNG ĐÃ KỂ Ở PHẦN 1 (tổng cộng {p1_count} phân đoạn):
 {p1_context}
+
+KỶ LUẬT NỐI MẠCH:
+- Tiếp tục trực tiếp từ hành động cuối PHẦN 1. Không mở đầu lại, không giới thiệu lại nhân vật và không kể lại các dấu hiệu đã có.
+- Mỗi chứng cứ cũ chỉ được nhắc rất ngắn khi dẫn thẳng đến một phát hiện mới.
+- Chỉ khép lại câu chuyện ở Act 8 và chỉ chào kết đúng một lần trong object cuối cùng của PHẦN 2.
 
 Nội dung Bước ngoặt, Chuỗi Nhân Quả & Hóa giải cảm xúc của Story Bible:
 - Bước ngoặt 1 (Reveal 1): {story_bible.reveal_1}
@@ -818,14 +902,43 @@ Trả về JSON Object có khóa "segments": [
             {"role": "user", "content": prompt_part2},
         ]
         raw_p2, in_tok2, out_tok2 = self._call_chat_completion(messages_p2, model=model, response_json=True)
-        parsed_p2 = _parse_json_safe(raw_p2)
-        p2_data = []
-        if isinstance(parsed_p2, dict):
-            p2_data = parsed_p2.get("segments", [])
-        elif isinstance(parsed_p2, list):
-            p2_data = parsed_p2
+        p2_data = _extract_script_segments(raw_p2)
+        _normalize_final_closure(p2_data)
+        combined_candidate = p1_data + p2_data
+        if (
+            len(p2_data) < _MIN_SCRIPT_PART_SEGMENTS
+            or len(combined_candidate) < _MIN_COMPLETE_SCRIPT_SEGMENTS
+            or not _has_valid_final_closure(combined_candidate)
+        ):
+            retry_messages = [
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": prompt_part2 + """
 
-        combined_data = p1_data + p2_data
+YÊU CẦU SỬA BẮT BUỘC: Kết quả trước bị thiếu phân đoạn, lặp lời chào hoặc đặt ENDING sai vị trí.
+Viết lại TOÀN BỘ PHẦN 2 với ít nhất 30 phân đoạn. Chỉ object cuối cùng được dùng delivery_profile='ENDING'
+và chứa đúng lời chào chuẩn. Mọi object trước đó không được cảm ơn thính giả hoặc chào tạm biệt.
+"""},
+            ]
+            raw_retry, retry_in, retry_out = self._call_chat_completion(
+                retry_messages, model=model, response_json=True
+            )
+            in_tok2 += retry_in
+            out_tok2 += retry_out
+            p2_data = _extract_script_segments(raw_retry)
+            _normalize_final_closure(p2_data)
+            combined_candidate = p1_data + p2_data
+        if len(p2_data) < _MIN_SCRIPT_PART_SEGMENTS:
+            raise RuntimeError(
+                f"OpenAI-compatible provider returned only {len(p2_data)} valid Part 2 segments after retry; at least {_MIN_SCRIPT_PART_SEGMENTS} are required."
+            )
+        if len(combined_candidate) < _MIN_COMPLETE_SCRIPT_SEGMENTS:
+            raise RuntimeError(
+                f"OpenAI-compatible provider returned only {len(combined_candidate)} total script segments after retry; at least {_MIN_COMPLETE_SCRIPT_SEGMENTS} are required."
+            )
+        if not _has_valid_final_closure(combined_candidate):
+            raise RuntimeError("OpenAI-compatible script does not contain exactly one final sign-off after retry; script was rejected.")
+
+        combined_data = combined_candidate
         segments: List[ScriptSegment] = []
         for idx, item in enumerate(combined_data):
             seg_id = f"{idx + 1:03d}"

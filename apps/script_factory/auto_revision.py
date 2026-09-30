@@ -37,9 +37,22 @@ class AutoRevisionManager:
     ) -> Tuple[FullScript, QCReport]:
         """Runs targeted revision and re-checks with QC."""
         if script.revision_round >= MAX_REVISION_ROUNDS:
-            script.status = ApprovalStatus.USER_REVIEW_REQUIRED
-            logger.warning(f"[AutoRevision] Reached max revision rounds ({MAX_REVISION_ROUNDS}) for {script.episode_id}. Marking USER_REVIEW_REQUIRED.")
-            return script, qc_report
+            # The round limit protects paid model calls. Safe deterministic
+            # repairs (hook/ending/profile normalization) may still resolve a
+            # legacy artifact without consuming another AI request.
+            from apps.script_factory.script_qc import apply_targeted_repairs
+
+            repaired_script = apply_targeted_repairs(script, story_bible, qc_report)
+            repaired_report = self.qc_engine.run_qc(repaired_script, story_bible, model=model)
+            if repaired_report.status == "PASS":
+                repaired_script.status = ApprovalStatus.QC_PASS
+            else:
+                repaired_script.status = ApprovalStatus.USER_REVIEW_REQUIRED
+                logger.warning(
+                    f"[AutoRevision] Reached max revision rounds ({MAX_REVISION_ROUNDS}) for "
+                    f"{script.episode_id}; deterministic repair still requires user review."
+                )
+            return repaired_script, repaired_report
 
         self.cost_ctrl.check_budget_pre_flight(episode_id=script.episode_id)
 

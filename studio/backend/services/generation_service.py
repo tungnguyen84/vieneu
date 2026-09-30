@@ -71,7 +71,7 @@ def get_configured_ai_provider(provider_id: Optional[str] = None, model_id: Opti
             return MockScriptAIProvider(default_model=default_model)
         else:
             raise RuntimeError(
-                f"AI GENERATION FAILED: {target_p.upper()} API key is missing. "
+                f"AI GENERATION FAILED: {target_p.upper()} API key is missing or not configured. "
                 "Please configure your provider credentials in Settings."
             )
     elif target_p == "anthropic":
