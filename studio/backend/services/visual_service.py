@@ -19,6 +19,376 @@ VISUAL_DIR = BASE_DIR / "production_pilot_03_visual_v1_0a"
 PROJECTS_DIR = BASE_DIR / "projects"
 
 
+def _normalize_gender(char_dict: Dict[str, Any], all_chars: Optional[List[Dict[str, Any]]] = None) -> Optional[str]:
+    """Extracts and normalizes character gender strictly without guessing solely from name."""
+    g = char_dict.get("gender")
+    if g:
+        g_str = str(g).strip().upper()
+        if g_str in ("FEMALE", "F", "NỮ", "NU", "WOMAN"):
+            return "FEMALE"
+        if g_str in ("MALE", "M", "NAM", "MAN"):
+            return "MALE"
+
+    desc = str(char_dict.get("description") or "")
+    role = str(char_dict.get("role") or "")
+    combined = (desc + " " + role).lower()
+
+    # Check contextual relationships from other characters (e.g. 'vợ của Hùng' -> Hùng is male)
+    cname = str(char_dict.get("name") or "").strip().lower()
+    if cname and all_chars:
+        for oc in all_chars:
+            orole = (str(oc.get("role") or "") + " " + str(oc.get("description") or "")).lower()
+            if f"vợ của {cname}" in orole or f"vợ {cname}" in orole:
+                return "MALE"
+            if f"chồng của {cname}" in orole or f"chồng {cname}" in orole:
+                return "FEMALE"
+
+    female_indicators = ["người phụ nữ", "phụ nữ", "cô ấy", "cô ta", "vợ anh", "vợ của", "người vợ", "nữ sinh", "người mẹ"]
+    male_indicators = ["người đàn ông", "đàn ông", "anh ấy", "anh ta", "chồng cô", "chồng của", "người chồng", "nam sinh", "người bố", "người cha"]
+
+    has_female = any(re.search(r"\b" + re.escape(w) + r"\b", combined) for w in female_indicators)
+    has_male = any(re.search(r"\b" + re.escape(w) + r"\b", combined) for w in male_indicators)
+
+    if re.search(r"\bcô\s+(?:có|là|thường|yêu|muốn|biết|nghĩ|đang|đã)\b", combined):
+        has_female = True
+    if re.search(r"\banh\s+(?:có|là|thường|yêu|muốn|biết|nghĩ|đang|đã)\b", combined):
+        has_male = True
+
+    if has_female and not has_male:
+        return "FEMALE"
+    if has_male and not has_female:
+        return "MALE"
+    return None
+
+
+def _clean_character_reference_prompt(name: str, age: Optional[int], gender: Optional[str], role: str, description: str) -> str:
+    """Builds a clean visual identity reference prompt without narrative spoilers."""
+    spoiler_patterns = [
+        r"người tình[^.,;]*",
+        r"ngoại tình[^.,;]*",
+        r"phản bội[^.,;]*",
+        r"theo dõi[^.,;]*",
+        r"quan hệ ngoài luồng[^.,;]*",
+        r"hôn nhân tẻ nhạt[^.,;]*",
+        r"thao túng[^.,;]*",
+        r"ích kỷ[^.,;]*",
+        r"thủ đoạn[^.,;]*",
+        r"trả thù[^.,;]*",
+        r"hậu quả[^.,;]*",
+        r"bị bắt quả tang[^.,;]*",
+        r"bị lộ tẩy[^.,;]*",
+        r"lừa dối[^.,;]*",
+        r"tội lỗi[^.,;]*",
+        r"ảo tưởng[^.,;]*",
+        r"ảo mộng[^.,;]*",
+        r"đối mặt sự thật[^.,;]*",
+        r"níu giữ gia đình[^.,;]*",
+        r"con cái bị tổn thương[^.,;]*",
+        r"lợi dụng sự cả tin[^.,;]*",
+        r"hy vọng có thể làm lại[^.,;]*",
+        r"hứa hẹn[^.,;]*",
+        r"giải quyết nội bộ[^.,;]*",
+        r"không muốn đối mặt với sự thật[^.,;]*",
+    ]
+    clean_desc = description
+    for pat in spoiler_patterns:
+        clean_desc = re.sub(pat, "", clean_desc, flags=re.IGNORECASE)
+    clean_desc = re.sub(r"\s+", " ", clean_desc).strip(" .,;")
+
+    gender_tag = "woman" if gender == "FEMALE" else "man" if gender == "MALE" else "person"
+    age_tag = f"{age}-year-old " if age else ""
+
+    identity_summary = (
+        f"Realistic Vietnamese {gender_tag}, {age_tag}with authentic Vietnamese facial features, "
+        "natural skin texture, composed neutral expression, neat contemporary hairstyle."
+    )
+    wardrobe = "Wearing contemporary tasteful Vietnamese smart-casual attire appropriate for daily life."
+
+    return (
+        f"Cinematic identity reference portrait of Vietnamese character {name}. "
+        f"{identity_summary} {wardrobe} "
+        "Waist-up framing, neutral soft studio background, natural lighting, sharp focus, 16:9, no text, no watermark."
+    )
+
+
+class LocationContinuityEngine:
+    """Tracks location continuity state and infers locations purely from story semantics.
+    Never uses scene index, round-robin, or blind character occupation.
+    """
+    def __init__(self, locations: List[Dict[str, Any]]):
+        self.locations = locations
+        self.loc_by_id = {loc["location_id"]: loc for loc in locations}
+        self.primary_loc = locations[0] if locations else None
+
+        self.classified = []
+        for loc in locations:
+            blob = (loc["name"] + " " + loc.get("architecture", "") + " " + loc.get("story_function", "") + " " + loc["location_id"]).lower()
+            cat = "OTHER"
+            if any(k in blob for k in ("căn hộ", "nhà", "chung cư", "phòng khách", "phòng ngủ", "phòng tắm", "gia đình")):
+                cat = "HOME"
+            elif any(k in blob for k in ("resort", "khách sạn", "vũng tàu", "hotel")):
+                cat = "HOTEL_RESORT"
+            elif any(k in blob for k in ("cà phê", "cafe", "quán nước")):
+                cat = "CAFE"
+            elif "kiến trúc" in blob or ("văn phòng" in blob and "hùng" in blob):
+                cat = "OFFICE_PROTAGONIST"
+            elif "nội thất" in blob or ("công ty" in blob and "mai" in blob):
+                cat = "OFFICE_SUPPORTING"
+            elif "văn phòng" in blob or "công ty" in blob or "office" in blob:
+                cat = "OFFICE"
+            self.classified.append({
+                "loc": loc,
+                "cat": cat,
+                "id": loc["location_id"],
+                "name": loc["name"],
+                "blob": blob
+            })
+
+    def find_by_category(self, cat: str) -> Optional[Dict[str, Any]]:
+        for c in self.classified:
+            if c["cat"] == cat:
+                return c["loc"]
+        return None
+
+    def resolve(
+        self,
+        scene_index: int,
+        combined_text: str,
+        dominant_profile: str,
+        previous_loc_id: Optional[str]
+    ) -> Tuple[Optional[str], str, str, str]:
+        """
+        Returns (location_id, location_source, location_evidence, location_confidence).
+        Priority:
+        1. EXPLICIT: Physical setting directly mentioned in narration
+        2. TRANSITION: Explicit transition phrases in narration
+        3. CONTINUITY: Preserved setting from previous scene
+        4. STORY_BIBLE: Primary story setting anchor
+        5. UNKNOWN: Fallback
+        """
+        t_low = combined_text.lower()
+
+        # 1. EXPLICIT PHYSICAL SIGNALS
+        home_presence = [
+            "ngưỡng cửa nhà", "trước cửa nhà", "chuông cửa", "mở chốt", "cánh cửa vừa hé",
+            "bước vào trong", "phòng khách", "ghế sofa", "phòng ngủ", "phòng tắm",
+            "về nhà", "trở về nhà", "trong nhà", "ở nhà", "căn hộ", "ngôi nhà", "mái ấm",
+            "tổ ấm", "nằm trên giường", "ngủ say", "điện thoại của cô bỗng rung",
+            "bước ra khỏi căn nhà", "khép lại an toàn"
+        ]
+        matched_home = next((kw for kw in home_presence if kw in t_low), None)
+        if matched_home:
+            home_loc = self.find_by_category("HOME") or self.primary_loc
+            if home_loc:
+                return (
+                    home_loc["location_id"],
+                    "EXPLICIT",
+                    f"Explicit domestic setting in narration: '{matched_home}'",
+                    "HIGH"
+                )
+
+        cafe_presence = ["ngồi trong quán cà phê", "tại quán cà phê", "bước vào quán cà phê", "ở quán cà phê", "hai người gặp nhau ở quán cà phê"]
+        matched_cafe = next((kw for kw in cafe_presence if kw in t_low), None)
+        if matched_cafe:
+            cafe_loc = self.find_by_category("CAFE")
+            if cafe_loc:
+                return (
+                    cafe_loc["location_id"],
+                    "EXPLICIT",
+                    f"Explicit cafe setting in narration: '{matched_cafe}'",
+                    "HIGH"
+                )
+
+        office_protagonist_presence = ["đến văn phòng kiến trúc", "tại văn phòng kiến trúc", "ngồi tại bàn làm việc ở văn phòng kiến trúc"]
+        matched_off_pro = next((kw for kw in office_protagonist_presence if kw in t_low), None)
+        if matched_off_pro:
+            off_loc = self.find_by_category("OFFICE_PROTAGONIST") or self.find_by_category("OFFICE")
+            if off_loc:
+                return (
+                    off_loc["location_id"],
+                    "EXPLICIT",
+                    f"Explicit architect office presence: '{matched_off_pro}'",
+                    "HIGH"
+                )
+
+        office_supporting_presence = ["đến công ty thiết kế", "tại công ty thiết kế", "ở công ty nội thất"]
+        matched_off_sup = next((kw for kw in office_supporting_presence if kw in t_low), None)
+        if matched_off_sup:
+            off_sup = self.find_by_category("OFFICE_SUPPORTING") or self.find_by_category("OFFICE")
+            if off_sup:
+                return (
+                    off_sup["location_id"],
+                    "EXPLICIT",
+                    f"Explicit design office presence: '{matched_off_sup}'",
+                    "HIGH"
+                )
+
+        resort_presence = ["đến resort", "trong phòng khách sạn tại vũng tàu", "ở tại resort", "bước vào khách sạn ở vũng tàu"]
+        matched_resort = next((kw for kw in resort_presence if kw in t_low), None)
+        if matched_resort:
+            resort_loc = self.find_by_category("HOTEL_RESORT")
+            if resort_loc:
+                return (
+                    resort_loc["location_id"],
+                    "EXPLICIT",
+                    f"Explicit resort presence in narration: '{matched_resort}'",
+                    "HIGH"
+                )
+
+        # 2. CONTINUITY: If previous location was established, preserve it!
+        if previous_loc_id and previous_loc_id in self.loc_by_id:
+            return (
+                previous_loc_id,
+                "CONTINUITY",
+                "Continued setting from previous scene without location transition",
+                "HIGH"
+            )
+
+        # 3. STORY BIBLE / PRIMARY ANCHOR: For opening scenes or default grounding
+        if self.primary_loc:
+            return (
+                self.primary_loc["location_id"],
+                "STORY_BIBLE",
+                f"Primary story setting established from Story Bible ({self.primary_loc['name']})",
+                "HIGH"
+            )
+
+        # 4. UNKNOWN Fallback
+        return (
+            None,
+            "UNKNOWN",
+            "Location could not be established from narration or continuity",
+            "LOW"
+        )
+
+
+def _compose_scene_image_prompt(
+    scene_idx: int,
+    combined_text: str,
+    visible_characters: List[str],
+    location_name: str,
+    dominant_profile: str,
+    characters_map: Dict[str, Dict[str, Any]]
+) -> str:
+    """Creates a specific cinematic visual moment for the keyframe rather than dumping raw narration."""
+    t_low = combined_text.lower()
+
+    if any(k in t_low for k in ("ngưỡng cửa", "trước cửa", "chuông cửa", "mở chốt", "cánh cửa vừa hé", "bước vào trong")):
+        moment = (
+            "A tense nighttime scene at an apartment entrance door; a Vietnamese woman standing firmly in hallway shadows outside, "
+            "viewed as the heavy timber apartment door opens slightly from inside with subtle interior light spilling into the corridor"
+        )
+    elif any(k in t_low for k in ("điện thoại của cô bỗng rung", "màn hình sáng lên", "tin nhắn", "anh đang đợi em ở vũng tàu", "anh nhớ em")):
+        moment = (
+            "A 32-year-old Vietnamese man sitting in a dimly lit modern living room at night, staring with a troubled gaze "
+            "at an illuminated smartphone resting on a low coffee table; soft screen glow illuminating his contemplative face while a figure sleeps peacefully in background"
+        )
+    elif any(k in t_low for k in ("túi xách chanel", "đồng hồ hiệu dior", "món đồ xa xỉ", "quà tặng từ một khách hàng")):
+        moment = (
+            "A high-end luxury designer leather handbag and an elegant wristwatch resting conspicuously on an apartment coffee table; "
+            "subtle ambient indoor light emphasizing their expensive materials against a modest domestic background"
+        )
+    elif any(k in t_low for k in ("chúng ta cần nói chuyện rõ ràng", "đưa ra một chiếc điện thoại", "hình ảnh chụp lén", "vợ của lâm")):
+        moment = (
+            "A dramatic confrontation in a contemporary Vietnamese apartment living room; an unexpected female visitor standing with sharp gaze "
+            "holding out a glowing phone screen toward a shaken couple seated on a fabric sofa"
+        )
+    elif any(k in t_low for k in ("co rúm lại", "bắt quả tang", "ngấn lệ", "thú nhận", "trái tim anh tan nát", "khóc")):
+        moment = (
+            "An emotionally shattered scene in an apartment living room; a distressed Vietnamese woman seated on a sofa with face buried in hands in deep shame, "
+            "while a man stands nearby looking away in stunned disbelief under dim warm room lighting"
+        )
+    elif any(k in t_low for k in ("bước ra khỏi căn nhà", "mảnh vỡ", "quay lưng")):
+        moment = (
+            "A solemn moment in an apartment entryway; an assertive woman turning toward the front door to depart, "
+            "leaving behind a fractured domestic scene in the quiet amber glow of the living room"
+        )
+    elif any(k in t_low for k in ("quyết định ly hôn", "buông bỏ", "ngọn lửa yêu thương", "cánh cửa mà ta tin", "sau cánh cửa")):
+        moment = (
+            "A quiet, melancholic living room scene in soft daylight; an introspective Vietnamese man looking toward a large window, "
+            "with packed luggage near the entrance door symbolizing emotional closure and solemn resolution"
+        )
+    elif any(k in t_low for k in ("tự hào về gia đình", "căn hộ chung cư", "bảy năm", "ánh đèn vàng ấm áp", "phòng khách")):
+        moment = (
+            "A contemporary Vietnamese couple in their comfortable high-rise apartment living room; "
+            "tasteful modern interior design, warm ambient evening light casting soft shadows across the living space"
+        )
+    elif any(k in t_low for k in ("phòng tắm", "lén lút", "về nhà muộn")):
+        moment = (
+            "An atmosphere of domestic unease; a closed bathroom door with light glowing from underneath, "
+            "while an observant husband stands in the dimly lit hallway listening intently with quiet suspicion"
+        )
+    else:
+        moment = (
+            "An authentic documentary scene capturing a quiet dramatic moment in a Vietnamese interior; "
+            "subtle atmospheric lighting and restrained human emotion"
+        )
+
+    clean_loc = re.sub(r"\(.*?\)", "", location_name).strip()
+
+    return (
+        f"Vietnamese cinematic documentary realism, 35mm photography, natural film grain, authentic setting: {clean_loc}. "
+        f"{moment}. Restrained dramatic lighting, realistic Vietnamese character identity, balanced 16:9 composition, no captions, no watermark."
+    )
+
+
+def _compose_scene_video_prompt(
+    scene_idx: int,
+    combined_text: str,
+    visible_characters: List[str],
+    location_name: str,
+    dominant_profile: str
+) -> Dict[str, str]:
+    """Generates a scene-specific dynamic video prompt adhering strictly to Start/Action/Camera/End."""
+    t_low = combined_text.lower()
+    clean_loc = re.sub(r"\(.*?\)", "", location_name).strip()
+
+    if any(k in t_low for k in ("ngưỡng cửa", "chuông cửa", "mở chốt", "cánh cửa vừa hé", "bước vào trong")):
+        start = "Preserve exact keyframe: Hùng standing before the apartment entrance door at midnight, his hand grasping the lock handle."
+        action = "Hùng unlocks the deadbolt and slowly pulls the door open; Thanh steps decisively across the threshold, her cold gaze scanning the living room."
+        camera = "Slow restrained push-in tracking the visitor's forward step into the hallway."
+        end = "Thanh stops firmly inside the entryway; Hùng turns around behind her with a startled expression."
+    elif any(k in t_low for k in ("điện thoại của cô bỗng rung", "màn hình sáng lên", "tin nhắn", "anh đang đợi em ở vũng tàu", "anh nhớ em")):
+        start = "Preserve exact keyframe: Hùng sitting near the coffee table in the dim living room, the phone screen vibrating with a new notification."
+        action = "Hùng leans forward slowly, hesitating for a second before picking up the illuminated smartphone; his eyes widen with growing tension as he reads the message."
+        camera = "Slow restrained push-in toward Hùng's face and the glowing phone display."
+        end = "Hùng holds the phone motionless, his face tightened in silent disbelief; hold on expression."
+    elif any(k in t_low for k in ("chúng ta cần nói chuyện rõ ràng", "đưa ra một chiếc điện thoại", "hình ảnh chụp lén", "vợ của lâm")):
+        start = "Preserve exact keyframe: Thanh standing firmly in the living room holding out the smartphone, facing Mai seated on the sofa."
+        action = "Thanh extends her arm, presenting the illuminated screen directly toward Mai; Mai recoils slightly, her face draining of color as she looks up."
+        camera = "Restrained medium two-shot with subtle lateral drift emphasizing the emotional confrontation."
+        end = "Mai lowers her head trembling, unable to look back up; Thanh remains completely motionless."
+    elif any(k in t_low for k in ("co rúm lại", "bắt quả tang", "ngấn lệ", "thú nhận", "trái tim anh tan nát", "khóc")):
+        start = "Preserve exact keyframe: Mai sitting on the sofa with eyes welled with tears, Hùng standing frozen beside her."
+        action = "Mai slowly covers her face with both hands, her shoulders shuddering with quiet sobs; Hùng takes a slow half-step backward in shock."
+        camera = "Slow cinematic pull-out capturing the expanding emotional void between the couple."
+        end = "Mai weeps quietly with head bowed; Hùng looks away into the shadows with hollow defeat."
+    elif any(k in t_low for k in ("bước ra khỏi căn nhà", "mảnh vỡ", "quay lưng")):
+        start = "Preserve exact keyframe: Thanh turning toward the apartment entrance door after speaking her final words."
+        action = "Thanh walks steadily toward the exit without pausing; she opens the heavy front door and steps out, pulling the door closed behind her."
+        camera = "Static wide framing from the living room observing the closing doorway."
+        end = "The front door clicks shut, leaving Hùng standing in heavy silence amidst the quiet room."
+    elif any(k in t_low for k in ("phòng tắm", "lén lút", "về nhà muộn")):
+        start = "Preserve exact keyframe: Mai stepping into the bathroom with her phone in hand, Hùng seated in the living room."
+        action = "Mai closes the bathroom door firmly; Hùng turns his head toward the closed door, his expression shifting from calm to quiet suspicion."
+        camera = "Slow restrained push-in toward Hùng's attentive gaze."
+        end = "Hùng stares at the closed door in contemplation as a sliver of light glows from beneath it."
+    else:
+        start = f"Preserve exact subjects, wardrobe, and setting from the approved keyframe in {clean_loc}."
+        action = "The character shifts posture slowly, looking toward the window with restrained emotional intensity reflecting the narrative beat."
+        camera = "Slow cinematic lateral drift maintaining stable 24fps framing."
+        end = "Hold on the contemplative expression, no new characters or objects entering the frame."
+
+    full = f"Start: {start} Action: {action} Camera: {camera} End: {end} Zero generated dialogue, no subtitles, no text, no watermark."
+    return {
+        "start_state": start,
+        "action": action,
+        "camera": camera,
+        "end_state": end,
+        "full_prompt": full
+    }
+
+
 class VisualService:
     def __init__(self):
         pass
@@ -60,22 +430,43 @@ class VisualService:
             story_path = project_dir / "story" / "story_bible.json"
         story = json.loads(story_path.read_text(encoding="utf-8")) if story_path.exists() else {}
 
+        # 1. Characters Normalization
         raw_characters = []
-        if isinstance(story.get("protagonist"), dict):
-            raw_characters.append(story["protagonist"])
-        raw_characters.extend(item for item in story.get("supporting_characters", []) if isinstance(item, dict))
-        if not raw_characters and isinstance(story.get("characters"), list):
-            raw_characters = story["characters"]
+        char_bible_path = project_dir / "character_bible.json"
+        if char_bible_path.exists():
+            try:
+                cb_data = json.loads(char_bible_path.read_text(encoding="utf-8"))
+                if isinstance(cb_data, dict):
+                    if "characters" in cb_data and isinstance(cb_data["characters"], list):
+                        raw_characters = cb_data["characters"]
+                    else:
+                        raw_characters = list(cb_data.values())
+                elif isinstance(cb_data, list):
+                    raw_characters = cb_data
+            except Exception:
+                raw_characters = []
+
+        if not raw_characters:
+            if isinstance(story.get("protagonist"), dict):
+                raw_characters.append(story["protagonist"])
+            raw_characters.extend(item for item in story.get("supporting_characters", []) if isinstance(item, dict))
+            if not raw_characters and isinstance(story.get("characters"), list):
+                raw_characters = story["characters"]
+
         characters = []
         for index, char in enumerate(raw_characters):
             name = str(char.get("name") or f"Nhân vật {index + 1}")
             char_id = str(char.get("char_id") or char.get("character_id") or self._slug(name, "CHAR"))
             description = str(char.get("description") or char.get("appearance") or char.get("role") or "")
+            age = char.get("age")
+            gender = _normalize_gender(char, raw_characters)
+            role = str(char.get("role") or "")
+            ref_prompt = _clean_character_reference_prompt(name, age, gender, role, description)
             characters.append({
                 "character_id": char_id,
                 "name": name,
-                "age": char.get("age"),
-                "gender": char.get("gender"),
+                "age": age,
+                "gender": gender,
                 "ethnicity": "Vietnamese",
                 "identity_family_id": None,
                 "identity_role": "ANCHOR",
@@ -83,15 +474,13 @@ class VisualService:
                 "face_description": description,
                 "hair": "",
                 "body_build": "",
-                "emotional_baseline": str(char.get("role") or ""),
+                "emotional_baseline": role,
                 "wardrobe_baseline": "Contemporary Vietnamese clothing appropriate to the story",
                 "wardrobe_variants": {},
-                "reference_prompt": (
-                    f"Cinematic identity reference portrait of Vietnamese character {name}. {description}. "
-                    "Neutral background, natural skin texture, consistent facial identity, no text, 16:9."
-                ),
+                "reference_prompt": ref_prompt,
             })
 
+        # 2. Locations Grounding
         location_path = project_dir / "location_bible.json"
         location_data = json.loads(location_path.read_text(encoding="utf-8")) if location_path.exists() else {}
         raw_locations = location_data.get("locations", []) if isinstance(location_data, dict) else location_data
@@ -102,19 +491,30 @@ class VisualService:
             else:
                 name = str(item.get("name") or f"Bối cảnh {index + 1}")
                 description = str(item.get("description") or item.get("architecture") or item.get("story_function") or name)
+            clean_name = re.sub(r"\(.*?\)", "", name).strip()
             locations.append({
-                "location_id": self._slug(name, "LOC"), "name": name, "city_region": "Vietnam",
-                "type": "INTERIOR", "architecture": description, "story_function": description,
-                "reference_prompt": f"Cinematic Vietnamese location reference: {description}. Natural light, realistic documentary style, no text.",
+                "location_id": self._slug(name, "LOC"),
+                "name": name,
+                "city_region": "Vietnam",
+                "type": "INTERIOR",
+                "architecture": description,
+                "story_function": description,
+                "reference_prompt": f"Cinematic Vietnamese location reference: {clean_name}. Natural light, realistic documentary style, 16:9, no text, no watermark.",
             })
         if not locations:
             locations.append({
-                "location_id": "LOC_VIETNAM_HOME", "name": "Không gian gia đình Việt Nam", "city_region": "Vietnam",
-                "type": "INTERIOR", "architecture": "Contemporary Vietnamese family home",
+                "location_id": "LOC_VIETNAM_HOME",
+                "name": "Không gian gia đình Việt Nam",
+                "city_region": "Vietnam",
+                "type": "INTERIOR",
+                "architecture": "Contemporary Vietnamese family home",
                 "story_function": "Primary story setting",
-                "reference_prompt": "Contemporary Vietnamese family home, cinematic documentary realism, natural light, no text.",
+                "reference_prompt": "Contemporary Vietnamese family home, cinematic documentary realism, natural light, 16:9, no text, no watermark.",
             })
 
+        loc_engine = LocationContinuityEngine(locations)
+
+        # 3. Timeline & Segments Mapping
         weights = []
         for segment in segments:
             words = max(1, len(str(segment.get("text") or "").split()))
@@ -131,56 +531,91 @@ class VisualService:
         scene_count = min(45, len(segments))
         boundaries = [round(index * len(segments) / scene_count) for index in range(scene_count + 1)]
         scene_groups = [segment_times[boundaries[index]:boundaries[index + 1]] for index in range(scene_count)]
-        action_words = ("bước", "mở", "nhìn", "phát hiện", "khóc", "chạy", "đối diện", "cầm", "lật", "rời")
+        action_words = ("bước", "mở", "nhìn", "phát hiện", "khóc", "chạy", "đối diện", "cầm", "lật", "rời", "rung", "chuông", "gục")
         scored = []
         for index, group in enumerate(scene_groups):
             text = " ".join(str(item[2].get("text") or "") for item in group)
             profiles = [str(item[2].get("delivery_profile") or "NORMAL").upper() for item in group]
             score = 30 + (25 if any(word in text.lower() for word in action_words) else 0)
-            score += 20 if any(profile in {"HOOK", "MYSTERY", "ENDING"} for profile in profiles) else 0
+            score += 20 if any(profile in {"HOOK", "MYSTERY", "ENDING", "REVEAL", "TENSION"} for profile in profiles) else 0
             scored.append((score, index))
         video_target = min(8, max(1, round(scene_count * 0.18)))
         video_indexes = {index for _, index in sorted(scored, reverse=True)[:video_target]}
 
+        # 4. Scenes Planning with Continuity State Machine
         plan_scenes = []
+        previous_loc_id = None
+        characters_map = {c["character_id"]: c for c in characters}
+
         for scene_index, group in enumerate(scene_groups):
             start_time = round(group[0][0], 3)
             end_time = round(group[-1][1], 3)
             texts = [str(item[2].get("text") or "") for item in group]
             combined = " ".join(texts).strip()
             lower = combined.lower()
+            profiles = [str(item[2].get("delivery_profile") or "NORMAL").upper() for item in group]
+            dominant_profile = max(set(profiles), key=profiles.count)
+
             visible = [char["character_id"] for char in characters if char["name"].lower() in lower]
-            location = next((loc for loc in locations if loc["name"].lower() in lower), locations[scene_index % len(locations)])
+
+            # Semantic location inference with continuity tracking
+            loc_id, loc_source, loc_evidence, loc_confidence = loc_engine.resolve(
+                scene_index=scene_index,
+                combined_text=combined,
+                dominant_profile=dominant_profile,
+                previous_loc_id=previous_loc_id
+            )
+            previous_loc_id = loc_id
+            assigned_loc = loc_engine.loc_by_id.get(loc_id) or locations[0]
+
             is_video = scene_index in video_indexes
-            image_prompt = (
-                "Vietnamese cinematic documentary scene, photorealistic 35mm photography, natural skin texture, "
-                f"authentic setting: {location['name']}. Story beat: {combined[:500]}. "
-                "Restrained emotion, coherent character identity, 16:9 composition, no captions, no watermark."
+            image_prompt = _compose_scene_image_prompt(
+                scene_idx=scene_index,
+                combined_text=combined,
+                visible_characters=visible,
+                location_name=assigned_loc["name"],
+                dominant_profile=dominant_profile,
+                characters_map=characters_map
             )
             video_prompt = None
             if is_video:
-                video_prompt = (
-                    "Start: preserve the exact subjects, clothing and environment from the approved keyframe. "
-                    "Action: subtle natural movement matching the story beat with restrained Vietnamese drama acting. "
-                    "Camera: slow cinematic push-in or gentle lateral drift, stable 24fps. "
-                    "End: hold the same composition and identity, no new people or objects."
+                video_prompt_obj = _compose_scene_video_prompt(
+                    scene_idx=scene_index,
+                    combined_text=combined,
+                    visible_characters=visible,
+                    location_name=assigned_loc["name"],
+                    dominant_profile=dominant_profile
                 )
+                video_prompt = video_prompt_obj["full_prompt"]
+
             plan_scenes.append({
-                "scene_id": f"SC_{scene_index + 1:03d}", "order": scene_index + 1,
-                "start_time": start_time, "end_time": end_time, "duration": round(end_time - start_time, 3),
+                "scene_id": f"SC_{scene_index + 1:03d}",
+                "order": scene_index + 1,
+                "start_time": start_time,
+                "end_time": end_time,
+                "duration": round(end_time - start_time, 3),
                 "source_segments": [str(item[2].get("id") or item[2].get("segment_id") or "") for item in group],
                 "visual_mode": "VIDEO_RECOMMENDED" if is_video else "IMAGE_ONLY",
-                "visual_mode_reason": combined[:220], "video_value_scores": {"total_score": scored[scene_index][0]},
-                "image_prompt": image_prompt, "video_prompt": video_prompt,
-                "visible_characters": visible, "location_id": location["location_id"], "props": [],
+                "visual_mode_reason": combined[:220],
+                "video_value_scores": {"total_score": scored[scene_index][0]},
+                "image_prompt": image_prompt,
+                "video_prompt": video_prompt,
+                "visible_characters": visible,
+                "location_id": loc_id,
+                "location_confidence": loc_confidence,
+                "location_evidence": loc_evidence,
+                "location_source": loc_source,
+                "props": [],
                 "image_motion": {"type": "SLOW_PUSH_IN" if is_video else "KEN_BURNS_SLOW_PAN"},
             })
 
         target_dir = VISUAL_DIR / project_id
         target_dir.mkdir(parents=True, exist_ok=True)
         plan = {
-            "episode_id": project_id, "title": project_meta.get("title") or script_data.get("title") or project_id,
-            "audio_duration_sec": round(audio_duration, 3), "scenes": plan_scenes,
+            "episode_id": project_id,
+            "title": project_meta.get("title") or script_data.get("title") or project_id,
+            "audio_duration_sec": round(audio_duration, 3),
+            "scenes": plan_scenes,
         }
         (target_dir / "visual_plan.json").write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
         (target_dir / "character_bible.json").write_text(
@@ -224,6 +659,9 @@ class VisualService:
                 video_prompt=vp_text,
                 visible_characters=s.get("visible_characters", []),
                 location_id=s.get("location_id"),
+                location_confidence=s.get("location_confidence"),
+                location_evidence=s.get("location_evidence"),
+                location_source=s.get("location_source"),
                 props=s.get("props", []),
                 overlay_text=None,
                 motion_type="KEN_BURNS_SLOW_PAN"
@@ -249,6 +687,7 @@ class VisualService:
                 depends_on_reference=c.get("depends_on_reference"),
                 use_identity_anchor=bool(c.get("depends_on_reference")),
                 age=c.get("age"),
+                gender=c.get("gender"),
                 appearance_description=c.get("face_description", "") + " " + c.get("hair", ""),
                 reference_required=c.get("requires_approval", True),
                 reference_status="NOT_GENERATED",

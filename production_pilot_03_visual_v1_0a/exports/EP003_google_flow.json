@@ -3,7 +3,7 @@
   "project": {
     "series": "Sau Cánh Cửa",
     "production_id": "PRODUCTION_PILOT_03",
-    "exported_at": 1790692752.58,
+    "exported_at": 1790757370.36,
     "export_status": "GOOGLE_FLOW_EXPORT_READY"
   },
   "episodes": [
@@ -439,6 +439,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_WOODEN_BOX"
           ],
@@ -486,6 +489,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_WOODEN_BOX"
           ],
@@ -523,6 +529,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_WOODEN_BOX"
           ],
@@ -564,6 +573,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_NHA_MAI_HCM",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "A 32-year-old Vietnamese woman (CHAR_MAI) in smart casual linen shirt working thoughtfully at a wooden desk in her apartment in Ho Chi Minh City, evening urban skyline softly visible outside window, warm ambient interior light, 35mm cinematic documentary.",
@@ -597,6 +609,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "A traditional Vietnamese wooden family altar in a provincial home, framed black and white portrait of an 82-year-old elderly Vietnamese grandmother (CHAR_BA_HAO_ELDER) with silver hair and kind smile, bronze incense burner with thin curl of smoke, soft reverent daylight, warm cinematic tones, 35mm documentary photography.",
@@ -634,6 +649,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_WOODEN_BOX"
           ],
@@ -677,6 +695,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_WOODEN_BOX",
             "PROP_PASSBOOK_1994",
@@ -722,6 +743,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_VINTAGE_PHOTO_BAO_THOA"
           ],
@@ -763,6 +787,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_NHA_MAI_HCM",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_PASSBOOK_1994",
             "PROP_LAND_DEED_1992"
@@ -799,6 +826,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_MAI_HCM",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_PASSBOOK_1994"
           ],
@@ -834,6 +864,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_MAI_HCM",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_HANDWRITTEN_NOTE"
           ],
@@ -873,6 +906,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_NHA_MAI_HCM",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_MAI) standing in her dimly lit apartment living room, arms crossed, troubled introspective gaze toward the study table, city night lights blurred in the background window, cinematic 35mm documentary realism.",
@@ -910,6 +946,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_NHA_MAI_HCM",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_VINTAGE_PHOTO_BAO_THOA"
           ],
@@ -951,6 +990,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_NHA_MAI_HCM",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "A 32-year-old Vietnamese woman (CHAR_MAI) in a dusty-rose knit cardigan holding a travel bag and folder, standing by the apartment doorway in morning daylight, resolute and focused expression, modern Vietnamese domestic environment, 35mm photography.",
@@ -988,6 +1030,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_NHA_MAI_HCM",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Atmospheric cinematic shot of a 32-year-old Vietnamese woman (CHAR_MAI) sitting in contemplative silence beside a sunny window, warm morning dust motes, silhouette framed against sheer curtains, realistic emotional depth, muted colors, 35mm photography.",
@@ -1025,6 +1070,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_NHA_MAI_HCM",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_PASSBOOK_1994"
           ],
@@ -1064,6 +1112,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_NHA_MAI_HCM",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_MAI) holding a vintage family photo album on a wooden shelf, warm natural afternoon light streaming into the room, dust specks in air, authentic Vietnamese living space, 35mm photography.",
@@ -1097,6 +1148,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_MAI_HCM",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_HANDWRITTEN_NOTE"
           ],
@@ -1136,6 +1190,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Exterior shot of a 32-year-old Vietnamese woman (CHAR_MAI) walking up to the wooden entrance door of a provincial single-story home in Bảo Lộc, lush highland potted plants and ferns, gentle morning sunlight through tree branches, cinematic realism, 35mm photography.",
@@ -1181,6 +1238,9 @@
             "CHAR_CHU_MINH"
           ],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Medium two-shot of a 58-year-old Vietnamese man (CHAR_CHU_MINH) pouring green tea for a 32-year-old Vietnamese woman (CHAR_MAI) at a traditional carved wooden table in a provincial living room, porcelain tea set, ancestor altar in background, warm daylight, 35mm photography.",
@@ -1218,6 +1278,9 @@
             "CHAR_CHU_MINH"
           ],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_VINTAGE_PHOTO_BAO_THOA"
           ],
@@ -1259,6 +1322,9 @@
             "CHAR_CHU_MINH"
           ],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Medium shot of a 58-year-old Vietnamese man (CHAR_CHU_MINH) speaking with calm reverence and deep emotion, looking slightly past the camera as he recalls past memories, seated in his wooden living room, gentle natural light, 35mm photography.",
@@ -1296,6 +1362,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Medium close-up of a 32-year-old Vietnamese woman (CHAR_MAI) listening intently, eyes reflecting relief mixed with deeper curiosity, holding a steaming ceramic teacup, warm ambient lighting, 35mm cinematic documentary.",
@@ -1335,6 +1404,9 @@
             "CHAR_CHU_MINH"
           ],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_PASSBOOK_1994",
             "PROP_LAND_DEED_1992"
@@ -1371,6 +1443,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_PASSBOOK_1994"
           ],
@@ -1406,6 +1481,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Macro photograph of handwritten personal letters written in faded violet ink on yellowed thin paper, delicate Vietnamese cursive script, stacked neatly with soft creases, soft natural window light, historical authenticity, 35mm photography.",
@@ -1443,6 +1521,9 @@
             "CHAR_CHU_MINH"
           ],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Medium shot of a 58-year-old Vietnamese man (CHAR_CHU_MINH) looking warmly toward Mai, eyes glistening with quiet admiration, his hand resting gently on the wooden armrest, soft indoor light, cinematic documentary.",
@@ -1480,6 +1561,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Close-up of a 32-year-old Vietnamese woman (CHAR_MAI), a soft peaceful smile breaking through her previous anxiety, eyes shining with understanding and pride, warm natural light framing her face, 35mm lens.",
@@ -1519,6 +1603,9 @@
             "CHAR_BA_THOA_YOUNG"
           ],
           "location_id": "LOC_GAC_XEP_BAO_LOC",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Archival documentary scene from the 1980s: Two young Vietnamese women (CHAR_BA_HAO_YOUNG and CHAR_BA_THOA_YOUNG) in faded blue factory workwear working together at a textile weaving loom, cotton fibers in the air, warm industrial sunlight, subtle film grain, realistic working-class dignity, 35mm photography.",
@@ -1558,6 +1645,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_LAND_DEED_1992"
           ],
@@ -1593,6 +1683,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_VINTAGE_PHOTO_BAO_THOA",
             "PROP_PASSBOOK_1994",
@@ -1632,6 +1725,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Black-and-white archival photograph from 1985 of two young Vietnamese working women (young Bà Hảo and young Bà Thoa) sitting on a wooden bench, sharing a simple meal from an enamel tiffin carrier, genuine smiles, soft vintage grain, timeless dignity, 35mm photography.",
@@ -1665,6 +1761,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_WOODEN_BOX"
           ],
@@ -1706,6 +1805,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Cinematic close-up of a 32-year-old Vietnamese woman (CHAR_MAI) looking through a rain-streaked window in Lâm Đồng, soft tear on her cheek, expression of profound emotional pride and reverence, muted highland rainy daylight, 35mm lens.",
@@ -1745,6 +1847,9 @@
             "CHAR_CHU_MINH"
           ],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Medium two-shot of a 58-year-old Vietnamese man (CHAR_CHU_MINH) placing his reassuring hand over the hand of a 32-year-old woman (CHAR_MAI) at a wooden dining table, expressions of deep solidarity and family agreement, warm natural lighting, 35mm documentary.",
@@ -1778,6 +1883,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_WOODEN_BOX"
           ],
@@ -1815,6 +1923,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_CHU_MINH",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_VINTAGE_PHOTO_BAO_THOA"
           ],
@@ -1856,6 +1967,9 @@
             "CHAR_MAI"
           ],
           "location_id": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Cinematic landscape of a peaceful colonial-style rest home in Lâm Đồng nestled among pine-covered hills, a 32-year-old Vietnamese woman (CHAR_MAI) in a warm cardigan walking up the front stone pathway, soft morning highland mist, documentary realism, 35mm photography.",
@@ -1901,6 +2015,9 @@
             "CHAR_BA_THOA_ELDER"
           ],
           "location_id": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_VINTAGE_PHOTO_BAO_THOA"
           ],
@@ -1944,6 +2061,9 @@
             "CHAR_BA_THOA_ELDER"
           ],
           "location_id": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Medium shot of a 32-year-old Vietnamese woman (CHAR_MAI) gently wheeling an 80-year-old woman in a wheelchair (CHAR_BA_THOA_ELDER) along a brick garden path lined with hydrangeas and tall pine trees in Lâm Đồng, golden morning sunshine, tranquil warmth, 35mm.",
@@ -1989,6 +2109,9 @@
             "CHAR_BA_THOA_ELDER"
           ],
           "location_id": "LOC_VIEN_DUONG_LAO_LAM_DONG",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Close-up of young smooth Vietnamese hands (CHAR_MAI) clasped gently around elderly, wrinkled, weathered Vietnamese hands (CHAR_BA_THOA_ELDER), warm natural highland sunlight, symbol of generational promise and continuity, 35mm macro lens.",
@@ -2022,6 +2145,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_KHU_DAT_BAO_LOC",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Cinematic landscape of rolling Vietnamese tea plantations and distant mountains in Bảo Lộc under early morning golden hour, thin layers of mist hovering above vibrant green rows of tea bushes, tranquil cinematic documentary beauty, 35mm photography.",
@@ -2055,6 +2181,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_KHU_DAT_BAO_LOC",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Macro shot of architectural blueprints and sketches for a modest community children's shelter, titled in clean Vietnamese text, resting on a rustic wooden table with a view of green hills in the soft background, bright hopeful daylight, 35mm photography.",
@@ -2094,6 +2223,9 @@
             "CHAR_CHU_MINH"
           ],
           "location_id": "LOC_KHU_DAT_BAO_LOC",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [],
           "prop_refs_required": [],
           "image_prompt": "Wide cinematic shot of a 32-year-old Vietnamese woman (CHAR_MAI) and a 58-year-old man (CHAR_CHU_MINH) walking together on a green hillside in Bảo Lộc overlooking tea valleys, warm morning sun flare, blue sky, feeling of hope, closure and new beginning, 35mm photography.",
@@ -2133,6 +2265,9 @@
           "visible_characters": [],
           "character_refs_required": [],
           "location_id": "LOC_NHA_MAI_HCM",
+          "location_confidence": "HIGH",
+          "location_evidence": "",
+          "location_source": "EXPLICIT",
           "props": [
             "PROP_WOODEN_BOX",
             "PROP_VINTAGE_PHOTO_BAO_THOA"
@@ -2155,7 +2290,21 @@
           "video_status": "NOT_GENERATED",
           "video_media_id": null
         }
-      ]
+      ],
+      "qc_summary": {
+        "scene_count": 45,
+        "image_only_count": 38,
+        "video_recommended_count": 7,
+        "location_high_confidence_count": 45,
+        "location_medium_confidence_count": 0,
+        "location_low_confidence_count": 0,
+        "location_unresolved_count": 0,
+        "location_mismatch_count": 0,
+        "character_reference_count": 6,
+        "prop_reference_count": 2,
+        "timeline_gap_count": 0,
+        "timeline_overlap_count": 0
+      }
     }
   ]
 }

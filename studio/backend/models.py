@@ -102,6 +102,7 @@ class CharacterItem(BaseModel):
     depends_on_reference: Optional[str] = None
     use_identity_anchor: bool = False
     age: Optional[int] = None
+    gender: Optional[str] = None
     appearance_description: str = ""
     reference_required: bool = True
     reference_status: str = "NOT_GENERATED"
@@ -142,6 +143,9 @@ class SceneItem(BaseModel):
     video_prompt: Optional[str] = None
     visible_characters: List[str] = Field(default_factory=list)
     location_id: Optional[str] = None
+    location_confidence: Optional[str] = None
+    location_evidence: Optional[str] = None
+    location_source: Optional[str] = None
     props: List[str] = Field(default_factory=list)
     overlay_text: Optional[str] = None
     asset_image_path: Optional[str] = None

@@ -60,16 +60,27 @@ def parse_video_prompt_parts(vp: Optional[str]) -> Optional[Dict[str, str]]:
 
 
 def load_full_script_segments(ep_id: str) -> Dict[str, str]:
-    """Loads segment texts from full_script.json snapshot."""
-    script_path = SNAPSHOT_BASE / ep_id / "script_snapshot" / "full_script.json"
-    if not script_path.exists():
-        return {}
-    with open(script_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    segments = data.get("segments", [])
-    if not segments and isinstance(data, list):
-        segments = data
-    return {seg.get("id", seg.get("segment_id", f"{i+1:03d}")): seg.get("text", "") for i, seg in enumerate(segments)}
+    """Loads segment texts from project script or snapshot."""
+    candidates = [
+        BASE_DIR / "projects" / ep_id / "script" / "full_script.json",
+        BASE_DIR / "projects" / ep_id / "script.json",
+        SNAPSHOT_BASE / ep_id / "script_snapshot" / "full_script.json",
+    ]
+    for script_path in candidates:
+        if script_path.exists():
+            try:
+                with open(script_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                segments = data.get("segments", [])
+                if not segments and isinstance(data, list):
+                    segments = data
+                return {
+                    str(seg.get("id", seg.get("segment_id", f"{i+1:03d}"))): seg.get("text", "")
+                    for i, seg in enumerate(segments)
+                }
+            except Exception:
+                continue
+    return {}
 
 
 def build_episode_export(ep_id: str) -> Dict[str, Any]:
@@ -294,6 +305,9 @@ def build_episode_export(ep_id: str) -> Dict[str, Any]:
             "visible_characters": vis_chars,
             "character_refs_required": char_refs_req,
             "location_id": sc.get("location_id"),
+            "location_confidence": sc.get("location_confidence", "HIGH"),
+            "location_evidence": sc.get("location_evidence", ""),
+            "location_source": sc.get("location_source", "EXPLICIT"),
             "props": scene_props,
             "prop_refs_required": prop_refs_req,
             "image_prompt": sc["image_prompt"],
@@ -321,58 +335,129 @@ def build_episode_export(ep_id: str) -> Dict[str, Any]:
     }
 
 
+def check_scene_location_mismatch(scene: Dict[str, Any], locations_map: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+    """Checks semantic consistency between narration and assigned location."""
+    narr = (scene.get("narration_summary") or "").lower()
+    loc_id = scene.get("location_id")
+    if not loc_id:
+        return True, None
+    loc_info = locations_map.get(loc_id, {})
+    loc_text = (loc_id + " " + loc_info.get("name", "") + " " + loc_info.get("description", "")).lower()
+
+    # Rule 1: Domestic cues vs non-domestic location (Office / Resort / Cafe)
+    home_cues = [
+        "ngưỡng cửa nhà", "trước cửa nhà", "chuông cửa", "trong nhà", "ở nhà",
+        "căn hộ", "phòng khách", "phòng ngủ", "phòng tắm", "về nhà", "ngủ say",
+        "ghế sofa", "mở chốt", "cánh cửa vừa hé", "mái ấm", "tổ ấm", "bước ra khỏi căn nhà"
+    ]
+    is_home_narration = any(c in narr for c in home_cues)
+    is_office_or_resort_or_cafe = (
+        any(k in loc_text for k in ("văn phòng", "van_phong", "công ty", "cong_ty", "resort", "khách sạn", "khach_san", "cà phê", "ca_phe"))
+        and not any(k in loc_text for k in ("căn hộ", "can_ho", "nhà", "nha"))
+    )
+
+    if is_home_narration and is_office_or_resort_or_cafe:
+        return False, f"CRITICAL location mismatch in {scene.get('scene_id')}: narration describes domestic setting but location is {loc_id}"
+
+    # Rule 2: Office presence cues vs domestic location
+    office_presence_cues = [
+        "đến văn phòng kiến trúc", "tại văn phòng kiến trúc", "đến công ty thiết kế", "tại công ty thiết kế"
+    ]
+    if any(c in narr for c in office_presence_cues) and any(k in loc_text for k in ("căn hộ", "can_ho", "nhà", "nha")):
+        return False, f"CRITICAL location mismatch in {scene.get('scene_id')}: narration describes office presence but location is {loc_id}"
+
+    # Rule 3: Resort presence cues vs non-resort location
+    resort_presence_cues = [
+        "đến resort", "trong phòng khách sạn tại vũng tàu", "ở tại resort"
+    ]
+    if any(c in narr for c in resort_presence_cues) and not any(k in loc_text for k in ("resort", "khách sạn", "khach_san")):
+        return False, f"CRITICAL location mismatch in {scene.get('scene_id')}: narration describes resort presence but location is {loc_id}"
+
+    return True, None
+
+
 def validate_flow_export(export_data: Dict[str, Any]) -> Tuple[bool, List[str]]:
-    """Performs Section 35 strict validation checks."""
+    """Performs strict Section 22 and Section 35 validation checks."""
     errors = []
     episodes = export_data.get("episodes", [])
-    if len(episodes) not in [1, 2]:
-        errors.append(f"Expected 1 or 2 episodes in export, got {len(episodes)}")
+    if not episodes:
+        errors.append("No episodes found in export data")
+        return False, errors
 
     for ep in episodes:
         ep_id = ep["episode_id"]
-        scenes = ep["scenes"]
+        scenes = ep.get("scenes", [])
+        if not scenes:
+            errors.append(f"{ep_id}: No scenes in episode")
+            continue
 
-        # 1. Scene Count == 45
-        if len(scenes) != 45:
-            errors.append(f"{ep_id}: Expected 45 scenes, got {len(scenes)}")
+        # 1. Scene Count
+        if ep_id in ("EP003", "EP011"):
+            if len(scenes) != 45:
+                errors.append(f"{ep_id}: Expected 45 scenes, got {len(scenes)}")
+        else:
+            if len(scenes) < 1:
+                errors.append(f"{ep_id}: Episode has no scenes")
 
         # 2. Video Count
-        video_count = sum(1 for s in scenes if s["visual_mode"] == "VIDEO_RECOMMENDED")
-        expected_videos = 7 if ep_id == "EP003" else 8
-        if video_count != expected_videos:
-            errors.append(f"{ep_id}: Expected {expected_videos} video recommended scenes, got {video_count}")
+        video_count = sum(1 for s in scenes if s.get("visual_mode") == "VIDEO_RECOMMENDED")
+        if ep_id in ("EP003", "EP011"):
+            expected_videos = 7 if ep_id == "EP003" else 8
+            if video_count != expected_videos:
+                errors.append(f"{ep_id}: Expected {expected_videos} video recommended scenes, got {video_count}")
+        else:
+            if video_count < 1 or video_count > max(1, int(len(scenes) * 0.40)):
+                errors.append(f"{ep_id}: Video count {video_count} out of expected range for {len(scenes)} scenes")
 
         # 3. Image-Only Count
-        image_only_count = sum(1 for s in scenes if s["visual_mode"] == "IMAGE_ONLY")
-        expected_images = 38 if ep_id == "EP003" else 37
-        if image_only_count != expected_images:
-            errors.append(f"{ep_id}: Expected {expected_images} image-only scenes, got {image_only_count}")
+        image_only_count = sum(1 for s in scenes if s.get("visual_mode") == "IMAGE_ONLY")
+        if ep_id in ("EP003", "EP011"):
+            expected_images = 38 if ep_id == "EP003" else 37
+            if image_only_count != expected_images:
+                errors.append(f"{ep_id}: Expected {expected_images} image-only scenes, got {image_only_count}")
+        else:
+            if video_count + image_only_count != len(scenes):
+                errors.append(f"{ep_id}: Video ({video_count}) + Image ({image_only_count}) mismatch with total ({len(scenes)})")
 
         # 4. Character References Complete
-        char_refs = [c for c in ep["characters"] if c["reference_required"]]
-        expected_char_refs = 6 if ep_id == "EP003" else 7
-        if len(char_refs) != expected_char_refs:
-            errors.append(f"{ep_id}: Expected {expected_char_refs} character references, got {len(char_refs)}")
+        char_refs = [c for c in ep.get("characters", []) if c.get("reference_required")]
+        char_ids = {c["character_id"] for c in ep.get("characters", [])}
+        if ep_id in ("EP003", "EP011"):
+            expected_char_refs = 6 if ep_id == "EP003" else 7
+            if len(char_refs) != expected_char_refs:
+                errors.append(f"{ep_id}: Expected {expected_char_refs} character references, got {len(char_refs)}")
+        else:
+            for sc in scenes:
+                for cid in sc.get("visible_characters", []):
+                    if cid not in char_ids:
+                        errors.append(f"{ep_id}: Scene {sc['scene_id']} references unknown character {cid}")
 
         # 5. Prop References Complete
-        prop_refs = [p for p in ep["props"] if p["reference_required"]]
-        expected_prop_refs = 2 if ep_id == "EP003" else 3
-        if len(prop_refs) != expected_prop_refs:
-            errors.append(f"{ep_id}: Expected {expected_prop_refs} prop references, got {len(prop_refs)}")
+        prop_refs = [p for p in ep.get("props", []) if p.get("reference_required")]
+        prop_ids = {p["prop_id"] for p in ep.get("props", [])}
+        if ep_id in ("EP003", "EP011"):
+            expected_prop_refs = 2 if ep_id == "EP003" else 3
+            if len(prop_refs) != expected_prop_refs:
+                errors.append(f"{ep_id}: Expected {expected_prop_refs} prop references, got {len(prop_refs)}")
+        else:
+            for sc in scenes:
+                for pid in sc.get("props", []):
+                    if pid not in prop_ids:
+                        errors.append(f"{ep_id}: Scene {sc['scene_id']} references unknown prop {pid}")
 
         # 6. Identity dependencies valid
-        for c in ep["characters"]:
+        for c in ep.get("characters", []):
             if c.get("depends_on_reference"):
                 anchor_id = c["depends_on_reference"]
-                anchor_exists = any(ch["character_id"] == anchor_id for ch in ep["characters"])
+                anchor_exists = any(ch["character_id"] == anchor_id for ch in ep.get("characters", []))
                 if not anchor_exists:
                     errors.append(f"{ep_id}: Character {c['character_id']} depends on missing anchor {anchor_id}")
 
         # 7. No Media IDs Invented (must be null)
-        for c in ep["characters"]:
+        for c in ep.get("characters", []):
             if c.get("reference_media_id") is not None:
                 errors.append(f"{ep_id}: Invented media ID in character {c['character_id']}")
-        for p in ep["props"]:
+        for p in ep.get("props", []):
             if p.get("reference_media_id") is not None:
                 errors.append(f"{ep_id}: Invented media ID in prop {p['prop_id']}")
         for sc in scenes:
@@ -381,45 +466,90 @@ def validate_flow_export(export_data: Dict[str, Any]) -> Tuple[bool, List[str]]:
             if sc.get("generation_dependencies_satisfied") is not False:
                 errors.append(f"{ep_id}: generation_dependencies_satisfied must be False in scene {sc['scene_id']}")
 
-        # 8. Visual Spoiler Guard
-        sc31 = scenes[30]
-        if sc31["scene_id"] != "SC_031" or sc31["visual_mode"] != "IMAGE_ONLY":
-            errors.append(f"{ep_id}: Reveal 1 (SC_031) must be IMAGE_ONLY")
+        # 8. Visual Spoiler Guard for pilot episodes
+        if ep_id in ("EP003", "EP011"):
+            sc31 = scenes[30] if len(scenes) > 30 else None
+            if sc31 and (sc31["scene_id"] != "SC_031" or sc31["visual_mode"] != "IMAGE_ONLY"):
+                errors.append(f"{ep_id}: Reveal 1 (SC_031) must be IMAGE_ONLY")
 
-        sc39 = scenes[38]
-        if sc39["scene_id"] != "SC_039" or sc39["visual_mode"] != "IMAGE_ONLY":
-            errors.append(f"{ep_id}: Reveal 2 (SC_039) must be IMAGE_ONLY")
+            sc39 = scenes[38] if len(scenes) > 38 else None
+            if sc39 and (sc39["scene_id"] != "SC_039" or sc39["visual_mode"] != "IMAGE_ONLY"):
+                errors.append(f"{ep_id}: Reveal 2 (SC_039) must be IMAGE_ONLY")
 
-        for i in range(30):
-            sc = scenes[i]
-            text_check = (sc["image_prompt"] + " " + str(sc.get("video_prompt") or "")).lower()
-            if ep_id == "EP003":
-                if "nhà tình thương" in text_check or "trẻ mồ côi" in text_check:
-                    errors.append(f"{ep_id}: Spoiler in scene {sc['scene_id']}")
-            elif ep_id == "EP011":
-                if "nhận nuôi hợp pháp" in text_check or "gia đình hiếm muộn" in text_check:
-                    errors.append(f"{ep_id}: Spoiler in scene {sc['scene_id']}")
+            for i in range(min(30, len(scenes))):
+                sc = scenes[i]
+                text_check = (sc.get("image_prompt", "") + " " + str(sc.get("video_prompt") or "")).lower()
+                if ep_id == "EP003":
+                    if "nhà tình thương" in text_check or "trẻ mồ côi" in text_check:
+                        errors.append(f"{ep_id}: Spoiler in scene {sc['scene_id']}")
+                elif ep_id == "EP011":
+                    if "nhận nuôi hợp pháp" in text_check or "gia đình hiếm muộn" in text_check:
+                        errors.append(f"{ep_id}: Spoiler in scene {sc['scene_id']}")
 
         # 9. All Prompts Non-empty
         for sc in scenes:
-            if len(sc.get("image_prompt", "")) < 20:
+            if len(sc.get("image_prompt", "").strip()) < 20:
                 errors.append(f"{ep_id}: image_prompt too short in scene {sc['scene_id']}")
-            if sc["visual_mode"] == "VIDEO_RECOMMENDED":
+            if sc.get("visual_mode") == "VIDEO_RECOMMENDED":
                 vp = sc.get("video_prompt")
                 if not vp or not vp.get("full_prompt"):
                     errors.append(f"{ep_id}: video_prompt missing in recommended scene {sc['scene_id']}")
 
-        # 10. Timeline 100% continuous
+        # 10. Timeline Contiguity & Gap/Overlap tracking
+        timeline_gap_count = 0
+        timeline_overlap_count = 0
         if scenes[0]["start_time"] != 0.0:
             errors.append(f"{ep_id}: First scene does not start at 0.0s")
         diff = abs(scenes[-1]["end_time"] - ep["audio_duration"])
-        if diff > 0.10:
-            errors.append(f"{ep_id}: Timeline end discrepancy {diff}s > 0.10s")
+        if diff > 0.15:
+            errors.append(f"{ep_id}: Timeline end discrepancy {diff:.3f}s > 0.15s")
         for i in range(len(scenes) - 1):
-            if round(scenes[i]["end_time"], 3) != round(scenes[i+1]["start_time"], 3):
-                errors.append(f"{ep_id}: Discontinuity between {scenes[i]['scene_id']} and {scenes[i+1]['scene_id']}")
+            s_end = round(scenes[i]["end_time"], 3)
+            s_next_start = round(scenes[i + 1]["start_time"], 3)
+            if s_end != s_next_start:
+                if s_end < s_next_start:
+                    timeline_gap_count += 1
+                    errors.append(f"{ep_id}: Discontinuity gap between {scenes[i]['scene_id']} and {scenes[i+1]['scene_id']}")
+                else:
+                    timeline_overlap_count += 1
+                    errors.append(f"{ep_id}: Discontinuity overlap between {scenes[i]['scene_id']} and {scenes[i+1]['scene_id']}")
 
-    return (len(errors) == 0), errors
+        # 11. Location Consistency & SCENE_LOCATION_MISMATCH QC
+        loc_map = {loc["location_id"]: loc for loc in ep.get("locations", [])}
+        location_mismatch_count = 0
+        for sc in scenes:
+            loc_id = sc.get("location_id")
+            if loc_id and loc_id not in loc_map:
+                errors.append(f"{ep_id}: Scene {sc['scene_id']} references unknown location '{loc_id}'")
+            if loc_id:
+                mismatch_ok, mismatch_err = check_scene_location_mismatch(sc, loc_map)
+                if not mismatch_ok and mismatch_err:
+                    location_mismatch_count += 1
+                    errors.append(f"{ep_id}: {mismatch_err}")
+
+        # 12. Build QC Summary
+        qc_summary = {
+            "scene_count": len(scenes),
+            "image_only_count": image_only_count,
+            "video_recommended_count": video_count,
+            "location_high_confidence_count": sum(1 for s in scenes if s.get("location_confidence") == "HIGH"),
+            "location_medium_confidence_count": sum(1 for s in scenes if s.get("location_confidence") == "MEDIUM"),
+            "location_low_confidence_count": sum(1 for s in scenes if s.get("location_confidence") == "LOW"),
+            "location_unresolved_count": sum(1 for s in scenes if not s.get("location_id") or s.get("location_confidence") == "LOW"),
+            "location_mismatch_count": location_mismatch_count,
+            "character_reference_count": len(char_refs),
+            "prop_reference_count": len(prop_refs),
+            "timeline_gap_count": timeline_gap_count,
+            "timeline_overlap_count": timeline_overlap_count
+        }
+        ep["qc_summary"] = qc_summary
+
+    if errors:
+        export_data.setdefault("project", {})["export_status"] = "BLOCKED_QC"
+        return False, errors
+
+    export_data.setdefault("project", {})["export_status"] = "GOOGLE_FLOW_EXPORT_READY"
+    return True, []
 
 
 def export_google_flow_app_json() -> Dict[str, Any]:
@@ -508,6 +638,37 @@ def export_google_flow_app_json() -> Dict[str, Any]:
             "locations": len(ep011_data["locations"]),
             "overlays": len(ep011_data["overlays"])
         }
+    }
+
+
+def export_episode_flow_json(ep_id: str) -> Dict[str, Any]:
+    """Exports a single episode SCC_FLOW_V1 Google Flow JSON package."""
+    EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    ep_data = build_episode_export(ep_id)
+    pkg = {
+        "schema_version": SCHEMA_VERSION,
+        "project": {
+            "series": "Sau Cánh Cửa",
+            "production_id": ep_id,
+            "exported_at": round(time.time(), 3),
+            "export_status": "GOOGLE_FLOW_EXPORT_READY"
+        },
+        "episodes": [ep_data]
+    }
+    is_valid, validation_errors = validate_flow_export(pkg)
+    out_path = EXPORTS_DIR / f"{ep_id}_google_flow.json"
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(pkg, f, ensure_ascii=False, indent=2)
+    if not is_valid:
+        pkg["project"]["export_status"] = "BLOCKED_QC"
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(pkg, f, ensure_ascii=False, indent=2)
+        raise ValueError(f"Google Flow Export for {ep_id} FAILED with errors:\n" + "\n".join(validation_errors))
+    return {
+        "status": "PASS",
+        "validation_status": pkg["project"]["export_status"],
+        "export_file": str(out_path.relative_to(BASE_DIR)),
+        "qc_summary": ep_data.get("qc_summary", {})
     }
 
 

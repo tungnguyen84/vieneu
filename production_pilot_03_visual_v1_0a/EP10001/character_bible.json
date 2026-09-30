@@ -5,7 +5,7 @@
       "character_id": "HÙNG",
       "name": "Hùng",
       "age": 32,
-      "gender": null,
+      "gender": "MALE",
       "ethnicity": "Vietnamese",
       "identity_family_id": null,
       "identity_role": "ANCHOR",
@@ -16,13 +16,13 @@
       "emotional_baseline": "Nhân vật chính",
       "wardrobe_baseline": "Contemporary Vietnamese clothing appropriate to the story",
       "wardrobe_variants": {},
-      "reference_prompt": "Cinematic identity reference portrait of Vietnamese character Hùng. Hùng là một kiến trúc sư trẻ, năng động, có sự nghiệp đang trên đà phát triển. Anh có vẻ ngoài điềm đạm, tính cách thực tế và luôn đặt gia đình lên hàng đầu. Anh yêu thương vợ con hết mực và tin tưởng vào mái ấm mình đã xây dựng. Anh thường xuyên bận rộn với các dự án lớn, đôi khi hơi vô tâm trong việc chia sẻ cảm xúc với vợ, nhưng luôn cố gắng bù đắp bằng vật chất và sự hiện diện khi có thể.. Neutral background, natural skin texture, consistent facial identity, no text, 16:9."
+      "reference_prompt": "Cinematic identity reference portrait of Vietnamese character Hùng. Realistic Vietnamese man, 32-year-old with authentic Vietnamese facial features, natural skin texture, composed neutral expression, neat contemporary hairstyle. Wearing contemporary tasteful Vietnamese smart-casual attire appropriate for daily life. Waist-up framing, neutral soft studio background, natural lighting, sharp focus, 16:9, no text, no watermark."
     },
     {
       "character_id": "MAI",
       "name": "Mai",
       "age": 30,
-      "gender": null,
+      "gender": "FEMALE",
       "ethnicity": "Vietnamese",
       "identity_family_id": null,
       "identity_role": "ANCHOR",
@@ -33,13 +33,13 @@
       "emotional_baseline": "Vợ của Hùng, người tình của đối tác",
       "wardrobe_baseline": "Contemporary Vietnamese clothing appropriate to the story",
       "wardrobe_variants": {},
-      "reference_prompt": "Cinematic identity reference portrait of Vietnamese character Mai. Mai là một người phụ nữ xinh đẹp, khéo léo, làm việc trong ngành thiết kế nội thất. Cô có vẻ ngoài mạnh mẽ nhưng bên trong lại khao khát được công nhận, được yêu thương một cách lãng mạn. Mai cảm thấy cuộc sống hôn nhân với Hùng dần trở nên tẻ nhạt, thiếu sự lãng mạn và thấu hiểu. Cô muốn một cuộc sống khác biệt, thoát khỏi những khuôn khổ hiện tại.. Neutral background, natural skin texture, consistent facial identity, no text, 16:9."
+      "reference_prompt": "Cinematic identity reference portrait of Vietnamese character Mai. Realistic Vietnamese woman, 30-year-old with authentic Vietnamese facial features, natural skin texture, composed neutral expression, neat contemporary hairstyle. Wearing contemporary tasteful Vietnamese smart-casual attire appropriate for daily life. Waist-up framing, neutral soft studio background, natural lighting, sharp focus, 16:9, no text, no watermark."
     },
     {
       "character_id": "THANH",
       "name": "Thanh",
       "age": 35,
-      "gender": null,
+      "gender": "FEMALE",
       "ethnicity": "Vietnamese",
       "identity_family_id": null,
       "identity_role": "ANCHOR",
@@ -50,13 +50,13 @@
       "emotional_baseline": "Vợ của đối tác kinh doanh (người phụ nữ lạ mặt)",
       "wardrobe_baseline": "Contemporary Vietnamese clothing appropriate to the story",
       "wardrobe_variants": {},
-      "reference_prompt": "Cinematic identity reference portrait of Vietnamese character Thanh. Thanh là một người phụ nữ mạnh mẽ, quyết đoán, là vợ của Lâm - đối tác kinh doanh của Hùng. Cô đã chịu đựng sự phản bội của chồng nhiều lần nhưng vẫn cố gắng níu giữ gia đình vì con cái. Thanh là người thực tế, không ngại đối mặt với sự thật dù đau lòng. Cô đã theo dõi chồng và Mai trong một thời gian dài.. Neutral background, natural skin texture, consistent facial identity, no text, 16:9."
+      "reference_prompt": "Cinematic identity reference portrait of Vietnamese character Thanh. Realistic Vietnamese woman, 35-year-old with authentic Vietnamese facial features, natural skin texture, composed neutral expression, neat contemporary hairstyle. Wearing contemporary tasteful Vietnamese smart-casual attire appropriate for daily life. Waist-up framing, neutral soft studio background, natural lighting, sharp focus, 16:9, no text, no watermark."
     },
     {
       "character_id": "LÂM",
       "name": "Lâm",
       "age": 38,
-      "gender": null,
+      "gender": "MALE",
       "ethnicity": "Vietnamese",
       "identity_family_id": null,
       "identity_role": "ANCHOR",
@@ -67,7 +67,7 @@
       "emotional_baseline": "Đối tác kinh doanh của Hùng, người tình của Mai",
       "wardrobe_baseline": "Contemporary Vietnamese clothing appropriate to the story",
       "wardrobe_variants": {},
-      "reference_prompt": "Cinematic identity reference portrait of Vietnamese character Lâm. Lâm là một doanh nhân thành đạt, khéo léo trong giao tiếp nhưng ích kỷ và thủ đoạn. Anh ta có vẻ ngoài lịch lãm, lời nói ngọt ngào, giỏi thao túng tâm lý người khác. Lâm lợi dụng sự cả tin và khao khát tình cảm của Mai để duy trì mối quan hệ ngoài luồng, đồng thời vẫn giữ vững gia đình và công việc của mình.. Neutral background, natural skin texture, consistent facial identity, no text, 16:9."
+      "reference_prompt": "Cinematic identity reference portrait of Vietnamese character Lâm. Realistic Vietnamese man, 38-year-old with authentic Vietnamese facial features, natural skin texture, composed neutral expression, neat contemporary hairstyle. Wearing contemporary tasteful Vietnamese smart-casual attire appropriate for daily life. Waist-up framing, neutral soft studio background, natural lighting, sharp focus, 16:9, no text, no watermark."
     }
   ]
 }

@@ -80,52 +80,8 @@ class FlowService:
         }
 
     def _validate(self, package: Dict[str, Any], project_id: str) -> Tuple[bool, List[str]]:
-        errors: List[str] = []
-        if package.get("schema_version") != SCHEMA_VERSION:
-            errors.append(f"schema_version phải là {SCHEMA_VERSION}")
-        episodes = package.get("episodes") or []
-        if len(episodes) != 1:
-            errors.append("Gói xuất từng tập phải có đúng một episode")
-            return False, errors
-        episode = episodes[0]
-        if episode.get("episode_id") != project_id:
-            errors.append("episode_id không khớp với dự án đang xuất")
-        scenes = episode.get("scenes") or []
-        if not scenes:
-            errors.append("Visual Plan chưa có phân cảnh")
-            return False, errors
-        seen_ids = set()
-        character_ids = {item.get("character_id") for item in episode.get("characters") or []}
-        for index, scene in enumerate(scenes):
-            scene_id = scene.get("scene_id")
-            if not scene_id or scene_id in seen_ids:
-                errors.append(f"scene_id thiếu hoặc trùng tại vị trí {index + 1}")
-            seen_ids.add(scene_id)
-            if len(str(scene.get("image_prompt") or "").strip()) < 20:
-                errors.append(f"{scene_id}: image_prompt quá ngắn")
-            if scene.get("visual_mode") == "VIDEO_RECOMMENDED":
-                video_prompt = scene.get("video_prompt") or {}
-                if not str(video_prompt.get("full_prompt") or "").strip():
-                    errors.append(f"{scene_id}: thiếu video_prompt")
-            if scene.get("image_media_id") is not None or scene.get("video_media_id") is not None:
-                errors.append(f"{scene_id}: media ID phải để trống trước khi import")
-            if scene.get("generation_dependencies_satisfied") is not False:
-                errors.append(f"{scene_id}: trạng thái dependency ban đầu phải là false")
-            if index and round(float(scenes[index - 1].get("end_time", 0)), 3) != round(float(scene.get("start_time", 0)), 3):
-                errors.append(f"Timeline bị hở trước {scene_id}")
-        for character in episode.get("characters") or []:
-            dependency = character.get("depends_on_reference")
-            if dependency and dependency not in character_ids:
-                errors.append(f"{character.get('character_id')}: thiếu anchor {dependency}")
-            if character.get("reference_media_id") is not None:
-                errors.append(f"{character.get('character_id')}: reference_media_id phải để trống")
-        for prop in episode.get("props") or []:
-            if prop.get("reference_media_id") is not None:
-                errors.append(f"{prop.get('prop_id')}: reference_media_id phải để trống")
-        audio_duration = float(episode.get("audio_duration") or 0)
-        if audio_duration and abs(float(scenes[-1].get("end_time", 0)) - audio_duration) > 0.1:
-            errors.append("Mốc kết thúc timeline không khớp thời lượng audio")
-        return not errors, errors
+        from apps.visual_pilot_03_v1_0a.google_flow_exporter import validate_flow_export
+        return validate_flow_export(package)
 
     def run_export(self, project_id: str) -> Dict[str, Any]:
         plan_dir = VISUAL_DIR / project_id
