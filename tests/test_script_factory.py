@@ -40,6 +40,7 @@ if str(REPO_ROOT) not in sys.path:
 
 import pytest
 
+from tests.mocks.mock_script_provider import MockScriptAIProvider
 from apps.script_factory import (
     ApprovalStatus,
     AutoRevisionManager,
@@ -50,7 +51,6 @@ from apps.script_factory import (
     IdeaGenerator,
     IdeaItem,
     LockedFact,
-    MockScriptAIProvider,
     NoveltyEngine,
     ProductionAdapter,
     QCReport,

@@ -17,6 +17,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 from apps.script_factory.models import FullScript, IdeaItem, LockedFact, QCReport, ScriptSegment, StoryBible
@@ -64,6 +65,7 @@ class GeminiScriptAIProvider(ScriptAIProvider):
     ):
         self.api_key = _get_api_key(api_key)
         self.default_model = default_model
+        self.last_used_model = default_model
         self.embedding_model = embedding_model
         self.timeout_sec = timeout_sec
 
@@ -152,6 +154,7 @@ class GeminiScriptAIProvider(ScriptAIProvider):
                     usage = resp_data.get("usageMetadata", {})
                     in_tokens = usage.get("promptTokenCount", 0)
                     out_tokens = usage.get("candidatesTokenCount", 0)
+                    self.last_used_model = cur_model
 
                     return text_out, in_tokens, out_tokens
 
@@ -397,22 +400,20 @@ Trả về một JSON Array chứa chính xác {count} objects, mỗi object có
                 status="AWAITING_USER_REVIEW"
             )
 
-            # Topic Adherence Evaluation & Auto-Repair for Topic Drift
+            # Topic Adherence Evaluation without artificial string prepending
             if topic_intent_obj:
                 adherence = topic_intent_obj.calculate_adherence_score(item_data)
-                if adherence < 85.0:
-                    # Enforce topic anchor if score falls below 85%
-                    req_terms = " / ".join(topic_intent_obj.required_semantic_elements[:2])
-                    ctx_term = topic_intent_obj.context
-                    if not any(r in idea.central_secret.lower() for r in topic_intent_obj.required_semantic_elements):
-                        idea.central_secret = f"Bí mật {req_terms} tại {ctx_term}: {idea.central_secret}"
-                    if not any(r in idea.hook.lower() for r in topic_intent_obj.required_semantic_elements):
-                        idea.hook = f"Phát hiện dấu hiệu bất thường liên quan đến {req_terms} tại {ctx_term}. {idea.hook}"
-                    adherence = topic_intent_obj.calculate_adherence_score(idea)
-                
-                idea.topic_adherence_score = max(85.0, adherence)
+                idea.topic_adherence_score = adherence
                 idea.original_user_topic = topic_intent_obj.original_topic
                 idea.topic_intent = topic_intent_obj.to_dict()
+            elif user_topic:
+                idea.original_user_topic = user_topic
+
+            idea.generation_request_id = str(uuid.uuid4())
+            idea.prompt_version = "ideas-v2.1"
+            idea.generation_source = "REAL_AI"
+            idea.model_name = self.last_used_model or model or self.default_model
+            idea.provider_name = "GeminiScriptAIProvider"
 
             ideas.append(idea)
 
@@ -733,8 +734,119 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
             topic_intent=idea.topic_intent,
             topic_adherence=adherence_val,
             status="DRAFT",
+            generation_request_id=str(uuid.uuid4()),
+            prompt_version="story-v3.0",
+            generation_source="REAL_AI",
+            model_name=self.last_used_model or model or self.default_model,
+            provider_name="GeminiScriptAIProvider",
+            generated_at=time.time(),
         )
         return bible, in_tok, out_tok
+
+    def repair_story_bible(
+        self,
+        story_bible: StoryBible,
+        issues: List[Dict[str, Any]],
+        model: Optional[str] = None,
+    ) -> Tuple[StoryBible, int, int]:
+        """
+        Asks Gemini to repair Story Bible QC issues (causal gaps, knowledge contradictions, clue jumps)
+        strictly preserving the authoritative user topic and character identities without injecting hardcoded templates.
+        """
+        issues_summary = "\n".join(
+            f"- [{it.get('rule', 'LOGIC')}] {it.get('message', '')} (Target: {it.get('target', 'general')})"
+            for it in issues if isinstance(it, dict)
+        )
+        if not issues_summary:
+            issues_summary = "Cần bổ sung và chuẩn hóa cấu trúc: causal_chains, knowledge_ledger, structured_clues, reveal_justifications."
+
+        orig_topic_clause = f"\nCHỦ ĐỀ BẮT BUỘC: '{story_bible.original_user_topic}'. Tuyệt đối KHÔNG thay đổi đề tài gốc!\n" if story_bible.original_user_topic else ""
+
+        system_instruction = (
+            "Bạn là Trưởng ban Biên kịch của series 'Sau Cánh Cửa'. Nhiệm vụ của bạn là sửa chữa các lỗi logic, thiếu sót nhân quả "
+            "hoặc mâu thuẫn nhận thức trong Story Bible hiện tại mà KHÔNG làm thay đổi cốt truyện hay danh tính nhân vật đã có.\n"
+            + orig_topic_clause +
+            "Yêu cầu:\n"
+            "1. Tuyệt đối KHÔNG đưa vào các khuôn mẫu template hay tên nhân vật ngoài kịch bản.\n"
+            "2. Khắc phục triệt để các vấn đề QC được chỉ rõ.\n"
+            "3. Trả về toàn bộ Story Bible đã sửa đổi dưới dạng JSON hợp lệ."
+        )
+
+        prompt = f"""Dưới đây là Story Bible hiện tại và danh sách các lỗi QC cần khắc phục:
+
+STORY BIBLE HIỆN TẠI:
+{json.dumps(story_bible.to_dict(), ensure_ascii=False, indent=2)}
+
+DANH SÁCH LỖI QC CẦN SỬA:
+{issues_summary}
+
+Hãy sửa đổi và hoàn thiện Story Bible, đảm bảo bổ sung đầy đủ và chặt chẽ:
+1. causal_chains (nguyên nhân, quyết định, hành động, hệ quả, lý do giải pháp thông thường bất khả thi)
+2. knowledge_ledger (ai biết gì, khi nào biết, biết bằng cách nào, scope)
+3. structured_clues (clue, what_it_proves, what_it_does_NOT_prove, next_question)
+4. reveal_justifications (reveal_1 và reveal_2 có evidence_support, motivation_support, v.v.)
+5. critical_facts (các sự thật cốt lõi đóng băng)
+
+Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đúng định dạng schema chuẩn."""
+
+        raw_text, in_tok, out_tok = self._call_generate_content(
+            prompt=prompt,
+            model=model or self.default_model,
+            response_json=True,
+            system_instruction=system_instruction,
+        )
+
+        def _parse_json_safe(text: str) -> Optional[Dict[str, Any]]:
+            clean = re.sub(r"^```json\s*", "", text.strip(), flags=re.MULTILINE)
+            clean = re.sub(r"^```\s*$", "", clean, flags=re.MULTILINE)
+            clean = re.sub(r",\s*([\]}])", r"\1", clean)
+            try:
+                return json.loads(clean)
+            except Exception:
+                m = re.search(r"\{.*\}", clean, re.DOTALL)
+                if m:
+                    try:
+                        return json.loads(m.group(0))
+                    except Exception:
+                        pass
+            return None
+
+        parsed = _parse_json_safe(raw_text)
+        if parsed and isinstance(parsed, dict):
+            if parsed.get("causal_chains"):
+                story_bible.causal_chains = parsed.get("causal_chains")
+            if parsed.get("knowledge_ledger"):
+                story_bible.knowledge_ledger = parsed.get("knowledge_ledger")
+            if parsed.get("structured_clues"):
+                story_bible.structured_clues = parsed.get("structured_clues")
+            if parsed.get("reveal_justifications"):
+                story_bible.reveal_justifications = parsed.get("reveal_justifications")
+            if parsed.get("critical_facts"):
+                new_cf = []
+                for f_data in parsed.get("critical_facts", []):
+                    new_cf.append(LockedFact(
+                        fact_id=f_data.get("fact_id", f"FACT_{len(new_cf)+1:03d}"),
+                        field=f_data.get("field", "fact"),
+                        value=str(f_data.get("value", "")),
+                        description=f_data.get("description", ""),
+                        status="LOCKED",
+                    ))
+                story_bible.critical_facts = new_cf
+            if parsed.get("reveal_1"):
+                story_bible.reveal_1 = parsed.get("reveal_1")
+            if parsed.get("reveal_2"):
+                story_bible.reveal_2 = parsed.get("reveal_2")
+            if parsed.get("secret"):
+                story_bible.secret = parsed.get("secret")
+            if parsed.get("clues"):
+                story_bible.clues = parsed.get("clues")
+
+        story_bible.generation_request_id = str(uuid.uuid4())
+        story_bible.generation_source = "REAL_AI"
+        story_bible.model_name = self.last_used_model or model or self.default_model
+        story_bible.provider_name = "GeminiScriptAIProvider"
+        story_bible.last_modified_at = time.time()
+        return story_bible, in_tok, out_tok
 
     def write_script(
         self,
@@ -792,9 +904,9 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
             f"9. TUYỆT ĐỐI KHÔNG DÙNG NHÃN TEMPLATE / DATABASE NỘI BỘ (INTERNAL LABELS): Lời đọc của MC là văn xuôi tự nhiên, TUYỆT ĐỐI KHÔNG chứa các nhãn kỹ thuật như: 'Nhân vật chính', 'Manh mối 1', 'Manh mối 2', 'Manh mối 3', 'Bước ngoặt 1', 'Bước ngoặt 2', 'Reveal 1', 'Reveal 2', 'Fact Lock', 'Story Bible', 'central_conflict', 'topic_intent'. Luôn dùng tên riêng cụ thể của nhân vật (ví dụ: {protag_name}) thay cho cụm danh xưng 'Nhân vật chính'."
         )
 
-        # ---------------- PART 1: ACTS 1 to 5 (Segments 001 to 045) ----------------
-        prompt_part1 = f"""Hãy viết PHẦN 1 (Phân đoạn 001 đến 045) cho kịch bản câu chuyện: '{clean_title}'.
-Mục tiêu độ dài Phần 1: Khoảng 1.300 - 1.500 từ tiếng Việt, chia thành chính xác 45 phân đoạn.
+        # ---------------- PART 1: ACTS 1 to 5 (~40 to 50 Segments) ----------------
+        prompt_part1 = f"""Hãy viết PHẦN 1 cho kịch bản câu chuyện: '{clean_title}'.
+Mục tiêu độ dài Phần 1: Khoảng 1.200 - 1.500 từ tiếng Việt, triển khai tự nhiên khoảng 40 - 50 phân đoạn.
 {user_topic_constraint}
 Thông tin Story Bible:
 - Nhân vật chính: {protag_name} ({story_bible.protagonist.get('age', 30) if isinstance(story_bible.protagonist, dict) else 30} tuổi) - {story_bible.protagonist.get('description', '') if isinstance(story_bible.protagonist, dict) else ''}
@@ -811,24 +923,24 @@ Thông tin Story Bible:
 - Các sự thật đóng băng (Fact Lock - TUYỆT ĐỐI TUÂN THỦ, KHÔNG SỬA ĐỔI):
 {facts_summary}
 
-Cấu trúc Phân bổ Phần 1 (tổng cộng 45 phân đoạn):
-1. Act 1: HOOK (Phân đoạn 001 - 006):
-   - 001-003: Mở đầu bằng chi tiết cụ thể trong lá thư và dấu hiệu bất thường đầu tiên dưới dạng nghi vấn (delivery_profile='HOOK', speed=0.98). Tuyệt đối không kết luận trước sự thật ở Reveal.
-   - 004: Lời chào mở đầu chương trình của {host_name}: BẮT BUỘC mở đầu bằng "Chào mừng quý vị và các bạn đến với Sau Cánh Cửa." (KHÔNG đọc số tập hay mã tập, delivery_profile='NORMAL', speed=1.01).
-   - 005-006: Giới thiệu nhân vật gửi thư và bước vào bối cảnh câu chuyện (delivery_profile='NORMAL', speed=1.01).
-2. Act 2: SETUP (Phân đoạn 007 - 017):
-   - Đời sống thường nhật, bối cảnh gia đình, những chi tiết quan sát cụ thể trước khi phát hiện bất thường.
+Cấu trúc Phân bổ Phần 1 (khoảng 40-50 phân đoạn):
+1. Act 1: HOOK (khoảng 5-6 phân đoạn đầu):
+   - Mở đầu bằng chi tiết cụ thể trong lá thư và dấu hiệu bất thường đầu tiên dưới dạng nghi vấn (delivery_profile='HOOK', speed=0.98). Tuyệt đối không kết luận trước sự thật ở Reveal.
+   - Lời chào mở đầu chương trình của {host_name}: BẮT BUỘC mở đầu bằng "Chào mừng quý vị và các bạn đến với Sau Cánh Cửa." (KHÔNG đọc số tập hay mã tập, delivery_profile='NORMAL', speed=1.01).
+   - Giới thiệu nhân vật gửi thư và bước vào bối cảnh câu chuyện (delivery_profile='NORMAL', speed=1.01).
+2. Act 2: SETUP (khoảng 10-12 phân đoạn):
+   - Đời sống thường nhật, bối cảnh gia đình/công việc, những chi tiết quan sát cụ thể trước khi phát hiện bất thường.
    - Chứa đúng 1 phân đoạn giao lưu khán giả gợi mở (audience_address=true, delivery_profile='COMMENT').
-3. Act 3: MYSTERY / FIRST ANOMALY (Phân đoạn 018 - 028):
+3. Act 3: MYSTERY / FIRST ANOMALY (khoảng 10-12 phân đoạn):
    - Manh mối 1 xuất hiện. Chỉ mô tả đúng những gì Manh mối 1 cho thấy và đặt câu hỏi tiếp theo, không nhảy cóc kết luận (delivery_profile='MYSTERY' và 'NORMAL').
    - Chứa đúng 1 phân đoạn giao lưu khán giả đặt câu hỏi giả thuyết (audience_address=true, delivery_profile='COMMENT').
-4. Act 4: ESCALATION (Phân đoạn 029 - 037):
+4. Act 4: ESCALATION (khoảng 8-10 phân đoạn):
    - Giả thuyết sai ban đầu (false lead) xuất hiện từ góc nhìn hạn chế của nhân vật chính (delivery_profile='NORMAL' và 'MYSTERY').
-5. Act 5: INVESTIGATION (Phân đoạn 038 - 045):
+5. Act 5: INVESTIGATION (khoảng 8-10 phân đoạn):
    - Nhân vật chính bắt đầu hành động xác minh thực tế, tìm gặp nhân chứng hoặc đối chiếu tài liệu thứ hai.
 
 Yêu cầu định dạng JSON:
-Trả về JSON Array gồm đúng 45 objects từ id '001' đến '045':
+Trả về JSON Array gồm các objects từ id '001' trở đi (khoảng 40-50 phân đoạn tự nhiên):
 [
   {{
     "id": "001",
@@ -858,13 +970,15 @@ Trả về JSON Array gồm đúng 45 objects từ id '001' đến '045':
 
         time.sleep(2)
 
-        # ---------------- PART 2: ACTS 5 (cont) to 9 (Segments 046 to 090) ----------------
+        # ---------------- PART 2: ACTS 5 (cont) to 9 (~40 to 50 Segments) ----------------
         p1_context = "\n".join(f"[{s.get('id')}] {s.get('text')[:80]}..." for s in p1_data[-5:]) if p1_data else ""
+        p1_count = len(p1_data)
+        next_start_id = p1_count + 1
 
-        prompt_part2 = f"""Hãy viết tiếp PHẦN 2 (Phân đoạn 046 đến 090) cho kịch bản câu chuyện: '{clean_title}'.
-Mục tiêu độ dài Phần 2: Khoảng 1.300 - 1.600 từ tiếng Việt, chia thành chính xác 45 phân đoạn.
+        prompt_part2 = f"""Hãy viết tiếp PHẦN 2 cho kịch bản câu chuyện: '{clean_title}'.
+Mục tiêu độ dài Phần 2: Khoảng 1.200 - 1.600 từ tiếng Việt, triển khai tự nhiên khoảng 40 - 50 phân đoạn tiếp theo.
 
-Bối cảnh cuối Phần 1 vừa kết thúc ở phân đoạn 045:
+Bối cảnh cuối Phần 1 vừa kết thúc (tổng cộng {p1_count} phân đoạn):
 {p1_context}
 
 Nội dung Bước ngoặt, Chuỗi Nhân Quả & Hóa giải cảm xúc của Story Bible:
@@ -880,30 +994,30 @@ Nội dung Bước ngoặt, Chuỗi Nhân Quả & Hóa giải cảm xúc của S
 - Các sự thật đóng băng (Fact Lock - TUYỆT ĐỐI TUÂN THỦ):
 {facts_summary}
 
-Cấu trúc Phân bổ Phần 2 (tổng cộng 45 phân đoạn từ 046 đến 090):
-1. Act 5 (tiếp tục): EVIDENCE CHAIN (Phân đoạn 046 - 055):
+Cấu trúc Phân bổ Phần 2 (khoảng 40-50 phân đoạn, bắt đầu từ id '{next_start_id:03d}'):
+1. Act 5 (tiếp tục): EVIDENCE CHAIN (khoảng 8-10 phân đoạn):
    - Manh mối thứ 2 và thứ 3 xuất hiện cụ thể, từng bước dẫn tới sự thật (delivery_profile='MYSTERY' và 'NORMAL').
-2. Act 6: MAJOR REVEAL (Phân đoạn 056 - 063):
+2. Act 6: MAJOR REVEAL (khoảng 7-9 phân đoạn, rơi vào vị trí khoảng 60-75% toàn bộ câu chuyện):
    - Sự thật Bước ngoặt 1 được mở ra rõ ràng qua chứng cứ xác thực.
    - BẮT BUỘC: delivery_profile='REVEAL', importance='critical', audience_address=false (KHÔNG hỏi khán giả).
-3. Act 7: SECOND REVEAL / CAUSAL EXPLANATION (Phân đoạn 064 - 074):
+3. Act 7: SECOND REVEAL / CAUSAL EXPLANATION (khoảng 10-12 phân đoạn, rơi vào vị trí khoảng 75-90% toàn bộ câu chuyện):
    - Bước ngoặt 2 giải thích đầy đủ chuỗi nhân quả: Nguyên nhân (WHY) -> Lý do không thể làm cách bình thường (MOTIVATION) -> Cơ chế thực hiện thực tế (HOW) -> Hệ quả (CONSEQUENCE).
    - Tuân thủ chặt chẽ Knowledge Ledger: không viết "không ai biết / kể cả người vợ" nếu trong truyện có người thân biết sự thật.
    - BẮT BUỘC: audience_address=false. Các phân đoạn mở nút thắt chính dùng delivery_profile='REVEAL' (speed=0.92), các phân đoạn giải thích hoàn cảnh dùng delivery_profile='NORMAL'.
-4. Act 8: EMOTIONAL PAYOFF & RESOLUTION (Phân đoạn 075 - 085):
+4. Act 8: EMOTIONAL PAYOFF & RESOLUTION (khoảng 10-12 phân đoạn):
    - Cuộc đối thoại trực tiếp, hành động cụ thể, cử chỉ đời thường khi các nhân vật đối diện và tháo gỡ khúc mắc (delivery_profile='NORMAL').
    - Chứa đúng 1 phân đoạn giao lưu khán giả (audience_address=true, delivery_profile='COMMENT').
-5. Act 9: CONCISE REFLECTION + SIGN-OFF (Phân đoạn 086 - 090 — CHỈ 5 PHÂN ĐOẠN, KHÔNG LẶP Ý):
-   - 086: Hình ảnh khép lại câu chuyện của gia đình nhân vật bằng chi tiết đời thực lắng đọng (delivery_profile='NORMAL', audience_address=false).
-   - 087: ĐÚNG 1 phân đoạn duy nhất đúc kết bài học chiêm nghiệm từ câu chuyện (delivery_profile='COMMENT', audience_address=false).
-   - 088: ĐÚNG 1 câu hỏi gợi suy ngẫm gửi tới thính giả (delivery_profile='COMMENT', audience_address=true).
-   - 089-090: Lời cảm ơn người gửi thư, cảm ơn thính giả và lời chào tạm biệt ngắn gọn của {host_name} (delivery_profile='ENDING', speed=0.965, audience_address=false).
+5. Act 9: CONCISE REFLECTION + SIGN-OFF (khoảng 4-6 phân đoạn cuối, KHÔNG LẶP Ý):
+   - Hình ảnh khép lại câu chuyện của gia đình nhân vật bằng chi tiết đời thực lắng đọng (delivery_profile='NORMAL', audience_address=false).
+   - ĐÚNG 1 phân đoạn duy nhất đúc kết bài học chiêm nghiệm từ câu chuyện (delivery_profile='COMMENT', audience_address=false).
+   - ĐÚNG 1 câu hỏi gợi suy ngẫm gửi tới thính giả (delivery_profile='COMMENT', audience_address=true).
+   - Lời cảm ơn người gửi thư, cảm ơn thính giả và lời chào tạm biệt ngắn gọn của {host_name}: 'Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.' (delivery_profile='ENDING', speed=0.965, audience_address=false).
 
 Yêu cầu định dạng JSON:
-Trả về JSON Array gồm đúng 45 objects từ id '046' đến '090':
+Trả về JSON Array gồm các objects từ id '{next_start_id:03d}' trở đi:
 [
   {{
-    "id": "046",
+    "id": "{next_start_id:03d}",
     "speaker": "{host_id}",
     "text": "Lời dẫn tiếng Việt tự nhiên, điềm đạm, khoảng 28-42 từ...",
     "delivery_profile": "MYSTERY",
@@ -976,17 +1090,15 @@ Trả về JSON Array gồm đúng 45 objects từ id '046' đến '090':
 
         # Rebalance audience interactions if needed (must be 3 to 6)
         aud_indices = [i for i, s in enumerate(segments) if s.audience_address and s.delivery_profile != "REVEAL"]
-        if len(aud_indices) < 3:
-            # Seed natural audience interaction at segment 12 and 40 if not already present
-            if len(segments) > 12 and not segments[12].audience_address and segments[12].delivery_profile != "REVEAL":
-                segments[12].audience_address = True
-                segments[12].delivery_profile = "COMMENT"
-            if len(segments) > 40 and not segments[40].audience_address and segments[40].delivery_profile != "REVEAL":
-                segments[40].audience_address = True
-                segments[40].delivery_profile = "COMMENT"
-            if len(segments) > 87 and not segments[87].audience_address and segments[87].delivery_profile != "REVEAL":
-                segments[87].audience_address = True
-                segments[87].delivery_profile = "COMMENT"
+        if len(aud_indices) < 3 and len(segments) >= 30:
+            step = len(segments) // 4
+            for target_idx in [step, 2 * step, len(segments) - 3]:
+                if target_idx < len(segments) and not segments[target_idx].audience_address and segments[target_idx].delivery_profile != "REVEAL":
+                    segments[target_idx].audience_address = True
+                    segments[target_idx].delivery_profile = "COMMENT"
+                    aud_indices.append(target_idx)
+                    if len(aud_indices) >= 3:
+                        break
         elif len(aud_indices) > 6:
             for i in aud_indices[6:]:
                 segments[i].audience_address = False
@@ -1002,6 +1114,13 @@ Trả về JSON Array gồm đúng 45 objects từ id '046' đến '090':
             total_segments=len(segments),
             total_words=total_words,
             status="DRAFT",
+            generation_request_id=str(uuid.uuid4()),
+            prompt_version="script-v3.0",
+            generation_source="REAL_AI",
+            model_name=self.last_used_model or model or self.default_model,
+            provider_name="GeminiScriptAIProvider",
+            created_at=time.time(),
+            updated_at=time.time(),
         )
         return script, in_tok1 + in_tok2, out_tok1 + out_tok2
 
@@ -1024,30 +1143,11 @@ Trả về JSON Array gồm đúng 45 objects từ id '046' đến '090':
         qc_report: QCReport,
         model: Optional[str] = None,
     ) -> Tuple[FullScript, int, int]:
-        """Performs targeted script revisions to resolve QC issues."""
+        """Performs targeted script revisions to resolve QC issues without hardcoded sentence injection."""
         from apps.script_factory.script_qc import apply_targeted_repairs
 
         script.revision_round += 1
         script = apply_targeted_repairs(script, story_bible, qc_report)
-
-        for conflict in qc_report.fact_conflicts:
-            ctype = conflict.get("type", "") if isinstance(conflict, dict) else ""
-            if ctype in (
-                "HOOK_FACT_CONTRADICTION",
-                "CHARACTER_FACT_VIOLATION",
-                "UNGROUNDED_CHARACTER_HALLUCINATION",
-                "BLOCKED_PREMATURE_REVEAL",
-                "CAUSAL_GAP",
-                "CHARACTER_KNOWLEDGE_CONTRADICTION",
-                "EVIDENCE_DOES_NOT_PROVE_CLAIM",
-                "INTERNAL_EPISODE_ID_SPOKEN",
-            ):
-                continue
-            val = (conflict.get("expected") or conflict.get("value")) if isinstance(conflict, dict) else str(conflict)
-            if script.segments and val and isinstance(val, str):
-                target_idx = min(2, len(script.segments) - 1)
-                if val.lower() not in script.segments[target_idx].text.lower():
-                    script.segments[target_idx].text += f" Con số và dữ kiện chính xác được xác nhận là {val}."
 
         script.total_words = sum(len(s.text.split()) for s in script.segments)
         script.updated_at = time.time()

@@ -96,15 +96,21 @@ def extract_key_entities_from_text(text: str) -> List[str]:
         "năm", "ngày", "tháng", "đoạn", "trang", "hồi", "tập", "chương", "giấy", "hồ sơ",
         "chứng từ", "biên bản", "chân", "tướng", "chân tướng", "bước", "ngoặt", "manh",
         "mối", "bí mật", "sự thật", "tiết lộ", "phát hiện", "chứng cứ", "nhân chứng",
-        "hồ sơ", "tài liệu", "cơ quan", "địa phương", "nguyên nhân", "bên dưới", "trên"
+        "hồ sơ", "tài liệu", "cơ quan", "địa phương", "nguyên nhân", "bên dưới", "trên",
+        "giấu", "chàng", "không", "biết", "hiểu", "thấy", "làm", "tìm", "gặp", "chọn",
+        "nghĩ", "mang", "giữ", "đưa", "nhận", "gửi", "vợ", "chồng", "phụ nữ", "hàng xóm"
     }
 
     proper_nouns = []
     for pn in proper_nouns_raw:
         pn_clean = pn.strip()
-        if pn_clean.lower() not in stop_words and len(pn_clean) >= 3:
+        pn_low = pn_clean.lower()
+        if pn_low not in stop_words and len(pn_clean) >= 3:
             # Don't add generic capitalized words that often appear at start of phrases
-            if pn_clean.lower() in ("chân", "bước", "manh", "sự", "điều", "người"):
+            if pn_low in ("chân", "bước", "manh", "sự", "điều", "người", "giấu", "chàng", "không", "chọn"):
+                continue
+            # For single words, require length >= 4 unless known name
+            if " " not in pn_clean and len(pn_clean) < 4:
                 continue
             proper_nouns.append(pn_clean)
     

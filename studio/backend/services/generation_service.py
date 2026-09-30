@@ -15,7 +15,6 @@ from apps.script_factory.cost_control import CostController
 from apps.script_factory.idea_generator import IdeaGenerator
 from apps.script_factory.models import IdeaItem, StoryBible, FullScript, ScriptSegment
 from apps.script_factory.providers.gemini_provider import GeminiScriptAIProvider
-from apps.script_factory.providers.mock_provider import MockScriptAIProvider
 from apps.script_factory.providers.router import ModelRouter, RouterConfig
 from apps.script_factory.script_qc import ScriptQCEngine
 from apps.script_factory.script_writer import ScriptWriter
@@ -33,13 +32,15 @@ def get_configured_ai_provider():
     default_p = (status.get("default_provider") or "gemini").strip().lower()
     model = (status.get("default_model") or "gemini-2.5-flash").strip()
 
-    is_test_env = os.environ.get("APP_ENV") == "test" or os.environ.get("ALLOW_MOCK_AI") == "1"
+    is_production = os.environ.get("APP_ENV") == "production"
+    is_test_env = not is_production and (os.environ.get("APP_ENV") == "test")
 
     if default_p == "gemini":
         gemini_key = get_active_api_key("gemini")
         if gemini_key:
             return GeminiScriptAIProvider(api_key=gemini_key, default_model=model)
-        elif is_test_env or default_p == "mock":
+        elif is_test_env:
+            from tests.mocks.mock_script_provider import MockScriptAIProvider
             return MockScriptAIProvider()
         else:
             raise RuntimeError(
@@ -58,7 +59,8 @@ def get_configured_ai_provider():
                 base_url=base_url,
                 provider_name=default_p
             )
-        elif is_test_env or default_p == "mock":
+        elif is_test_env:
+            from tests.mocks.mock_script_provider import MockScriptAIProvider
             return MockScriptAIProvider()
         else:
             raise RuntimeError(
@@ -76,7 +78,8 @@ def get_configured_ai_provider():
         from apps.script_factory.providers.openai_provider import OpenAICompatibleProvider
         return OpenAICompatibleProvider(api_key=openai_key, default_model=model, provider_name="openai")
 
-    if is_test_env or default_p == "mock":
+    if is_test_env:
+        from tests.mocks.mock_script_provider import MockScriptAIProvider
         return MockScriptAIProvider()
 
     raise RuntimeError(
@@ -129,7 +132,7 @@ class GenerationService:
                     pass
 
         provider = self.get_provider()
-        prov_source = "MOCK" if isinstance(provider, MockScriptAIProvider) else "REAL_AI"
+        prov_source = "MOCK" if "mock" in provider.provider_name.lower() else "REAL_AI"
         logger.debug(
             f"[Lineage Stage=IDEAS] project_id={project_id}, original_user_topic='{user_topic}', "
             f"provider={provider.provider_name}, model={getattr(provider, 'default_model', 'unknown')}, source={prov_source}"
@@ -196,8 +199,8 @@ class GenerationService:
             ("Đang xây dựng nhân vật, tính cách và mối quan hệ...", 35),
             ("Đang tạo bí ẩn cốt lõi và chuỗi manh mối (clues)...", 50),
             ("Đang khóa cấu trúc timeline và lịch sử sự kiện...", 65),
-            ("Đang xây dựng bước ngoặt 1 (Reveal 1 tại Scene 31)...", 80),
-            ("Đang xây dựng bước ngoặt 2 (Reveal 2 tại Scene 39)...", 90),
+            ("Đang xây dựng bước ngoặt 1 (Reveal 1 tại ~60-75% thời lượng)...", 80),
+            ("Đang xây dựng bước ngoặt 2 (Reveal 2 tại ~75-90% thời lượng)...", 90),
             ("Đang kiểm tra tính logic và thiết lập Fact Lock...", 100),
         ]
 
@@ -225,61 +228,47 @@ class GenerationService:
         sel_idea = proj_meta.get("selected_idea") or {}
         clean_topic = topic.strip()
         if not clean_topic:
-            clean_topic = sel_idea.get("premise") or sel_idea.get("hook") or proj_meta.get("topic") or "Bí mật gia đình được giấu kín."
+            clean_topic = sel_idea.get("premise") or sel_idea.get("hook") or proj_meta.get("topic") or ""
+
+        if not sel_idea and clean_topic:
+            # Generate premise ideas from real AI provider first to ensure 100% AI creative generation
+            ideas = self.generate_ideas(project_id=project_id, count=1, direction=clean_topic)
+            if ideas:
+                sel_idea = ideas[0]
+                if p_json.exists():
+                    try:
+                        proj_meta["selected_idea"] = sel_idea
+                        with open(p_json, "w", encoding="utf-8") as f:
+                            json.dump(proj_meta, f, ensure_ascii=False, indent=2)
+                    except Exception:
+                        pass
 
         import re
         raw_title = sel_idea.get("title") or sel_idea.get("working_title") or proj_meta.get("title") or ""
         working_title = re.sub(r"^(?:Tập\s+)?EP_?[A-Z0-9_]*\d+\s*[-:]?\s*", "", str(raw_title), flags=re.IGNORECASE).strip()
         if not working_title:
-            working_title = "Câu chuyện phía sau cánh cửa"
+            working_title = clean_topic or "Câu chuyện Sau Cánh Cửa"
         hook = sel_idea.get("hook") or sel_idea.get("premise") or clean_topic
-        
-        # Helper to clean out internal template prefixes
-        def _clean_scaffold(val: str) -> str:
-            v = re.sub(r"^(?:Manh mối|Bước ngoặt|Reveal)\s*\d*\s*[-:]?\s*", "", str(val or "")).strip()
-            v = re.sub(r"^Chân tướng sự thật về bí mật\s+", "", v).strip()
-            return v
 
         protag = str(sel_idea.get("protagonist") or "").strip()
-        if protag.lower() in ("nhân vật chính", "protagonist", ""):
-            if any(w in clean_topic.lower() for w in ["cháu", "người cháu"]):
-                protag = "Người cháu"
-            elif any(w in clean_topic.lower() for w in ["công sở", "văn phòng", "công ty", "đồng nghiệp"]):
-                protag = "Hà"
-            else:
-                protag = "Tuấn"
+        if not protag or protag.lower() in ("nhân vật chính", "protagonist"):
+            protag = "Nhân vật"
 
-        rel = sel_idea.get("relationship") or ""
-        if not rel:
-            if any(w in clean_topic.lower() for w in ["ông nội", "bà nội", "cha", "mẹ", "gia đình", "cháu", "con", "ruột"]):
-                rel = "Người thân trong gia đình"
-            elif any(w in clean_topic.lower() for w in ["công sở", "văn phòng", "công ty", "đồng nghiệp", "sếp"]):
-                rel = "Đồng nghiệp"
-            else:
-                rel = "Người thân"
-
+        rel = sel_idea.get("relationship") or "Người liên quan"
         secret = sel_idea.get("central_secret") or sel_idea.get("core_mystery") or clean_topic
         mystery_q = sel_idea.get("mystery_question") or f"Điều gì đã thực sự xảy ra đằng sau uẩn khúc của {protag}?"
-        false_lead = sel_idea.get("false_lead") or "Nghi ngờ ban đầu hướng về người ngoài hoặc sự phản bội."
+        false_lead = sel_idea.get("false_lead") or ""
 
         clues_data = sel_idea.get("clues") or []
-        if sel_idea:
-            clue1 = _clean_scaffold(sel_idea.get("clue_1") or (clues_data[0] if isinstance(clues_data, list) and len(clues_data) > 0 else f"Dấu vết vật chứng liên quan đến {clean_topic[:60]}."))
-            clue2 = _clean_scaffold(sel_idea.get("clue_2") or (clues_data[1] if isinstance(clues_data, list) and len(clues_data) > 1 else f"Lời khai mâu thuẫn của những người liên quan đến {clean_topic[:60]}."))
-            clue3 = _clean_scaffold(sel_idea.get("clue_3") or (clues_data[2] if isinstance(clues_data, list) and len(clues_data) > 2 else f"Chứng từ hồ sơ xác thực mốc thời gian liên quan đến {clean_topic[:60]}."))
-            rev1 = _clean_scaffold(sel_idea.get("reveal_1") or sel_idea.get("possible_reveal") or f"Hé lộ nhân chứng hoặc góc nhìn mới đảo ngược suy đoán về {clean_topic[:60]}.")
-            raw_rev2 = sel_idea.get("reveal_2") or f"Chân tướng sự thật liên quan đến {secret[:80]}."
-            rev2 = _clean_scaffold(raw_rev2)
-        else:
-            clue1 = f"Dấu vết và chứng từ liên quan đến {clean_topic[:60]}."
-            clue2 = f"Nhân chứng và mốc thời gian mâu thuẫn xoay quanh {clean_topic[:60]}."
-            clue3 = f"Hồ sơ tài liệu xác thực nguồn cơn {clean_topic[:60]}."
-            rev1 = f"Bước ngoặt ban đầu làm thay đổi nhận thức về {clean_topic[:60]}."
-            rev2 = f"Sự thật cốt lõi về {clean_topic[:60]}."
-        payoff = sel_idea.get("emotional_payoff") or sel_idea.get("emotional_angle") or "Hóa giải hiểu lầm trong nước mắt, sự thấu hiểu và tha thứ giữa những người trong cuộc."
-        reflection = sel_idea.get("reflection_theme") or "Đằng sau cánh cửa đóng kín, sự thật dù bất ngờ nhưng là nhịp cầu duy nhất để chữa lành."
-        hook_arch = sel_idea.get("hook_archetype") or "BÍ MẬT GIA ĐÌNH"
-        twist_arch = sel_idea.get("twist_archetype") or "BƯỚC NGOẶT KÉP"
+        clue1 = sel_idea.get("clue_1") or (clues_data[0] if isinstance(clues_data, list) and len(clues_data) > 0 else "")
+        clue2 = sel_idea.get("clue_2") or (clues_data[1] if isinstance(clues_data, list) and len(clues_data) > 1 else "")
+        clue3 = sel_idea.get("clue_3") or (clues_data[2] if isinstance(clues_data, list) and len(clues_data) > 2 else "")
+        rev1 = sel_idea.get("reveal_1") or sel_idea.get("possible_reveal") or ""
+        rev2 = sel_idea.get("reveal_2") or ""
+        payoff = sel_idea.get("emotional_payoff") or sel_idea.get("emotional_angle") or ""
+        reflection = sel_idea.get("reflection_theme") or ""
+        hook_arch = sel_idea.get("hook_archetype") or ""
+        twist_arch = sel_idea.get("twist_archetype") or ""
         try:
             n_score = float(sel_idea.get("novelty_score") or 8.8)
         except Exception:
@@ -289,7 +278,7 @@ class GenerationService:
         top_intent = sel_idea.get("topic_intent")
         top_score = sel_idea.get("topic_adherence_score")
         if top_score is None:
-            top_score = 100.0
+            top_score = 100.0 if orig_topic else None
         else:
             try:
                 top_score = float(top_score)
@@ -321,7 +310,7 @@ class GenerationService:
         )
 
         provider = self.get_provider()
-        prov_source = "MOCK" if isinstance(provider, MockScriptAIProvider) else "REAL_AI"
+        prov_source = "MOCK" if "mock" in provider.provider_name.lower() else "REAL_AI"
         logger.debug(
             f"[Lineage Stage=STORY_BIBLE] project_id={project_id}, original_user_topic='{orig_topic}', "
             f"selected_idea_title='{working_title}', premise='{hook}', secret='{secret}', "
@@ -347,6 +336,10 @@ class GenerationService:
         bible_dict["topic_intent"] = story_bible.topic_intent
         bible_dict["topic_adherence"] = story_bible.topic_adherence
         bible_dict["generation_source"] = prov_source
+        bible_dict["generation_request_id"] = getattr(story_bible, "generation_request_id", None)
+        bible_dict["prompt_version"] = getattr(story_bible, "prompt_version", None)
+        bible_dict["model_name"] = getattr(story_bible, "model_name", None)
+        bible_dict["provider_name"] = getattr(story_bible, "provider_name", None)
 
         bible_path = story_dir / "story_bible.json"
         with open(bible_path, "w", encoding="utf-8") as f:
@@ -365,6 +358,11 @@ class GenerationService:
                 p_curr["original_user_topic"] = orig_topic
                 p_curr["topic_intent"] = top_intent
                 p_curr["topic_adherence"] = story_bible.topic_adherence
+                p_curr["generation_source"] = prov_source
+                p_curr["generation_request_id"] = getattr(story_bible, "generation_request_id", None)
+                p_curr["prompt_version"] = getattr(story_bible, "prompt_version", None)
+                p_curr["model_name"] = getattr(story_bible, "model_name", None)
+                p_curr["provider_name"] = getattr(story_bible, "provider_name", None)
                 with open(p_json, "w", encoding="utf-8") as f:
                     json.dump(p_curr, f, ensure_ascii=False, indent=2)
             except Exception:
@@ -398,9 +396,12 @@ class GenerationService:
             bible_data = json.load(f)
         story_bible = StoryBible.from_dict(bible_data)
 
+        provider = self.get_provider()
+        prov_source = "MOCK" if "mock" in provider.provider_name.lower() else "REAL_AI"
+
         # Ensure Story Bible passes Story Logic & Reveal Justification Gate before ScriptWriter runs
         from apps.script_factory.story_qc import StoryQCEngine
-        story_qc = StoryQCEngine()
+        story_qc = StoryQCEngine(provider=provider)
         bible_qc = story_qc.audit_story_bible(story_bible)
         if (
             bible_qc.status != "PASS"
@@ -424,8 +425,6 @@ class GenerationService:
                 stage_callback(label, pct)
             time.sleep(0.05)
 
-        provider = self.get_provider()
-        prov_source = "MOCK" if isinstance(provider, MockScriptAIProvider) else "REAL_AI"
         logger.debug(
             f"[Lineage Stage=SCRIPT] project_id={project_id}, original_user_topic='{story_bible.original_user_topic}', "
             f"title='{story_bible.title}', provider={provider.provider_name}, "
@@ -445,9 +444,13 @@ class GenerationService:
                 qc_report=qc_report,
             )
 
-        # Attach generation_source to script and project metadata
+        # Attach generation_source and trace to script and project metadata
         script_dict = script.to_dict()
         script_dict["generation_source"] = prov_source
+        script_dict["generation_request_id"] = getattr(script, "generation_request_id", None)
+        script_dict["prompt_version"] = getattr(script, "prompt_version", None)
+        script_dict["model_name"] = getattr(script, "model_name", None)
+        script_dict["provider_name"] = getattr(script, "provider_name", None)
 
         # Save script
         script_dir = proj_dir / "script"
@@ -469,13 +472,17 @@ class GenerationService:
         with open(hist_file, "w", encoding="utf-8") as f:
             json.dump(script_dict, f, ensure_ascii=False, indent=2)
 
-        # Update project.json with generation source
+        # Update project.json with generation source and trace
         p_json = proj_dir / "project.json"
         if p_json.exists():
             try:
                 with open(p_json, "r", encoding="utf-8") as f:
                     p_curr = json.load(f)
                 p_curr["generation_source"] = prov_source
+                p_curr["generation_request_id"] = getattr(script, "generation_request_id", None)
+                p_curr["prompt_version"] = getattr(script, "prompt_version", None)
+                p_curr["model_name"] = getattr(script, "model_name", None)
+                p_curr["provider_name"] = getattr(script, "provider_name", None)
                 p_curr["qc_status"] = qc_report.status
                 with open(p_json, "w", encoding="utf-8") as f:
                     json.dump(p_curr, f, ensure_ascii=False, indent=2)

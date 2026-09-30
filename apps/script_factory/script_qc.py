@@ -29,12 +29,12 @@ class ScriptQCEngine:
 
     def __init__(
         self,
-        provider: ScriptAIProvider,
-        cost_controller: CostController,
+        provider: Optional[ScriptAIProvider] = None,
+        cost_controller: Optional[CostController] = None,
         episodes_root: Optional[Path] = None,
     ):
         self.provider = provider
-        self.cost_ctrl = cost_controller
+        self.cost_ctrl = cost_controller or CostController()
         self.episodes_root = Path(episodes_root) if episodes_root else Path("episodes")
 
     @classmethod
@@ -47,8 +47,7 @@ class ScriptQCEngine:
     ) -> QCReport:
         """Convenience method to execute full QC audit without explicit controller instantiation."""
         from apps.script_factory.cost_control import CostController
-        from apps.script_factory.providers.mock_provider import MockScriptAIProvider
-        engine = cls(provider=MockScriptAIProvider(), cost_controller=CostController())
+        engine = cls(provider=None, cost_controller=CostController())
         return engine.run_qc(script=script, story_bible=story_bible)
 
     def run_qc(
@@ -99,6 +98,23 @@ class ScriptQCEngine:
                 for t in re.findall(r"\w+", src.lower()):
                     if len(t) >= 3:
                         known_setup.add(t)
+
+        # Include protagonist and supporting characters so character names are not flagged as spoilers
+        if hasattr(story_bible, "protagonist"):
+            p_name = story_bible.protagonist.get("name") if isinstance(story_bible.protagonist, dict) else str(story_bible.protagonist or "")
+            if p_name:
+                known_setup.add(p_name.lower())
+                for part in re.findall(r"\w+", p_name.lower()):
+                    if len(part) >= 2:
+                        known_setup.add(part)
+        for sc in (getattr(story_bible, "supporting_characters", []) or []):
+            sc_name = sc.get("name") if isinstance(sc, dict) else str(sc or "")
+            if sc_name:
+                known_setup.add(sc_name.lower())
+                for part in re.findall(r"\w+", sc_name.lower()):
+                    if len(part) >= 2:
+                        known_setup.add(part)
+
         spoiler_guard = SpoilerTimingGuard(rel_map, known_setup_entities=known_setup)
         spoiler_violations = spoiler_guard.audit_script(script)
         for sv in spoiler_violations:
@@ -1063,23 +1079,29 @@ def apply_targeted_repairs(
 
     # 5. Repair Ending Proportion & Semantic Repetition if overlong or repetitive
     has_ending_rep = any(iss.get("rule") == "ENDING_SEMANTIC_REPETITION" for iss in qc_report.evidence_issues)
-    if has_ending_rep and len(script.segments) >= 6:
-        # Keep narrative resolution concrete, compress redundant moralizing segments in the tail
-        tail_start = max(0, len(script.segments) - 10)
+    if has_ending_rep and len(script.segments) >= 5:
+        tail_len = max(5, int(len(script.segments) * 0.15))
+        tail_start = max(0, len(script.segments) - tail_len)
+        moralizing_phrases = [
+            r"bài\s+học", r"thấu\s+hiểu", r"bao\s+dung", r"tha\s+thứ", r"chữa\s+lành",
+            r"mặt\s+nạ", r"đằng\s+sau\s+cánh\s+cửa", r"giá\s+trị\s+của", r"cuộc\s+sống\s+dạy\s+chúng\s+ta",
+            r"lời\s+cảnh\s+tỉnh", r"nhìn\s+lại\s+chính\s+mình", r"tình\s+thân",
+        ]
         reflection_kept = False
         for idx in range(tail_start, len(script.segments) - 1):
             seg = script.segments[idx]
             if seg.delivery_profile in ("HOOK", "REVEAL"):
                 continue
-            if not reflection_kept and seg.delivery_profile in ("COMMENT", "NORMAL"):
-                seg.text = story_bible.reflection_theme or "Đằng sau cánh cửa mỗi gia đình, sự thấu hiểu luôn bắt đầu từ khoảnh khắc chúng ta dám lắng nghe nhau."
-                seg.delivery_profile = "COMMENT"
-                reflection_kept = True
-            else:
-                # Convert redundant moralizing segments into concrete narrative transition details
-                seg.delivery_profile = "NORMAL"
-                seg.audience_address = False
-                seg.text = f"Những tài liệu cũ được {protag} xếp lại gọn gàng vào ngăn tủ gỗ khi buổi chiều dần buông xuống."
+            hits = sum(1 for p in moralizing_phrases if re.search(p, seg.text, re.IGNORECASE))
+            if hits >= 2 or (hits >= 1 and seg.delivery_profile == "COMMENT"):
+                if not reflection_kept:
+                    seg.text = story_bible.reflection_theme or "Đằng sau cánh cửa mỗi gia đình, sự thấu hiểu luôn bắt đầu từ lòng bao dung."
+                    seg.delivery_profile = "COMMENT"
+                    reflection_kept = True
+                else:
+                    seg.text = "Mọi biến cố rồi cũng dần khép lại trong sự bình yên của căn nhà nhỏ."
+                    seg.delivery_profile = "NORMAL"
+                    seg.audience_address = False
 
     if len(script.segments) >= 20:
         closing_indices = [

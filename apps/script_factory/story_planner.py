@@ -30,12 +30,13 @@ class StoryPlanner:
         self.cost_ctrl = cost_controller
         self.episodes_root = Path(episodes_root) if episodes_root else Path("episodes")
         self.episodes_root.mkdir(parents=True, exist_ok=True)
-        self.story_qc = StoryQCEngine()
+        self.story_qc = StoryQCEngine(provider=self.provider)
 
     def validate_story_bible(
         self,
         bible: StoryBible,
         auto_repair: bool = False,
+        model: Optional[str] = None,
     ) -> StoryBibleQCReport:
         """Validates Story Bible against causal, knowledge, clue, and reveal justification gates."""
         report = self.story_qc.audit_story_bible(bible)
@@ -46,8 +47,19 @@ class StoryPlanner:
             or not bible.structured_clues
             or not bible.reveal_justifications
         ):
-            self.story_qc.repair_story_bible(bible, report)
-            report = self.story_qc.audit_story_bible(bible)
+            rounds = 0
+            while rounds < 3 and report.status != "PASS" and hasattr(self.provider, "repair_story_bible"):
+                rounds += 1
+                try:
+                    bible, _, _ = self.provider.repair_story_bible(bible, report.issues, model=model)
+                    report = self.story_qc.audit_story_bible(bible)
+                except Exception as e:
+                    logger.warning(f"[StoryPlanner] AI repair round {rounds} failed: {e}")
+                    break
+
+            if report.status != "PASS" or not bible.causal_chains or not bible.knowledge_ledger:
+                self.story_qc.repair_story_bible(bible, report, provider=self.provider)
+                report = self.story_qc.audit_story_bible(bible)
         return report
 
     def get_next_episode_id(self) -> str:
@@ -113,7 +125,7 @@ class StoryPlanner:
                 bible.topic_adherence = idea.topic_adherence_score
 
             # Audit and auto-repair causal gaps, knowledge contradictions, clue jumps, and reveal justifications
-            self.validate_story_bible(bible, auto_repair=True)
+            self.validate_story_bible(bible, auto_repair=True, model=model)
             lat = time.time() - t0
             self.cost_ctrl.record_operation(
                 operation="create_story_bible",

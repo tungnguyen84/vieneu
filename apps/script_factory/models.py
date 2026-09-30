@@ -131,6 +131,11 @@ class IdeaItem:
     original_user_topic: Optional[str] = None
     topic_intent: Optional[Dict[str, Any]] = None
     topic_adherence_score: Optional[float] = None
+    generation_request_id: Optional[str] = None
+    prompt_version: Optional[str] = None
+    generation_source: Optional[str] = None
+    model_name: Optional[str] = None
+    provider_name: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -177,6 +182,11 @@ class StoryBible:
     topic_adherence: Optional[Dict[str, Any] | float] = None
     status: str = "DRAFT"
     generation_source: Optional[str] = None
+    generation_request_id: Optional[str] = None
+    prompt_version: Optional[str] = None
+    model_name: Optional[str] = None
+    provider_name: Optional[str] = None
+    generated_at: Optional[float] = None
     approved_by: Optional[str] = None
     approved_at: Optional[float] = None
     last_modified_at: float = field(default_factory=time.time)
@@ -232,6 +242,11 @@ class FullScript:
     total_words: int = 0
     status: str = "DRAFT"
     revision_round: int = 0
+    generation_source: Optional[str] = None
+    generation_request_id: Optional[str] = None
+    prompt_version: Optional[str] = None
+    model_name: Optional[str] = None
+    provider_name: Optional[str] = None
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
 

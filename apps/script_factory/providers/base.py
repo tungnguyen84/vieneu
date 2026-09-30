@@ -36,6 +36,16 @@ class ScriptAIProvider(ABC):
         """Expands an idea into a full Story Bible with locked facts."""
         pass
 
+    def repair_story_bible(
+        self,
+        story_bible: StoryBible,
+        qc_issues: List[str],
+        series_bible: Optional[Dict[str, Any]] = None,
+        model: Optional[str] = None,
+    ) -> Tuple[StoryBible, int, int]:
+        """Repairs a Story Bible via AI without local templates."""
+        return story_bible, 0, 0
+
     @abstractmethod
     def write_script(
         self,

@@ -57,8 +57,8 @@ export const ScriptView: React.FC<Props> = ({
     'Đang viết Hook mở màn cuốn hút...',
     'Đang phát triển bí ẩn và thiết lập tình huống ban đầu...',
     'Đang xây dựng manh mối và quá trình tìm kiếm sự thật...',
-    'Đang viết Reveal 1 (Bước ngoặt lớn đầu tiên tại Scene 31)...',
-    'Đang viết Reveal 2 (Lật mở chân tướng tại Scene 39)...',
+    'Đang viết Reveal 1 (Bước ngoặt lớn đầu tiên tại ~60-75% thời lượng)...',
+    'Đang viết Reveal 2 (Lật mở chân tướng tại ~75-90% thời lượng)...',
     'Đang hoàn thiện cảm xúc và đoạn kết chiêm nghiệm...',
     'Đang kiểm tra Fact Lock & Spoiler Leakage Guard...',
     'Đang kiểm định QC và tính toán độ dài lời dẫn...',
@@ -361,7 +361,7 @@ export const ScriptView: React.FC<Props> = ({
               <h3 className="text-sm font-bold text-[#F8FAFC]">Tập phim này chưa có kịch bản</h3>
               <p className="text-xs text-[#94A3B8] mt-1 leading-relaxed">
                 Tạo kịch bản hoàn chỉnh từ Story Bible đã duyệt tuân thủ các quy tắc nghiêm ngặt:
-                80–100 phân đoạn, 6 delivery profiles, chặn rò rỉ bước ngoặt trước Scene 31.
+                80–100 phân đoạn, 6 delivery profiles, bước ngoặt với tỷ lệ phát triển tự nhiên (~60-75% và ~75-90%).
               </p>
             </div>
 

@@ -9,40 +9,13 @@ interface Props {
 }
 
 export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpdated }) => {
-  const [direction, setDirection] = useState<string>('BÍ MẬT GIA ĐÌNH');
+  const [direction, setDirection] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [selectingId, setSelectingId] = useState<string>('');
   const [customIdeas, setCustomIdeas] = useState<IdeaItem[]>([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
-
-  const defaultIdeas = [
-    {
-      id: 'IDEA_003',
-      title: 'Chiếc Hộp Gỗ Của Người Bà Quá Cố',
-      premise: 'Người cháu dọn nhà tìm thấy chiếc hộp gỗ khóa chặt cùng bức ảnh năm 1980 và sổ tay quyên góp.',
-      novelty: 8.8,
-      status: 'APPROVED',
-      ep: 'EP003',
-    },
-    {
-      id: 'IDEA_011',
-      title: 'Bức Ảnh Lạ Trong Điện Thoại Cũ',
-      premise: 'Tìm thấy chiếc điện thoại cũ trong tủ đồ cũ tiết lộ bí mật nhận nuôi năm 2012.',
-      novelty: 8.6,
-      status: 'APPROVED',
-      ep: 'EP011',
-    },
-    {
-      id: 'IDEA_001',
-      title: 'Sau Cánh Cửa Khóa Kín',
-      premise: 'Căn phòng bỏ hoang 15 năm và bí mật gia đình chưa từng được tiết lộ.',
-      novelty: 9.1,
-      status: 'GOLDEN_REFERENCE',
-      ep: 'EP001',
-    },
-  ];
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -252,78 +225,18 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
         )}
       </div>
 
-      {/* Idea Bank Standard List */}
-      <div className="space-y-3">
-        <h3 className="text-xs font-semibold text-[#94A3B8]">Ngân hàng ý tưởng mẫu chuẩn (Idea Bank):</h3>
-        {defaultIdeas.map((idea) => {
-          const isCurrent = idea.ep === projectId;
-          return (
-            <div
-              key={idea.id}
-              className={`p-4 rounded-lg border transition-all ${
-                isCurrent
-                  ? 'bg-[#161F36] border-[#3B82F6] ring-1 ring-[#3B82F6]'
-                  : 'bg-[#111827] border-[#28354D]'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="font-mono-code text-[11px] text-[#3B82F6] font-semibold">
-                      {idea.id}
-                    </span>
-                    <span>•</span>
-                    <span className="text-xs font-mono-code bg-[#E11D48]/20 text-[#E11D48] px-1.5 py-0.5 rounded font-bold">
-                      {idea.ep}
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-bold text-[#F8FAFC]">{idea.title}</h3>
-                  <p className="text-xs text-[#CBD5E1] mt-1 leading-relaxed">
-                    {idea.premise}
-                  </p>
-                </div>
-
-                <div className="text-right shrink-0 ml-4 flex flex-col items-end justify-between h-full">
-                  <div>
-                    <span className="text-[10px] text-[#64748B] block">Novelty Score</span>
-                    <span className="font-mono-code text-sm font-bold text-[#10B981]">
-                      {idea.novelty} / 10
-                    </span>
-                  </div>
-                  {!isCurrent && (
-                    <button
-                      onClick={() => handleSelectIdea(idea)}
-                      disabled={selectingId === idea.id}
-                      className="mt-3 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white font-bold text-[11px] px-3 py-1.5 rounded flex items-center space-x-1 cursor-pointer shadow active:scale-95 transition-all"
-                    >
-                      {selectingId === idea.id ? (
-                        <>
-                          <Loader2 size={12} className="animate-spin" />
-                          <span>Đang chọn...</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 size={12} />
-                          <span>CHỌN TẬP NÀY</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {isCurrent && (
-                <div className="mt-3 pt-2.5 border-t border-[#28354D]/60 flex items-center justify-between text-xs text-[#10B981]">
-                  <span className="flex items-center space-x-1">
-                    <CheckCircle2 size={13} />
-                    <span>Ý tưởng đang được phát triển trong Project này</span>
-                  </span>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {/* Instructions when no ideas are generated yet */}
+      {customIdeas.length === 0 && (
+        <div className="bg-[#111827] border border-[#28354D] rounded-xl p-8 text-center space-y-3">
+          <div className="w-12 h-12 rounded-full bg-[#E11D48]/15 text-[#E11D48] flex items-center justify-center mx-auto">
+            <Sparkles size={24} />
+          </div>
+          <h3 className="text-sm font-bold text-[#F8FAFC]">Sáng tác ý tưởng độc bản bằng Gemini AI</h3>
+          <p className="text-xs text-[#94A3B8] max-w-md mx-auto leading-relaxed">
+            Nhập đề tài bạn muốn khai thác vào ô phía trên (hoặc để trống để AI tự do sáng tạo) và nhấn <strong>"Sinh 5 ý tưởng AI"</strong>. Toàn bộ nội dung tiền đề, nhân vật và bí mật sẽ được Gemini sinh ra 100% không dùng bất kỳ template mẫu nào.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

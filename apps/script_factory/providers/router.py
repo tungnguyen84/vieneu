@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from apps.script_factory.providers.base import ScriptAIProvider
-from apps.script_factory.providers.mock_provider import MockScriptAIProvider
 from apps.script_factory.providers.gemini_provider import GeminiScriptAIProvider, _get_api_key
 
 logger = logging.getLogger("VieNeu.ModelRouter")
@@ -28,9 +27,7 @@ class ModelRouter:
 
     def __init__(self, config: Optional[RouterConfig] = None):
         self.config = config or RouterConfig()
-        self._providers: Dict[str, ScriptAIProvider] = {
-            "mock": MockScriptAIProvider()
-        }
+        self._providers: Dict[str, ScriptAIProvider] = {}
         # Check if Gemini API key exists
         gemini_key = _get_api_key()
         if gemini_key:
@@ -39,15 +36,12 @@ class ModelRouter:
                 default_model=self.config.idea_model,
                 embedding_model=self.config.embedding_model,
             )
-        elif self.config.preferred_provider == "gemini":
-            # Fallback to mock if no key found
-            self.config.preferred_provider = "mock"
 
     def register_provider(self, name: str, provider: ScriptAIProvider) -> None:
         self._providers[name.lower()] = provider
 
     def get_provider(self, task: str = "general") -> ScriptAIProvider:
-        """Returns the appropriate provider based on environment and preference."""
+        """Returns the appropriate real AI provider based on environment and preference."""
         pref = self.config.preferred_provider.lower()
         if pref in self._providers:
             return self._providers[pref]
@@ -59,8 +53,18 @@ class ModelRouter:
                 self._providers["gemini"] = GeminiScriptAIProvider(api_key=gemini_key)
             return self._providers["gemini"]
 
-        # Default fallback is Mock provider
-        return self._providers["mock"]
+        if os.environ.get("APP_ENV") == "test" or os.environ.get("ALLOW_MOCK_AI") == "1":
+            if "mock" in self._providers:
+                return self._providers["mock"]
+            from tests.mocks.mock_script_provider import MockScriptAIProvider
+            mock_p = MockScriptAIProvider()
+            self._providers["mock"] = mock_p
+            return mock_p
+
+        raise RuntimeError(
+            "AI generation failed: No valid AI provider credentials found. "
+            "Please configure your GEMINI_API_KEY in Settings."
+        )
 
     def get_connection_status(self) -> Dict[str, Any]:
         """Returns clear status for UI: Provider, Model, Connection Status."""

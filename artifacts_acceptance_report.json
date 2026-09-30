@@ -1,0 +1,71 @@
+[
+  {
+    "project_id": "EP2001",
+    "topic": "Bí mật ngoại tình công sở",
+    "title": "Khoảng Trống Trên Lịch Biểu",
+    "segment_count": 87,
+    "word_count": 3081,
+    "qc_status": "NEEDS_REVISION",
+    "generation_source": "REAL_AI",
+    "request_id": "4e846a07-b38d-4f2a-83bb-b53c2554796f",
+    "leaks_found": [],
+    "keyword_hits": [
+      "công sở",
+      "văn phòng",
+      "đồng nghiệp",
+      "sếp",
+      "công ty",
+      "ngoại tình",
+      "quan hệ"
+    ],
+    "protagonist": "Ngọc Lan",
+    "reveal_1": "Không có cuộc họp chiến lược nào cả; hệ thống camera an ninh khẳng định anh đã rời văn phòng từ sớm để đến một không gian riêng tư.",
+    "reveal_2": "Sự thật vạch trần mối quan hệ ngoại tình công sở được che đậy hoàn hảo dưới vỏ bọc những dự án ngoài giờ do chính cấp dưới trực tiếp cấu kết tạo dựng."
+  },
+  {
+    "project_id": "EP2002",
+    "topic": "Người vợ phát hiện chồng bí mật gửi tiền cho một người phụ nữ suốt 5 năm",
+    "title": "Bản Án Từ Tấm Ảnh Cũ",
+    "segment_count": 90,
+    "word_count": 2531,
+    "qc_status": "NEEDS_REVISION",
+    "generation_source": "REAL_AI",
+    "request_id": "981f6187-5158-49e2-b292-35478213db14",
+    "leaks_found": [],
+    "keyword_hits": [
+      "chồng",
+      "vợ",
+      "gửi tiền",
+      "phụ nữ",
+      "5 năm",
+      "ngân hàng",
+      "sao kê"
+    ],
+    "protagonist": "Hoài Thương",
+    "reveal_1": "Người phụ nữ nhận tiền không phải là người tình mà là vợ cũ và đứa con mắc bệnh hiểm nghèo của người chồng trước khi họ kết hôn.",
+    "reveal_2": "Người chồng chọn cách giấu giếm vì sợ người vợ hiện tại tổn thương và lo sợ sự xáo trộn trong gia đình hiện tại, dù anh luôn chu cấp trách nhiệm."
+  },
+  {
+    "project_id": "EP2003",
+    "topic": "Người mẹ già nhận được cuộc gọi từ người con đã mất 8 năm trước",
+    "title": "Tần Số Của Nỗi Nhớ",
+    "segment_count": 79,
+    "word_count": 2975,
+    "qc_status": "NEEDS_REVISION",
+    "generation_source": "REAL_AI",
+    "request_id": "c9af0700-c02d-449f-9ec9-c4c92a950c2c",
+    "leaks_found": [],
+    "keyword_hits": [
+      "mẹ",
+      "con",
+      "cuộc gọi",
+      "mất",
+      "8 năm",
+      "điện thoại",
+      "giọng nói"
+    ],
+    "protagonist": "Bà Nguyễn Thị Tư",
+    "reveal_1": "Người gọi không phải là người con đã khuất mà là một chàng trai trẻ vô tình mua được chiếc sim cũ chứa số điện thoại đó ngoài tiệm điện thoại.",
+    "reveal_2": "Chàng trai gọi cho bà Tư vì số máy này liên tục nhận được những tin nhắn hỏi thăm, tò mò từ bạn bè cũ của chủ nhân trước, khiến cậu tò mò muốn tìm hiểu chủ nhân thực sự."
+  }
+]

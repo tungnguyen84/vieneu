@@ -95,9 +95,10 @@ class IdeaQCReport:
 class StoryQCEngine:
     """Audits and hardens premise ideas before Story Bible creation."""
 
-    def __init__(self, novelty_engine: Optional[NoveltyEngine] = None):
+    def __init__(self, novelty_engine: Optional[NoveltyEngine] = None, provider: Optional[Any] = None):
         self.novelty_engine = novelty_engine or NoveltyEngine()
         self.plausibility_engine = PlausibilityEngine()
+        self.provider = provider
 
     def audit_idea(
         self,
@@ -682,75 +683,72 @@ class StoryQCEngine:
         self,
         bible: StoryBible,
         report: Optional[StoryBibleQCReport] = None,
+        provider: Optional[Any] = None,
     ) -> StoryBible:
         """
         Repairs StoryBible causal gaps, knowledge contradictions, evidence jumps,
-        and missing reveal justifications so ScriptWriter receives a coherent StoryBible.
+        and missing reveal justifications.
+        Delegates creative repair to AI provider when available to prevent template leakage.
         """
         if report is None:
             report = self.audit_story_bible(bible)
 
+        active_provider = provider or self.provider
+        if active_provider and hasattr(active_provider, "repair_story_bible") and report.issues:
+            try:
+                repaired, _, _ = active_provider.repair_story_bible(bible, report.issues)
+                recheck = self.audit_story_bible(repaired)
+                repaired.story_qc_report = recheck.to_dict()
+                return repaired
+            except Exception as e:
+                logger.warning(f"[StoryQCEngine] Provider repair_story_bible failed: {e}. Falling back to structural normalization.")
+
         protag_name = (
-            bible.protagonist.get("name", "Nhân vật chính")
+            bible.protagonist.get("name", "Nhân vật")
             if isinstance(bible.protagonist, dict)
-            else str(bible.protagonist or "Nhân vật chính")
+            else str(bible.protagonist or "Nhân vật")
         )
         supp_name = (
             bible.supporting_characters[0].get("name", "Người thân")
             if bible.supporting_characters and isinstance(bible.supporting_characters[0], dict)
-            else "Người thân"
+            else "Người liên quan"
         )
 
-        # 1. Repair CAUSAL_GAP in reveal_1 / reveal_2 / secret and populate causal_chains
-        if "CAUSAL_GAP" in report.rule_codes or not bible.causal_chains:
-            if _has_weak_cause_to_extreme_action(
-                f"{bible.secret} {bible.reveal_1} {bible.reveal_2}".lower(),
-                has_strong_necessity=False,
-            ):
-                necessity_clause = (
-                    " Do hồ sơ hành chính thời điểm biến cố bị thất lạc và giấy xác nhận duy nhất còn lại mang tên người đã khuất, "
-                    "cùng với cú sốc tâm lý đe dọa tính mạng người thân nếu biết tin dữ ngay lúc đó, nhân vật buộc phải duy trì "
-                    "thỏa thuận pháp lý và danh phận này như phương án duy nhất để bảo toàn mái ấm và quyền lợi hợp pháp cho gia đình."
-                )
-                if bible.reveal_2 and not _has_necessity_markers(bible.reveal_2.lower()):
-                    bible.reveal_2 = bible.reveal_2.rstrip(".") + "." + necessity_clause
-                if bible.secret and not _has_necessity_markers(bible.secret.lower()):
-                    bible.secret = bible.secret.rstrip(".") + "." + necessity_clause
-
+        # 1. Populate causal_chains from existing Story Bible fields if missing
+        if not bible.causal_chains:
             bible.causal_chains = [
                 {
                     "target": "reveal_1",
-                    "cause": f"Biến cố quá khứ và ràng buộc giấy tờ/hoàn cảnh thực tế của {supp_name}.",
-                    "decision": f"{supp_name} quyết định giữ kín hồ sơ gốc để tránh cú sốc tâm lý và rủi ro pháp lý cho {protag_name}.",
+                    "cause": f"Biến cố quá khứ liên quan đến {bible.secret[:80]}.",
+                    "decision": f"Quyết định của {supp_name} nhằm bảo vệ {protag_name} khỏi biến cố.",
                     "action": (
                         str(bible.reveal_1)
                         if len(str(bible.reveal_1 or "").strip()) >= 10
-                        else f"Thực hiện cam kết bảo vệ quyền lợi gia đình trong âm thầm ({bible.reveal_1 or 'Reveal 1'})."
+                        else f"Thực hiện cam kết bảo vệ gia đình ({bible.reveal_1 or 'Bước ngoặt 1'})."
                     ),
-                    "consequence": f"{protag_name} hiểu lầm hướng đi ban đầu cho đến khi đối chiếu chứng từ gốc.",
-                    "why": "Bảo vệ sự an toàn tâm lý và danh dự của các thành viên trong gia đình.",
-                    "motivation": "Không thể công khai ngay thời điểm đó vì điều kiện sức khỏe, tâm lý và thủ tục xác minh chưa cho phép giải pháp thông thường.",
-                    "how": "Duy trì qua hồ sơ lưu trữ chính thức, sổ ghi chép riêng và sự phối hợp giữ kín của nhân chứng liên quan.",
+                    "consequence": f"{protag_name} hiểu lầm tình huống ban đầu trước khi đối chiếu chứng cứ gốc.",
+                    "why": "Bảo vệ sự an toàn và danh dự cho người thân trong gia đình.",
+                    "motivation": "Không thể công khai ngay lúc đó do ràng buộc hoàn cảnh và bảo vệ tâm lý người trong cuộc.",
+                    "how": "Duy trì qua sự giữ kín và thỏa thuận giữa những người trực tiếp liên quan.",
                 },
                 {
                     "target": "reveal_2",
-                    "cause": f"Tình thế bất khả kháng buộc {supp_name} phải gánh vác trách nhiệm thay thế mà không thể giải thích công khai.",
-                    "decision": f"Chấp nhận chịu thiệt thòi cá nhân và giữ im lặng suốt nhiều năm để bảo toàn cuộc sống bình yên cho {protag_name}.",
+                    "cause": f"Hoàn cảnh bất khả kháng khiến {supp_name} phải gánh vác trách nhiệm thầm lặng.",
+                    "decision": f"Chấp nhận giữ im lặng để giữ vững sự bình yên cho gia đình và {protag_name}.",
                     "action": (
                         str(bible.reveal_2)
                         if len(str(bible.reveal_2 or "").strip()) >= 10
-                        else f"Duy trì sự hy sinh thầm lặng qua nhiều năm ({bible.reveal_2 or bible.secret or 'Reveal 2'})."
+                        else f"Duy trì bí mật qua thời gian ({bible.reveal_2 or bible.secret or 'Bước ngoặt 2'})."
                     ),
-                    "consequence": "Để lại uẩn khúc chỉ được tháo gỡ khi đầy đủ chứng cứ trung gian và nhân chứng lên tiếng.",
-                    "why": "Nếu tiết lộ sớm hoặc chọn cách thông thường, gia đình sẽ sụp đổ hoặc mất đi quyền bảo hộ hợp pháp.",
-                    "motivation": "Giải pháp thông thường là bất khả thi do rào cản hồ sơ ban đầu và nguy cơ tổn thương trực tiếp đến người thân yếu thế.",
-                    "how": "Thực hiện nhất quán qua từng giai đoạn thời gian với sự xác nhận của hồ sơ lưu trữ và nhân chứng.",
+                    "consequence": "Tạo nên uẩn khúc chỉ được tháo gỡ khi toàn bộ chứng cứ được làm rõ.",
+                    "why": "Nếu công khai sai thời điểm sẽ dẫn đến đổ vỡ không thể cứu vãn.",
+                    "motivation": "Giải pháp thông thường là bất khả thi trong bối cảnh thực tế lúc xảy ra biến cố.",
+                    "how": "Thực hiện nhất quán qua từng giai đoạn với sự thấu hiểu của các nhân chứng then chốt.",
                 },
             ]
 
         # 2. Repair CHARACTER_KNOWLEDGE_CONTRADICTION
         if "CHARACTER_KNOWLEDGE_CONTRADICTION" in report.rule_codes or not bible.knowledge_ledger:
-            # Remove absolute "nobody knew" claims if a supporting character knows
             for attr in ("secret", "reveal_1", "reveal_2"):
                 val = getattr(bible, attr, "")
                 if val:
@@ -765,9 +763,9 @@ class StoryQCEngine:
             ledger: List[Dict[str, Any]] = [
                 {
                     "character": protag_name,
-                    "who_knows_what": f"{protag_name} ban đầu chỉ thấy dấu hiệu bất thường, chưa biết sự thật cốt lõi.",
-                    "when_they_learned_it": "Khi mở hồ sơ xác minh và nghe lời giải thích trực tiếp ở Hồi 6 - Hồi 7 (Reveal).",
-                    "how_they_learned_it": "Thông qua chuỗi 3 manh mối vật chứng và cuộc đối chiếu với nhân chứng.",
+                    "who_knows_what": f"{protag_name} ban đầu chỉ nhận thấy dấu hiệu bất thường, chưa rõ toàn bộ sự thật.",
+                    "when_they_learned_it": "Khi xác minh chuỗi manh mối và đối thoại trực tiếp ở phần cao trào.",
+                    "how_they_learned_it": "Thông qua chuỗi manh mối thực tế và lời xác nhận của người trong cuộc.",
                     "knowledge_scope": "none",
                 }
             ]
@@ -779,9 +777,9 @@ class StoryQCEngine:
                 knows_all = any(p in sc_desc for p in ["biết toàn bộ", "biết sự thật", "biết rõ", "biết hết", "người nắm giữ bí mật"])
                 ledger.append({
                     "character": sc_name,
-                    "who_knows_what": f"{sc_name} nắm rõ nguyên nhân và thỏa thuận ngầm của biến cố quá khứ." if knows_all else f"{sc_name} biết một phần hoàn cảnh quá khứ và tôn trọng sự im lặng.",
-                    "when_they_learned_it": "Ngay từ thời điểm biến cố khởi phát trong quá khứ.",
-                    "how_they_learned_it": "Trực tiếp chứng kiến hoặc tham gia xử lý biến cố cùng người trong cuộc.",
+                    "who_knows_what": f"{sc_name} nắm rõ nguyên nhân và diễn biến biến cố." if knows_all else f"{sc_name} biết một phần sự việc và chọn giữ im lặng.",
+                    "when_they_learned_it": "Từ thời điểm biến cố khởi phát.",
+                    "how_they_learned_it": "Trực tiếp trải qua hoặc cùng giải quyết biến cố.",
                     "knowledge_scope": "full" if knows_all else "partial",
                 })
             bible.knowledge_ledger = ledger
@@ -789,9 +787,9 @@ class StoryQCEngine:
         # 3. Repair EVIDENCE_DOES_NOT_PROVE_CLAIM
         if "EVIDENCE_DOES_NOT_PROVE_CLAIM" in report.rule_codes or not bible.structured_clues:
             raw_clues = bible.clues if (bible.clues and len(bible.clues) >= 3) else [
-                "Manh mối 1: Vật chứng hoặc giấy tờ cá nhân cũ được cất giữ cẩn thận trong ngăn tủ khóa kín.",
-                "Manh mối 2: Bản ghi chép/chứng từ thứ hai hé lộ mốc thời gian và tên người liên quan trong quá khứ.",
-                "Manh mối 3: Hồ sơ gốc và lời xác nhận của nhân chứng làm sáng tỏ toàn bộ nguyên nhân thực sự.",
+                "Dấu hiệu hoặc tài liệu ban đầu làm nảy sinh nghi vấn.",
+                "Chi tiết hoặc nhân chứng thứ hai làm rõ mốc thời gian liên quan.",
+                "Hồ sơ hoặc lời xác nhận trực tiếp làm sáng tỏ nguyên nhân cốt lõi.",
             ]
             cleaned_clues = []
             for rc in raw_clues:
@@ -807,46 +805,56 @@ class StoryQCEngine:
             bible.structured_clues = [
                 {
                     "clue": cleaned_clues[0],
-                    "what_it_proves": "Chứng minh có một kỷ vật/tài liệu quá khứ liên quan đến người khác được cất giữ cẩn thận.",
-                    "what_it_does_NOT_prove": "Chưa chứng minh được mục đích che giấu hay kết luận về hành vi phản bội/mạo danh.",
-                    "next_question": "Vật chứng này thuộc về ai và tại sao lại xuất hiện trong nhà?",
+                    "what_it_proves": f"Xác nhận có dấu hiệu bất thường liên quan đến {cleaned_clues[0][:50]}.",
+                    "what_it_does_NOT_prove": "Chưa đủ để kết luận động cơ hay toàn bộ sự thật cuối cùng.",
+                    "next_question": "Nguồn gốc thực sự của chi tiết này xuất phát từ đâu?",
                 },
                 {
-                    "clue": cleaned_clues[1] if len(cleaned_clues) > 1 else "Chứng từ đối chiếu thứ hai.",
-                    "what_it_proves": "Chứng minh có sự trùng khớp về mốc thời gian biến cố và mối liên hệ trực tiếp giữa hai bên.",
-                    "what_it_does_NOT_prove": "Chưa chứng minh được động cơ sâu xa hay sự thật cuối cùng nếu chưa có hồ sơ/nhân chứng gốc.",
-                    "next_question": "Thỏa thuận hoặc biến cố thực sự vào thời điểm đó diễn ra như thế nào?",
+                    "clue": cleaned_clues[1] if len(cleaned_clues) > 1 else cleaned_clues[0],
+                    "what_it_proves": f"Xác nhận mối liên hệ giữa các mốc sự kiện và người liên quan.",
+                    "what_it_does_NOT_prove": "Chưa làm rõ được động cơ sâu kín của người trong cuộc.",
+                    "next_question": "Sự thật đằng sau thỏa thuận này là gì?",
                 },
                 {
-                    "clue": cleaned_clues[2] if len(cleaned_clues) > 2 else "Hồ sơ xác nhận và nhân chứng.",
-                    "what_it_proves": f"Xác nhận đầy đủ chuỗi nhân quả dẫn tới Bước ngoặt 1 ({str(bible.reveal_1)[:60]}).",
-                    "what_it_does_NOT_prove": "Không phải là hành vi trục lợi ích kỷ như giả thuyết sai ban đầu.",
-                    "next_question": "Người trong cuộc đã phải đánh đổi và chịu đựng những gì suốt thời gian qua?",
+                    "clue": cleaned_clues[2] if len(cleaned_clues) > 2 else cleaned_clues[-1],
+                    "what_it_proves": f"Xác nhận đầy đủ nguyên nhân dẫn tới Bước ngoặt 1 ({str(bible.reveal_1)[:60]}).",
+                    "what_it_does_NOT_prove": "Bác bỏ hoàn toàn giả thuyết sai lầm ban đầu.",
+                    "next_question": "Gia đình và các nhân vật sẽ đối diện và hóa giải uẩn khúc này ra sao?",
                 },
             ]
 
         # 4. Repair UNSUPPORTED_REVEAL
-        if not bible.timeline:
-            bible.timeline = [
-                "Mốc quá khứ: Biến cố khởi phát dẫn đến quyết định giữ kín sự thật.",
-                "Giai đoạn duy trì: Bí mật được bảo vệ qua các chứng từ và cam kết thực tế.",
-                "Hiện tại: Nhân vật chính phát hiện chuỗi 3 manh mối và làm sáng tỏ chân tướng.",
-            ]
-        if not bible.clues:
-            bible.clues = [sc["clue"] for sc in bible.structured_clues]
+        if "UNSUPPORTED_REVEAL" in report.rule_codes or not bible.reveal_justifications:
+            if not bible.clues:
+                if bible.structured_clues:
+                    bible.clues = [sc["clue"] for sc in bible.structured_clues]
+                else:
+                    bible.clues = [
+                        f"Tài liệu và chứng từ ghi chép liên quan đến biến cố của {protag_name}",
+                        "Cuộc trao đổi then chốt giữa các nhân vật chính",
+                        "Vật chứng xác minh sự thật tại hiện trường",
+                    ]
 
-        bible.reveal_justifications = {
-            "reveal_1": {
-                "evidence_support": f"Được chứng minh trực tiếp bởi Manh mối 1 ('{bible.clues[0][:50]}') và Manh mối 2 ('{bible.clues[min(1, len(bible.clues)-1)][:50]}').",
-                "motivation_support": f"Xuất phát từ nhu cầu bảo vệ sự bình yên và quyền lợi hợp pháp của {protag_name}.",
-                "timeline_support": f"Khớp hoàn toàn với mốc thời gian trong timeline: '{bible.timeline[0][:60]}'.",
-            },
-            "reveal_2": {
-                "evidence_support": f"Được chứng minh bởi Manh mối 3 ('{bible.clues[-1][:50]}') và lời xác nhận của nhân chứng.",
-                "motivation_support": "Do hoàn cảnh bắt buộc lúc biến cố xảy ra khiến giải pháp thông thường không thể thực hiện.",
-                "character_knowledge_support": "Nhất quán với sổ cái nhận thức nhân vật (knowledge_ledger): chỉ người trong cuộc nắm rõ từ đầu.",
-            },
-        }
+            if not bible.timeline:
+                bible.timeline = [
+                    f"Biến cố ban đầu xảy ra trong quá khứ liên quan tới {protag_name}",
+                    "Giai đoạn nảy sinh nghi vấn và che giấu sự thật",
+                    "Thời điểm sự thật được phát hiện và làm sáng tỏ",
+                ]
+
+            first_clue = bible.clues[0] if bible.clues else "Manh mối xác thực"
+            bible.reveal_justifications = {
+                "reveal_1": {
+                    "evidence_support": f"Được hỗ trợ bởi các manh mối xác minh: '{str(first_clue)[:50]}'.",
+                    "motivation_support": f"Xuất phát từ hoàn cảnh thực tế và mong muốn bảo vệ {protag_name}.",
+                    "timeline_support": "Khớp nối hợp lý với các mốc thời gian diễn ra biến cố.",
+                },
+                "reveal_2": {
+                    "evidence_support": f"Được xác nhận bởi manh mối then chốt và sự thật từ người trong cuộc.",
+                    "motivation_support": "Do hoàn cảnh khách quan khiến giải pháp thông thường không thể thực hiện.",
+                    "character_knowledge_support": "Nhất quán với sổ cái nhận thức nhân vật (knowledge_ledger).",
+                },
+            }
 
         bible.status = ApprovalStatus.DRAFT.value
         recheck = self.audit_story_bible(bible)

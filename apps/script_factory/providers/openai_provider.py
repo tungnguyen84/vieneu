@@ -233,7 +233,7 @@ Trả về JSON object có khóa "ideas": [
                 "AI GENERATION FAILED: OpenAICompatibleProvider write_script is not implemented for production. "
                 "Production must use GeminiProvider. Silent mock fallback is strictly forbidden."
             )
-        from apps.script_factory.providers.mock_provider import MockScriptAIProvider
+        from tests.mocks.mock_script_provider import MockScriptAIProvider
         mock = MockScriptAIProvider()
         return mock.write_script(story_bible, story_formula, series_bible, model)
 

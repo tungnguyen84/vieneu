@@ -60,13 +60,18 @@ class ScriptWriter:
             with open(STORY_FORMULA_PATH, "r", encoding="utf-8") as f:
                 story_formula = json.load(f)
 
-        # Ensure protagonist has a real Vietnamese name, never internal role placeholder "Nhân vật chính"
+        # Ensure protagonist has a real character name from AI, not generic internal role placeholder
         if isinstance(story_bible.protagonist, dict):
             curr_name = str(story_bible.protagonist.get("name", "")).strip()
             if not curr_name or curr_name.lower() in ("nhân vật chính", "người", "protagonist"):
-                story_bible.protagonist["name"] = "Tuấn"
+                cand = None
+                for sc in story_bible.supporting_characters:
+                    if isinstance(sc, dict) and sc.get("name") and sc.get("name").lower() not in ("nhân vật chính", "người thân", "nhân vật phụ"):
+                        cand = sc.get("name")
+                        break
+                story_bible.protagonist["name"] = cand or "Minh Tuấn"
         elif not story_bible.protagonist or str(story_bible.protagonist).strip().lower() in ("nhân vật chính", "người", "protagonist"):
-            story_bible.protagonist = {"name": "Tuấn", "age": 32, "description": "Người đàn ông điềm đạm, gửi lá thư tâm sự về chương trình"}
+            story_bible.protagonist = {"name": "Minh Tuấn", "age": 32, "description": "Người gửi lá thư tâm sự về chương trình"}
 
         t0 = time.time()
         try:

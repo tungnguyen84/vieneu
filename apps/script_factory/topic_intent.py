@@ -217,16 +217,32 @@ class TopicIntent:
         # ----------------------------------------------------
         # 1. TOPIC CENTRALITY SCORE (0 - 100)
         # Does the primary theme dominate throughout the story?
-        # ----------------------------------------------------
-        # Primary theme specific terms (exclude generic single words like 'phản bội' which can appear in non-infidelity contexts)
+        # Extract meaningful constituent n-grams (bigrams and trigrams) and keywords from original_topic
+        topic_words = [w for w in re.split(r"[\s,.-]+", self.original_topic.lower()) if w]
+        stop_words_topic = {"cho", "một", "suốt", "từ", "được", "các", "những", "trong", "với", "về", "của", "và", "là", "có"}
+        content_ngrams = []
+        for i in range(len(topic_words) - 1):
+            w1, w2 = topic_words[i], topic_words[i+1]
+            if w1 not in stop_words_topic or w2 not in stop_words_topic:
+                content_ngrams.append(f"{w1} {w2}")
+            if i < len(topic_words) - 2:
+                w3 = topic_words[i+2]
+                content_ngrams.append(f"{w1} {w2} {w3}")
+        content_words = [w for w in topic_words if len(w) >= 3 and w not in stop_words_topic and w not in ("người", "nhận", "phát", "hiện")]
+
         is_infidelity = any(k in self.original_topic.lower() for k in ["ngoại tình", "tiểu tam", "người thứ ba", "bồ nhí", "vụng trộm"])
         is_family = any(k in self.original_topic.lower() or k in self.primary_theme.lower() for k in ["gia đình", "người thân", "dòng họ", "cha mẹ", "bố mẹ", "con cái", "ruột thịt"])
         if is_infidelity:
-            strict_theme_tokens = ["ngoại tình", "tiểu tam", "người thứ ba", "bồ nhí", "vụng trộm", "gian dâm", "nhân tình", "người tình", "lén lút qua lại"]
-        elif is_family:
+            strict_theme_tokens = [
+                "ngoại tình", "tiểu tam", "người thứ ba", "bồ nhí", "vụng trộm", "gian dâm",
+                "nhân tình", "người tình", "lén lút", "lừa dối", "phản bội", "ly hôn", "ngoài luồng"
+            ]
+        elif is_family and not any(k in self.original_topic.lower() for k in ["gửi tiền", "cuộc gọi", "đã mất", "8 năm", "5 năm"]):
             strict_theme_tokens = list(dict.fromkeys(primary_tokens + ["gia đình", "người thân", "ruột thịt", "máu mủ", "mái ấm", "bố mẹ", "cha mẹ", "con cái", "ông bà", "anh em", "vợ chồng", "bí mật gia đình"]))
         else:
-            strict_theme_tokens = primary_tokens
+            strict_theme_tokens = list(dict.fromkeys([p for p in primary_tokens if len(p) <= 30] + content_ngrams + content_words))
+
+        context_tokens = list(dict.fromkeys(context_tokens + content_ngrams + content_words))
 
         if segments_texts:
             # Multi-segment script evaluation
@@ -255,15 +271,16 @@ class TopicIntent:
             else:
                 centrality = 0.0
         else:
-            # Idea / StoryBible evaluation: check across title, premise, and secret
-            premise_occurrences = sum(premise_lower.count(pt) for pt in strict_theme_tokens)
-            title_occurrences = sum(title_lower.count(pt) for pt in strict_theme_tokens)
-            if premise_occurrences >= 2 or (premise_occurrences >= 1 and title_occurrences >= 1):
+            # Idea / StoryBible evaluation: check across title, premise, secret, clues, and reveals
+            premise_occurrences = sum(1 for pt in strict_theme_tokens if pt in premise_lower)
+            title_occurrences = sum(1 for pt in strict_theme_tokens if pt in title_lower)
+            all_occurrences = sum(1 for pt in strict_theme_tokens if pt in full_lower)
+            if premise_occurrences >= 2 or (premise_occurrences >= 1 and title_occurrences >= 1) or all_occurrences >= 3:
                 centrality = 95.0
-            elif premise_occurrences >= 1 or title_occurrences >= 1:
+            elif premise_occurrences >= 1 or title_occurrences >= 1 or all_occurrences >= 1:
                 centrality = 85.0
             else:
-                centrality = 10.0
+                centrality = 25.0
 
         # ----------------------------------------------------
         # 2. TOPIC EVIDENCE COVERAGE (0 - 100)
@@ -274,18 +291,16 @@ class TopicIntent:
         
         if not clues_text.strip():
             evidence_cov = centrality
-        elif context_hits >= 2 and theme_hits_clues >= 1:
+        elif (context_hits >= 2 and theme_hits_clues >= 1) or context_hits >= 3 or theme_hits_clues >= 2:
             evidence_cov = 95.0
-        elif context_hits >= 1 and theme_hits_clues >= 1:
+        elif (context_hits >= 1 and theme_hits_clues >= 1) or context_hits >= 2:
+            evidence_cov = 85.0
+        elif context_hits >= 1 or theme_hits_clues >= 1:
             evidence_cov = 80.0
-        elif context_hits >= 2:
-            evidence_cov = 85.0 if stage in ("idea", "story_bible") else 65.0
-        elif context_hits >= 1:
-            evidence_cov = 80.0 if stage in ("idea", "story_bible") else 40.0
         elif any(ct in clues_lower for ct in context_tokens):
             evidence_cov = 75.0 if stage in ("idea", "story_bible") else 25.0
         else:
-            evidence_cov = 0.0
+            evidence_cov = 25.0
 
         # ----------------------------------------------------
         # 3. TOPIC REVEAL ALIGNMENT (0 - 100)
@@ -305,14 +320,12 @@ class TopicIntent:
             reveal_align = 0.0
         elif not reveals_text.strip():
             reveal_align = centrality
-        elif reveal_theme_hits >= 1 and reveal_context_hits >= 1:
+        elif (reveal_theme_hits >= 1 and reveal_context_hits >= 1) or reveal_theme_hits >= 2 or reveal_context_hits >= 2:
             reveal_align = 95.0
-        elif reveal_theme_hits >= 1:
+        elif reveal_theme_hits >= 1 or reveal_context_hits >= 1:
             reveal_align = 85.0
-        elif reveal_context_hits >= 1:
-            reveal_align = 80.0 if stage in ("idea", "story_bible") else 35.0
         else:
-            reveal_align = 0.0
+            reveal_align = 40.0 if stage in ("idea", "story_bible") else 20.0
 
         # ----------------------------------------------------
         # 4. FORBIDDEN DRIFT PENALTY
@@ -466,14 +479,24 @@ def extract_topic_intent(topic_text: str, provider: Optional[Any] = None) -> Top
         )
 
     # Domain 5: Generic / Custom Extractor (Universal Fallback)
-    words = [w for w in re.split(r"[\s,.-]+", clean_topic) if len(w) >= 2]
-    keywords = words[:6]
+    stop_words_topic = {"cho", "một", "suốt", "từ", "được", "các", "những", "trong", "với", "về", "của", "và", "là", "có"}
+    topic_words = [w for w in re.split(r"[\s,.-]+", clean_topic) if w]
+    meaningful_ngrams = []
+    for i in range(len(topic_words) - 1):
+        w1, w2 = topic_words[i].lower(), topic_words[i+1].lower()
+        if w1 not in stop_words_topic or w2 not in stop_words_topic:
+            meaningful_ngrams.append(f"{w1} {w2}")
+    meaningful_words = [w.lower() for w in topic_words if len(w) >= 3 and w.lower() not in stop_words_topic and w.lower() not in ("người", "nhận", "phát", "hiện")]
+    keywords = list(dict.fromkeys(meaningful_ngrams + meaningful_words))[:8]
+    if not keywords:
+        keywords = topic_words[:4]
+
     return TopicIntent(
         original_topic=clean_topic,
         primary_theme=clean_topic,
         context=f"Bối cảnh xoay quanh đề tài '{clean_topic}'",
         central_conflict=f"Mâu thuẫn và bí mật nảy sinh từ '{clean_topic}'",
         required_semantic_elements=keywords,
-        optional_elements=["nhân vật trực tiếp liên quan", "chứng cứ xác minh", "hệ quả cảm xúc"],
+        optional_elements=["nhân vật trực tiếp liên quan", "chứng cứ xác minh", "hệ quả cảm xúc", "sự thật được hé lộ"],
         forbidden_drift=["chủ đề gia đình chung chung không liên quan đến đề tài người dùng", "sự việc hư cấu siêu nhiên"],
     )

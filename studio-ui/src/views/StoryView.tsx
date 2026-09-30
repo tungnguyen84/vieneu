@@ -39,8 +39,8 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
     'Đang xây dựng nhân vật, tính cách và mối quan hệ...',
     'Đang tạo bí ẩn cốt lõi và chuỗi manh mối (clues)...',
     'Đang khóa cấu trúc timeline và lịch sử sự kiện...',
-    'Đang xây dựng bước ngoặt 1 (Reveal 1 tại Scene 31)...',
-    'Đang xây dựng bước ngoặt 2 (Reveal 2 tại Scene 39)...',
+    'Đang xây dựng bước ngoặt 1 (Reveal 1 tại ~60-75% thời lượng)...',
+    'Đang xây dựng bước ngoặt 2 (Reveal 2 tại ~75-90% thời lượng)...',
     'Đang kiểm tra tính logic và thiết lập Fact Lock...',
   ];
 
@@ -452,7 +452,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
             <div className="bg-[#111827] border border-[#28354D] rounded-lg p-4">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-mono-code bg-[#F59E0B]/20 text-[#F59E0B] px-1.5 py-0.5 rounded font-bold">
-                  SCENE 31 (Reveal 1)
+                  REVEAL 1 (~60-75%)
                 </span>
                 <span className="text-[10px] text-[#64748B]">Manh mối thật</span>
               </div>
@@ -468,7 +468,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
             <div className="bg-[#111827] border border-[#28354D] rounded-lg p-4">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-mono-code bg-[#E11D48]/20 text-[#E11D48] px-1.5 py-0.5 rounded font-bold">
-                  SCENE 39 (Reveal 2)
+                  REVEAL 2 (~75-90%)
                 </span>
                 <span className="text-[10px] text-[#64748B]">Chân tướng sự thật</span>
               </div>

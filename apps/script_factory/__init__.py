@@ -16,7 +16,6 @@ from apps.script_factory.models import (
 )
 from apps.script_factory.novelty_engine import NoveltyEngine
 from apps.script_factory.production_adapter import ProductionAdapter
-from apps.script_factory.providers.mock_provider import MockScriptAIProvider
 from apps.script_factory.providers.router import ModelRouter, RouterConfig
 from apps.script_factory.script_qc import ScriptQCEngine
 from apps.script_factory.script_writer import ScriptWriter
@@ -38,7 +37,6 @@ __all__ = [
     "StoryBible",
     "NoveltyEngine",
     "ProductionAdapter",
-    "MockScriptAIProvider",
     "ModelRouter",
     "RouterConfig",
     "ScriptQCEngine",
