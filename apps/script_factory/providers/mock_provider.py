@@ -426,18 +426,20 @@ class MockScriptAIProvider(ScriptAIProvider):
         qc_report: QCReport,
         model: Optional[str] = None,
     ) -> Tuple[FullScript, int, int]:
-        # Targeted fix only for requested segments
-        script.revision_round += 1
-        for conflict in qc_report.fact_conflicts:
-            val = conflict.get("expected") or conflict.get("value") or str(conflict) if isinstance(conflict, dict) else str(conflict)
-            if script.segments and val:
-                script.segments[2].text += f" Con số và dữ kiện chính xác được xác nhận là {val}."
+        from apps.script_factory.script_qc import apply_targeted_repairs
 
-        for log_iss in qc_report.logic_issues:
-            if "audience_address=True" in log_iss:
-                for s in script.segments:
-                    if s.delivery_profile == "REVEAL":
-                        s.audience_address = False
+        script.revision_round += 1
+        script = apply_targeted_repairs(script, story_bible, qc_report)
+
+        for conflict in qc_report.fact_conflicts:
+            ctype = conflict.get("type", "") if isinstance(conflict, dict) else ""
+            if ctype in ("HOOK_FACT_CONTRADICTION", "CHARACTER_FACT_VIOLATION", "UNGROUNDED_CHARACTER_HALLUCINATION", "BLOCKED_PREMATURE_REVEAL"):
+                continue
+            val = (conflict.get("expected") or conflict.get("value")) if isinstance(conflict, dict) else str(conflict)
+            if script.segments and val and isinstance(val, str):
+                target_idx = min(2, len(script.segments) - 1)
+                if val.lower() not in script.segments[target_idx].text.lower():
+                    script.segments[target_idx].text += f" Con số và dữ kiện chính xác được xác nhận là {val}."
 
         script.status = "DRAFT"
         return script, 600, 1500

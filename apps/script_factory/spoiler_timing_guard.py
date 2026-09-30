@@ -56,6 +56,9 @@ class SpoilerTimingGuard:
         except ValueError:
             return []
 
+        if segment.delivery_profile == "REVEAL" and seg_num > 4:
+            return []
+
         text = segment.text.strip()
         text_lower = text.lower()
         violations: List[SpoilerViolation] = []

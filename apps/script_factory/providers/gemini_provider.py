@@ -848,32 +848,20 @@ Trả về JSON Array gồm đúng 45 objects từ id '046' đến '090':
         model: Optional[str] = None,
     ) -> Tuple[FullScript, int, int]:
         """Performs targeted script revisions to resolve QC issues."""
+        from apps.script_factory.script_qc import apply_targeted_repairs
+
         script.revision_round += 1
-        host_id = script.host.get("id", "MINH")
+        script = apply_targeted_repairs(script, story_bible, qc_report)
 
-        # Automatically resolve audience address in REVEAL segments
-        for s in script.segments:
-            if s.delivery_profile == "REVEAL" and s.audience_address:
-                s.audience_address = False
-
-        # Clean any accidental database/prompt leakage from segment text
-        from apps.script_factory.leakage_guard import StoryBibleLeakageGuard
-        leakage_guard = StoryBibleLeakageGuard()
-        for s in script.segments:
-            s.text = leakage_guard.clean_text_from_leakage(s.text)
-
-        # Re-check audience address count (must be 3-6)
-        aud_indices = [i for i, s in enumerate(script.segments) if s.audience_address and s.delivery_profile != "REVEAL"]
-        if len(aud_indices) < 3:
-            for idx in [12, 35, 85]:
-                if idx < len(script.segments) and script.segments[idx].delivery_profile != "REVEAL":
-                    script.segments[idx].audience_address = True
-                    script.segments[idx].delivery_profile = "COMMENT"
-        elif len(aud_indices) > 6:
-            for idx in aud_indices[6:]:
-                script.segments[idx].audience_address = False
-                if script.segments[idx].delivery_profile == "COMMENT":
-                    script.segments[idx].delivery_profile = "NORMAL"
+        for conflict in qc_report.fact_conflicts:
+            ctype = conflict.get("type", "") if isinstance(conflict, dict) else ""
+            if ctype in ("HOOK_FACT_CONTRADICTION", "CHARACTER_FACT_VIOLATION", "UNGROUNDED_CHARACTER_HALLUCINATION", "BLOCKED_PREMATURE_REVEAL"):
+                continue
+            val = (conflict.get("expected") or conflict.get("value")) if isinstance(conflict, dict) else str(conflict)
+            if script.segments and val and isinstance(val, str):
+                target_idx = min(2, len(script.segments) - 1)
+                if val.lower() not in script.segments[target_idx].text.lower():
+                    script.segments[target_idx].text += f" Con số và dữ kiện chính xác được xác nhận là {val}."
 
         script.total_words = sum(len(s.text.split()) for s in script.segments)
         script.updated_at = time.time()

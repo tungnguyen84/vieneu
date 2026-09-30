@@ -4,14 +4,22 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import shutil
+import sys
 import threading
 from pathlib import Path
 from typing import Any, BinaryIO, Dict, List, Optional
 
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+SRC_DIR = BASE_DIR / "src"
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
 from apps.production_story import build_master_audio, generate_single_segment_takes, get_all_available_voices
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 PROJECTS_DIR = BASE_DIR / "projects"
 PILOT_03_AUDIO = BASE_DIR / "production_pilot_03"
 
@@ -24,8 +32,79 @@ PROFILE_SPEEDS = {
     "ENDING": 0.965,
 }
 
+VOICE_ALIASES: Dict[str, str] = {
+    "binh": "020",
+    "minh": "020",
+    "mc minh": "020",
+    "mc_minh": "020",
+    "thanh binh": "020",
+    "thanh bình": "020",
+    "020": "020",
+}
+
+
+def normalize_voice_id(voice_id: Optional[str]) -> str:
+    """Normalizes host/voice aliases (e.g., 'Binh', 'MINH', 'MC Minh') to canonical voice ID '020'."""
+    if not voice_id or not str(voice_id).strip():
+        return "020"
+    cleaned = str(voice_id).strip().lower()
+    return VOICE_ALIASES.get(cleaned, str(voice_id).strip())
+
+
+def normalize_script_segment(
+    raw: Dict[str, Any],
+    index: int,
+    voice_id: str = "020",
+    contextual_speed: bool = True,
+    global_speed: float = 1.0,
+) -> Dict[str, Any]:
+    """Normalizes both legacy and new Full MC Script segments into Audio pipeline format."""
+    seg = dict(raw)
+    raw_id = seg.get("id") or seg.get("segment_id") or str(index + 1)
+    match = re.search(r"\d+", str(raw_id))
+    if match:
+        seg_id = str(int(match.group(0))).zfill(3)
+    else:
+        seg_id = str(index + 1).zfill(3)
+    seg["id"] = seg_id
+    seg["segment_id"] = seg_id
+
+    speaker = str(seg.get("speaker") or "MINH").strip()
+    if speaker.upper() in ("NARRATOR", "HOST", "MC", "MC MINH", "MC_MINH"):
+        speaker = "MINH"
+    seg["speaker"] = speaker
+    seg["voice"] = normalize_voice_id(voice_id)
+
+    prof = str(seg.get("delivery_profile") or "NORMAL").upper()
+    seg["delivery_profile"] = prof
+
+    if contextual_speed:
+        seg_speed = seg.get("speed")
+        if seg_speed is not None and str(seg_speed).strip() != "":
+            try:
+                speed = float(seg_speed)
+            except Exception:
+                speed = PROFILE_SPEEDS.get(prof, 1.0)
+        else:
+            speed = PROFILE_SPEEDS.get(prof, 1.0)
+    else:
+        speed = max(0.88, min(1.05, float(global_speed)))
+    seg["speed"] = max(0.88, min(1.05, speed))
+
+    seg["pause_before"] = float(seg.get("pause_before", 0.0) or 0.0)
+    seg["pause_after"] = float(seg.get("pause_after", 0.25) or 0.25)
+    seg["text"] = str(seg.get("text", "")).strip()
+    seg["importance"] = str(seg.get("importance") or "normal").lower()
+    if "music_cue" not in seg:
+        seg["music_cue"] = "none"
+
+    return seg
+
 
 class AudioService:
+    normalize_voice_id = staticmethod(normalize_voice_id)
+    normalize_script_segment = staticmethod(normalize_script_segment)
+
     def __init__(self):
         self._engine: Any = None
         self._engine_lock = threading.Lock()
@@ -273,10 +352,30 @@ class AudioService:
                     saved_ids.update((json.loads(path.read_text(encoding="utf-8")).get("presets") or {}).keys())
                 except Exception:
                     pass
-        voices = [
-            {"label": label, "voice_id": voice_id, "cloned": voice_id in saved_ids}
-            for label, voice_id in get_all_available_voices(None)
-        ]
+        all_voices = get_all_available_voices(None)
+        voices = []
+        found_020 = False
+        for label, v_id in all_voices:
+            if v_id == "020":
+                found_020 = True
+                voices.append({
+                    "label": "⭐ MC Minh (Binh / 020) — Giọng dẫn chuyện Sau Cánh Cửa",
+                    "voice_id": "020",
+                    "cloned": True,
+                })
+            else:
+                voices.append({
+                    "label": label,
+                    "voice_id": v_id,
+                    "cloned": v_id in saved_ids,
+                })
+        if not found_020:
+            voices.insert(0, {
+                "label": "⭐ MC Minh (Binh / 020) — Giọng dẫn chuyện Sau Cánh Cửa",
+                "voice_id": "020",
+                "cloned": True,
+            })
+        voices.sort(key=lambda x: 0 if x["voice_id"] == "020" else 1)
         return {"voices": voices, "profile_speeds": PROFILE_SPEEDS}
 
     def import_audio_file(self, project_id: str, source: Path) -> Dict[str, Any]:
@@ -526,7 +625,9 @@ class AudioService:
         global_speed: float = 1.0,
         enable_music: bool = True,
     ) -> Dict[str, Any]:
-        if voice_id not in {voice["voice_id"] for voice in self.list_voices()["voices"]}:
+        voice_id = normalize_voice_id(voice_id)
+        available_voice_ids = {voice["voice_id"] for voice in self.list_voices()["voices"]}
+        if voice_id not in available_voice_ids and voice_id not in VOICE_ALIASES.values():
             raise ValueError(f"Giọng '{voice_id}' không tồn tại")
         script_path = self._script_path(project_id)
         if not script_path:
@@ -542,18 +643,21 @@ class AudioService:
         project_state: Dict[str, Any] = {"segments": {}}
         generated_segments = []
         for index, original in enumerate(raw_segments):
-            segment = dict(original)
-            segment["id"] = str(segment.get("id") or segment.get("segment_id") or index + 1).zfill(3)
-            profile = str(segment.get("delivery_profile", "NORMAL")).upper()
-            segment["speed"] = (
-                float(segment.get("speed") or PROFILE_SPEEDS.get(profile, 1.0))
-                if contextual_speed else max(0.88, min(1.05, float(global_speed)))
+            segment = normalize_script_segment(
+                original, index, voice_id=voice_id,
+                contextual_speed=contextual_speed, global_speed=global_speed
             )
+            char_config = {
+                "char_id": segment["speaker"],
+                "display_name": "MC Minh" if segment["speaker"] == "MINH" else segment["speaker"],
+                "voice": voice_id,
+                "default_speed": segment["speed"],
+            }
             ok, message, result = generate_single_segment_takes(
-                engine, work_dir, segment, {"voice": voice_id, "default_speed": segment["speed"]}
+                engine, work_dir, segment, char_config
             )
             if not ok:
-                raise RuntimeError(message)
+                raise RuntimeError(f"Lỗi tạo audio cho phân đoạn {segment['id']}: {message}")
             project_state["segments"][segment["id"]] = result
             generated_segments.append(segment)
 
