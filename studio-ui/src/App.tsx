@@ -23,6 +23,7 @@ import { QCView } from './views/QCView';
 import { SettingsView } from './views/SettingsView';
 import { LibraryView } from './views/LibraryView';
 import { NewEpisodeModal } from './components/NewEpisodeModal';
+import { ProjectManagerModal } from './components/ProjectManagerModal';
 
 export const App: React.FC = () => {
   const [projects, setProjects] = useState<ProjectMetadata[]>([]);
@@ -32,6 +33,7 @@ export const App: React.FC = () => {
   const [selectedSegment, setSelectedSegment] = useState<ScriptSegment | null>(null);
   const [advancedMode, setAdvancedMode] = useState<boolean>(false);
   const [isNewEpisodeModalOpen, setIsNewEpisodeModalOpen] = useState<boolean>(false);
+  const [isProjectManagerOpen, setIsProjectManagerOpen] = useState<boolean>(false);
 
 
   const fetchProjects = (selectedId?: string) => {
@@ -59,6 +61,28 @@ export const App: React.FC = () => {
       setCurrentProject(proj);
       setSelectedScene(null);
       setSelectedSegment(null);
+    }
+  };
+
+  const handleProjectUpdated = (updated: ProjectMetadata) => {
+    setProjects((previous) =>
+      previous.map((project) =>
+        project.project_id === updated.project_id ? updated : project
+      )
+    );
+    if (currentProject?.project_id === updated.project_id) {
+      setCurrentProject(updated);
+    }
+  };
+
+  const handleProjectDeleted = (projectId: string) => {
+    const remaining = projects.filter((project) => project.project_id !== projectId);
+    setProjects(remaining);
+    if (currentProject?.project_id === projectId) {
+      setCurrentProject(remaining[0] || null);
+      setSelectedScene(null);
+      setSelectedSegment(null);
+      setActiveTab('overview');
     }
   };
 
@@ -139,6 +163,7 @@ export const App: React.FC = () => {
         onOpenSettings={() => setActiveTab('settings')}
         onExportArchive={handleExportArchive}
         onOpenNewEpisodeModal={() => setIsNewEpisodeModalOpen(true)}
+        onOpenProjectManager={() => setIsProjectManagerOpen(true)}
       />
 
       {/* 2. Compact Pipeline Header */}
@@ -293,6 +318,19 @@ export const App: React.FC = () => {
           });
           setActiveTab(targetTab);
         }}
+      />
+
+      <ProjectManagerModal
+        isOpen={isProjectManagerOpen}
+        projects={projects}
+        currentProjectId={currentProject?.project_id}
+        onClose={() => setIsProjectManagerOpen(false)}
+        onOpenProject={(projectId) => {
+          handleSelectProject(projectId);
+          setActiveTab('script');
+        }}
+        onProjectUpdated={handleProjectUpdated}
+        onProjectDeleted={handleProjectDeleted}
       />
     </div>
   );

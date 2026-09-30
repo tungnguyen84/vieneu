@@ -11,6 +11,7 @@ interface Props {
   onOpenSettings: () => void;
   onExportArchive: () => void;
   onOpenNewEpisodeModal: () => void;
+  onOpenProjectManager: () => void;
 }
 
 export const TopProjectBar: React.FC<Props> = ({
@@ -22,6 +23,7 @@ export const TopProjectBar: React.FC<Props> = ({
   onOpenSettings,
   onExportArchive,
   onOpenNewEpisodeModal,
+  onOpenProjectManager,
 }) => {
   return (
     <header className="h-12 border-b border-[#28354D] bg-[#111827] px-4 flex items-center justify-between select-none">
@@ -59,6 +61,15 @@ export const TopProjectBar: React.FC<Props> = ({
         >
           <Plus size={13} />
           <span>+ Tạo tập mới</span>
+        </button>
+
+        <button
+          onClick={onOpenProjectManager}
+          className="text-[#CBD5E1] hover:text-white hover:bg-[#1E293B] text-xs font-medium px-2.5 py-1.5 rounded flex items-center space-x-1.5 border border-[#334155] transition-colors cursor-pointer"
+          title="Tìm, đổi tên hoặc xóa tập/kịch bản"
+        >
+          <FolderOpen size={13} />
+          <span>Quản lý</span>
         </button>
 
         {/* Saved Badge */}

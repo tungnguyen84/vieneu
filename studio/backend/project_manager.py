@@ -241,6 +241,84 @@ class ProjectManager:
                 selected_idea=sel_idea_val,
             )
 
+    def rename_project(self, project_id: str, title: str) -> ProjectMetadata:
+        """Renames a Studio project in SQLite and its portable project.json."""
+        clean_title = " ".join(str(title or "").split()).strip()
+        if not clean_title:
+            raise ValueError("Tên tập không được để trống")
+        if len(clean_title) > 160:
+            raise ValueError("Tên tập không được dài quá 160 ký tự")
+        if not self.get_project(project_id):
+            raise FileNotFoundError(f"Không tìm thấy tập {project_id}")
+
+        now = time.time()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE projects SET title = ?, updated_at = ? WHERE project_id = ?",
+                (clean_title, now, project_id),
+            )
+            conn.commit()
+
+        project_file = PROJECTS_DIR / project_id / "project.json"
+        if project_file.exists():
+            data = json.loads(project_file.read_text(encoding="utf-8"))
+            data["title"] = clean_title
+            data["updated_at"] = now
+            project_file.write_text(
+                json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+
+        return self.get_project(project_id)  # type: ignore
+
+    @staticmethod
+    def _safe_remove_project_path(path: Path, allowed_parent: Path) -> bool:
+        """Removes a project artifact only when it is a direct child of its root."""
+        resolved_parent = allowed_parent.resolve()
+        resolved_path = path.resolve()
+        if resolved_path.parent != resolved_parent:
+            raise ValueError(f"Đường dẫn dự án không an toàn: {resolved_path}")
+        if resolved_path.exists():
+            if resolved_path.is_dir():
+                shutil.rmtree(resolved_path)
+            else:
+                resolved_path.unlink()
+            return True
+        return False
+
+    def delete_project(self, project_id: str, delete_files: bool = True) -> Dict[str, Any]:
+        """Deletes a Studio project and its project-specific generated artifacts."""
+        if project_id in {"EP003", "EP011"}:
+            raise ValueError("EP003 và EP011 là tập tham chiếu hệ thống, không thể xóa trong Studio")
+        if not self.get_project(project_id):
+            raise FileNotFoundError(f"Không tìm thấy tập {project_id}")
+
+        removed_paths: List[str] = []
+        if delete_files:
+            targets = (
+                (PROJECTS_DIR / project_id, PROJECTS_DIR),
+                (PILOT_03_AUDIO / project_id, PILOT_03_AUDIO),
+                (PILOT_03_VISUAL / project_id, PILOT_03_VISUAL),
+                (EXPORTS_DIR / f"{project_id}_google_flow.json", EXPORTS_DIR),
+            )
+            for target, parent in targets:
+                if self._safe_remove_project_path(target, parent):
+                    removed_paths.append(str(target.relative_to(BASE_DIR)))
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            for table in ("approvals", "jobs", "render_history"):
+                cursor.execute(f"DELETE FROM {table} WHERE project_id = ?", (project_id,))
+            cursor.execute("DELETE FROM projects WHERE project_id = ?", (project_id,))
+            conn.commit()
+
+        return {
+            "project_id": project_id,
+            "deleted": True,
+            "files_deleted": delete_files,
+            "removed_paths": removed_paths,
+        }
+
     def update_stage_status(self, project_id: str, stage: StageId, status: StageStatus) -> ProjectMetadata:
         """Updates stage status and applies dependency cascade."""
         proj = self.get_project(project_id)

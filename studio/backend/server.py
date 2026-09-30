@@ -200,6 +200,30 @@ def get_project(project_id: str):
     return p
 
 
+class UpdateProjectRequest(BaseModel):
+    title: str
+
+
+@app.patch("/api/projects/{project_id}", response_model=ProjectMetadata)
+def update_project(project_id: str, req: UpdateProjectRequest):
+    try:
+        return pm.rename_project(project_id, req.title)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.delete("/api/projects/{project_id}")
+def delete_project(project_id: str, delete_files: bool = True):
+    try:
+        return pm.delete_project(project_id, delete_files=delete_files)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
 class StageUpdateRequest(BaseModel):
     stage_id: StageId
     status: StageStatus
