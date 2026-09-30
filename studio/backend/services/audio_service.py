@@ -13,10 +13,13 @@ from typing import Any, BinaryIO, Dict, List, Optional
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 SRC_DIR = BASE_DIR / "src"
+VENV_SITE = BASE_DIR / ".venv" / "Lib" / "site-packages"
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
+if VENV_SITE.exists() and str(VENV_SITE) not in sys.path:
+    sys.path.append(str(VENV_SITE))
 
 from apps.production_story import build_master_audio, generate_single_segment_takes, get_all_available_voices
 
