@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
@@ -216,13 +217,19 @@ def select_project_idea(project_id: str, req: SelectIdeaRequest):
         if title:
             data["title"] = title
         data["topic"] = premise
+        data["selected_idea"] = selected
+        data.setdefault("stage_statuses", {})[StageId.IDEA.value] = StageStatus.APPROVED.value
+        data["updated_at"] = time.time()
         with open(p_json, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
     if title:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("UPDATE projects SET title = ? WHERE project_id = ?", (title, project_id))
+            cursor.execute(
+                "UPDATE projects SET title = ?, updated_at = ? WHERE project_id = ?",
+                (title, time.time(), project_id),
+            )
             conn.commit()
 
     return pm.update_stage_status(project_id, StageId.IDEA, StageStatus.APPROVED)
@@ -347,24 +354,115 @@ def get_audio_info(project_id: str):
     return audio_srv.get_audio_info(project_id)
 
 
+@app.get("/api/audio/voices")
+def get_audio_voices():
+    return audio_srv.list_voices()
+
+
 @app.get("/api/projects/{project_id}/audio/stream")
-def stream_audio(project_id: str):
-    p = audio_srv.get_audio_master_path(project_id)
+def stream_audio(project_id: str, stem: str = "final"):
+    p = audio_srv.get_audio_stem_path(project_id, stem=stem)
     if not p or not p.exists():
-        raise HTTPException(status_code=404, detail="Audio master not found")
+        p = audio_srv.get_audio_master_path(project_id)
+    if not p or not p.exists():
+        raise HTTPException(status_code=404, detail=f"Audio file not found for stem '{stem}'")
     media_type = "audio/wav" if p.suffix.lower() == ".wav" else "audio/mpeg"
     return FileResponse(path=str(p), media_type=media_type)
 
 
 @app.post("/api/projects/{project_id}/audio/import")
-def import_audio(project_id: str, file_path: str = Form(...)):
-    return audio_srv.import_audio_file(project_id, file_path)
+def import_audio(project_id: str, file: UploadFile = File(...)):
+    try:
+        uploaded = audio_srv.save_upload(project_id, file.filename or "audio.wav", file.file, "imports")
+        result = audio_srv.import_audio_file(project_id, uploaded)
+        pm.update_stage_status(project_id, StageId.AUDIO, StageStatus.NEEDS_REVIEW)
+        return result
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+class AutoMixRequest(BaseModel):
+    enable_ducking: bool = True
+    target_lufs: float = -14.0
+
+
+@app.post("/api/projects/{project_id}/audio/auto-mix")
+def auto_mix_audio(project_id: str, req: Optional[AutoMixRequest] = None):
+    ducking = req.enable_ducking if req else True
+    lufs = req.target_lufs if req else -14.0
+    try:
+        res = audio_srv.auto_mix_background_music(project_id, enable_ducking=ducking, target_lufs=lufs)
+        if pm.get_project(project_id):
+            pm.update_stage_status(project_id, StageId.AUDIO, StageStatus.NEEDS_REVIEW)
+        return res
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Chèn nhạc nền thất bại: {exc}")
+
+
+class GenerateAudioRequest(BaseModel):
+    voice_id: str
+    contextual_speed: bool = True
+    global_speed: float = 1.0
+    enable_music: bool = True
+
+
+@app.post("/api/projects/{project_id}/audio/generate")
+def generate_audio(project_id: str, req: GenerateAudioRequest):
+    try:
+        result = audio_srv.generate_narration(
+            project_id,
+            voice_id=req.voice_id,
+            contextual_speed=req.contextual_speed,
+            global_speed=req.global_speed,
+            enable_music=req.enable_music,
+        )
+        pm.update_stage_status(project_id, StageId.AUDIO, StageStatus.NEEDS_REVIEW)
+        return result
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Tạo TTS thất bại: {exc}")
+
+
+@app.post("/api/projects/{project_id}/audio/clone-voice")
+def clone_audio_voice(
+    project_id: str,
+    name: str = Form(...),
+    description: str = Form(""),
+    file: UploadFile = File(...),
+):
+    try:
+        return audio_srv.clone_voice(
+            project_id,
+            name=name,
+            description=description,
+            filename=file.filename or "voice_sample.wav",
+            source=file.file,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Clone giọng thất bại: {exc}")
 
 
 # ---------------- VISUAL PLAN ENDPOINTS ----------------
 @app.get("/api/projects/{project_id}/visual/scenes", response_model=List[SceneItem])
 def get_scenes(project_id: str):
     return visual_srv.get_scenes(project_id)
+
+
+@app.post("/api/projects/{project_id}/visual/generate")
+def generate_visual_plan(project_id: str):
+    try:
+        result = visual_srv.generate_visual_plan(project_id)
+        pm.update_stage_status(project_id, StageId.VISUAL, StageStatus.NEEDS_REVIEW)
+        return result
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Tạo Visual Plan thất bại: {exc}")
 
 
 @app.get("/api/projects/{project_id}/visual/characters", response_model=List[CharacterItem])
@@ -404,9 +502,20 @@ def get_flow_info(project_id: str):
 
 @app.post("/api/projects/{project_id}/flow/export")
 def run_flow_export(project_id: str):
-    res = flow_srv.run_export(project_id)
-    pm.update_stage_status(project_id, StageId.FLOW, StageStatus.APPROVED)
-    return res
+    try:
+        res = flow_srv.run_export(project_id)
+        pm.update_stage_status(project_id, StageId.FLOW, StageStatus.APPROVED)
+        return res
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.get("/api/projects/{project_id}/flow/download")
+def download_flow_export(project_id: str):
+    path = flow_srv.export_path(project_id)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Chưa có file Google Flow JSON cho tập này")
+    return FileResponse(path=str(path), media_type="application/json", filename=path.name)
 
 
 # ---------------- ASSET ENDPOINTS ----------------

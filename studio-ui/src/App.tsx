@@ -276,17 +276,19 @@ export const App: React.FC = () => {
         isOpen={isNewEpisodeModalOpen}
         onClose={() => setIsNewEpisodeModalOpen(false)}
         onSuccess={async (newId, targetTab) => {
-          setIsNewEpisodeModalOpen(false);
-          try {
-            const res = await fetch(`/api/projects/${newId}`);
-            if (res.ok) {
-              const p = await res.json();
-              setCurrentProject(p);
-            }
-          } catch (e) {
-            console.error(e);
+          const res = await fetch(`/api/projects/${newId}`);
+          if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.detail || `Không thể tải tập ${newId}`);
           }
-          fetchProjects(newId);
+          const project = await res.json();
+          setCurrentProject(project);
+          setProjects((prev) => {
+            const exists = prev.some((p) => p.project_id === newId);
+            return exists
+              ? prev.map((p) => (p.project_id === newId ? project : p))
+              : [project, ...prev];
+          });
           setActiveTab(targetTab);
         }}
       />

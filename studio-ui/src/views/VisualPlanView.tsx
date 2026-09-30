@@ -8,6 +8,8 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   AlertTriangle,
+  Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { SceneItem } from '../types';
 
@@ -27,19 +29,43 @@ export const VisualPlanView: React.FC<Props> = ({
   const [scenes, setScenes] = useState<SceneItem[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const loadScenes = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/projects/${projectId}/visual/scenes`);
+      if (!response.ok) throw new Error('Không tải được Visual Plan');
+      const data = await response.json();
+      setScenes(data);
+      if (data.length > 0) onSelectScene(data[0]);
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Không tải được Visual Plan');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch(`/api/projects/${projectId}/visual/scenes`)
-      .then((r) => r.json())
-      .then((data) => {
-        setScenes(data);
-        if (data.length > 0 && !selectedScene) {
-          onSelectScene(data[0]);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    setErrorMessage('');
+    loadScenes();
   }, [projectId]);
+
+  const generatePlan = async () => {
+    setGenerating(true);
+    setErrorMessage('');
+    try {
+      const response = await fetch(`/api/projects/${projectId}/visual/generate`, { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || 'Không tạo được Visual Plan');
+      await loadScenes();
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Không tạo được Visual Plan');
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const videoScenesCount = scenes.filter(
     (s) => s.visual_mode === 'VIDEO_RECOMMENDED'
@@ -101,7 +127,8 @@ export const VisualPlanView: React.FC<Props> = ({
 
           <button
             onClick={onApproveVisual}
-            className="flex items-center space-x-1.5 bg-[#10B981] hover:bg-[#059669] text-white text-xs font-semibold px-3 py-1.5 rounded shadow cursor-pointer transition-colors"
+            disabled={scenes.length === 0}
+            className="flex items-center space-x-1.5 bg-[#10B981] hover:bg-[#059669] disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded shadow cursor-pointer transition-colors"
           >
             <CheckCircle2 size={13} />
             <span>Duyệt Visual Plan</span>
@@ -114,6 +141,20 @@ export const VisualPlanView: React.FC<Props> = ({
         {loading ? (
           <div className="p-8 text-center text-xs text-[#94A3B8]">
             Đang tải dữ liệu Storyboard...
+          </div>
+        ) : scenes.length === 0 ? (
+          <div className="max-w-xl mx-auto mt-16 p-8 text-center bg-[#111827] border border-[#28354D] rounded-xl space-y-4">
+            <AlertTriangle size={28} className="mx-auto text-[#F59E0B]" />
+            <div>
+              <h3 className="text-sm font-semibold text-[#F8FAFC]">Tập này chưa có Visual Plan</h3>
+              <p className="text-xs text-[#94A3B8] mt-2">Studio sẽ căn thời lượng cảnh theo Audio Master và tạo prompt từ đúng kịch bản, nhân vật, bối cảnh của tập hiện tại.</p>
+            </div>
+            {errorMessage && <p className="text-xs text-[#FCA5A5]">{errorMessage}</p>}
+            <button onClick={generatePlan} disabled={generating}
+              className="mx-auto flex items-center gap-2 bg-[#2563EB] disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded">
+              {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              <span>{generating ? 'Đang tạo Visual Plan...' : 'Tạo Visual Plan từ Audio & Kịch bản'}</span>
+            </button>
           </div>
         ) : viewMode === 'grid' ? (
           /* Storyboard Grid View */

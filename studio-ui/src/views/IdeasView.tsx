@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lightbulb, Sparkles, CheckCircle2, Search, Loader2, ArrowRight } from 'lucide-react';
+import { Lightbulb, Sparkles, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 import { IdeaItem } from '../types';
 
 interface Props {
@@ -15,6 +15,7 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
   const [customIdeas, setCustomIdeas] = useState<IdeaItem[]>([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const defaultIdeas = [
     {
@@ -46,16 +47,21 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
   const handleGenerate = async () => {
     setLoading(true);
     setSuccessMsg('');
+    setErrorMessage('');
     try {
       const res = await fetch(`/api/projects/${projectId}/ideas/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ direction, count: 5 }),
       });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.detail || 'Không thể tạo ý tưởng');
+      }
       const data = await res.json();
       setCustomIdeas(data.ideas || []);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      setErrorMessage(e.message || 'Không thể tạo ý tưởng');
     } finally {
       setLoading(false);
     }
@@ -64,6 +70,8 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
   const handleSelectIdea = async (idea: IdeaItem | any) => {
     const idKey = idea.idea_id || idea.id;
     setSelectingId(idKey);
+    setSuccessMsg('');
+    setErrorMessage('');
     try {
       const ideaPayload = {
         idea_id: idKey,
@@ -78,19 +86,19 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idea: ideaPayload }),
       });
-      if (res.ok) {
-        const updatedProj = await res.json();
-        onProjectUpdated?.(updatedProj);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.detail || 'Không thể áp dụng ý tưởng');
       }
+      const updatedProj = await res.json();
+      onProjectUpdated?.(updatedProj);
       setSelectedIdeaId(idKey);
       setSuccessMsg(`Đã áp dụng ý tưởng "${idea.title}" cho tập ${projectId}.`);
       if (onNavigate) {
-        setTimeout(() => {
-          onNavigate('story');
-        }, 500);
+        onNavigate('story');
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      setErrorMessage(e.message || 'Không thể áp dụng ý tưởng');
     } finally {
       setSelectingId('');
     }
@@ -125,6 +133,12 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
               <ArrowRight size={13} />
             </button>
           )}
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="p-3 rounded bg-[#EF4444]/15 border border-[#EF4444]/30 text-[#FCA5A5] text-xs">
+          {errorMessage}
         </div>
       )}
 

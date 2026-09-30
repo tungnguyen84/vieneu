@@ -3,7 +3,6 @@ import {
   ExternalLink,
   Download,
   CheckCircle2,
-  FolderOpen,
   ArrowRight,
   ShieldCheck,
   FileCode,
@@ -21,6 +20,7 @@ export const GoogleFlowView: React.FC<Props> = ({
   const [flowInfo, setFlowInfo] = useState<any>(null);
   const [exporting, setExporting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     fetch(`/api/projects/${projectId}/flow`)
@@ -31,15 +31,20 @@ export const GoogleFlowView: React.FC<Props> = ({
 
   const handleExport = async () => {
     setExporting(true);
+    setSuccessMsg('');
+    setErrorMsg('');
     try {
       const res = await fetch(`/api/projects/${projectId}/flow/export`, {
         method: 'POST',
       });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Không thể xuất Google Flow JSON');
+      }
       setFlowInfo(data);
       setSuccessMsg('Đã xuất Google Flow JSON (SCC_FLOW_V1) thành công!');
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      setErrorMsg(e.message || 'Không thể xuất Google Flow JSON');
     } finally {
       setExporting(false);
     }
@@ -61,7 +66,7 @@ export const GoogleFlowView: React.FC<Props> = ({
 
         <button
           onClick={handleExport}
-          disabled={exporting}
+          disabled={exporting || !flowInfo?.is_ready}
           className="flex items-center space-x-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold px-4 py-2 rounded shadow cursor-pointer transition-colors active:scale-95 disabled:opacity-50"
         >
           <Download size={14} />
@@ -73,6 +78,18 @@ export const GoogleFlowView: React.FC<Props> = ({
         <div className="p-3 bg-[#10B981]/10 border border-[#10B981]/30 rounded text-xs text-[#10B981] flex items-center space-x-2">
           <CheckCircle2 size={15} />
           <span>{successMsg}</span>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="p-3 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded text-xs text-[#FCA5A5]">
+          {errorMsg}
+        </div>
+      )}
+
+      {flowInfo && !flowInfo.is_ready && (
+        <div className="p-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded text-xs text-[#FCD34D]">
+          Cần hoàn tất Visual Plan của tập {projectId} trước khi xuất. Studio sẽ không dùng nhầm dữ liệu EP003/EP011.
         </div>
       )}
 
@@ -94,25 +111,25 @@ export const GoogleFlowView: React.FC<Props> = ({
           <div className="p-3 rounded bg-[#0B0F17] border border-[#28354D]">
             <span className="text-[#64748B] block mb-1">Số phân cảnh:</span>
             <strong className="text-sm text-[#F8FAFC]">
-              {flowInfo?.stats?.scenes || 45} Scenes
+              {flowInfo?.stats?.scenes ?? 0} Scenes
             </strong>
           </div>
           <div className="p-3 rounded bg-[#0B0F17] border border-[#28354D]">
             <span className="text-[#64748B] block mb-1">Ảnh tĩnh Banana Pro:</span>
             <strong className="text-sm text-[#06B6D4]">
-              {flowInfo?.stats?.images || 38} Ảnh
+              {flowInfo?.stats?.images ?? 0} Ảnh
             </strong>
           </div>
           <div className="p-3 rounded bg-[#0B0F17] border border-[#28354D]">
             <span className="text-[#64748B] block mb-1">Video Omni đề xuất:</span>
             <strong className="text-sm text-[#8B5CF6]">
-              {flowInfo?.stats?.videos || 7} Video
+              {flowInfo?.stats?.videos ?? 0} Video
             </strong>
           </div>
           <div className="p-3 rounded bg-[#0B0F17] border border-[#28354D]">
             <span className="text-[#64748B] block mb-1">Mốc nhân vật & đạo cụ:</span>
             <strong className="text-sm text-[#10B981]">
-              {(flowInfo?.stats?.characters || 6) + (flowInfo?.stats?.props || 2)} References
+              {(flowInfo?.stats?.characters ?? 0) + (flowInfo?.stats?.props ?? 0)} References
             </strong>
           </div>
         </div>
@@ -125,12 +142,10 @@ export const GoogleFlowView: React.FC<Props> = ({
                 {flowInfo.stats.export_file_path}
               </span>
             </div>
-            <button
-              onClick={() => navigator.clipboard.writeText(flowInfo.stats.export_file_path)}
-              className="text-[11px] text-[#3B82F6] hover:underline cursor-pointer"
-            >
-              Sao chép đường dẫn
-            </button>
+            <div className="flex items-center gap-3">
+              <a href={`/api/projects/${projectId}/flow/download`} download className="text-[11px] text-[#10B981] hover:underline">Tải JSON</a>
+              <button onClick={() => navigator.clipboard.writeText(flowInfo.stats.export_file_path)} className="text-[11px] text-[#3B82F6] hover:underline cursor-pointer">Sao chép đường dẫn</button>
+            </div>
           </div>
         )}
       </div>

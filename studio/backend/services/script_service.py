@@ -82,9 +82,10 @@ class ScriptService:
         if not premise_val and isinstance(data.get("protagonist"), dict):
             premise_val = data["protagonist"].get("description", "")
 
-        fact_locks = data.get("fact_lock", {}).get("locked_facts", [])
-        if not fact_locks and isinstance(data.get("fact_lock"), list):
-            fact_locks = data.get("fact_lock")
+        raw_fact_lock = data.get("fact_lock", {})
+        fact_locks = raw_fact_lock.get("locked_facts", []) if isinstance(raw_fact_lock, dict) else []
+        if not fact_locks and isinstance(raw_fact_lock, list):
+            fact_locks = raw_fact_lock
         if not fact_locks and data.get("critical_facts"):
             fact_locks = [f.get("value") or f.get("description") for f in data.get("critical_facts", [])]
 
@@ -132,6 +133,9 @@ class ScriptService:
                 delivery_profile=s.get("delivery_profile", "SUSPENSE_COLD"),
                 text=s.get("text", ""),
                 story_function=s.get("story_function", "DEVELOPMENT"),
+                speed=float(s.get("speed", 1.0) or 1.0),
+                pause_before=float(s.get("pause_before", 0.0) or 0.0),
+                pause_after=float(s.get("pause_after", 0.25) or 0.25),
                 estimated_duration_sec=s.get("duration", est_dur),
                 qc_flags=[]
             ))
@@ -176,7 +180,10 @@ class ScriptService:
             speaker=target.get("speaker", "NARRATOR") if target else "NARRATOR",
             delivery_profile=target.get("delivery_profile", "SUSPENSE_COLD") if target else "SUSPENSE_COLD",
             text=new_text,
-            story_function=target.get("story_function", "DEVELOPMENT") if target else "DEVELOPMENT"
+            story_function=target.get("story_function", "DEVELOPMENT") if target else "DEVELOPMENT",
+            speed=float(target.get("speed", 1.0) or 1.0) if target else 1.0,
+            pause_before=float(target.get("pause_before", 0.0) or 0.0) if target else 0.0,
+            pause_after=float(target.get("pause_after", 0.25) or 0.25) if target else 0.25,
         )
 
     def get_script_qc(self, project_id: str) -> Optional[Dict[str, Any]]:
@@ -220,7 +227,15 @@ class ScriptService:
                 "speaker": "NARRATOR",
                 "delivery_profile": profile,
                 "text": line,
-                "story_function": "DEVELOPMENT"
+                "story_function": "DEVELOPMENT",
+                "speed": {
+                    "HOOK": 0.98,
+                    "REVEAL": 0.92,
+                    "ENDING": 0.965,
+                    "NORMAL": 1.01,
+                }.get(profile, 1.0),
+                "pause_before": 0.05,
+                "pause_after": 0.25,
             })
 
         data = {

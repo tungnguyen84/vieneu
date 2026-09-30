@@ -68,6 +68,9 @@ class ScriptSegment(BaseModel):
     delivery_profile: str = "SUSPENSE_COLD"
     text: str
     story_function: str = "SETUP"
+    speed: float = 1.0
+    pause_before: float = 0.0
+    pause_after: float = 0.25
     estimated_duration_sec: float = 0.0
     qc_flags: List[str] = Field(default_factory=list)
 

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, BookOpen, FileText, ArrowRight, Loader2, CheckCircle2, Lightbulb, AlertCircle } from 'lucide-react';
+import { X, Sparkles, BookOpen, FileText, ArrowRight, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { IdeaItem } from '../types';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (projectId: string, targetTab: string) => void;
+  onSuccess: (projectId: string, targetTab: string) => Promise<void>;
 }
 
 export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
@@ -32,12 +32,14 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [createdProjectId, setCreatedProjectId] = useState<string>('');
 
   // Fetch next suggested episode ID on open
   useEffect(() => {
     if (isOpen) {
       setStep(1);
       setErrorMessage('');
+      setCreatedProjectId('');
       fetch('/api/projects/next-id')
         .then((r) => r.json())
         .then((data) => {
@@ -84,25 +86,27 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
     setSelectedIdea(idea);
 
     try {
-      // 1. Create project with this idea
-      const createRes = await fetch('/api/projects/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          episode_id: episodeId.trim().toUpperCase(),
-          title: idea.title || `Tập ${episodeId}`,
-          premise: idea.premise,
-          target_duration: targetDuration,
-          category,
-        }),
-      });
-
-      if (!createRes.ok) {
-        const err = await createRes.json();
-        throw new Error(err.detail || 'Không thể tạo tập phim');
+      let newId = createdProjectId;
+      if (!newId) {
+        const createRes = await fetch('/api/projects/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            episode_id: episodeId.trim().toUpperCase(),
+            title: idea.title || `Tập ${episodeId}`,
+            premise: idea.premise,
+            target_duration: targetDuration,
+            category,
+          }),
+        });
+        if (!createRes.ok) {
+          const err = await createRes.json();
+          throw new Error(err.detail || 'Không thể tạo tập phim');
+        }
+        const createdProj = await createRes.json();
+        newId = createdProj.project_id;
+        setCreatedProjectId(newId);
       }
-      const createdProj = await createRes.json();
-      const newId = createdProj.project_id;
 
       // 2. Select idea to set 01_idea to APPROVED and write premise.txt
       const selRes = await fetch(`/api/projects/${newId}/ideas/select`, {
@@ -111,10 +115,11 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
         body: JSON.stringify({ idea }),
       });
       if (!selRes.ok) {
-        console.warn('Idea select non-200:', await selRes.text());
+        const err = await selRes.json();
+        throw new Error(err.detail || 'Không thể áp dụng ý tưởng');
       }
 
-      onSuccess(newId, 'story');
+      await onSuccess(newId, 'story');
       onClose();
     } catch (e: any) {
       setErrorMessage(e.message || 'Lỗi khi khởi tạo tập phim');
@@ -149,47 +154,57 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
           ? topic.trim()
           : '';
 
-      // 1. Create project
-      const createRes = await fetch('/api/projects/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          episode_id: episodeId.trim().toUpperCase(),
-          title: finalTitle || `Tập ${episodeId}`,
-          premise: finalPremise,
-          target_duration: targetDuration,
-          category,
-        }),
-      });
-
-      if (!createRes.ok) {
-        const err = await createRes.json();
-        throw new Error(err.detail || 'Không thể tạo tập phim');
+      let newId = createdProjectId;
+      if (!newId) {
+        const createRes = await fetch('/api/projects/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            episode_id: episodeId.trim().toUpperCase(),
+            title: finalTitle || `Tập ${episodeId}`,
+            premise: finalPremise,
+            target_duration: targetDuration,
+            category,
+          }),
+        });
+        if (!createRes.ok) {
+          const err = await createRes.json();
+          throw new Error(err.detail || 'Không thể tạo tập phim');
+        }
+        const createdProj = await createRes.json();
+        newId = createdProj.project_id;
+        setCreatedProjectId(newId);
       }
-      const createdProj = await createRes.json();
-      const newId = createdProj.project_id;
 
       // 2. Handle specific mode
       let targetTab = 'story';
       if (startMode === 'ideas' && selectedIdea) {
-        await fetch(`/api/projects/${newId}/ideas/select`, {
+        const selectRes = await fetch(`/api/projects/${newId}/ideas/select`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ idea: selectedIdea }),
         });
+        if (!selectRes.ok) {
+          const err = await selectRes.json();
+          throw new Error(err.detail || 'Không thể áp dụng ý tưởng');
+        }
         targetTab = 'story';
       } else if (startMode === 'script' && scriptText.trim()) {
-        await fetch(`/api/projects/${newId}/script/import-text`, {
+        const importRes = await fetch(`/api/projects/${newId}/script/import-text`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: scriptText.trim() }),
         });
+        if (!importRes.ok) {
+          const err = await importRes.json();
+          throw new Error(err.detail || 'Không thể nhập kịch bản');
+        }
         targetTab = 'script';
       } else {
         targetTab = 'story';
       }
 
-      onSuccess(newId, targetTab);
+      await onSuccess(newId, targetTab);
       onClose();
     } catch (e: any) {
       setErrorMessage(e.message || 'Lỗi khi khởi tạo tập phim');

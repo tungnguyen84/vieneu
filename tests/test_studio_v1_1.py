@@ -208,12 +208,27 @@ def test_idea_generation_and_selection():
         assert res_sel.status_code == 200
         updated_proj = res_sel.json()
         assert updated_proj["stage_statuses"]["01_idea"] == "APPROVED"
+        assert updated_proj["next_action"]["stage_id"] == "02_story"
+        assert updated_proj["title"] == chosen_idea["title"]
 
         # Verify premise.txt saved
         premise_file = PROJECTS_DIR / TEST_EP_ID / "story" / "premise.txt"
         assert premise_file.exists()
         content = premise_file.read_text(encoding="utf-8")
         assert chosen_idea["title"] in content
+
+        story_res = client.get(f"/api/projects/{TEST_EP_ID}/story")
+        assert story_res.status_code == 200
+        assert story_res.json()["premise"] == chosen_idea["premise"]
+
+        project_json = json.loads((PROJECTS_DIR / TEST_EP_ID / "project.json").read_text(encoding="utf-8"))
+        assert project_json["topic"] == chosen_idea["premise"]
+        assert project_json["selected_idea"]["idea_id"] == chosen_idea["idea_id"]
+
+        refreshed = client.get(f"/api/projects/{TEST_EP_ID}")
+        assert refreshed.status_code == 200
+        assert refreshed.json()["title"] == chosen_idea["title"]
+        assert refreshed.json()["next_action"]["stage_id"] == "02_story"
 
 
 # ============================================================================
@@ -247,6 +262,11 @@ def test_story_bible_generation_and_approval():
         bible_file = PROJECTS_DIR / TEST_EP_ID / "story" / "story_bible.json"
         assert bible_file.exists()
 
+        story_reload = client.get(f"/api/projects/{TEST_EP_ID}/story")
+        assert story_reload.status_code == 200
+        assert story_reload.json()["premise"]
+        assert story_reload.json()["fact_lock_items"]
+
         # Check stage status updated to REVIEW_REQUIRED / NEEDS_REVIEW
         proj = pm.get_project(TEST_EP_ID)
         assert proj.stage_statuses["02_story"] in ["NEEDS_REVIEW", "IN_PROGRESS"]
@@ -256,6 +276,20 @@ def test_story_bible_generation_and_approval():
         assert res_app.status_code == 200
         proj_approved = pm.get_project(TEST_EP_ID)
         assert proj_approved.stage_statuses["02_story"] == "APPROVED"
+
+
+def test_story_endpoint_accepts_list_fact_lock():
+    """AI output may serialize fact_lock as a list; Story must still load."""
+    pm = ProjectManager()
+    pm.create_project(episode_id=TEST_EP_ID, title="List Fact Lock")
+    bible_file = PROJECTS_DIR / TEST_EP_ID / "story" / "story_bible.json"
+    bible_file.write_text(
+        json.dumps({"premise": "Một bí mật gia đình.", "fact_lock": ["Thư viết năm 1990", "Người cha đã mất"]}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    response = client.get(f"/api/projects/{TEST_EP_ID}/story")
+    assert response.status_code == 200
+    assert response.json()["fact_lock_items"] == ["Thư viết năm 1990", "Người cha đã mất"]
 
 
 # ============================================================================
