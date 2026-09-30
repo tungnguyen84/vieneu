@@ -636,15 +636,27 @@ class GenerationService:
         rev_manager = AutoRevisionManager(provider=provider, cost_controller=self.cost_ctrl, qc_engine=qc_engine)
 
         qc_report = qc_engine.run_qc(script=script, story_bible=story_bible)
+        starting_round = script.revision_round
         if qc_report.status == "PASS":
             revised_script, final_qc = script, qc_report
             revised_script.status = "QC_PASS"
         else:
-            revised_script, final_qc = rev_manager.auto_revise_and_recheck(
-                script=script,
-                story_bible=story_bible,
-                qc_report=qc_report,
-            )
+            revised_script, final_qc = script, qc_report
+            while final_qc.status != "PASS":
+                previous_round = revised_script.revision_round
+                revised_script, final_qc = rev_manager.auto_revise_and_recheck(
+                    script=revised_script,
+                    story_bible=story_bible,
+                    qc_report=final_qc,
+                )
+                if final_qc.status == "PASS":
+                    break
+                if revised_script.revision_round >= MAX_REVISION_ROUNDS:
+                    break
+                # Defensive stop for a provider that returns without consuming
+                # a revision round; otherwise this endpoint could loop forever.
+                if revised_script.revision_round <= previous_round:
+                    break
 
         # Auto-repair is allowed only inside the current Story lineage and must
         # preserve all lineage metadata when the dataclass is serialized again.
@@ -678,9 +690,23 @@ class GenerationService:
             project_path.write_text(json.dumps(project_data, ensure_ascii=False, indent=2), encoding="utf-8")
 
         total_words = revised_script.total_words or sum(len(s.text.split()) for s in revised_script.segments)
+        remaining_rules = sorted({
+            str(issue.get("rule") or issue.get("type") or "UNKNOWN_QC")
+            for issue in [*final_qc.evidence_issues, *final_qc.fact_conflicts]
+            if isinstance(issue, dict)
+        })
+        completed = final_qc.status == "PASS"
         return {
             "rounds": revised_script.revision_round,
+            "rounds_attempted": max(0, revised_script.revision_round - starting_round),
             "qc_status": final_qc.status,
+            "completed": completed,
+            "remaining_rules": remaining_rules,
+            "message": (
+                "Kịch bản đã vượt qua QC."
+                if completed
+                else "Đã tự sửa đến giới hạn 3 vòng nhưng kịch bản vẫn chưa đạt QC. Hãy xem lỗi còn lại hoặc tạo lại từ Story Bible."
+            ),
             "word_count": total_words,
             "segments": len(revised_script.segments)
         }

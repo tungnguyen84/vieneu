@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from apps.script_factory.models import FullScript, QCReport, ScriptSegment, StoryBible
 from apps.script_factory.narrative_continuity import find_repeated_narrative_block
 from apps.script_factory.script_qc import apply_targeted_repairs
 from apps.script_factory.story_qc import StoryQCEngine
+from studio.backend.services import generation_service as generation_module
 
 
 def _segment(index: int, text: str, profile: str = "NORMAL") -> ScriptSegment:
@@ -94,3 +98,64 @@ def test_story_qc_rejects_indirect_evidence_as_conclusive_proof() -> None:
     report = StoryQCEngine().audit_story_bible(bible)
     proof_issues = [issue for issue in report.issues if issue["rule"] == "REVEAL_PROOF_OVERCLAIM"]
     assert len(proof_issues) == 2
+
+
+def _run_auto_repair_service(tmp_path: Path, monkeypatch, pass_on_round: int) -> dict:
+    project = tmp_path / "EP_AUTO"
+    (project / "script").mkdir(parents=True)
+    (project / "story").mkdir(parents=True)
+    script = FullScript(
+        episode_id="EP_AUTO",
+        title="Tự sửa một lần bấm",
+        host={"id": "MINH"},
+        segments=[_segment(1, "Một chi tiết cần được sửa lại.", "HOOK")],
+    )
+    bible = StoryBible(episode_id="EP_AUTO", title=script.title, protagonist={"name": "Lan"})
+    (project / "script" / "full_script.json").write_text(
+        json.dumps(script.to_dict(), ensure_ascii=False), encoding="utf-8"
+    )
+    (project / "story" / "story_bible.json").write_text(
+        json.dumps(bible.to_dict(), ensure_ascii=False), encoding="utf-8"
+    )
+
+    class FakeQC:
+        def __init__(self, **_kwargs):
+            pass
+
+        def run_qc(self, script, story_bible, **_kwargs):
+            status = "PASS" if script.revision_round >= pass_on_round else "FAIL"
+            return QCReport(
+                episode_id=story_bible.episode_id,
+                status=status,
+                evidence_issues=[] if status == "PASS" else [{"rule": "TEST_REMAINING"}],
+            )
+
+    class FakeRevisionManager:
+        def __init__(self, **_kwargs):
+            pass
+
+        def auto_revise_and_recheck(self, script, story_bible, qc_report):
+            script.revision_round += 1
+            return script, FakeQC().run_qc(script, story_bible)
+
+    monkeypatch.setattr(generation_module, "PROJECTS_DIR", tmp_path)
+    monkeypatch.setattr(generation_module, "ScriptQCEngine", FakeQC)
+    monkeypatch.setattr(generation_module, "AutoRevisionManager", FakeRevisionManager)
+    service = object.__new__(generation_module.GenerationService)
+    service.cost_ctrl = object()
+    service.get_provider = lambda: object()
+    return service.auto_repair_script("EP_AUTO")
+
+
+def test_auto_repair_one_click_runs_until_qc_pass(tmp_path: Path, monkeypatch) -> None:
+    result = _run_auto_repair_service(tmp_path, monkeypatch, pass_on_round=2)
+    assert result["completed"] is True
+    assert result["rounds_attempted"] == 2
+    assert result["qc_status"] == "PASS"
+
+
+def test_auto_repair_one_click_stops_at_three_rounds_with_reason(tmp_path: Path, monkeypatch) -> None:
+    result = _run_auto_repair_service(tmp_path, monkeypatch, pass_on_round=99)
+    assert result["completed"] is False
+    assert result["rounds_attempted"] == 3
+    assert result["remaining_rules"] == ["TEST_REMAINING"]

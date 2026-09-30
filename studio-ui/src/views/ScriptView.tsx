@@ -105,10 +105,10 @@ export const ScriptView: React.FC<Props> = ({
     'Đang kiểm định QC và tính toán độ dài lời dẫn...',
   ];
 
-  const fetchScriptData = () => {
+  const fetchScriptData = (clearError = true) => {
     setLoading(true);
-    setErrorMessage('');
-    Promise.all([
+    if (clearError) setErrorMessage('');
+    return Promise.all([
       fetch(`/api/projects/${projectId}/script`).then((r) => r.json()),
       fetch(`/api/projects/${projectId}/script/full`).then((r) => r.json()),
       fetch(`/api/projects/${projectId}/script/qc`).then((r) => (r.ok ? r.json() : null)),
@@ -176,7 +176,14 @@ export const ScriptView: React.FC<Props> = ({
         const err = await res.json();
         throw new Error(err.detail || 'Lỗi khi sửa kịch bản');
       }
-      fetchScriptData();
+      const result = await res.json();
+      if (!result.completed) {
+        const remaining = Array.isArray(result.remaining_rules) && result.remaining_rules.length
+          ? ` Lỗi còn lại: ${result.remaining_rules.join(', ')}.`
+          : '';
+        setErrorMessage(`${result.message || 'Kịch bản vẫn chưa đạt QC.'}${remaining}`);
+      }
+      await fetchScriptData(false);
     } catch (e: any) {
       setErrorMessage(e.message || 'Lỗi trong quá trình tự động sửa kịch bản');
     } finally {
