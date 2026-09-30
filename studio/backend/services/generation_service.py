@@ -20,25 +20,32 @@ from apps.script_factory.script_qc import ScriptQCEngine
 from apps.script_factory.script_writer import ScriptWriter
 from apps.script_factory.story_planner import StoryPlanner
 from studio.backend.credentials import get_active_api_key, get_public_providers_status
+from studio.backend.services.artifact_lineage import (
+    mark_full_script_stale,
+    require_current_full_script,
+    story_content_hash,
+)
 
 logger = logging.getLogger("SCCStudio.GenerationService")
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 PROJECTS_DIR = BASE_DIR / "projects"
 
 
-def get_configured_ai_provider():
+def get_configured_ai_provider(provider_id: Optional[str] = None, model_id: Optional[str] = None):
     """Builds provider from credentials. NEVER silently falls back to Mock in production."""
     status = get_public_providers_status()
-    default_p = (status.get("default_provider") or "gemini").strip().lower()
-    model = (status.get("default_model") or "gemini-2.5-flash").strip()
+    target_p = (provider_id or status.get("default_provider") or "gemini").strip().lower()
+
+    prov_data = status.get("providers", {}).get(target_p, {})
+    model = (model_id or prov_data.get("model") or status.get("default_model") or "").strip()
 
     is_production = os.environ.get("APP_ENV") == "production"
     is_test_env = not is_production and (os.environ.get("APP_ENV") == "test")
 
-    if default_p == "gemini":
+    if target_p == "gemini":
         gemini_key = get_active_api_key("gemini")
         if gemini_key:
-            return GeminiScriptAIProvider(api_key=gemini_key, default_model=model)
+            return GeminiScriptAIProvider(api_key=gemini_key, default_model=model or "gemini-2.5-flash")
         elif is_test_env:
             from tests.mocks.mock_script_provider import MockScriptAIProvider
             return MockScriptAIProvider()
@@ -47,36 +54,53 @@ def get_configured_ai_provider():
                 "AI GENERATION FAILED: Google Gemini API key is missing or not configured. "
                 "Please configure a valid GEMINI_API_KEY in Settings."
             )
-    elif default_p in ("openai", "openai_compatible", "local"):
+    elif target_p in ("openai", "openai_compatible", "local"):
         from apps.script_factory.providers.openai_provider import OpenAICompatibleProvider
-        prov_data = status.get("providers", {}).get(default_p, {})
-        key = get_active_api_key(default_p) or ""
-        base_url = prov_data.get("base_url") or ("http://localhost:11434/v1" if default_p == "local" else "https://api.openai.com/v1")
-        if key or default_p == "local":
+        key = get_active_api_key(target_p) or ""
+        base_url = prov_data.get("base_url") or ("http://localhost:11434/v1" if target_p == "local" else "https://api.openai.com/v1")
+        default_model = model or prov_data.get("model") or ("gpt-4o" if target_p == "openai" else "deepseek-chat")
+        if key or target_p == "local":
             return OpenAICompatibleProvider(
                 api_key=key,
-                default_model=model,
+                default_model=default_model,
                 base_url=base_url,
-                provider_name=default_p
+                provider_name=target_p
             )
         elif is_test_env:
             from tests.mocks.mock_script_provider import MockScriptAIProvider
             return MockScriptAIProvider()
         else:
             raise RuntimeError(
-                f"AI GENERATION FAILED: {default_p.upper()} API key is missing. "
+                f"AI GENERATION FAILED: {target_p.upper()} API key is missing. "
                 "Please configure your provider credentials in Settings."
+            )
+    elif target_p == "anthropic":
+        from apps.script_factory.providers.anthropic_provider import AnthropicScriptAIProvider
+        key = get_active_api_key("anthropic") or ""
+        default_model = model or prov_data.get("model") or "claude-3-5-sonnet-20241022"
+        if key:
+            return AnthropicScriptAIProvider(
+                api_key=key,
+                default_model=default_model,
+            )
+        elif is_test_env:
+            from tests.mocks.mock_script_provider import MockScriptAIProvider
+            return MockScriptAIProvider()
+        else:
+            raise RuntimeError(
+                "AI GENERATION FAILED: Anthropic API key is missing. "
+                "Please configure your ANTHROPIC_API_KEY in Settings."
             )
 
     # Secondary checks
     gemini_key = get_active_api_key("gemini")
     if gemini_key:
-        return GeminiScriptAIProvider(api_key=gemini_key, default_model=model)
+        return GeminiScriptAIProvider(api_key=gemini_key, default_model=model or "gemini-2.5-flash")
 
     openai_key = get_active_api_key("openai")
     if openai_key:
         from apps.script_factory.providers.openai_provider import OpenAICompatibleProvider
-        return OpenAICompatibleProvider(api_key=openai_key, default_model=model, provider_name="openai")
+        return OpenAICompatibleProvider(api_key=openai_key, default_model=model or "gpt-4o", provider_name="openai")
 
     if is_test_env:
         from tests.mocks.mock_script_provider import MockScriptAIProvider
@@ -92,14 +116,16 @@ class GenerationService:
     def __init__(self):
         self.cost_ctrl = CostController()
 
-    def get_provider(self):
-        return get_configured_ai_provider()
+    def get_provider(self, provider_id: Optional[str] = None, model_id: Optional[str] = None):
+        return get_configured_ai_provider(provider_id=provider_id, model_id=model_id)
 
     def generate_ideas(
         self,
         project_id: str,
         count: int = 10,
-        direction: str = ""
+        direction: str = "",
+        provider_id: Optional[str] = None,
+        model_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Generates structured ideas using Idea Bank, TopicIntent and Novelty Engine."""
         from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
@@ -131,7 +157,7 @@ class GenerationService:
                 except Exception:
                     pass
 
-        provider = self.get_provider()
+        provider = self.get_provider(provider_id=provider_id, model_id=model_id)
         prov_source = "MOCK" if "mock" in provider.provider_name.lower() else "REAL_AI"
         logger.debug(
             f"[Lineage Stage=IDEAS] project_id={project_id}, original_user_topic='{user_topic}', "
@@ -191,6 +217,8 @@ class GenerationService:
         self,
         project_id: str,
         topic: str = "",
+        provider_id: Optional[str] = None,
+        model_id: Optional[str] = None,
         stage_callback: Optional[Callable[[str, int], None]] = None
     ) -> Dict[str, Any]:
         """Expands topic into complete Story Bible with Fact Lock."""
@@ -232,7 +260,7 @@ class GenerationService:
 
         if not sel_idea and clean_topic:
             # Generate premise ideas from real AI provider first to ensure 100% AI creative generation
-            ideas = self.generate_ideas(project_id=project_id, count=1, direction=clean_topic)
+            ideas = self.generate_ideas(project_id=project_id, count=1, direction=clean_topic, provider_id=provider_id, model_id=model_id)
             if ideas:
                 sel_idea = ideas[0]
                 if p_json.exists():
@@ -309,7 +337,7 @@ class GenerationService:
             topic_adherence_score=top_score
         )
 
-        provider = self.get_provider()
+        provider = self.get_provider(provider_id=provider_id, model_id=model_id)
         prov_source = "MOCK" if "mock" in provider.provider_name.lower() else "REAL_AI"
         logger.debug(
             f"[Lineage Stage=STORY_BIBLE] project_id={project_id}, original_user_topic='{orig_topic}', "
@@ -340,6 +368,7 @@ class GenerationService:
         bible_dict["prompt_version"] = getattr(story_bible, "prompt_version", None)
         bible_dict["model_name"] = getattr(story_bible, "model_name", None)
         bible_dict["provider_name"] = getattr(story_bible, "provider_name", None)
+        bible_dict["artifact_status"] = "CURRENT"
 
         bible_path = story_dir / "story_bible.json"
         with open(bible_path, "w", encoding="utf-8") as f:
@@ -348,6 +377,14 @@ class GenerationService:
         bible_root_path = proj_dir / "story_bible.json"
         with open(bible_root_path, "w", encoding="utf-8") as f:
             json.dump(bible_dict, f, ensure_ascii=False, indent=2)
+
+        # A newly generated Story Bible starts a new lineage.  Keep any older
+        # script for audit/history, but it can no longer be approved or voiced.
+        mark_full_script_stale(
+            project_id,
+            PROJECTS_DIR,
+            "Story Bible was regenerated; Full Script must be regenerated from the new lineage",
+        )
 
         if p_json.exists():
             try:
@@ -373,6 +410,8 @@ class GenerationService:
     def generate_full_script(
         self,
         project_id: str,
+        provider_id: Optional[str] = None,
+        model_id: Optional[str] = None,
         stage_callback: Optional[Callable[[str, int], None]] = None
     ) -> Dict[str, Any]:
         """Writes full script using Script Factory V1.3.1a and runs Script QC + Auto-Repair."""
@@ -396,7 +435,7 @@ class GenerationService:
             bible_data = json.load(f)
         story_bible = StoryBible.from_dict(bible_data)
 
-        provider = self.get_provider()
+        provider = self.get_provider(provider_id=provider_id, model_id=model_id)
         prov_source = "MOCK" if "mock" in provider.provider_name.lower() else "REAL_AI"
 
         # Ensure Story Bible passes Story Logic & Reveal Justification Gate before ScriptWriter runs
@@ -416,8 +455,12 @@ class GenerationService:
                     f"Bị chặn bởi Cross-Stage Topic Gate 2! Vui lòng tạo lại hoặc chỉnh sửa Story Bible."
                 )
             story_bible = story_qc.repair_story_bible(story_bible, bible_qc)
-            with open(story_path, "w", encoding="utf-8") as f:
-                json.dump(story_bible.to_dict(), f, ensure_ascii=False, indent=2)
+            repaired_story_data = story_bible.to_dict()
+            repaired_story_data["artifact_status"] = "CURRENT"
+            for target in (story_path, proj_dir / "story_bible.json"):
+                with open(target, "w", encoding="utf-8") as f:
+                    json.dump(repaired_story_data, f, ensure_ascii=False, indent=2)
+            bible_data = repaired_story_data
 
         # Progress simulation
         for label, pct in stages:
@@ -451,6 +494,13 @@ class GenerationService:
         script_dict["prompt_version"] = getattr(script, "prompt_version", None)
         script_dict["model_name"] = getattr(script, "model_name", None)
         script_dict["provider_name"] = getattr(script, "provider_name", None)
+        script_dict["source_story_generation_request_id"] = story_bible.generation_request_id
+        current_story_data = json.loads(story_path.read_text(encoding="utf-8"))
+        script_dict["source_story_content_hash"] = story_content_hash(current_story_data)
+        script_dict["artifact_status"] = "CURRENT"
+        script_dict.pop("stale_reason", None)
+        script_dict.pop("stale_reasons", None)
+        script_dict.pop("stale_at", None)
 
         # Save script
         script_dir = proj_dir / "script"
@@ -461,6 +511,10 @@ class GenerationService:
 
         qc_dict = asdict(qc_report)
         qc_dict["generation_source"] = prov_source
+        qc_dict["generation_request_id"] = script_dict.get("generation_request_id")
+        qc_dict["source_story_generation_request_id"] = story_bible.generation_request_id
+        qc_dict["source_story_content_hash"] = script_dict["source_story_content_hash"]
+        qc_dict["artifact_status"] = "CURRENT"
         qc_path = script_dir / "qc_report.json"
         with open(qc_path, "w", encoding="utf-8") as f:
             json.dump(qc_dict, f, ensure_ascii=False, indent=2)
@@ -483,6 +537,11 @@ class GenerationService:
                 p_curr["prompt_version"] = getattr(script, "prompt_version", None)
                 p_curr["model_name"] = getattr(script, "model_name", None)
                 p_curr["provider_name"] = getattr(script, "provider_name", None)
+                p_curr["story_generation_request_id"] = story_bible.generation_request_id
+                p_curr["script_generation_request_id"] = getattr(script, "generation_request_id", None)
+                p_curr["script_source_story_generation_request_id"] = story_bible.generation_request_id
+                p_curr["script_source_story_content_hash"] = script_dict["source_story_content_hash"]
+                p_curr["script_artifact_status"] = "CURRENT"
                 p_curr["qc_status"] = qc_report.status
                 with open(p_json, "w", encoding="utf-8") as f:
                     json.dump(p_curr, f, ensure_ascii=False, indent=2)
@@ -514,8 +573,11 @@ class GenerationService:
         if not script_path.exists() or not story_path.exists():
             raise FileNotFoundError("Script or Story Bible not found for repair.")
 
+        require_current_full_script(project_id, PROJECTS_DIR)
+
         with open(script_path, "r", encoding="utf-8") as f:
-            script = FullScript.from_dict(json.load(f))
+            original_script_data = json.load(f)
+            script = FullScript.from_dict(original_script_data)
         with open(story_path, "r", encoding="utf-8") as f:
             story_bible = StoryBible.from_dict(json.load(f))
 
@@ -530,11 +592,27 @@ class GenerationService:
             qc_report=qc_report
         )
 
-        # Overwrite script with revised version
+        # Auto-repair is allowed only inside the current Story lineage and must
+        # preserve all lineage metadata when the dataclass is serialized again.
+        revised_data = revised_script.to_dict()
+        for key in (
+            "generation_source", "generation_request_id", "prompt_version",
+            "model_name", "provider_name", "source_story_generation_request_id",
+            "source_story_content_hash", "artifact_status",
+        ):
+            revised_data[key] = original_script_data.get(key)
         with open(script_path, "w", encoding="utf-8") as f:
-            json.dump(revised_script.to_dict(), f, ensure_ascii=False, indent=2)
+            json.dump(revised_data, f, ensure_ascii=False, indent=2)
         with open(qc_path, "w", encoding="utf-8") as f:
-            json.dump(asdict(final_qc), f, ensure_ascii=False, indent=2)
+            final_qc_data = asdict(final_qc)
+            final_qc_data.update({
+                "generation_source": revised_data.get("generation_source"),
+                "generation_request_id": revised_data.get("generation_request_id"),
+                "source_story_generation_request_id": revised_data.get("source_story_generation_request_id"),
+                "source_story_content_hash": revised_data.get("source_story_content_hash"),
+                "artifact_status": "CURRENT",
+            })
+            json.dump(final_qc_data, f, ensure_ascii=False, indent=2)
 
         total_words = revised_script.total_words or sum(len(s.text.split()) for s in revised_script.segments)
         return {

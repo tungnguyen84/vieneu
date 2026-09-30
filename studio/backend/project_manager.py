@@ -251,7 +251,14 @@ class ProjectManager:
         statuses[stage.value] = status
 
         # Cascade Rule:
-        if stage == StageId.SCRIPT and status != StageStatus.APPROVED:
+        if stage == StageId.STORY and status != StageStatus.APPROVED:
+            statuses[StageId.SCRIPT.value] = StageStatus.STALE
+            statuses[StageId.AUDIO.value] = StageStatus.STALE
+            statuses[StageId.VISUAL.value] = StageStatus.STALE
+            statuses[StageId.FLOW.value] = StageStatus.STALE
+            statuses[StageId.TIMELINE.value] = StageStatus.STALE
+            statuses[StageId.RENDER.value] = StageStatus.STALE
+        elif stage == StageId.SCRIPT and status != StageStatus.APPROVED:
             statuses[StageId.AUDIO.value] = StageStatus.STALE
             statuses[StageId.VISUAL.value] = StageStatus.STALE
             statuses[StageId.FLOW.value] = StageStatus.STALE
@@ -277,6 +284,20 @@ class ProjectManager:
                 (project_id, stage.value, status.value, now)
             )
             conn.commit()
+
+        # project.json is the portable/autosave copy.  Keep it in lockstep with
+        # SQLite so a browser reload cannot revive an older approved stage.
+        project_file = PROJECTS_DIR / project_id / "project.json"
+        if project_file.exists():
+            try:
+                project_data = json.loads(project_file.read_text(encoding="utf-8"))
+                project_data["stage_statuses"] = {k: v.value for k, v in statuses.items()}
+                project_data["updated_at"] = now
+                project_file.write_text(
+                    json.dumps(project_data, ensure_ascii=False, indent=2), encoding="utf-8"
+                )
+            except Exception:
+                pass
 
         return self.get_project(project_id)  # type: ignore
 
@@ -362,18 +383,27 @@ class ProjectManager:
 
         final_topic = (premise if premise is not None else topic).strip()
 
-        # If project already exists in SQLite, clean it up so creation is idempotent
+        # Never place a new episode on top of an existing project directory.
+        # A browser may hold a previously suggested ID while another Studio
+        # process creates it; reusing that ID would keep the old Story/Script.
+        proj_dir = PROJECTS_DIR / ep_id
+        while proj_dir.exists():
+            ep_id = self.get_next_available_episode_id()
+            proj_dir = PROJECTS_DIR / ep_id
+
+        # A DB-only row can remain after an interrupted/test cleanup. It is safe
+        # to replace only when no artifact directory exists.
         existing = self.get_project(ep_id)
-        if existing:
+        if existing and not proj_dir.exists():
             with get_db_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("DELETE FROM projects WHERE project_id = ?", (ep_id,))
                 conn.commit()
 
         # Create project directory structure
-        proj_dir = PROJECTS_DIR / ep_id
+        proj_dir.mkdir(parents=True, exist_ok=False)
         for subdir in ["story", "script", "audio", "visual", "flow", "assets", "timeline", "render", "reports"]:
-            (proj_dir / subdir).mkdir(parents=True, exist_ok=True)
+            (proj_dir / subdir).mkdir()
 
         now = time.time()
         initial_statuses = {

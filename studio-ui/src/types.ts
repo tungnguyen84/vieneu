@@ -162,7 +162,11 @@ export interface FinalQCReport {
 }
 
 export interface ProviderInfo {
+  id?: string;
+  name?: string;
   configured: boolean;
+  is_connected?: boolean;
+  is_default?: boolean;
   has_key: boolean;
   masked_key: string;
   model: string;
@@ -176,6 +180,7 @@ export interface ProvidersStatus {
   default_model: string;
   has_connected_provider: boolean;
   providers: Record<string, ProviderInfo>;
+  providers_list?: Array<ProviderInfo & { id: string; name: string }>;
 }
 
 export interface IdeaItem {

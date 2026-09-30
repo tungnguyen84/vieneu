@@ -339,11 +339,24 @@ def apply_audio_speed(input_wav: Path, output_wav: Path, speed: float, sample_ra
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
         return True
-    except subprocess.CalledProcessError as e:
-        logger.error(f"FFmpeg atempo error: {e.stderr}")
-        if input_wav != output_wav and input_wav.exists():
-            shutil.copy2(input_wav, output_wav)
-        return False
+    except (subprocess.CalledProcessError, OSError) as e:
+        # Windows packaged/sandboxed launches can see an App Execution Alias for
+        # ffmpeg but cannot execute it (WinError 5).  Librosa provides a local,
+        # pitch-preserving fallback so contextual delivery speed still applies.
+        logger.warning(f"FFmpeg atempo unavailable ({e}); using local time-stretch fallback.")
+        try:
+            import librosa
+            audio, sr = sf.read(str(input_wav), dtype="float32", always_2d=False)
+            if sr != sample_rate:
+                audio = librosa.resample(audio, orig_sr=sr, target_sr=sample_rate)
+            stretched = librosa.effects.time_stretch(audio, rate=speed)
+            sf.write(str(output_wav), stretched, sample_rate)
+            return True
+        except Exception as fallback_error:
+            logger.error(f"Local time-stretch fallback failed: {fallback_error}")
+            if input_wav != output_wav and input_wav.exists():
+                shutil.copy2(input_wav, output_wav)
+            return False
 
 
 def generate_single_segment_takes(

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from studio.backend.models import ScriptSegment, StoryBibleSection
+from studio.backend.services.artifact_lineage import validate_full_script
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 PILOT_02_SCRIPTS = BASE_DIR / "pilot_02_v1_3_1a"
@@ -136,10 +137,11 @@ class ScriptService:
     def get_script_segments(self, project_id: str) -> List[ScriptSegment]:
         # Check newly created project directory first
         script_path = PROJECTS_DIR / project_id / "script" / "full_script.json"
-        if not script_path.exists():
-            # Try production pilot 03 snapshot first, then pilot 02
+        # Only the two explicitly migrated legacy pilots may use legacy snapshots.
+        # New Studio projects must never resolve to an unrelated pre-Studio file.
+        if not script_path.exists() and project_id in {"EP003", "EP011"}:
             script_path = PILOT_03_AUDIO / project_id / "script_snapshot" / "full_script.json"
-        if not script_path.exists():
+        if not script_path.exists() and project_id in {"EP003", "EP011"}:
             idea_id = self.get_idea_id(project_id)
             script_path = PILOT_02_SCRIPTS / idea_id / "full_script.json"
 
@@ -180,12 +182,15 @@ class ScriptService:
             paragraphs.append(s.text)
         return "\n\n".join(paragraphs)
 
+    def get_script_status(self, project_id: str) -> Dict[str, Any]:
+        return validate_full_script(project_id, PROJECTS_DIR)
+
     def update_segment(self, project_id: str, segment_id: str, new_text: str) -> ScriptSegment:
         idea_id = self.get_idea_id(project_id)
         script_path = PROJECTS_DIR / project_id / "script" / "full_script.json"
-        if not script_path.exists():
+        if not script_path.exists() and project_id in {"EP003", "EP011"}:
             script_path = PILOT_03_AUDIO / project_id / "script_snapshot" / "full_script.json"
-        if not script_path.exists():
+        if not script_path.exists() and project_id in {"EP003", "EP011"}:
             script_path = PILOT_02_SCRIPTS / idea_id / "full_script.json"
 
         if not script_path.exists():
@@ -219,7 +224,7 @@ class ScriptService:
 
     def get_script_qc(self, project_id: str) -> Optional[Dict[str, Any]]:
         qc_path = PROJECTS_DIR / project_id / "script" / "qc_report.json"
-        if not qc_path.exists():
+        if not qc_path.exists() and project_id in {"EP003", "EP011"}:
             idea_id = self.get_idea_id(project_id)
             qc_path = PILOT_02_SCRIPTS / idea_id / "qc_report.json"
 
@@ -271,6 +276,9 @@ class ScriptService:
 
         data = {
             "episode_id": project_id,
+            "generation_source": "MANUAL_IMPORT",
+            "artifact_status": "STALE",
+            "stale_reason": "Kịch bản nhập tay không có REAL_AI generation lineage",
             "word_count": sum(len(s["text"].split()) for s in segments),
             "estimated_duration_sec": sum(len(s["text"].split()) / 2.7 for s in segments),
             "segments": segments

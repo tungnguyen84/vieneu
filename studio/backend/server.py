@@ -29,6 +29,7 @@ from studio.backend.credentials import (
     fetch_available_models,
     get_public_providers_status,
     save_provider_credentials,
+    set_default_provider,
     test_provider_connection,
 )
 from studio.backend.db import get_db_connection
@@ -41,6 +42,11 @@ from studio.backend.services.job_service import JobService
 from studio.backend.services.qc_service import QCService
 from studio.backend.services.render_service import RenderService
 from studio.backend.services.script_service import ScriptService
+from studio.backend.services.artifact_lineage import (
+    mark_full_script_stale,
+    mark_story_bible_stale,
+    require_current_full_script,
+)
 from studio.backend.services.timeline_service import TimelineService
 from studio.backend.services.visual_service import VisualService
 
@@ -57,6 +63,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def disable_mutable_studio_cache(request, call_next):
+    """Mutable API data and the app shell must never revive an older project UI."""
+    response = await call_next(request)
+    if request.url.path.startswith("/api/") or request.url.path in {"/", "/index.html"}:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+    return response
 
 # Service Singletons
 pm = ProjectManager()
@@ -131,6 +147,20 @@ def get_provider_models(provider_id: str):
     return fetch_available_models(provider_id=provider_id)
 
 
+class SetDefaultProviderRequest(BaseModel):
+    provider: str
+    model: Optional[str] = None
+    model_id: Optional[str] = None
+
+
+@app.post("/api/ai/set-default")
+def set_default_ai_provider(req: SetDefaultProviderRequest):
+    try:
+        return set_default_provider(provider=req.provider, model=req.model_id or req.model)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # ---------------- PROJECT ENDPOINTS ----------------
 @app.get("/api/projects/next-id")
 def get_next_id():
@@ -190,12 +220,20 @@ def export_archive(project_id: str, full: bool = False):
 class GenerateIdeasRequest(BaseModel):
     direction: Optional[str] = ""
     count: Optional[int] = 5
+    provider: Optional[str] = None
+    model: Optional[str] = None
 
 
 @app.post("/api/projects/{project_id}/ideas/generate")
 def generate_project_ideas(project_id: str, req: GenerateIdeasRequest):
     try:
-        ideas = gen_srv.generate_ideas(project_id, count=req.count or 5, direction=req.direction or "")
+        ideas = gen_srv.generate_ideas(
+            project_id,
+            count=req.count or 5,
+            direction=req.direction or "",
+            provider_id=req.provider,
+            model_id=req.model,
+        )
         return {"ideas": ideas}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -214,6 +252,10 @@ def select_project_idea(project_id: str, req: SelectIdeaRequest):
     selected = req.idea
     premise = selected.get("premise") or selected.get("hook") or ""
     title = selected.get("title")
+
+    lineage_reason = "A new idea was selected; regenerate Story Bible and Full Script"
+    mark_story_bible_stale(project_id, BASE_DIR / "projects", lineage_reason)
+    mark_full_script_stale(project_id, BASE_DIR / "projects", lineage_reason)
 
     proj_dir = BASE_DIR / "projects" / project_id
     story_dir = proj_dir / "story"
@@ -243,6 +285,8 @@ def select_project_idea(project_id: str, req: SelectIdeaRequest):
             )
             conn.commit()
 
+    pm.update_stage_status(project_id, StageId.STORY, StageStatus.STALE)
+    pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.STALE)
     return pm.update_stage_status(project_id, StageId.IDEA, StageStatus.APPROVED)
 
 
@@ -255,12 +299,20 @@ def get_story(project_id: str):
 
 class GenerateStoryRequest(BaseModel):
     topic: Optional[str] = ""
+    provider: Optional[str] = None
+    model: Optional[str] = None
 
 
 @app.post("/api/projects/{project_id}/story/generate")
 def generate_project_story(project_id: str, req: GenerateStoryRequest):
     try:
-        res = gen_srv.generate_story_bible(project_id, topic=req.topic or "")
+        res = gen_srv.generate_story_bible(
+            project_id,
+            topic=req.topic or "",
+            provider_id=req.provider,
+            model_id=req.model,
+        )
+        pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.STALE)
         pm.update_stage_status(project_id, StageId.STORY, StageStatus.NEEDS_REVIEW)
         return res
     except HTTPException:
@@ -281,11 +333,18 @@ def get_script(project_id: str):
 
 @app.get("/api/projects/{project_id}/script/full")
 def get_script_full(project_id: str):
-    return {"text": script_srv.get_full_script_text(project_id)}
+    return {"text": script_srv.get_full_script_text(project_id), **script_srv.get_script_status(project_id)}
+
+
+@app.get("/api/projects/{project_id}/script/status")
+def get_script_status(project_id: str):
+    return script_srv.get_script_status(project_id)
 
 
 class GenerateScriptRequest(BaseModel):
     force: Optional[bool] = False
+    provider: Optional[str] = None
+    model: Optional[str] = None
 
 
 @app.post("/api/projects/{project_id}/script/generate")
@@ -301,7 +360,11 @@ def generate_project_script(project_id: str, req: GenerateScriptRequest):
             if not bible_path.exists():
                 raise HTTPException(status_code=400, detail="Story Bible chưa được duyệt hoặc chưa tồn tại. Vui lòng duyệt Story Bible trước khi tạo kịch bản!")
 
-        res = gen_srv.generate_full_script(project_id)
+        res = gen_srv.generate_full_script(
+            project_id,
+            provider_id=req.provider,
+            model_id=req.model,
+        )
         pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.NEEDS_REVIEW)
         return res
     except HTTPException:
@@ -326,6 +389,10 @@ def repair_project_script(project_id: str):
 
 @app.post("/api/projects/{project_id}/script/approve")
 def approve_project_script(project_id: str):
+    try:
+        require_current_full_script(project_id, BASE_DIR / "projects")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     return pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.APPROVED)
 
 
@@ -417,6 +484,7 @@ class GenerateAudioRequest(BaseModel):
     contextual_speed: bool = True
     global_speed: float = 1.0
     enable_music: bool = True
+    segment_ids: Optional[List[str]] = None
 
 
 @app.post("/api/projects/{project_id}/audio/generate")
@@ -428,6 +496,7 @@ def generate_audio(project_id: str, req: GenerateAudioRequest):
             contextual_speed=req.contextual_speed,
             global_speed=req.global_speed,
             enable_music=req.enable_music,
+            segment_ids=req.segment_ids,
         )
         pm.update_stage_status(project_id, StageId.AUDIO, StageStatus.NEEDS_REVIEW)
         return result

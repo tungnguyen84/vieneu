@@ -11,6 +11,32 @@ from studio.backend.services.audio_service import AudioService
 from studio.backend.services.flow_service import FlowService
 from studio.backend.services.script_service import ScriptService
 from studio.backend.services.visual_service import VisualService
+from studio.backend.services.artifact_lineage import story_content_hash
+
+
+def _add_real_lineage(project: Path, script: dict) -> dict:
+    story = {
+        "episode_id": project.name,
+        "title": "Tập kiểm thử",
+        "generation_source": "REAL_AI",
+        "generation_request_id": "11111111-1111-4111-8111-111111111111",
+        "prompt_version": "story-test",
+        "model_name": "gemini-test",
+    }
+    story_dir = project / "story"
+    story_dir.mkdir(parents=True, exist_ok=True)
+    (story_dir / "story_bible.json").write_text(json.dumps(story), encoding="utf-8")
+    script.update({
+        "generation_source": "REAL_AI",
+        "generation_request_id": "22222222-2222-4222-8222-222222222222",
+        "source_story_generation_request_id": story["generation_request_id"],
+        "source_story_content_hash": story_content_hash(story),
+        "prompt_version": "script-test",
+        "model_name": "gemini-test",
+        "provider_name": "GeminiScriptAIProvider",
+        "artifact_status": "CURRENT",
+    })
+    return script
 
 
 def test_script_api_preserves_contextual_speed(tmp_path, monkeypatch):
@@ -33,13 +59,11 @@ def test_audio_generation_uses_segment_speeds_and_selected_voice(tmp_path, monke
     projects = tmp_path / "projects"
     script_dir = projects / "EP900" / "script"
     script_dir.mkdir(parents=True)
-    (script_dir / "full_script.json").write_text(
-        json.dumps({"segments": [
+    script = _add_real_lineage(projects / "EP900", {"segments": [
             {"id": "001", "speaker": "MINH", "text": "Mở đầu", "delivery_profile": "HOOK", "speed": 0.98},
             {"id": "002", "speaker": "MINH", "text": "Hé lộ", "delivery_profile": "REVEAL", "speed": 0.92},
-        ]}),
-        encoding="utf-8",
-    )
+        ]})
+    (script_dir / "full_script.json").write_text(json.dumps(script), encoding="utf-8")
     monkeypatch.setattr(audio_module, "PROJECTS_DIR", projects)
     seen = []
 
@@ -166,14 +190,14 @@ def test_auto_mix_bgm_creates_stems_and_cue_sheet(tmp_path, monkeypatch):
     sf.write(str(voice_file), voice, sr)
 
     # Script
-    script = {
+    script = _add_real_lineage(project, {
         "episode_id": "EP904",
         "segments": [
             {"id": "001", "delivery_profile": "HOOK", "text": "Mở đầu kịch tính", "pause_after": 0.5},
             {"id": "002", "delivery_profile": "MYSTERY", "text": "Khám phá bí mật", "pause_after": 0.5},
             {"id": "003", "delivery_profile": "ENDING", "text": "Chiêm nghiệm kết thúc", "pause_after": 0.5},
         ]
-    }
+    })
     (script_dir / "full_script.json").write_text(json.dumps(script, ensure_ascii=False), encoding="utf-8")
 
     monkeypatch.setattr(audio_module, "PROJECTS_DIR", projects)

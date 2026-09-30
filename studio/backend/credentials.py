@@ -16,7 +16,27 @@ try:
     if (_repo_root / ".env").exists():
         load_dotenv(_repo_root / ".env")
 except Exception:
-    pass
+    # Packaged/minimal Studio runtimes may not include python-dotenv.  Read the
+    # simple KEY=VALUE form used by this app so provider credentials do not
+    # silently disappear just because that optional package is absent.
+    _repo_root = Path(__file__).resolve().parent.parent.parent
+    _env_file = _repo_root / ".env"
+    if _env_file.exists():
+        try:
+            for _raw_line in _env_file.read_text(encoding="utf-8-sig").splitlines():
+                _line = _raw_line.strip()
+                if not _line or _line.startswith("#") or "=" not in _line:
+                    continue
+                _name, _value = _line.split("=", 1)
+                _name = _name.strip()
+                if not _name or _name in os.environ:
+                    continue
+                _value = _value.strip()
+                if len(_value) >= 2 and _value[0] == _value[-1] and _value[0] in {'"', "'"}:
+                    _value = _value[1:-1]
+                os.environ[_name] = _value
+        except Exception:
+            pass
 
 # User-level secret storage directory outside any repository or project directory
 SECRETS_DIR = Path.home() / ".scc_studio"
@@ -191,6 +211,37 @@ def save_provider_credentials(
     return {"status": "saved", "configured": True, **get_public_providers_status()}
 
 
+def set_default_provider(
+    provider_id: Optional[str] = None,
+    model_id: Optional[str] = None,
+    provider: Optional[str] = None,
+    model: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Sets a configured provider as the default/active provider for generations."""
+    pid = (provider_id or provider or "gemini").strip().lower()
+    prov_def = next((p for p in SUPPORTED_PROVIDERS if p["id"] == pid), None)
+    if not prov_def:
+        raise ValueError(f"Nhà cung cấp không hợp lệ: {pid}")
+
+    data = _load_raw_secrets()
+    if "providers" not in data:
+        data["providers"] = {}
+
+    stored_prov = data["providers"].get(pid, {})
+    chosen_model = (model_id or model or stored_prov.get("model") or prov_def["default_model"]).strip()
+
+    data["default_provider"] = pid
+    data["default_model"] = chosen_model
+    _save_raw_secrets(data)
+
+    # Sync environment variable if key exists
+    api_key = stored_prov.get("api_key") or os.getenv(prov_def.get("env_var", ""), "")
+    if prov_def.get("env_var") and api_key:
+        os.environ[prov_def["env_var"]] = api_key
+
+    return {"status": "default_updated", **get_public_providers_status()}
+
+
 def delete_provider_credentials(
     provider_id: Optional[str] = None,
     provider: Optional[str] = None
@@ -236,6 +287,29 @@ def test_provider_connection(
         return {"success": False, "message": "Vui lòng nhập API Key trước khi kiểm tra.", "model": actual_model}
 
     # Test logic
+    if pid == "anthropic":
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                "https://api.anthropic.com/v1/models",
+                headers={
+                    "x-api-key": actual_key,
+                    "anthropic-version": "2023-06-01",
+                    "User-Agent": "SCC-Studio/1.1",
+                },
+                method="GET"
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                if resp.status == 200:
+                    return {"success": True, "message": "Kết nối Anthropic Claude thành công ✓", "model": actual_model}
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                return {"success": False, "message": "API key Anthropic không hợp lệ.", "model": actual_model}
+            elif e.code == 429:
+                return {"success": False, "message": "Hết quota Anthropic hoặc bị rate limit.", "model": actual_model}
+            return {"success": False, "message": f"Lỗi HTTP {e.code} từ máy chủ Anthropic.", "model": actual_model}
+        except Exception as e:
+            return {"success": False, "message": f"Không thể kết nối đến Anthropic Claude ({e}).", "model": actual_model}
     if pid == "gemini":
         try:
             # Minimal check using google-genai or urllib

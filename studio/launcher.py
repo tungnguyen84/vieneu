@@ -14,6 +14,8 @@ SRC_DIR = BASE_DIR / "src"
 VENV_SITE = BASE_DIR / ".venv" / "Lib" / "site-packages"
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
+from studio.runtime_env import isolate_active_repo_venv
+isolate_active_repo_venv(BASE_DIR)
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 if VENV_SITE.exists() and str(VENV_SITE) not in sys.path:

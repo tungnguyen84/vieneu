@@ -185,6 +185,38 @@ export const SettingsView: React.FC = () => {
     }
   };
 
+  const [settingDefault, setSettingDefault] = useState<string | null>(null);
+
+  const handleSetDefaultProvider = async (provider: string) => {
+    setSettingDefault(provider);
+    try {
+      const effectiveModel = getEffectiveModel(provider);
+      const res = await fetch('/api/ai/set-default', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider,
+          model: effectiveModel || undefined,
+          model_id: effectiveModel || undefined,
+        }),
+      });
+      if (res.ok) {
+        fetchProviders();
+        setTestResult((prev) => ({
+          ...prev,
+          [provider]: {
+            success: true,
+            message: `★ Đã chọn ${providerMeta[provider]?.title || provider} làm nhà cung cấp AI chính!`,
+          },
+        }));
+      }
+    } catch (e: any) {
+      console.error(e);
+    } finally {
+      setSettingDefault(null);
+    }
+  };
+
   const providerMeta: Record<
     string,
     { title: string; desc: string; guideUrl: string; needsBaseUrl?: boolean }
@@ -278,6 +310,11 @@ export const SettingsView: React.FC = () => {
                           ) : (
                             <span className="text-[10px] bg-[#64748B]/20 text-[#94A3B8] border border-[#64748B]/30 px-2 py-0.5 rounded">
                               CHƯA KẾT NỐI
+                            </span>
+                          )}
+                          {pInfo.is_default && (
+                            <span className="text-[10px] bg-[#3B82F6]/25 text-[#60A5FA] border border-[#3B82F6]/50 px-2 py-0.5 rounded font-bold flex items-center space-x-1 shadow-sm">
+                              <span>★ ĐANG SỬ DỤNG (MẶC ĐỊNH)</span>
                             </span>
                           )}
                         </div>
@@ -450,6 +487,25 @@ export const SettingsView: React.FC = () => {
                             </>
                           )}
                         </button>
+
+                        {pInfo.configured && !pInfo.is_default && (
+                          <button
+                            type="button"
+                            onClick={() => handleSetDefaultProvider(pName)}
+                            disabled={settingDefault === pName}
+                            className="bg-[#10B981]/20 hover:bg-[#10B981]/30 border border-[#10B981]/40 text-[#10B981] text-xs px-3 py-1.5 rounded font-semibold flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 transition-colors"
+                            title="Chọn nhà cung cấp này làm AI chính cho toàn bộ hệ thống"
+                          >
+                            {settingDefault === pName ? (
+                              <>
+                                <Loader2 size={12} className="animate-spin" />
+                                <span>Đang chọn...</span>
+                              </>
+                            ) : (
+                              <span>★ Chọn sử dụng</span>
+                            )}
+                          </button>
+                        )}
                       </div>
 
                       {pInfo.has_key && (

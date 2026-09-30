@@ -53,6 +53,7 @@ const getError = async (response: Response, fallback: string) => {
 
 export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
   const [audioInfo, setAudioInfo] = useState<any>(null);
+  const [scriptStatus, setScriptStatus] = useState<any>(null);
   const [voices, setVoices] = useState<VoiceOption[]>([]);
   const [profileSpeeds, setProfileSpeeds] = useState<Record<string, number>>({});
   const [selectedVoice, setSelectedVoice] = useState('');
@@ -88,9 +89,15 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
     setSelectedVoice((current) => current || data.voices?.[0]?.voice_id || '');
   };
 
+  const refreshScriptStatus = async () => {
+    const response = await fetch(`/api/projects/${projectId}/script/status`);
+    if (!response.ok) throw new Error(await getError(response, 'Không kiểm tra được Full Script'));
+    setScriptStatus(await response.json());
+  };
+
   useEffect(() => {
     setError('');
-    Promise.all([refreshAudio(), refreshVoices()]).catch((reason) => setError(reason.message));
+    Promise.all([refreshAudio(), refreshVoices(), refreshScriptStatus()]).catch((reason) => setError(reason.message));
   }, [projectId]);
 
   useEffect(() => {
@@ -221,6 +228,16 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
           }`}
         >
           {error || message}
+        </div>
+      )}
+
+      {scriptStatus && !scriptStatus.is_current && (
+        <div className="p-4 rounded border border-[#EF4444]/50 bg-[#EF4444]/10 text-xs text-[#FCA5A5]">
+          <div className="font-extrabold">STALE — REGENERATE REQUIRED</div>
+          <div className="mt-1">Audio bị khóa cho đến khi Full Script REAL_AI khớp Story Bible hiện tại.</div>
+          <ul className="mt-2 list-disc list-inside">
+            {(scriptStatus.stale_reasons || []).map((reason: string) => <li key={reason}>{reason}</li>)}
+          </ul>
         </div>
       )}
 
@@ -547,7 +564,7 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
 
             <button
               onClick={generateTts}
-              disabled={!!busy || !selectedVoice}
+              disabled={!!busy || !selectedVoice || !scriptStatus?.is_current}
               className="bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded flex items-center gap-2 transition-colors"
             >
               {busy === 'generate' && <Loader2 size={14} className="animate-spin" />}

@@ -134,9 +134,11 @@ def test_ai_idea_to_story_to_script_e2e():
         assert len(full_text.split()) == word_count
         assert "Minh" in full_text
 
-        # 10. Approve Script
+        # 10. Mock lineage can be rendered for test inspection but must never be
+        # approved as a production/current Full Script.
         app_script = client.post(f"/api/projects/{pid}/script/approve")
-        assert app_script.status_code == 200
+        assert app_script.status_code == 400
+        assert "STALE" in app_script.json()["detail"]
 
         # Verify final project status
         proj_resp = client.get(f"/api/projects/{pid}")
@@ -144,4 +146,4 @@ def test_ai_idea_to_story_to_script_e2e():
         proj = proj_resp.json()
         assert proj["stage_statuses"]["01_idea"] == StageStatus.APPROVED.value
         assert proj["stage_statuses"]["02_story"] == StageStatus.APPROVED.value
-        assert proj["stage_statuses"]["03_script"] == StageStatus.APPROVED.value
+        assert proj["stage_statuses"]["03_script"] == StageStatus.NEEDS_REVIEW.value

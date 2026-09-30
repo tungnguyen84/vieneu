@@ -27,6 +27,46 @@ interface Props {
   onNavigate?: (tab: string) => void;
 }
 
+interface ScriptArtifactStatus {
+  artifact_status: 'CURRENT' | 'STALE';
+  status_label: string;
+  is_current: boolean;
+  stale_reasons: string[];
+  generated_by?: string;
+  model_name?: string;
+  generation_request_id?: string;
+  prompt_version?: string;
+  generated_at?: number | string;
+  story_generation_request_id?: string;
+  source_story_generation_request_id?: string;
+  leakage_count: number;
+}
+
+const normalizeArtifactStatus = (payload: any): ScriptArtifactStatus => {
+  if (payload && typeof payload.is_current === 'boolean') {
+    return {
+      ...payload,
+      stale_reasons: Array.isArray(payload.stale_reasons) ? payload.stale_reasons : [],
+      leakage_count: Number(payload.leakage_count || 0),
+    };
+  }
+  return {
+    artifact_status: 'STALE',
+    status_label: 'BACKEND RESTART REQUIRED',
+    is_current: false,
+    stale_reasons: [
+      'Backend Studio đang chạy phiên cũ và chưa cung cấp trạng thái REAL_AI lineage. Hãy khởi động lại Studio.',
+    ],
+    leakage_count: 0,
+  };
+};
+
+const formatGeneratedAt = (value?: number | string) => {
+  if (!value) return '—';
+  const date = typeof value === 'number' ? new Date(value * 1000) : new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('vi-VN');
+};
+
 export const ScriptView: React.FC<Props> = ({
   projectId,
   onSelectSegment,
@@ -35,6 +75,7 @@ export const ScriptView: React.FC<Props> = ({
 }) => {
   const [segments, setSegments] = useState<ScriptSegment[]>([]);
   const [fullText, setFullText] = useState<string>('');
+  const [artifactStatus, setArtifactStatus] = useState<ScriptArtifactStatus | null>(null);
   const [qcReport, setQcReport] = useState<ScriptQCReport | null>(null);
   // Default to 'normal' mode (Continuous Readable Transcript)
   const [viewMode, setViewMode] = useState<'normal' | 'advanced'>('normal');
@@ -74,8 +115,9 @@ export const ScriptView: React.FC<Props> = ({
       fetch(`/api/projects/${projectId}`).then((r) => r.json()),
     ])
       .then(([segs, full, qc, proj]) => {
-        setSegments(segs || []);
+        setSegments(Array.isArray(segs) ? segs : []);
         setFullText(full?.text || '');
+        setArtifactStatus(normalizeArtifactStatus(full));
         setQcReport(qc);
         if (proj?.stage_statuses && proj.stage_statuses['03_script'] === 'APPROVED') {
           setIsApproved(true);
@@ -164,14 +206,18 @@ export const ScriptView: React.FC<Props> = ({
 
   const handleApproveAndProceed = async () => {
     try {
-      await fetch(`/api/projects/${projectId}/script/approve`, { method: 'POST' });
+      const response = await fetch(`/api/projects/${projectId}/script/approve`, { method: 'POST' });
+      if (!response.ok) {
+        const payload = await response.json();
+        throw new Error(payload.detail || 'Không thể duyệt kịch bản');
+      }
       setIsApproved(true);
       onApproveScript();
       if (onNavigate) {
         onNavigate('audio');
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      setErrorMessage(e.message || 'Không thể duyệt kịch bản');
     }
   };
 
@@ -184,6 +230,7 @@ export const ScriptView: React.FC<Props> = ({
 
   const totalWords = fullText.split(/\s+/).filter(Boolean).length;
   const estimatedMin = (totalWords / 160).toFixed(1);
+  const qcStatus = qcReport?.overall_status || (qcReport as any)?.status;
 
   return (
     <div className="h-full flex flex-col select-none text-[#F8FAFC]">
@@ -209,15 +256,20 @@ export const ScriptView: React.FC<Props> = ({
                 Thời lượng: <strong className="text-[#F8FAFC]">~{estimatedMin} phút</strong>
               </span>
               <span>•</span>
-              {qcReport && qcReport.overall_status === 'PASS' ? (
+              {qcReport && qcStatus === 'PASS' ? (
                 <span className="text-[#10B981] flex items-center space-x-1 font-semibold">
                   <ShieldCheck size={13} />
                   <span>QC Đạt Chuẩn</span>
                 </span>
-              ) : qcReport && qcReport.overall_status === 'WARNING' ? (
+              ) : qcReport && (qcStatus === 'WARNING' || qcStatus === 'NEEDS_REVISION') ? (
                 <span className="text-[#F59E0B] flex items-center space-x-1 font-semibold">
                   <AlertTriangle size={13} />
                   <span>QC Cảnh báo</span>
+                </span>
+              ) : qcReport && qcStatus === 'FAIL' ? (
+                <span className="text-[#EF4444] flex items-center space-x-1 font-semibold">
+                  <AlertCircle size={13} />
+                  <span>QC Không đạt</span>
                 </span>
               ) : (
                 <span className="text-[#10B981] flex items-center space-x-1 font-semibold">
@@ -282,7 +334,7 @@ export const ScriptView: React.FC<Props> = ({
             </>
           )}
 
-          {qcReport && (qcReport.overall_status === 'FAIL' || qcReport.overall_status === 'WARNING') && (
+          {qcReport && (qcStatus === 'FAIL' || qcStatus === 'WARNING' || qcStatus === 'NEEDS_REVISION') && (
             <button
               onClick={handleAutoRepair}
               disabled={repairing}
@@ -296,7 +348,8 @@ export const ScriptView: React.FC<Props> = ({
           {segments.length > 0 && (
             <button
               onClick={handleApproveAndProceed}
-              className="flex items-center space-x-1.5 text-xs font-bold px-3.5 py-1.5 rounded shadow cursor-pointer transition-colors bg-[#10B981] hover:bg-[#059669] text-white"
+              disabled={!artifactStatus?.is_current}
+              className="flex items-center space-x-1.5 text-xs font-bold px-3.5 py-1.5 rounded shadow cursor-pointer transition-colors bg-[#10B981] hover:bg-[#059669] disabled:bg-[#475569] disabled:cursor-not-allowed text-white"
             >
               <CheckCircle2 size={13} />
               <span>DUYỆT KỊCH BẢN & CHUYỂN SANG AUDIO</span>
@@ -311,6 +364,33 @@ export const ScriptView: React.FC<Props> = ({
         <div className="mx-6 mt-3 p-3 rounded bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center space-x-2 text-xs text-[#FCA5A5]">
           <AlertCircle size={15} className="shrink-0 text-[#EF4444]" />
           <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {artifactStatus && !artifactStatus.is_current && (
+        <div className="mx-6 mt-3 p-4 rounded bg-[#EF4444]/15 border border-[#EF4444]/50 text-xs text-[#FCA5A5]">
+          <div className="font-extrabold tracking-wide">STALE — REGENERATE REQUIRED</div>
+          <ul className="mt-2 list-disc list-inside space-y-1">
+            {(artifactStatus.stale_reasons || []).map((reason) => <li key={reason}>{reason}</li>)}
+          </ul>
+          <div className="mt-2 text-[#CBD5E1]">Kịch bản này không thể duyệt hoặc chuyển sang tạo Audio.</div>
+        </div>
+      )}
+
+      {viewMode === 'advanced' && artifactStatus && (
+        <div className="mx-6 mt-3 grid grid-cols-2 lg:grid-cols-5 gap-2 text-[11px]">
+          {[
+            ['Generated by', artifactStatus.generated_by || '—'],
+            ['Model', artifactStatus.model_name || '—'],
+            ['Request ID', artifactStatus.generation_request_id || '—'],
+            ['Prompt Version', artifactStatus.prompt_version || '—'],
+            ['Generated At', formatGeneratedAt(artifactStatus.generated_at)],
+          ].map(([label, value]) => (
+            <div key={label} className="bg-[#111827] border border-[#28354D] rounded p-2 min-w-0">
+              <div className="text-[#64748B] uppercase tracking-wide">{label}</div>
+              <div className="text-[#E2E8F0] font-mono break-all mt-1">{value}</div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -428,7 +508,8 @@ export const ScriptView: React.FC<Props> = ({
               </span>
               <button
                 onClick={handleApproveAndProceed}
-                className="bg-[#10B981] hover:bg-[#059669] text-white text-xs font-bold px-5 py-2.5 rounded-lg flex items-center space-x-2 shadow cursor-pointer transition-colors"
+                disabled={!artifactStatus?.is_current}
+                className="bg-[#10B981] hover:bg-[#059669] disabled:bg-[#475569] disabled:cursor-not-allowed text-white text-xs font-bold px-5 py-2.5 rounded-lg flex items-center space-x-2 shadow cursor-pointer transition-colors"
               >
                 <CheckCircle2 size={15} />
                 <span>DUYỆT KỊCH BẢN & CHUYỂN SANG AUDIO</span>

@@ -22,6 +22,7 @@ if VENV_SITE.exists() and str(VENV_SITE) not in sys.path:
     sys.path.append(str(VENV_SITE))
 
 from apps.production_story import build_master_audio, generate_single_segment_takes, get_all_available_voices
+from studio.backend.services.artifact_lineage import require_current_full_script
 
 PROJECTS_DIR = BASE_DIR / "projects"
 PILOT_03_AUDIO = BASE_DIR / "production_pilot_03"
@@ -116,11 +117,8 @@ class AudioService:
         return PROJECTS_DIR / project_id / "audio"
 
     def _script_path(self, project_id: str) -> Optional[Path]:
-        candidates = [
-            PROJECTS_DIR / project_id / "script" / "full_script.json",
-            PILOT_03_AUDIO / project_id / "script_snapshot" / "full_script.json",
-        ]
-        return next((path for path in candidates if path.exists()), None)
+        path = PROJECTS_DIR / project_id / "script" / "full_script.json"
+        return path if path.exists() else None
 
     def get_audio_stem_path(self, project_id: str, stem: str = "final") -> Optional[Path]:
         stem = (stem or "final").lower().strip()
@@ -432,6 +430,7 @@ class AudioService:
     def auto_mix_background_music(
         self, project_id: str, enable_ducking: bool = True, target_lufs: float = -14.0
     ) -> Dict[str, Any]:
+        require_current_full_script(project_id, PROJECTS_DIR)
         from apps.music_engine import (
             generate_cue_sheet_from_segments,
             build_final_mix,
@@ -627,7 +626,9 @@ class AudioService:
         contextual_speed: bool = True,
         global_speed: float = 1.0,
         enable_music: bool = True,
+        segment_ids: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
+        lineage = require_current_full_script(project_id, PROJECTS_DIR)
         voice_id = normalize_voice_id(voice_id)
         available_voice_ids = {voice["voice_id"] for voice in self.list_voices()["voices"]}
         if voice_id not in available_voice_ids and voice_id not in VOICE_ALIASES.values():
@@ -639,6 +640,21 @@ class AudioService:
         raw_segments = script_data.get("segments", script_data if isinstance(script_data, list) else [])
         if not raw_segments:
             raise ValueError("Kịch bản không có phân đoạn")
+        if segment_ids:
+            wanted = {
+                str(int(match.group(0))).zfill(3) if (match := re.search(r"\d+", str(value))) else str(value)
+                for value in segment_ids
+            }
+            raw_segments = [
+                segment for index, segment in enumerate(raw_segments)
+                if (
+                    str(int(match.group(0))).zfill(3)
+                    if (match := re.search(r"\d+", str(segment.get("id") or segment.get("segment_id") or index + 1)))
+                    else str(segment.get("id") or segment.get("segment_id") or index + 1)
+                ) in wanted
+            ]
+            if not raw_segments:
+                raise ValueError("Không tìm thấy phân đoạn được yêu cầu trong Full Script hiện tại")
 
         work_dir = self._project_audio_dir(project_id) / "tts"
         work_dir.mkdir(parents=True, exist_ok=True)
@@ -683,16 +699,15 @@ class AudioService:
 
         # Nếu bật tự động chèn nhạc nền, tiến hành auto-mix BGM ngay
         if enable_music:
-            try:
-                self.auto_mix_background_music(project_id, enable_ducking=True)
-            except Exception as e:
-                # Ghi nhận log nếu có lỗi khi mix nhưng không làm hỏng tiến trình TTS
-                pass
+            self.auto_mix_background_music(project_id, enable_ducking=True)
 
         report = {
             "project_id": project_id, "voice_id": voice_id, "contextual_speed": contextual_speed,
             "global_speed": global_speed, "enable_music": enable_music,
             "segments": len(generated_segments), "profile_speeds": PROFILE_SPEEDS,
+            "requested_segment_ids": segment_ids or [],
+            "script_generation_request_id": lineage["generation_request_id"],
+            "story_generation_request_id": lineage["story_generation_request_id"],
         }
         (self._project_audio_dir(project_id) / "generation_report.json").write_text(
             json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
