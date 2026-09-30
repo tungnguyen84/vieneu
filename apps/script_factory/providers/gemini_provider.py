@@ -613,13 +613,15 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
         )
 
         system_instruction = (
-            f"Bạn là Người dẫn chuyện và Biên kịch duy nhất của series tài liệu tâm lý/xã hội gia đình 'Sau Cánh Cửa'.\n"
-            f"Người dẫn chuyện: {host_name} ({host_id}) - giọng Bắc điềm đạm, nhân văn, sâu sắc, quan sát tinh tế.\n"
-            f"Phong cách viết: Tiếng Việt văn nói tự nhiên, chững chạc, giàu hình ảnh, không sáo rỗng hay giật gân rẻ tiền.\n"
-            f"Tránh tuyệt đối các từ giật gân lặp đi lặp lại như: 'bàng hoàng', 'chết lặng', 'kinh hoàng', 'không thể tin nổi'.\n"
+            f"Bạn là Người dẫn chuyện và Biên kịch duy nhất của series tâm sự/tài liệu gia đình 'Sau Cánh Cửa'.\n"
+            f"Người dẫn chuyện: MC {host_name} ({host_id}) - giọng đọc TTS độc quyền, điềm đạm, nhân văn, sâu sắc, quan sát tinh tế.\n"
+            f"Định dạng nội dung: Một lá thư/câu chuyện tâm sự của nhân vật gửi về cho chương trình. MC Minh là người đọc toàn bộ kịch bản.\n"
+            f"MC Minh dẫn dắt và trích dẫn lời nhân vật tự nhiên (ví dụ: 'Lan viết trong thư gửi về: \"...\"', 'Theo lời anh Nam kể lại...'), tuyệt đối KHÔNG tạo speaker riêng biệt cho các nhân vật khác.\n"
+            f"Mở đầu đa dạng: Không dùng cùng một câu mở đầu rập khuôn cho mọi tập. Mở đầu bằng phong cách thư tâm sự linh hoạt, chân thực.\n"
+            f"Phong cách viết: Tiếng Việt văn nói truyền cảm, giàu hình ảnh, nhịp nhàng cho diễn đọc TTS, không sáo rỗng hay giật gân rẻ tiền.\n"
             f"Phân loại delivery_profile chính xác theo 6 loại: HOOK, NORMAL, MYSTERY, REVEAL, COMMENT, ENDING.\n"
             f"Quy tắc Bước ngoặt (REVEAL): Không đặt câu hỏi giao lưu khán giả (audience_address: false) trong các phân đoạn REVEAL.\n"
-            f"Mỗi phân đoạn (segment) phải là một khối lời dẫn hoàn chỉnh, dài khoảng 25-45 từ, nhịp nhàng cho diễn đọc TTS."
+            f"Mỗi phân đoạn (segment) dài khoảng 28-42 từ, nhịp nhàng cho diễn đọc TTS. Tổng độ dài đạt chuẩn 2.500 - 3.200 từ."
         )
 
         # ---------------- PART 1: ACTS 1 to 5 (Segments 001 to 045) ----------------

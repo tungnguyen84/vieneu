@@ -42,6 +42,8 @@ export interface ProjectMetadata {
   stage_statuses: Record<string, StageStatus>;
   next_action?: NextAction;
   is_archived: boolean;
+  topic?: string;
+  selected_idea?: any;
 }
 
 export interface ScriptSegment {
@@ -64,6 +66,11 @@ export interface StoryBibleSection {
   reveal_2: string;
   emotional_payoff: string;
   fact_lock_items: string[];
+  has_story_bible?: boolean;
+  selected_idea?: any;
+  clues?: string[];
+  reflection_theme?: string;
+  title?: string;
 }
 
 export interface CharacterItem {

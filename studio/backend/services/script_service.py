@@ -40,7 +40,19 @@ class ScriptService:
             p_json = proj_dir / "project.json"
             premise_text = ""
             mystery_text = "Đang chờ phát triển cốt truyện..."
-            if premise_file.exists():
+            sel_idea = None
+            title_text = ""
+            if p_json.exists():
+                try:
+                    with open(p_json, "r", encoding="utf-8") as f:
+                        meta = json.load(f)
+                        premise_text = meta.get("topic") or meta.get("premise") or ""
+                        sel_idea = meta.get("selected_idea")
+                        title_text = meta.get("title", "")
+                except Exception:
+                    pass
+
+            if not premise_text and premise_file.exists():
                 try:
                     content = premise_file.read_text(encoding="utf-8").strip()
                     lines = content.splitlines()
@@ -53,21 +65,26 @@ class ScriptService:
                         premise_text = content
                 except Exception:
                     pass
-            elif p_json.exists():
-                try:
-                    with open(p_json, "r", encoding="utf-8") as f:
-                        meta = json.load(f)
-                        premise_text = meta.get("topic") or meta.get("premise") or ""
-                except Exception:
-                    pass
 
             return StoryBibleSection(
                 premise=premise_text or "Câu chuyện chưa có Story Bible chi tiết.",
-                mystery_core=mystery_text
+                mystery_core=mystery_text,
+                has_story_bible=False,
+                selected_idea=sel_idea,
+                title=title_text
             )
 
         with open(bible_path, "r", encoding="utf-8") as f:
             data = json.load(f)
+
+        p_json = PROJECTS_DIR / project_id / "project.json"
+        sel_idea = None
+        if p_json.exists():
+            try:
+                with open(p_json, "r", encoding="utf-8") as f:
+                    sel_idea = json.load(f).get("selected_idea")
+            except Exception:
+                pass
 
         chars = data.get("characters", [])
         if not chars:
@@ -76,7 +93,7 @@ class ScriptService:
                 all_chars.append(data["protagonist"])
             all_chars.extend(data.get("supporting_characters", []))
             chars = all_chars
-        char_summary = ", ".join([f"{c.get('name')} ({c.get('role', 'Nhân vật')})" for c in chars])
+        char_summary = ", ".join([f"{c.get('name')} ({c.get('role', 'Nhân vật')})" for c in chars if isinstance(c, dict)])
 
         premise_val = data.get("premise", "") or data.get("secret", "") or data.get("false_lead", "")
         if not premise_val and isinstance(data.get("protagonist"), dict):
@@ -89,16 +106,30 @@ class ScriptService:
         if not fact_locks and data.get("critical_facts"):
             fact_locks = [f.get("value") or f.get("description") for f in data.get("critical_facts", [])]
 
+        raw_clues = data.get("clues", [])
+        clues_list = [str(c) for c in raw_clues] if isinstance(raw_clues, list) else []
+
+        timeline_data = data.get("timeline_structure", "") or data.get("timeline", "")
+        if isinstance(timeline_data, list):
+            timeline_str = " -> ".join([str(t) for t in timeline_data])
+        else:
+            timeline_str = str(timeline_data)
+
         return StoryBibleSection(
             premise=premise_val,
             characters_summary=char_summary,
             relationships=str(data.get("relationships", "")),
-            timeline_summary=str(data.get("timeline_structure", "") or data.get("timeline", "")),
+            timeline_summary=timeline_str,
             mystery_core=data.get("core_mystery", "") or data.get("mystery", "") or data.get("secret", ""),
             reveal_1=data.get("reveal_1", "") or data.get("twist_1", ""),
             reveal_2=data.get("reveal_2", "") or data.get("twist_2", ""),
             emotional_payoff=data.get("emotional_payoff", ""),
-            fact_lock_items=[str(f) for f in fact_locks]
+            fact_lock_items=[str(f) for f in fact_locks],
+            has_story_bible=True,
+            selected_idea=sel_idea,
+            clues=clues_list,
+            reflection_theme=str(data.get("reflection_theme", "")),
+            title=str(data.get("title", ""))
         )
 
 

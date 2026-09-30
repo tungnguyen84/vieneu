@@ -182,6 +182,7 @@ export const App: React.FC = () => {
             <StoryView
               projectId={currentProject.project_id}
               onApproveStory={() => handleUpdateStage('02_story', 'APPROVED')}
+              onNavigate={(tab) => setActiveTab(tab)}
             />
           )}
 
@@ -193,6 +194,7 @@ export const App: React.FC = () => {
                 setSelectedScene(null);
               }}
               onApproveScript={() => handleUpdateStage('03_script', 'APPROVED')}
+              onNavigate={(tab) => setActiveTab(tab)}
             />
           )}
 

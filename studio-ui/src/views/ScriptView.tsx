@@ -13,6 +13,10 @@ import {
   RefreshCw,
   Clock,
   Layers,
+  Copy,
+  Check,
+  ArrowRight,
+  Mic,
 } from 'lucide-react';
 import { ScriptSegment, ScriptQCReport } from '../types';
 
@@ -20,19 +24,23 @@ interface Props {
   projectId: string;
   onSelectSegment: (segment: ScriptSegment) => void;
   onApproveScript: () => void;
+  onNavigate?: (tab: string) => void;
 }
 
 export const ScriptView: React.FC<Props> = ({
   projectId,
   onSelectSegment,
   onApproveScript,
+  onNavigate,
 }) => {
   const [segments, setSegments] = useState<ScriptSegment[]>([]);
   const [fullText, setFullText] = useState<string>('');
   const [qcReport, setQcReport] = useState<ScriptQCReport | null>(null);
-  const [articleMode, setArticleMode] = useState<boolean>(false);
+  // Default to 'normal' mode (Continuous Readable Transcript)
+  const [viewMode, setViewMode] = useState<'normal' | 'advanced'>('normal');
   const [loading, setLoading] = useState(true);
   const [isApproved, setIsApproved] = useState<boolean>(false);
+  const [copied, setCopied] = useState<boolean>(false);
 
   // Generation state
   const [generating, setGenerating] = useState(false);
@@ -154,14 +162,24 @@ export const ScriptView: React.FC<Props> = ({
     }
   };
 
-  const handleApprove = async () => {
+  const handleApproveAndProceed = async () => {
     try {
       await fetch(`/api/projects/${projectId}/script/approve`, { method: 'POST' });
       setIsApproved(true);
       onApproveScript();
+      if (onNavigate) {
+        onNavigate('audio');
+      }
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleCopyScript = () => {
+    if (!fullText) return;
+    navigator.clipboard.writeText(fullText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const totalWords = fullText.split(/\s+/).filter(Boolean).length;
@@ -171,10 +189,10 @@ export const ScriptView: React.FC<Props> = ({
     <div className="h-full flex flex-col select-none text-[#F8FAFC]">
       {/* Top Bar with Metrics */}
       <div className="h-12 border-b border-[#28354D] bg-[#111827] px-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-5 text-xs">
+        <div className="flex items-center space-x-4 text-xs">
           <div className="flex items-center space-x-2">
             <FileText size={16} className="text-[#3B82F6]" />
-            <span className="font-bold text-[#F8FAFC]">Kịch bản (Script Factory V1.3.1a)</span>
+            <span className="font-bold text-[#F8FAFC]">Kịch bản MC Minh (Sau Cánh Cửa)</span>
           </div>
 
           {segments.length > 0 && (
@@ -215,18 +233,43 @@ export const ScriptView: React.FC<Props> = ({
         <div className="flex items-center space-x-2">
           {segments.length > 0 && (
             <>
+              {/* Copy Script */}
               <button
-                onClick={() => setArticleMode(!articleMode)}
-                className={`flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded border transition-colors cursor-pointer ${
-                  articleMode
-                    ? 'bg-[#3B82F6]/20 border-[#3B82F6] text-[#3B82F6]'
-                    : 'bg-[#161F36] border-[#28354D] text-[#94A3B8] hover:text-[#F8FAFC]'
-                }`}
+                onClick={handleCopyScript}
+                className="bg-[#161F36] hover:bg-[#1E293B] border border-[#28354D] text-[#CBD5E1] text-xs px-2.5 py-1.5 rounded flex items-center space-x-1.5 cursor-pointer transition-colors"
+                title="Sao chép toàn bộ kịch bản để đọc thử bằng TTS bên ngoài"
               >
-                <Eye size={13} />
-                <span>{articleMode ? 'Chế độ phân đoạn' : 'Đọc toàn văn'}</span>
+                {copied ? <Check size={13} className="text-[#10B981]" /> : <Copy size={13} />}
+                <span>{copied ? 'Đã sao chép!' : 'Sao chép văn bản'}</span>
               </button>
 
+              {/* View Mode Toggle: Normal vs Advanced */}
+              <div className="flex bg-[#0B0F17] p-0.5 rounded border border-[#28354D] text-xs">
+                <button
+                  onClick={() => setViewMode('normal')}
+                  className={`px-2.5 py-1 rounded transition-colors cursor-pointer flex items-center space-x-1 ${
+                    viewMode === 'normal'
+                      ? 'bg-[#3B82F6] text-white font-semibold'
+                      : 'text-[#94A3B8] hover:text-[#F8FAFC]'
+                  }`}
+                >
+                  <Eye size={12} />
+                  <span>Đọc Thường</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('advanced')}
+                  className={`px-2.5 py-1 rounded transition-colors cursor-pointer flex items-center space-x-1 ${
+                    viewMode === 'advanced'
+                      ? 'bg-[#3B82F6] text-white font-semibold'
+                      : 'text-[#94A3B8] hover:text-[#F8FAFC]'
+                  }`}
+                >
+                  <Layers size={12} />
+                  <span>Phân Đoạn Kỹ Thuật</span>
+                </button>
+              </div>
+
+              {/* Regenerate */}
               <button
                 onClick={() => handleGenerateScript(true)}
                 disabled={generating || repairing}
@@ -252,16 +295,12 @@ export const ScriptView: React.FC<Props> = ({
 
           {segments.length > 0 && (
             <button
-              onClick={handleApprove}
-              disabled={isApproved}
-              className={`flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded shadow cursor-pointer transition-colors ${
-                isApproved
-                  ? 'bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40 cursor-default'
-                  : 'bg-[#10B981] hover:bg-[#059669] text-white'
-              }`}
+              onClick={handleApproveAndProceed}
+              className="flex items-center space-x-1.5 text-xs font-bold px-3.5 py-1.5 rounded shadow cursor-pointer transition-colors bg-[#10B981] hover:bg-[#059669] text-white"
             >
               <CheckCircle2 size={13} />
-              <span>{isApproved ? 'Kịch bản đã duyệt' : 'Duyệt kịch bản'}</span>
+              <span>DUYỆT KỊCH BẢN & CHUYỂN SANG AUDIO</span>
+              <ArrowRight size={13} />
             </button>
           )}
         </div>
@@ -346,26 +385,65 @@ export const ScriptView: React.FC<Props> = ({
               </button>
             </div>
           </div>
-        ) : articleMode ? (
-          /* Article Review Mode */
-          <div className="max-w-3xl mx-auto bg-[#111827] border border-[#28354D] rounded-lg p-8 shadow-sm">
-            <div className="border-b border-[#28354D] pb-4 mb-6">
-              <span className="text-[10px] uppercase font-mono-code text-[#64748B] block mb-1">
-                Bản đọc toàn văn (Distraction-Free)
-              </span>
-              <h1 className="text-xl font-bold text-[#F8FAFC]">
-                Kịch bản hoàn chỉnh — {projectId}
-              </h1>
+        ) : viewMode === 'normal' ? (
+          /* NORMAL MODE: Continuous Reading Format */
+          <div className="max-w-3xl mx-auto bg-[#111827] border border-[#28354D] rounded-xl p-8 shadow-md space-y-6">
+            <div className="border-b border-[#28354D] pb-4 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] uppercase font-mono-code text-[#3B82F6] block mb-1 font-bold">
+                  Bản Đọc Toàn Văn (MC Minh — Series Sau Cánh Cửa)
+                </span>
+                <h1 className="text-lg font-bold text-[#F8FAFC]">
+                  Kịch bản hoàn chỉnh — {projectId}
+                </h1>
+              </div>
+
+              <div className="flex items-center space-x-2 text-xs bg-[#161F36] px-3 py-1.5 rounded-lg border border-[#28354D] text-[#94A3B8]">
+                <Mic size={14} className="text-[#10B981]" />
+                <span>Giọng đọc: <strong className="text-[#F8FAFC]">MC Minh (Binh / '020')</strong></span>
+              </div>
             </div>
+
+            {/* Continuous reading paragraphs */}
             <div className="text-sm text-[#E2E8F0] leading-relaxed space-y-4 font-serif">
-              {fullText.split('\n\n').map((paragraph, i) => (
-                <p key={i}>{paragraph}</p>
-              ))}
+              {fullText ? (
+                fullText.split('\n\n').map((paragraph, i) => (
+                  <p key={i} className="indent-6 leading-7">
+                    {paragraph}
+                  </p>
+                ))
+              ) : (
+                segments.map((s, idx) => (
+                  <p key={idx} className="leading-7">
+                    {s.text}
+                  </p>
+                ))
+              )}
+            </div>
+
+            {/* Bottom Approval Action */}
+            <div className="pt-6 border-t border-[#28354D] flex items-center justify-between">
+              <span className="text-xs text-[#94A3B8]">
+                Kịch bản đã sẵn sàng chuyển sang bước Audio Formula V1 để tạo giọng đọc MC Minh.
+              </span>
+              <button
+                onClick={handleApproveAndProceed}
+                className="bg-[#10B981] hover:bg-[#059669] text-white text-xs font-bold px-5 py-2.5 rounded-lg flex items-center space-x-2 shadow cursor-pointer transition-colors"
+              >
+                <CheckCircle2 size={15} />
+                <span>DUYỆT KỊCH BẢN & CHUYỂN SANG AUDIO</span>
+                <ArrowRight size={14} />
+              </button>
             </div>
           </div>
         ) : (
-          /* Segment by Segment List */
+          /* ADVANCED MODE: Segment by Segment Table */
           <div className="max-w-4xl mx-auto space-y-2">
+            <div className="text-xs text-[#94A3B8] pb-2 flex items-center justify-between">
+              <span>Bảng phân đoạn kỹ thuật ({segments.length} phân đoạn):</span>
+              <span className="text-[11px] text-[#64748B]">Bấm vào từng phân đoạn để chỉnh sửa chi tiết</span>
+            </div>
+
             {segments.map((seg) => (
               <div
                 key={seg.segment_id}

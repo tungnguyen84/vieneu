@@ -166,73 +166,186 @@ class MockScriptAIProvider(ScriptAIProvider):
         host_name = series_bible.get("host", {}).get("display_name", "Minh")
         host_id = series_bible.get("host", {}).get("id", "MINH")
 
-        # Generate exactly 85 realistic segments meeting EP001 V9.3 pacing
-        # Act 1: Hook (0-8%, segs 1-6)
-        fact_vals = [f.value for f in story_bible.critical_facts if f.value]
-        fact_phrase = " ".join(fact_vals) if fact_vals else "100.000.000 VND"
-        segments.append(ScriptSegment(id="001", speaker=host_id, text=f"Câu chuyện hôm nay mở đầu bằng một phát hiện kỳ lạ mà nhân vật chính không bao giờ nghĩ mình sẽ chạm tới.", delivery_profile="HOOK", importance="high", speed=0.98))
-        segments.append(ScriptSegment(id="002", speaker=host_id, text=f"Mọi thứ bắt đầu khi {story_bible.protagonist['name']} tìm thấy những manh mối đầu tiên bị giấu kín suốt 10 năm qua.", delivery_profile="HOOK", importance="high", speed=0.98))
-        segments.append(ScriptSegment(id="003", speaker=host_id, text=f"Một sự thật có liên quan trực tiếp đến {fact_phrase} và danh tính thật của người thân trong gia đình.", delivery_profile="HOOK", importance="normal", speed=0.98))
-        segments.append(ScriptSegment(id="004", speaker=host_id, text=f"Chào mừng quý vị và các bạn đã quay trở lại với Sau Cánh Cửa — nơi chúng ta cùng lắng nghe những bí mật đời thường.", delivery_profile="NORMAL", importance="normal", speed=1.01))
-        segments.append(ScriptSegment(id="005", speaker=host_id, text=f"Tôi là {host_name}, người sẽ đồng hành cùng quý vị trong suốt hành trình giải mã câu chuyện ngày hôm nay.", delivery_profile="NORMAL", importance="normal", speed=1.01))
+        protag = story_bible.protagonist.get("name", "nhân vật chính") if isinstance(story_bible.protagonist, dict) else str(story_bible.protagonist)
+        rel = story_bible.relationships if isinstance(story_bible.relationships, str) else "người thân trong gia đình"
 
-        # Act 2: Setup (8-20%, segs 6-16)
-        for i in range(6, 17):
-            aud = (i == 10)
-            text = f"Trong gia đình của {story_bible.protagonist['name']}, cuộc sống vốn dĩ trôi qua trong êm đềm và trật tự nhiều năm liền." if not aud else "Nếu là bạn, khi bắt gặp một chi tiết bất thường của người thân, bạn sẽ chọn im lặng quan sát hay hỏi thẳng ngay lập tức?"
+        # Determine diverse opening style based on episode seed
+        seed = int(hashlib.md5((story_bible.episode_id + story_bible.title).encode()).hexdigest(), 16) % 5
+        openers = [
+            f"Hòm thư của Sau Cánh Cửa tuần này nhận được một bức tâm thư rất dài từ {protag}, người vừa trải qua một biến cố khiến toàn bộ niềm tin gia đình bị đảo lộn.",
+            f"Câu chuyện hôm nay bắt đầu từ một lá thư gửi về chương trình với những dòng chữ run rẩy của {protag}, người đã giữ kín nỗi trăn trở này suốt nhiều năm trời.",
+            f"Một buổi tối muộn, hòm thư của Sau Cánh Cửa nhận được những dòng chia sẻ đầy day dứt của {protag} về một bí mật ngỡ như đã mãi ngủ yên trong quá khứ.",
+            f"Có những câu chuyện chỉ có thể cất lên thành lời khi người trong cuộc không còn đủ sức gánh vác sự im lặng. Đó là lá thư của {protag} gửi đến chương trình tuần này.",
+            f"Chào mừng quý vị và các bạn đã quay trở lại với Sau Cánh Cửa. Hôm nay, Minh xin được chia sẻ cùng quý vị lá thư tâm sự đặc biệt của {protag}."
+        ]
+        opening_hook = openers[seed]
+
+        fact_vals = [f.value for f in story_bible.critical_facts if f.value]
+        fact_phrase = ", ".join(fact_vals) if fact_vals else "100.000.000 VND và 10 năm"
+
+        # Act 1: HOOK (Segs 001 - 005)
+        segments.append(ScriptSegment(id="001", speaker=host_id, text=f"{opening_hook} Một bí mật gia đình tưởng chừng đã vĩnh viễn bị chôn vùi nay bất ngờ lộ diện.", delivery_profile="HOOK", importance="high", speed=0.98))
+        segments.append(ScriptSegment(id="002", speaker=host_id, text=f"Mọi thứ bắt đầu phát sinh khi {protag} tình cờ chạm tay vào những tài liệu và con số liên quan đến {fact_phrase}, hé lộ sự thật bị che giấu suốt 10 năm qua.", delivery_profile="HOOK", importance="high", speed=0.98))
+        segments.append(ScriptSegment(id="003", speaker=host_id, text=f"Trong lá thư gửi về, {protag} nghẹn ngào viết: 'Có những ngày tôi ước mình đừng bao giờ mở chiếc hộp ấy ra, để không phải đối mặt với nỗi nghi ngờ đau đớn này.'", delivery_profile="HOOK", importance="normal", speed=0.98))
+        segments.append(ScriptSegment(id="004", speaker=host_id, text=f"Chào mừng quý vị thính giả đã quay trở lại với không gian của Sau Cánh Cửa — nơi chúng ta cùng lắng nghe những uẩn khúc sau mỗi cánh cửa khép kín.", delivery_profile="NORMAL", importance="normal", speed=1.01))
+        segments.append(ScriptSegment(id="005", speaker=host_id, text=f"Tôi là {host_name}, người sẽ đồng hành và cùng quý vị lật mở từng trang nhật ký đời thực trong câu chuyện đầy xúc động ngày hôm nay.", delivery_profile="NORMAL", importance="normal", speed=1.01))
+
+        # Act 2: SETUP & DAILY LIFE (Segs 006 - 016)
+        setup_lines = [
+            f"Theo lời {protag} chia sẻ trong thư, gia đình từ trước đến nay luôn được chòm xóm ngưỡng mộ bởi sự thuận hòa, êm ấm và nề nếp gia giáo suốt hàng chục năm.",
+            f"Mỗi thành viên trong nhà đều có một vị trí vững chãi, luôn quan tâm, đùm bọc lẫn nhau trong từng bữa cơm chiều sau những giờ lao động miệt mài.",
+            f"Thế nhưng, đằng sau sự bình yên phẳng lặng ấy, dường như luôn tồn tại một khoảng lặng vô hình mà không ai dám chạm vào trong những cuộc chuyện trò sum họp.",
+            f"Đó là những ánh mắt lảng tránh mỗi khi có người vô tình nhắc lại những năm tháng xưa cũ, hay những chuyến đi xa bất chợt mà không rõ nguyên cớ.",
+            f"Nếu là quý vị, khi bắt gặp một chi tiết bất thường lặp đi lặp lại của người thân yêu nhất, quý vị sẽ chọn im lặng quan sát hay hỏi thẳng ngay lập tức?", # Seg 010: Audience Address 1
+            f"{protag} chọn cách im lặng, tự nhủ rằng có lẽ người thân của mình chỉ đang gánh vác một âu lo thường nhật của cuộc mưu sinh vất vả ngoài xã hội.",
+            f"Cuộc sống cứ thế trôi đi trong sự yên ả giả tạo, cho đến một buổi chiều cuối tuần khi {protag} nhận nhiệm vụ dọn dẹp lại căn gác cũ của gia đình.",
+            f"Căn gác phủ đầy bụi thời gian, nơi chứa đựng những kỷ vật cũ kỹ từ thời thơ ấu mà đã nhiều năm không một ai trong nhà bước chân lên.",
+            f"Và chính tại góc khuất tối tăm ấy, một vật thể không thuộc về trật tự thường ngày đã bất ngờ xuất hiện trước mắt {protag}.",
+            f"{protag} viết lại trong thư: 'Bàn tay tôi run lên khi chạm vào lớp bụi phủ trên phong bì niêm phong đã ố vàng, trực giác mách bảo đây không phải điều bình thường.'",
+            f"Cảm giác bất an bắt đầu nhen nhóm, phá vỡ hoàn toàn sự thanh thản vốn có bấy lâu trong tâm hồn của người con trong gia đình."
+        ]
+        for idx, text in enumerate(setup_lines):
+            sid = f"{idx + 6:03d}"
+            aud = (sid == "010")
             prof = "COMMENT" if aud else "NORMAL"
             speed = 1.025 if aud else 1.01
-            segments.append(ScriptSegment(id=f"{i:03d}", speaker=host_id, text=text, delivery_profile=prof, importance="normal", audience_address=aud, speed=speed))
+            segments.append(ScriptSegment(id=sid, speaker=host_id, text=text, delivery_profile=prof, importance="normal", audience_address=aud, speed=speed))
 
-        # Act 3: Mystery (20-35%, segs 17-29)
-        for i in range(17, 30):
-            aud = (i == 24)
-            text = f"Sự nghi ngờ bắt đầu nảy sinh rõ nét hơn khi các chứng từ giao dịch xuất hiện với con số chính xác 100.000.000 VND." if not aud else "Có lẽ bất cứ ai trong chúng ta khi đứng trước một câu hỏi không lời đáp cũng sẽ cảm thấy bất an."
+        # Act 3: FIRST ANOMALY & MYSTERY (Segs 017 - 028)
+        mystery_lines = [
+            f"Khi mở phong bì ra, những dòng chữ viết tay mờ nhạt cùng con dấu của một cơ quan lưu trữ địa phương từ 10 năm trước đập vào mắt.",
+            f"Đặc biệt, xuất hiện chứng từ giao dịch tài chính ghi rõ khoản tiền 100.000.000 VND kèm theo một bản cam kết bảo mật không được tiết lộ cho bất kỳ ai.",
+            f"Câu hỏi lớn nhất lúc này bùng lên dữ dội: Tại sao một gia đình bình dị lại có một khoản giao dịch bí mật lớn đến như vậy trong quá khứ?",
+            f"{protag} bàng hoàng đối chiếu mốc thời gian và nhận ra đó chính là giai đoạn gia đình từng trải qua biến cố mà mọi người luôn gọi là tai nạn rủi ro.",
+            f"Những lời kể trước đây của người lớn bỗng nhiên xuất hiện vô số lỗ hổng logic không thể nào giải thích một cách hợp lý và thuyết phục được.",
+            f"Tại sao người thân trong nhà lại phải giấu giếm {protag} về nguồn gốc số tiền và mối quan hệ thực sự liên quan đến bản cam kết ấy?",
+            f"{protag} viết trong thư: 'Tôi đã thức trắng cả đêm hôm đó, nhìn lên trần nhà và tự hỏi người bấy lâu nay mình kính trọng rốt cuộc đang che giấu điều gì?'",
+            f"Có lẽ bất cứ ai trong chúng ta khi đứng trước một câu hỏi không lời đáp từ chính mái ấm của mình cũng sẽ cảm thấy chông chênh và hụt hẫng đến nghẹt thở.", # Seg 024: Audience Address 2
+            f"Sự nghi ngờ như một hạt mầm độc hại bắt đầu đâm chồi, khiến mọi cử chỉ ân cần thường ngày của người thân bỗng trở nên gượng gạo trong mắt {protag}.",
+            f"Mỗi lần chạm mặt trong bữa cơm, {protag} đều cố gắng tìm kiếm một dấu vết chột dạ trên gương mặt người đối diện nhưng chỉ nhận lại sự điềm tĩnh lạ lùng.",
+            f"Liệu có phải sự im lặng của họ là để bảo vệ một tội lỗi trong quá khứ, hay đằng sau đó là một uẩn khúc mà họ không thể thốt nên lời?",
+            f"{story_bible.mystery_question} Đó chính là câu hỏi thúc đẩy {protag} không thể tiếp tục giả vờ như không biết chuyện gì đã xảy ra."
+        ]
+        for idx, text in enumerate(mystery_lines):
+            sid = f"{idx + 17:03d}"
+            aud = (sid == "024")
             prof = "COMMENT" if aud else "MYSTERY"
             speed = 1.025 if aud else 0.96
-            segments.append(ScriptSegment(id=f"{i:03d}", speaker=host_id, text=text, delivery_profile=prof, importance="normal", audience_address=aud, speed=speed))
+            segments.append(ScriptSegment(id=sid, speaker=host_id, text=text, delivery_profile=prof, importance="normal", audience_address=aud, speed=speed))
 
-        # Act 4: Escalation (35-50%, segs 30-42)
-        for i in range(30, 43):
-            aud = (i == 36)
-            text = f"Giả thuyết ban đầu về sự phản bội hay tư lợi bắt đầu dẫn dắt mọi phán đoán đi theo một hướng hoàn toàn sai lệch." if not aud else "Khi tâm trí đã bị dẫn dắt bởi một định kiến, con người ta rất dễ bỏ qua những manh mối tinh tế nhất."
+        # Act 4: ESCALATION & FALSE LEAD (Segs 029 - 042)
+        escalation_lines = [
+            f"Quyết định không hỏi trực tiếp vì sợ làm bẽ mặt người thân, {protag} bắt đầu tự mình thu thập thêm các mảnh ghép rời rạc còn sót lại trong nhà.",
+            f"Một cuốn sổ tay ghi chép sinh hoạt cũ được tìm thấy ở ngăn kéo khóa kín, bên trong có những dòng địa chỉ lạ ở ngoại thành và tên một người xa lạ.",
+            f"Cùng lúc đó, những lời bóng gió từ một người hàng xóm lâu năm càng như đổ thêm dầu vào ngọn lửa nghi hoặc đang âm ỉ cháy.",
+            f"Người hàng xóm buột miệng kể rằng năm xưa từng thấy một người đàn ông lạ mặt thường xuyên lui tới cổng nhà vào những đêm mưa gió để giao nhận giấy tờ.",
+            f"Mọi phán đoán ban đầu của {protag} nhanh chóng bị dẫn dắt theo hướng tiêu cực nhất: {story_bible.false_lead}",
+            f"{protag} cho rằng người thân của mình đã phản bội lòng tin gia đình, đem tài sản và tình cảm ra ngoài phục vụ cho một toan tính ích kỷ riêng tư.",
+            f"Khi tâm trí chúng ta đã bị phủ bóng bởi một định kiến xấu, con người ta rất dễ biến mọi hành động vô hại của người khác thành bằng chứng buộc tội.", # Seg 036: Audience Address 3
+            f"{protag} thừa nhận trong thư: 'Lúc ấy tôi giận dữ đến mức chỉ muốn lao vào đối chất, muốn hét lên đòi lại sự công bằng cho gia đình mình.'",
+            f"Nhưng một giọng nói lý trí sâu thẳm đã ngăn {protag} lại, yêu cầu phải có bằng chứng xác thực tuyệt đối trước khi đưa ra lời phán xét cuối cùng.",
+            f"Sự dằn vặt giữa tình thương máu mủ và nỗi căm phẫn vì cảm giác bị lừa dối khiến {protag} sút cân và suy sụp tinh thần suốt nhiều tuần lễ.",
+            f"Từng cử chỉ chăm sóc của người thân như chén canh nóng hay lời dặn dò giữ ấm nay lại khiến {protag} cảm thấy cay đắng và nặng nề hơn bao giờ hết.",
+            f"Mối quan hệ trong gia đình bắt đầu rạn nứt một cách âm thầm, không khí trong nhà trở nên ngột ngạt dù không một lời to tiếng nào được phát ra.",
+            f"{protag} tự nhủ rằng mình phải đích thân đi đến tận cùng sự thật, dù sự thật ấy có thể đập tan hoàn toàn ảo tưởng về một mái ấm trọn vẹn.",
+            f"Và thế là, một chuyến đi bí mật về miền quê xa — nơi bắt nguồn của dòng địa chỉ trong cuốn sổ cũ — đã được {protag} âm thầm lên kế hoạch thực hiện."
+        ]
+        for idx, text in enumerate(escalation_lines):
+            sid = f"{idx + 29:03d}"
+            aud = (sid == "036")
             prof = "COMMENT" if aud else "NORMAL"
             speed = 1.025 if aud else 1.01
-            segments.append(ScriptSegment(id=f"{i:03d}", speaker=host_id, text=text, delivery_profile=prof, importance="normal", audience_address=aud, speed=speed))
+            segments.append(ScriptSegment(id=sid, speaker=host_id, text=text, delivery_profile=prof, importance="normal", audience_address=aud, speed=speed))
 
-        # Act 5: Investigation (50-65%, segs 43-55)
-        for i in range(43, 56):
-            text = f"Các chuyến đi thực tế, gặp gỡ những người liên quan tại địa chỉ cũ dần hé mở một bức tranh hoàn toàn khác."
-            segments.append(ScriptSegment(id=f"{i:03d}", speaker=host_id, text=text, delivery_profile="MYSTERY", importance="normal", speed=0.96))
+        # Act 5: INVESTIGATION & EVIDENCE CHAIN (Segs 043 - 055)
+        investigation_lines = [
+            f"Chuyến xe đò đưa {protag} rời thành phố trong một buổi sớm mờ sương, mang theo trĩu nặng những âu lo và dự cảm chẳng lành về điều sắp đối diện.",
+            f"Nơi {protag} đặt chân đến là một vùng quê ven sông yên bình, nơi những nếp nhà ngói rêu phong dường như không hề thay đổi sau cả thập kỷ qua.",
+            f"Tìm đến đúng địa chỉ ghi trong mảnh giấy, {protag} gặp được một cán bộ hưu trí từng phụ trách công tác lưu trữ hồ sơ của địa phương thời kỳ đó.",
+            f"Manh mối thứ hai xuất hiện: {story_bible.clues[1] if len(story_bible.clues) > 1 else 'Lời kể của nhân chứng tại địa phương về người nhận tiền năm xưa.'}",
+            f"Khi {protag} nhắc đến tên người thân và số tiền 100.000.000 VND, người cán bộ già bỗng nhìn chăm chú với ánh mắt đầy ngạc nhiên và thương cảm.",
+            f"Ông chậm rãi mở chiếc tủ sắt cũ kỹ, lấy ra một tập hồ sơ bệnh án và biên bản xác nhận đã ngả màu vàng theo năm tháng.",
+            f"Manh mối thứ ba làm sáng tỏ mọi nghi vấn: {story_bible.clues[2] if len(story_bible.clues) > 2 else 'Chứng từ y tế và biên bản cứu trợ mang tên nhân vật chính.'}",
+            f"Những tài liệu gốc chứng minh rằng khoản tiền kia không hề được dùng vào việc mờ ám hay tư lợi cá nhân như {protag} từng cay đắng suy diễn.",
+            f"{protag} cầm những trang giấy trên tay, mắt nhòe đi khi nhìn thấy chữ ký của người thân mình run rẩy ở phần cam kết chịu mọi tổn thất kinh tế.",
+            f"Từng mảnh ghép của quá khứ 10 năm trước bắt đầu ghép nối lại với nhau, đảo lộn hoàn toàn mọi giả thuyết sai lầm ban đầu trong tâm trí {protag}.",
+            f"Người mà {protag} ngỡ là kẻ phản bội thực chất lại là người đã gánh trên vai một gánh nặng khổng lồ mà không một lời kêu ca oán thán.",
+            f"Càng đọc sâu vào những biên bản lưu trữ, trái tim của {protag} càng thắt lại vì nỗi ân hận tột cùng đã trót nghi oan cho người ruột thịt.",
+            f"Và giây phút then chốt nhất của toàn bộ hành trình tìm kiếm sự thật này cuối cùng cũng đã hiển hiện rõ ràng trước mắt."
+        ]
+        for idx, text in enumerate(investigation_lines):
+            sid = f"{idx + 43:03d}"
+            segments.append(ScriptSegment(id=sid, speaker=host_id, text=text, delivery_profile="MYSTERY", importance="normal", speed=0.96))
 
-        # Act 6: Major Reveal (65-75%, segs 56-64)
+        # Act 6: MAJOR REVEAL 1 (Scene 31 / Segs 056 - 064)
         # STRICT RULE: Major Reveal must be delivery_profile='REVEAL', importance='critical', audience_address=False
-        segments.append(ScriptSegment(id="056", speaker=host_id, text=f"Và rồi, thời khắc sự thật được đưa ra ánh sáng cũng đã đến.", delivery_profile="REVEAL", importance="critical", speed=0.92, pause_after=0.6))
-        segments.append(ScriptSegment(id="057", speaker=host_id, text=f"Tài liệu lưu trữ chính thức xác nhận: {story_bible.reveal_1}", delivery_profile="REVEAL", importance="critical", speed=0.90, pause_after=0.8))
-        segments.append(ScriptSegment(id="058", speaker=host_id, text=f"Toàn bộ giả thuyết ban đầu sụp đổ hoàn toàn trước chứng cứ không thể chối cãi này.", delivery_profile="REVEAL", importance="critical", speed=0.92, pause_after=0.6))
+        segments.append(ScriptSegment(id="056", speaker=host_id, text=f"Và rồi, sự thật lịch sử sau 10 năm giấu kín chính thức được phơi bày qua văn bản có mộc đỏ xác thực.", delivery_profile="REVEAL", importance="critical", speed=0.92, pause_after=0.6))
+        segments.append(ScriptSegment(id="057", speaker=host_id, text=f"Tài liệu lưu trữ chính thức khẳng định: {story_bible.reveal_1}", delivery_profile="REVEAL", importance="critical", speed=0.90, pause_after=0.8))
+        segments.append(ScriptSegment(id="058", speaker=host_id, text=f"Số tiền 100.000.000 VND và danh tính thực sự không hề là một vụ biển thủ hay phản bội, mà là cái giá để cứu lấy sinh mạng và tương lai của chính {protag}.", delivery_profile="REVEAL", importance="critical", speed=0.92, pause_after=0.6))
 
-        for i in range(59, 65):
-            segments.append(ScriptSegment(id=f"{i:03d}", speaker=host_id, text=f"Sự thật này không chỉ làm thay đổi cách nhìn nhận về quá khứ, mà còn khiến người trong cuộc chết lặng.", delivery_profile="NORMAL", importance="normal", speed=1.01))
+        reveal1_fallout = [
+            f"Đọc đến đây, {protag} ngồi bệt xuống bậc thềm ủy ban xã, hai hàng nước mắt tuôn rơi không sao kìm nén nổi.",
+            f"Hóa ra tai nạn năm xưa nghiêm trọng gấp nhiều lần những gì {protag} được nghe kể khi bình phục trong bệnh viện.",
+            f"Để có đủ chi phí phẫu thuật giành giật mạng sống cho con, người thân đã phải bán đi mảnh đất hương hỏa duy nhất và ký cam kết gánh nợ suốt một thập kỷ.",
+            f"Lý do họ chọn giữ im lặng và che giấu sự thật là vì không muốn {protag} phải lớn lên trong cảm giác mang tội nợ với gia đình.",
+            f"Họ chấp nhận để bản thân chịu tiếng xấu là người tính toán chi li, tằn tiện từng đồng, chỉ để con mình được ngẩng cao đầu bước vào đời một cách thanh thản.",
+            f"{protag} viết trong thư gửi Minh: 'Lúc ấy tôi cảm thấy mình là đứa con bất hiếu và nông nổi nhất trên cõi đời này, khi đã đem lòng nghi ngờ người yêu thương mình nhất.'"
+        ]
+        for idx, text in enumerate(reveal1_fallout):
+            sid = f"{idx + 59:03d}"
+            segments.append(ScriptSegment(id=sid, speaker=host_id, text=text, delivery_profile="NORMAL", importance="normal", speed=1.01))
 
-        # Act 7: Second Reveal / Explanation (75-85%, segs 65-73)
-        segments.append(ScriptSegment(id="065", speaker=host_id, text=f"Bí mật phía sau lời nói dối suốt 10 năm qua: {story_bible.reveal_2}", delivery_profile="REVEAL", importance="critical", speed=0.92))
-        for i in range(66, 74):
-            segments.append(ScriptSegment(id=f"{i:03d}", speaker=host_id, text=f"Đó là một sự hy sinh thầm lặng mà không ai trong gia đình từng nghi ngờ.", delivery_profile="NORMAL", importance="normal", speed=1.01))
+        # Act 7: SECOND REVEAL & DEEPER TRUTH (Scene 39 / Segs 065 - 074)
+        segments.append(ScriptSegment(id="065", speaker=host_id, text=f"Thế nhưng, bức màn bí mật vẫn còn một tầng uẩn khúc sâu sắc hơn nữa: {story_bible.reveal_2}", delivery_profile="REVEAL", importance="critical", speed=0.92))
+        
+        reveal2_lines = [
+            f"Người thân năm ấy thậm chí đã phải giấu đi chính căn bệnh hiểm nghèo của mình để dồn toàn bộ nguồn lực tài chính chữa trị cho {protag}.",
+            f"Những lần vắng nhà bí ẩn không phải là đi gặp người tình hay làm ăn mờ ám, mà là những ngày một mình vào viện chạy chữa trong âm thầm.",
+            f"Họ sợ rằng nếu nói ra, cả gia đình sẽ suy sụp và {protag} sẽ từ bỏ con đường học vấn đang rộng mở phía trước.",
+            f"Sự hy sinh thầm lặng đến tột cùng ấy đã được gói gọn trong chiếc hộp gỗ khóa kín suốt 10 năm trời ròng rã.",
+            f"Người cán bộ lưu trữ nắm lấy tay {protag} và nói: 'Bác của cháu từng dặn bác chỉ được giao tập hồ sơ này khi cháu đã đủ trưởng thành và vững vàng trong cuộc sống.'",
+            f"Từng lời nói của người xưa như nhát dao cứa vào tâm can, làm tan biến mọi hoài nghi và để lại một niềm biết ơn vô bờ bến.",
+            f"{protag} ôm chặt tập hồ sơ vào lòng, vội vã quay trở lại bến xe trong buổi chiều tà để trở về nhà sớm nhất có thể.",
+            f"Trong suốt chuyến đi trở về, lòng {protag} chỉ đau đáu một ý nghĩ duy nhất: phải quỳ xuống xin lỗi và ôm lấy người thân trước khi quá muộn.",
+            f"Khoảng cách địa lý hàng trăm cây số bỗng trở nên dài vô tận đối với một người con đang mang trong lòng sự ân hận và tình yêu thương dâng trào."
+        ]
+        for idx, text in enumerate(reveal2_lines):
+            sid = f"{idx + 66:03d}"
+            segments.append(ScriptSegment(id=sid, speaker=host_id, text=text, delivery_profile="NORMAL", importance="normal", speed=1.01))
 
-        # Act 8: Emotional Payoff (85-93%, segs 74-80)
-        for i in range(74, 81):
-            aud = (i == 78)
-            text = f"Cuộc đối thoại nghẹn ngào đã xóa tan mọi khoảng cách và hiểu lầm đè nặng bao năm." if not aud else "Có những nỗi đau chỉ được xoa dịu khi chúng ta đủ dũng cảm để tha thứ cho nhau."
+        # Act 8: EMOTIONAL PAYOFF & CONFRONTATION (Segs 075 - 082)
+        payoff_lines = [
+            f"Cánh cửa nhà mở ra khi ánh đèn vàng trong phòng khách đã được thắp sáng. Người thân đang ngồi cặm cụi đan lại chiếc áo len cũ bên mâm cơm phần.",
+            f"Khi {protag} bước vào, đặt tập hồ sơ lên bàn và nghẹn ngào gọi tiếng gọi ruột thịt, người thân khẽ giật mình rồi chậm rãi buông đôi que đan xuống.",
+            f"Không có lời trách móc, không có sự giận hờn. Chỉ có một ánh mắt hiền từ bao dung nhìn người con đã thấu hiểu tất cả.",
+            f"{story_bible.emotional_payoff}",
+            f"Trong cuộc đời này, có những nỗi đau chỉ được chữa lành khi chúng ta đủ dũng cảm để đối diện với sự thật và mở rộng tấm lòng tha thứ cho nhau.", # Seg 078: Audience Address 4
+            f"Hai con người ôm lấy nhau trong nước mắt, trút bỏ hoàn toàn gánh nặng tâm lý đè nặng lên mái ấm gia đình suốt cả một thập kỷ qua.",
+            f"Mâm cơm nguội hôm ấy bỗng trở nên ấm áp lạ thường, bởi vì từ nay giữa họ không còn bất kỳ bức tường ngăn cách nào nữa.",
+            f"{protag} nhận ra rằng tài sản quý giá nhất mà cha mẹ để lại không phải là tiền tài hay đất đai, mà là tình yêu thương vô điều kiện dám hy sinh tất cả."
+        ]
+        for idx, text in enumerate(payoff_lines):
+            sid = f"{idx + 75:03d}"
+            aud = (sid == "078")
             prof = "COMMENT" if aud else "NORMAL"
             speed = 1.025 if aud else 1.01
-            segments.append(ScriptSegment(id=f"{i:03d}", speaker=host_id, text=text, delivery_profile=prof, importance="normal", audience_address=aud, speed=speed))
+            segments.append(ScriptSegment(id=sid, speaker=host_id, text=text, delivery_profile=prof, importance="normal", audience_address=aud, speed=speed))
 
-        # Act 9: Reflection + Ending (93-100%, segs 81-85)
-        segments.append(ScriptSegment(id="081", speaker=host_id, text=f"{story_bible.reflection_theme}", delivery_profile="COMMENT", importance="normal", audience_address=True, speed=1.025))
-        segments.append(ScriptSegment(id="082", speaker=host_id, text=f"Còn bạn, bạn nghĩ điều gì là quý giá nhất khi chúng ta nhìn nhận lại những người thân yêu quanh mình?", delivery_profile="COMMENT", importance="normal", audience_address=True, speed=1.025))
-        segments.append(ScriptSegment(id="083", speaker=host_id, text=f"Cảm ơn quý vị và các bạn đã dành thời gian lắng nghe câu chuyện hôm nay.", delivery_profile="ENDING", importance="normal", speed=0.965))
-        segments.append(ScriptSegment(id="084", speaker=host_id, text=f"Đừng quên bấm đăng ký kênh và để lại suy nghĩ của bạn ở phần bình luận bên dưới.", delivery_profile="ENDING", importance="normal", speed=0.965))
-        segments.append(ScriptSegment(id="085", speaker=host_id, text=f"Tôi là Minh. Hẹn gặp lại quý vị trong tập tiếp theo của Sau Cánh Cửa. Chúc quý vị một buổi tối an lành.", delivery_profile="ENDING", importance="normal", speed=0.965))
+        # Act 9: REFLECTION & ENDING (Segs 083 - 088)
+        reflection_lines = [
+            f"{story_bible.reflection_theme}",
+            f"Còn quý vị thính giả, quý vị nghĩ điều gì là quan trọng nhất khi chúng ta nhìn nhận lại những người thân yêu đang ngày ngày lặng lẽ bên cạnh mình?", # Seg 084: Audience Address 5
+            f"Đôi khi, sự im lặng của cha mẹ hay người thân không phải là sự xa cách, mà là chiếc áo giáp kiên cố nhất họ dựng lên để che chở cho chúng ta trước bão giông cuộc đời.",
+            f"Cảm ơn {protag} đã tin tưởng gửi gắm lá thư tâm sự vô cùng xúc động này đến với Sau Cánh Cửa. Cảm ơn quý thính giả đã dành trọn vẹn thời gian lắng nghe.",
+            f"Nếu câu chuyện hôm nay chạm đến trái tim quý vị, đừng quên bấm chia sẻ và để lại những suy nghĩ của mình ở phần bình luận bên dưới.",
+            f"Tôi là Minh. Xin kính chúc quý vị và gia đình một buổi tối an lành, ấm áp và trọn vẹn yêu thương. Hẹn gặp lại quý vị trong tập tiếp theo của Sau Cánh Cửa."
+        ]
+        for idx, text in enumerate(reflection_lines):
+            sid = f"{idx + 83:03d}"
+            aud = (sid == "084")
+            prof = "COMMENT" if idx < 3 else "ENDING"
+            speed = 1.025 if aud else (0.965 if prof == "ENDING" else 1.01)
+            segments.append(ScriptSegment(id=sid, speaker=host_id, text=text, delivery_profile=prof, importance="normal", audience_address=aud, speed=speed))
 
         total_words = sum(len(s.text.split()) for s in segments)
         script = FullScript(

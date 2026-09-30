@@ -60,6 +60,8 @@ class ProjectMetadata(BaseModel):
     stage_statuses: Dict[str, StageStatus] = Field(default_factory=dict)
     next_action: Optional[NextAction] = None
     is_archived: bool = False
+    topic: Optional[str] = None
+    selected_idea: Optional[Dict[str, Any]] = None
 
 
 class ScriptSegment(BaseModel):
@@ -85,6 +87,11 @@ class StoryBibleSection(BaseModel):
     reveal_2: str = ""
     emotional_payoff: str = ""
     fact_lock_items: List[str] = Field(default_factory=list)
+    has_story_bible: bool = False
+    selected_idea: Optional[Dict[str, Any]] = None
+    clues: List[str] = Field(default_factory=list)
+    reflection_theme: str = ""
+    title: str = ""
 
 
 class CharacterItem(BaseModel):

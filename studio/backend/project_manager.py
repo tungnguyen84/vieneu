@@ -210,6 +210,19 @@ class ProjectManager:
             raw_statuses = json.loads(r["stage_statuses"])
             statuses = {k: StageStatus(v) for k, v in raw_statuses.items()}
             next_act = compute_next_action(statuses, project_id)
+
+            topic_val = None
+            sel_idea_val = None
+            p_json_file = PROJECTS_DIR / project_id / "project.json"
+            if p_json_file.exists():
+                try:
+                    with open(p_json_file, "r", encoding="utf-8") as f:
+                        p_data = json.load(f)
+                        topic_val = p_data.get("topic") or p_data.get("premise")
+                        sel_idea_val = p_data.get("selected_idea")
+                except Exception:
+                    pass
+
             return ProjectMetadata(
                 project_id=r["project_id"],
                 title=r["title"],
@@ -223,7 +236,9 @@ class ProjectManager:
                 video_count=r["video_count"],
                 stage_statuses=statuses,
                 next_action=next_act,
-                is_archived=bool(r["is_archived"])
+                is_archived=bool(r["is_archived"]),
+                topic=topic_val,
+                selected_idea=sel_idea_val,
             )
 
     def update_stage_status(self, project_id: str, stage: StageId, status: StageStatus) -> ProjectMetadata:

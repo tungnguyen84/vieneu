@@ -16,7 +16,7 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
   const [targetDuration, setTargetDuration] = useState<number>(1200);
 
   // Mode: 'ideas' | 'topic' | 'script'
-  const [startMode, setStartMode] = useState<'ideas' | 'topic' | 'script'>('topic');
+  const [startMode, setStartMode] = useState<'ideas' | 'topic' | 'script'>('ideas');
 
   // Option A (Ideas) state
   const [direction, setDirection] = useState<string>('BÍ MẬT GIA ĐÌNH');
