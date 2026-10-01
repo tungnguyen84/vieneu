@@ -236,8 +236,32 @@ class ScriptService:
                 target = s
                 break
 
+        # Mark script EDITED and clear approval hash
+        if isinstance(data, dict):
+            data["artifact_status"] = "EDITED"
+            data.pop("approved_content_hash", None)
+
         with open(script_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+
+        # Mark QC report as STALE
+        qc_path = PROJECTS_DIR / project_id / "script" / "qc_report.json"
+        if qc_path.exists():
+            try:
+                qc_data = json.loads(qc_path.read_text(encoding="utf-8"))
+                qc_data["artifact_status"] = "STALE"
+                qc_data["stale_reason"] = f"Phân đoạn [{segment_id}] đã được chỉnh sửa; cần chạy lại QC"
+                qc_path.write_text(json.dumps(qc_data, ensure_ascii=False, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+
+        # Reset Script stage to DRAFT and cascade STALE downstream
+        try:
+            from studio.backend.models import StageId, StageStatus
+            from studio.backend.project_manager import ProjectManager
+            ProjectManager().update_stage_status(project_id, StageId.SCRIPT, StageStatus.DRAFT)
+        except Exception:
+            pass
 
         return ScriptSegment(
             segment_id=segment_id,
@@ -258,8 +282,70 @@ class ScriptService:
 
         if qc_path.exists():
             with open(qc_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                report = json.load(f)
+            return self._refresh_outdated_qc(project_id, qc_path, report)
         return None
+
+    def _refresh_outdated_qc(self, project_id: str, qc_path: Path, report: Dict[str, Any]) -> Dict[str, Any]:
+        """Re-audits a script whose QC report predates the current rule set or script hash.
+
+        A PASS produced by an older QC version or for different script text must not keep showing
+        as PASS once stricter rules or edits exist, so the deterministic audit is re-run and persisted.
+        """
+        from dataclasses import asdict
+
+        from apps.script_factory.models import FullScript, StoryBible
+        from apps.script_factory.script_qc import SCRIPT_QC_VERSION, ScriptQCEngine
+        from studio.backend.services.artifact_lineage import script_content_hash
+
+        script_path = qc_path.parent / "full_script.json"
+        current_hash = None
+        if script_path.exists():
+            try:
+                with open(script_path, "r", encoding="utf-8") as f:
+                    raw_sc = json.load(f)
+                current_hash = script_content_hash(raw_sc)
+            except Exception:
+                pass
+
+        if report.get("qc_version") == SCRIPT_QC_VERSION and report.get("script_content_hash") == current_hash:
+            return report
+        story_path = PROJECTS_DIR / project_id / "story" / "story_bible.json"
+        if not script_path.exists() or not story_path.exists():
+            return report
+
+        with open(script_path, "r", encoding="utf-8") as f:
+            script = FullScript.from_dict(json.load(f))
+        with open(story_path, "r", encoding="utf-8") as f:
+            story_bible = StoryBible.from_dict(json.load(f))
+
+        engine = ScriptQCEngine(provider=None)
+        engine.save_qc_report = lambda _report: None  # persisted below with lineage fields
+        # Re-auditing on page load must not call a paid model. Reuse the previous
+        # story-logic review when the script text is unchanged; otherwise the
+        # verdict cannot be PASS until a full QC (Auto-Repair) runs it again.
+        from apps.script_factory.semantic_review import carry_over_semantic_review
+        semantic = carry_over_semantic_review(report, script) or {"status": "NOT_RUN", "issues": [], "advisories": []}
+        fresh = asdict(engine.run_qc(script=script, story_bible=story_bible, semantic_review=semantic))
+        if semantic.get("status") == "NOT_RUN" and fresh["status"] == "PASS":
+            fresh["status"] = "NEEDS_REVISION"
+            fresh["evidence_issues"].append({
+                "segment_id": None,
+                "excerpt": "",
+                "rule": "SEMANTIC_REVIEW_PENDING",
+                "severity": "HIGH",
+                "recommended_action": "Bấm Auto-Repair để chạy QC logic cốt truyện bằng AI.",
+                "message": "Kịch bản chưa được kiểm tra logic cốt truyện bằng bộ QC hiện tại.",
+            })
+        for key in ("generation_source", "generation_request_id",
+                    "source_story_generation_request_id", "source_story_content_hash"):
+            if key in report:
+                fresh[key] = report[key]
+        fresh["artifact_status"] = "CURRENT" if fresh["status"] == "PASS" else "NEEDS_REVISION"
+        fresh["previous_qc_version"] = report.get("qc_version")
+        with open(qc_path, "w", encoding="utf-8") as f:
+            json.dump(fresh, f, ensure_ascii=False, indent=2)
+        return fresh
 
     def import_script_text(self, project_id: str, text: str) -> List[ScriptSegment]:
         """Imports raw script text, chunks into segments, and saves full_script.json."""

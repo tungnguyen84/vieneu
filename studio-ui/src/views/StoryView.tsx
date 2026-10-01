@@ -294,6 +294,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
         </div>
       )}
 
+
       {/* CASE 1: NO BIBLE YET - SELECTED AI IDEA AVAILABLE (NO TYPING REQUIRED) */}
       {!hasValidBible && !generating && (activeIdea || customTopic) && (
         <div className="bg-[#111827] border border-[#28354D] rounded-xl p-6 max-w-2xl mx-auto space-y-5 shadow-lg">

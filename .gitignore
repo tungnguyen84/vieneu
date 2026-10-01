@@ -49,3 +49,9 @@ preview/*.mp4
 *.zip
 !examples/**
 
+# Scratch and audit work
+work/
+production_pilot_03_visual_v1_0a/EP2004/
+production_pilot_03_visual_v1_0a/exports/EP2004_google_flow.json
+
+

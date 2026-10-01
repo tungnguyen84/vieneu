@@ -14,7 +14,7 @@ import urllib.request
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-from apps.script_factory.models import FullScript, IdeaItem, LockedFact, QCReport, ScriptSegment, StoryBible
+from apps.script_factory.models import FullScript, IdeaItem, LockedFact, QCReport, ScriptSegment, StoryBible, apply_story_bible_patch, story_bible_repair_targets_clause
 from apps.script_factory.providers.base import ScriptAIProvider
 from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
 
@@ -312,18 +312,14 @@ Trả về JSON Object theo cấu trúc chuẩn có keys: episode_id, title, pro
             for it in issues if isinstance(it, dict)
         )
         system_instruction = "Bạn là Trưởng ban Biên kịch của 'Sau Cánh Cửa'. Hãy sửa chữa Story Bible theo danh sách lỗi QC và trả về JSON hợp lệ."
-        prompt = f"""STORY BIBLE HIỆN TẠI:\n{json.dumps(story_bible.to_dict(), ensure_ascii=False)}\n\nLỖI QC CẦN SỬA:\n{issues_summary}\n\nHãy sửa chữa và trả về toàn bộ Story Bible dưới dạng JSON object."""
+        prompt = f"""STORY BIBLE HIỆN TẠI:\n{json.dumps(story_bible.to_dict(), ensure_ascii=False)}\n\nLỖI QC CẦN SỬA:\n{issues_summary}\n\nHãy sửa chữa và chỉ trả về JSON object gồm các trường đã sửa hoặc bổ sung."""
+        prompt += story_bible_repair_targets_clause(issues)
         raw_text, in_tok, out_tok = self._call_messages(prompt, system_instruction=system_instruction, model=model)
         parsed = _parse_json_safe(raw_text)
         if parsed and isinstance(parsed, dict):
-            if parsed.get("causal_chains"):
-                story_bible.causal_chains = parsed.get("causal_chains")
-            if parsed.get("knowledge_ledger"):
-                story_bible.knowledge_ledger = parsed.get("knowledge_ledger")
-            if parsed.get("structured_clues"):
-                story_bible.structured_clues = parsed.get("structured_clues")
-            if parsed.get("reveal_justifications"):
-                story_bible.reveal_justifications = parsed.get("reveal_justifications")
+            apply_story_bible_patch(story_bible, parsed)
+        else:
+            logger.warning(f"Story Bible repair response was not JSON; nothing applied: {raw_text[:160]!r}")
 
         story_bible.generation_request_id = str(uuid.uuid4())
         story_bible.generation_source = "REAL_AI"
@@ -408,6 +404,12 @@ Trả về JSON Object có khóa "segments": [
         from apps.script_factory.script_qc import ScriptQCEngine
         return ScriptQCEngine.audit_script(script, story_bible, story_formula, series_bible), 100, 100
 
+    def complete_json(self, system_instruction: str, prompt: str, model: Optional[str] = None) -> Tuple[str, int, int]:
+        """Single JSON completion used by QC review and segment rewriting."""
+        return self._call_messages(
+            prompt=prompt, system_instruction=system_instruction, model=model, temperature=0.3,
+        )
+
     def revise_script(
         self,
         script: FullScript,
@@ -415,9 +417,9 @@ Trả về JSON Object có khóa "segments": [
         qc_report: QCReport,
         model: Optional[str] = None,
     ) -> Tuple[FullScript, int, int]:
-        from apps.script_factory.script_qc import apply_targeted_repairs
-        script.revision_round += 1
-        repaired = apply_targeted_repairs(script, story_bible, qc_report)
-        repaired.total_words = sum(len(s.text.split()) for s in repaired.segments)
-        repaired.updated_at = time.time()
-        return repaired, 100, 100
+        from apps.script_factory.segment_rewriter import revise_with_ai
+
+        return revise_with_ai(
+            script, story_bible, qc_report,
+            lambda system, prompt: self.complete_json(system, prompt, model=model),
+        )

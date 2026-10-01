@@ -9,6 +9,7 @@ Uses Google Gemini REST API (gemini-2.5-flash, gemini-2.5-pro) with:
 from __future__ import annotations
 
 import collections
+import hashlib
 import json
 import logging
 import os
@@ -20,8 +21,9 @@ import urllib.request
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-from apps.script_factory.models import FullScript, IdeaItem, LockedFact, QCReport, ScriptSegment, StoryBible
+from apps.script_factory.models import FullScript, IdeaItem, LockedFact, QCReport, ScriptSegment, StoryBible, apply_story_bible_patch, story_bible_repair_targets_clause
 from apps.script_factory.narrative_continuity import has_repeated_narrative_block
+from apps.script_factory.narrative_rules import ACT7_CAUSAL_INSTRUCTION, writer_rules_block
 from apps.script_factory.providers.base import ScriptAIProvider
 from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
 
@@ -70,6 +72,46 @@ def _part_has_premature_reveal(segments: List[Dict[str, Any]]) -> bool:
     )
 
 
+_CANONICAL_SIGNOFF = "Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại."
+
+
+def _normalize_final_signoff(segments: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Moves the broadcast close to exactly one final segment.
+
+    A misplaced or missing sign-off is a formatting slip, not a story defect, so
+    it is repaired here instead of discarding an otherwise usable 80-segment script.
+    """
+    body: List[Dict[str, Any]] = []
+    for segment in segments:
+        if not isinstance(segment, dict):
+            continue
+        text = str(segment.get("text", ""))
+        if _SCRIPT_SIGNOFF_RE.search(text):
+            # Keep any story content that shares a segment with a stray sign-off.
+            kept = " ".join(
+                s for s in re.split(r"(?<=[.!?])\s+", text)
+                if s and not _SCRIPT_SIGNOFF_RE.search(s) and not re.match(r"tôi\s+là\s+minh", s, re.IGNORECASE)
+            ).strip()
+            if not kept:
+                continue
+            segment = {**segment, "text": kept}
+        if str(segment.get("delivery_profile", "")).upper() == "ENDING":
+            segment = {**segment, "delivery_profile": "COMMENT"}
+        body.append(segment)
+    if not body:
+        return body
+    template = body[-1]
+    body.append({
+        "speaker": template.get("speaker", "MINH"),
+        "text": _CANONICAL_SIGNOFF,
+        "delivery_profile": "ENDING",
+        "importance": "normal",
+        "audience_address": False,
+        "speed": 0.965,
+    })
+    return body
+
+
 def _has_one_final_signoff(segments: List[Dict[str, Any]]) -> bool:
     """The completed episode must have one sign-off, in its final segment only."""
     if not segments:
@@ -108,7 +150,67 @@ def _get_api_key(explicit_key: Optional[str] = None) -> str:
     return ""
 
 
-_EXHAUSTED_MODELS: set[str] = set()
+# Gemini free-tier quotas are counted per Google Cloud project *and per model*:
+# each model has its own requests-per-day bucket, while every key created in the
+# same project shares that project's buckets. So capacity grows by falling back
+# across models and by rotating keys that belong to different projects.
+GEMINI_FLASH_CHAIN = [
+    "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash",
+    "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-flash-latest",
+]
+# Lite models write passable prose but cannot be trusted as reviewers.
+GEMINI_LITE_CHAIN = [
+    "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash-lite", "gemini-flash-lite-latest",
+]
+_FALLBACK_ELIGIBLE = set(GEMINI_FLASH_CHAIN) | set(GEMINI_LITE_CHAIN) | {
+    "gemini-2.5-pro", "gemini-pro-latest", "gemini-3.1-pro-preview",
+}
+
+# (key fingerprint or "*", model or "*") -> epoch seconds when the block lifts.
+_QUOTA_BLOCKS: Dict[Tuple[str, str], float] = {}
+
+
+def _key_fingerprint(key: str) -> str:
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
+
+
+def _next_quota_reset(now: Optional[float] = None) -> float:
+    """Daily Gemini quotas reset at midnight Pacific time."""
+    import datetime
+    now = time.time() if now is None else now
+    try:
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo("America/Los_Angeles")
+    except Exception:
+        tz = datetime.timezone(datetime.timedelta(hours=-8))
+    local = datetime.datetime.fromtimestamp(now, tz)
+    tomorrow = (local + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=5, microsecond=0)
+    return tomorrow.timestamp()
+
+
+def _is_blocked(key: str, model: str, now: Optional[float] = None) -> bool:
+    now = time.time() if now is None else now
+    fp = _key_fingerprint(key)
+    return any(_QUOTA_BLOCKS.get(slot, 0) > now for slot in ((fp, model), (fp, "*"), ("*", model)))
+
+
+def _block(key: Optional[str], model: str, until: float) -> None:
+    slot = (_key_fingerprint(key) if key else "*", model)
+    _QUOTA_BLOCKS[slot] = max(_QUOTA_BLOCKS.get(slot, 0), until)
+
+
+def _quota_block_until(error_body: str, now: Optional[float] = None) -> float:
+    """How long a 429 should take this key+model out of rotation."""
+    now = time.time() if now is None else now
+    lower = error_body.lower()
+    if "perday" in lower or "per_day" in lower or "requests_per_day" in lower:
+        return _next_quota_reset(now)
+    retry = re.search(r'"retrydelay":\s*"(\d+)(?:\.\d+)?s"', lower)
+    if retry:
+        return now + int(retry.group(1)) + 1
+    if "perminute" in lower or "per_minute" in lower:
+        return now + 60
+    return now + 600
 
 
 class GeminiScriptAIProvider(ScriptAIProvider):
@@ -122,8 +224,17 @@ class GeminiScriptAIProvider(ScriptAIProvider):
         default_model: str = "gemini-2.5-flash",
         embedding_model: str = "gemini-embedding-001",
         timeout_sec: float = 120.0,
+        api_keys: Optional[List[str]] = None,
     ):
-        self.api_key = _get_api_key(api_key)
+        keys: List[str] = []
+        for raw in [*(api_keys or []), *re.split(r"[\s,;]+", _get_api_key(api_key) or "")]:
+            raw = raw.strip()
+            if raw and raw not in keys:
+                keys.append(raw)
+        self.api_keys = keys
+        self.api_key = keys[0] if keys else ""
+        self.last_used_key_index = 0
+        self._sticky_review_model: Optional[str] = None
         self.default_model = default_model
         self.last_used_model = default_model
         self.embedding_model = embedding_model
@@ -139,118 +250,149 @@ class GeminiScriptAIProvider(ScriptAIProvider):
         response_json: bool = True,
         system_instruction: Optional[str] = None,
         allow_fallback: bool = True,
+        temperature: float = 0.75,
+        thinking_budget: int = 0,
+        allow_lite_models: bool = True,
     ) -> Tuple[str, int, int]:
-        """Calls Gemini generateContent endpoint with retry and model fallback. Returns (text, input_tokens, output_tokens)."""
-        import time
-        if not self.api_key:
+        """Calls Gemini generateContent with model fallback and API-key rotation.
+
+        Returns (text, input_tokens, output_tokens).
+        """
+        backoff_delays = [2, 5, 10]
+        if not self.api_keys:
             raise RuntimeError("GEMINI_API_KEY is not configured. Cannot call Gemini API.")
 
         primary_model = (model or self.default_model).replace("models/", "")
         candidate_models = [primary_model]
-
-        standard_known = {
-            "gemini-2.5-flash", "gemini-3-flash-preview", "gemini-flash-lite-latest",
-            "gemini-flash-latest", "gemini-3.5-flash", "gemini-3.5-flash-lite",
-            "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-pro-latest"
-        }
-        # Only fallback if allow_fallback=True AND primary model is a standard known preset
-        if allow_fallback and primary_model in standard_known:
-            for fb in ["gemini-3-flash-preview", "gemini-flash-lite-latest", "gemini-flash-latest"]:
+        if allow_fallback and primary_model in _FALLBACK_ELIGIBLE:
+            for fb in [*GEMINI_FLASH_CHAIN, *GEMINI_LITE_CHAIN]:
                 if fb not in candidate_models:
                     candidate_models.append(fb)
-
-        # Skip models known to be quota-exhausted during current execution
-        candidate_models = [m for m in candidate_models if m not in _EXHAUSTED_MODELS] or candidate_models
-
-        last_err = None
-        for cur_model in candidate_models:
-            url = f"{GEMINI_API_BASE}/models/{cur_model}:generateContent?key={self.api_key}"
-
-            gen_config: Dict[str, Any] = {
-                "temperature": 0.75,
-                "topP": 0.95,
-            }
-            if "2.5" in cur_model:
-                gen_config["thinkingConfig"] = {"thinkingBudget": 0}
-            if response_json:
-                gen_config["responseMimeType"] = "application/json"
-
-            payload: Dict[str, Any] = {
-                "contents": [
-                    {
-                        "parts": [{"text": prompt}]
-                    }
-                ],
-                "generationConfig": gen_config
-            }
-
-            if system_instruction:
-                payload["systemInstruction"] = {
-                    "parts": [{"text": system_instruction}]
-                }
-
-            data_bytes = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(
-                url,
-                data=data_bytes,
-                headers={"Content-Type": "application/json"},
-                method="POST"
+        if not allow_lite_models:
+            # Lite models answer review prompts with an empty list without reading
+            # the script, which would turn "could not check" into a false PASS.
+            candidate_models = [m for m in candidate_models if "lite" not in m]
+        if not any(not _is_blocked(k, m) for m in candidate_models for k in self.api_keys):
+            raise RuntimeError(
+                "No usable Gemini model/key is available right now (quota exhausted for every "
+                f"{'non-lite ' if not allow_lite_models else ''}model on all {len(self.api_keys)} key(s))."
             )
 
-            # Retry up to 3 times for transient 503/429
-            backoff_delays = [2, 5, 10]
-            for attempt in range(3):
-                try:
-                    with urllib.request.urlopen(req, timeout=self.timeout_sec) as resp:
-                        resp_data = json.loads(resp.read().decode("utf-8"))
-                    
-                    # Extract content
-                    candidates = resp_data.get("candidates", [])
-                    if not candidates:
-                        raise RuntimeError(f"Gemini {cur_model} returned no candidates.")
-                    
-                    parts = candidates[0].get("content", {}).get("parts", [])
-                    if not parts:
-                        raise RuntimeError(f"Gemini {cur_model} candidate has no parts.")
-                    
-                    text_out = parts[0].get("text", "")
-                    usage = resp_data.get("usageMetadata", {})
-                    in_tokens = usage.get("promptTokenCount", 0)
-                    out_tokens = usage.get("candidatesTokenCount", 0)
-                    self.last_used_model = cur_model
+        def _redact(text: str) -> str:
+            for k in self.api_keys:
+                text = text.replace(k, "[REDACTED]")
+            return text
 
-                    return text_out, in_tokens, out_tokens
+        gen_config: Dict[str, Any] = {"temperature": temperature, "topP": 0.95}
+        if response_json:
+            gen_config["responseMimeType"] = "application/json"
+        last_err: Optional[Exception] = None
 
-                except urllib.error.HTTPError as e:
-                    err_body = e.read().decode("utf-8", errors="ignore")
-                    clean_err = err_body.replace(self.api_key, "[REDACTED]")
-                    last_err = RuntimeError(f"Gemini API ({cur_model}) HTTP {e.code}: {clean_err}")
-                    
-                    # If daily quota limit exceeded, failover instantly without sleeping
-                    if e.code == 429 and ("quota" in clean_err.lower() or "perday" in clean_err.lower() or "limit: 20" in clean_err.lower() or "free_tier_requests" in clean_err.lower()):
-                        _EXHAUSTED_MODELS.add(cur_model)
-                        logger.warning(f"[GeminiProvider] {cur_model} daily quota limit reached ({clean_err[:100]}). Immediately trying next model...")
+        # Best model first across every key, then degrade to the next model.
+        for cur_model in candidate_models:
+            model_config = dict(gen_config)
+            if "2.5" in cur_model:
+                model_config["thinkingConfig"] = {"thinkingBudget": thinking_budget}
+            payload: Dict[str, Any] = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": model_config,
+            }
+            if system_instruction:
+                payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
+            data_bytes = json.dumps(payload).encode("utf-8")
+
+            for key_index, key in enumerate(self.api_keys):
+                if _is_blocked(key, cur_model):
+                    continue
+                key_label = f"key#{key_index + 1}"
+                req = urllib.request.Request(
+                    f"{GEMINI_API_BASE}/models/{cur_model}:generateContent?key={key}",
+                    data=data_bytes,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                model_unusable = False
+                for attempt in range(3):
+                    call_started = time.time()
+                    logger.info(f"→ Gọi {cur_model} ({key_label}/{len(self.api_keys)})...")
+                    try:
+                        with urllib.request.urlopen(req, timeout=self.timeout_sec) as resp:
+                            resp_data = json.loads(resp.read().decode("utf-8"))
+                        candidates = resp_data.get("candidates", [])
+                        if not candidates:
+                            raise RuntimeError(f"Gemini {cur_model} returned no candidates.")
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if not parts:
+                            raise RuntimeError(f"Gemini {cur_model} candidate has no parts.")
+                        usage = resp_data.get("usageMetadata", {})
+                        logger.info(
+                            f"✓ {cur_model} ({key_label}) trả lời sau {time.time() - call_started:.0f}s, "
+                            f"{usage.get('candidatesTokenCount', 0)} token"
+                        )
+                        self.last_used_model = cur_model
+                        self.last_used_key_index = key_index
+                        return (
+                            parts[0].get("text", ""),
+                            usage.get("promptTokenCount", 0),
+                            usage.get("candidatesTokenCount", 0),
+                        )
+                    except urllib.error.HTTPError as e:
+                        clean_err = _redact(e.read().decode("utf-8", errors="ignore"))
+                        last_err = RuntimeError(f"Gemini API ({cur_model}, {key_label}) HTTP {e.code}: {clean_err}")
+                        lower = clean_err.lower()
+                        if e.code == 429:
+                            until = _quota_block_until(clean_err)
+                            _block(key, cur_model, until)
+                            logger.warning(
+                                f"[GeminiProvider] {cur_model} {key_label} rate-limited until "
+                                f"{time.strftime('%H:%M', time.localtime(until))}; rotating to next key/model."
+                            )
+                            break
+                        if e.code == 400 and ("api_key_invalid" in lower or "api key not valid" in lower):
+                            _block(key, "*", time.time() + 86400)
+                            logger.warning(f"[GeminiProvider] {key_label} is invalid; removed from rotation.")
+                            break
+                        if e.code in (403, 404):
+                            # 404: model does not exist; 403: not enabled for this key's project.
+                            _block(key if e.code == 403 else None, cur_model, time.time() + 86400)
+                            model_unusable = e.code == 404
+                            logger.warning(f"[GeminiProvider] {cur_model} unavailable for {key_label} (HTTP {e.code}).")
+                            break
+                        if e.code in (500, 503):
+                            # Overload is model-wide on Google's side: other keys
+                            # will not help, waiting rarely does. Park the model
+                            # briefly for every key and move down the chain.
+                            _block(None, cur_model, time.time() + 120)
+                            model_unusable = True
+                            logger.warning(f"[GeminiProvider] {cur_model} quá tải (HTTP {e.code}); tạm bỏ qua 2 phút, chuyển model kế tiếp.")
+                            break
+                        # Overloaded or rejected request: the model is the problem, not the key.
+                        model_unusable = True
+                        logger.warning(f"[GeminiProvider] {cur_model} failed with HTTP {e.code}. Trying next model...")
                         break
-
-                    if e.code in (503, 429) and attempt < 2:
-                        sleep_s = backoff_delays[attempt]
-                        logger.warning(f"[GeminiProvider] {cur_model} returned HTTP {e.code}. Retrying attempt {attempt+2}/3 in {sleep_s}s...")
-                        time.sleep(sleep_s)
-                        continue
-                    else:
-                        logger.warning(f"[GeminiProvider] {cur_model} failed after retries with HTTP {e.code}. Trying next model...")
+                    except Exception as e:
+                        last_err = e
+                        if isinstance(e, TimeoutError) or "timed out" in str(e).lower():
+                            # A model that hangs for the full timeout usually hangs
+                            # again; retrying it cost minutes per call.
+                            _block(None, cur_model, time.time() + 300)
+                            model_unusable = True
+                            logger.warning(
+                                f"[GeminiProvider] {cur_model} không phản hồi sau {self.timeout_sec:.0f}s; "
+                                "tạm bỏ qua 5 phút, chuyển model kế tiếp."
+                            )
+                            break
+                        if attempt < 1:
+                            sleep_s = backoff_delays[attempt]
+                            logger.warning(f"[GeminiProvider] Connection error with {cur_model}: {e}. Retrying in {sleep_s}s...")
+                            time.sleep(sleep_s)
+                            continue
+                        model_unusable = True
                         break
-                except Exception as e:
-                    last_err = e
-                    if attempt < 2:
-                        sleep_s = backoff_delays[attempt]
-                        logger.warning(f"[GeminiProvider] Connection error with {cur_model}: {e}. Retrying in {sleep_s}s...")
-                        time.sleep(sleep_s)
-                        continue
-                    else:
-                        break
+                if model_unusable:
+                    break
 
-        raise last_err or RuntimeError("Gemini content generation failed across all candidate models.")
+        raise last_err or RuntimeError("Gemini content generation failed across all candidate models and keys.")
 
     def generate_ideas(
         self,
@@ -518,7 +660,10 @@ Trả về một JSON Array chứa chính xác {count} objects, mỗi object có
             "6. Tên Minh và mã MINH chỉ dành riêng cho MC, tuyệt đối không đặt cho nhân vật trong Story Bible.\n"
             "7. Với cáo buộc nghiêm trọng, tin nhắn/lịch sử cuộc gọi/lời đồn/lời thú nhận đơn độc chỉ là dấu hiệu; reveal phải có ít nhất một chi tiết độc lập có thể kiểm chứng.\n"
             "8. Bối cảnh hôn nhân có thể giải thích hoàn cảnh nhưng không được đổ trách nhiệm lựa chọn nói dối/ngoại tình lên người bị phản bội.\n"
-            "9. Xuất ra định dạng JSON hợp lệ."
+            "9. Xuất ra định dạng JSON hợp lệ.\n"
+            "Câu chuyện sẽ được kể như lá thư của nhân vật chính, nên mọi reveal phải có kênh để nhân vật chính biết được "
+            "(lời thú nhận, nhân chứng, tài liệu, xét nghiệm) và kết thúc phải hợp pháp. Tuân thủ các luật logic sau:\n"
+            + writer_rules_block(10)
         )
 
         direction_clause = f"\nCHỈ ĐẠO ĐẶC BIỆT CHO TẬP PHIM NÀY:\n{special_direction}\n" if special_direction else ""
@@ -836,8 +981,10 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
             + orig_topic_clause +
             "Yêu cầu:\n"
             "1. Tuyệt đối KHÔNG đưa vào các khuôn mẫu template hay tên nhân vật ngoài kịch bản.\n"
-            "2. Khắc phục triệt để các vấn đề QC được chỉ rõ.\n"
-            "3. Trả về toàn bộ Story Bible đã sửa đổi dưới dạng JSON hợp lệ."
+            "2. Khắc phục triệt để các vấn đề QC được chỉ rõ. Với lỗi logic cốt truyện, hãy BỔ SUNG kênh tiết lộ hoặc bằng chứng "
+            "cụ thể (lời thú nhận trực tiếp, xét nghiệm có mẫu hợp lệ, tài liệu nhân vật chính đọc được); KHÔNG làm mờ reveal "
+            "hay kết thúc thành nghi vấn chung chung. Câu chuyện phải giữ cú lật rõ ràng và kết thúc dứt khoát, hợp pháp.\n"
+            "3. Chỉ trả về JSON hợp lệ gồm các trường đã sửa hoặc bổ sung."
         )
 
         prompt = f"""Dưới đây là Story Bible hiện tại và danh sách các lỗi QC cần khắc phục:
@@ -865,7 +1012,8 @@ HƯỚNG DẪN SỬA CHỮA CỤ THỂ THEO TỪNG LOẠI LỖI:
    - reveal_justifications (reveal_1 và reveal_2 có evidence_support, motivation_support, timeline_support, v.v.)
    - critical_facts (các sự thật cốt lõi đóng băng)
 
-Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đúng định dạng schema chuẩn."""
+Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Object duy nhất, đúng tên trường của schema."""
+        prompt += story_bible_repair_targets_clause(issues)
 
         raw_text, in_tok, out_tok = self._call_generate_content(
             prompt=prompt,
@@ -891,59 +1039,9 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
 
         parsed = _parse_json_safe(raw_text)
         if parsed and isinstance(parsed, dict):
-            if parsed.get("timeline"):
-                story_bible.timeline = parsed.get("timeline")
-            if parsed.get("relationships"):
-                story_bible.relationships = parsed.get("relationships")
-            if parsed.get("supporting_characters"):
-                story_bible.supporting_characters = parsed.get("supporting_characters")
-            if parsed.get("protagonist"):
-                story_bible.protagonist = parsed.get("protagonist")
-            if parsed.get("time_period"):
-                story_bible.time_period = parsed.get("time_period")
-            if parsed.get("locations"):
-                story_bible.locations = parsed.get("locations")
-            if parsed.get("causal_chains"):
-                story_bible.causal_chains = parsed.get("causal_chains")
-            if parsed.get("knowledge_ledger"):
-                story_bible.knowledge_ledger = parsed.get("knowledge_ledger")
-            if parsed.get("structured_clues"):
-                story_bible.structured_clues = parsed.get("structured_clues")
-            if parsed.get("reveal_justifications"):
-                story_bible.reveal_justifications = parsed.get("reveal_justifications")
-            if parsed.get("events"):
-                story_bible.events = parsed.get("events")
-            if parsed.get("reveal_proofs"):
-                story_bible.reveal_proofs = parsed.get("reveal_proofs")
-            if parsed.get("narrative_skeleton"):
-                story_bible.narrative_skeleton = parsed.get("narrative_skeleton")
-            if parsed.get("critical_facts"):
-                new_cf = []
-                for f_data in parsed.get("critical_facts", []):
-                    new_cf.append(LockedFact(
-                        fact_id=f_data.get("fact_id", f"FACT_{len(new_cf)+1:03d}"),
-                        field=f_data.get("field", "fact"),
-                        value=str(f_data.get("value", "")),
-                        description=f_data.get("description", ""),
-                        status="LOCKED",
-                    ))
-                story_bible.critical_facts = new_cf
-            if parsed.get("reveal_1"):
-                story_bible.reveal_1 = parsed.get("reveal_1")
-            if parsed.get("reveal_2"):
-                story_bible.reveal_2 = parsed.get("reveal_2")
-            if parsed.get("secret"):
-                story_bible.secret = parsed.get("secret")
-            if parsed.get("false_lead"):
-                story_bible.false_lead = parsed.get("false_lead")
-            if parsed.get("clues"):
-                story_bible.clues = parsed.get("clues")
-            if parsed.get("emotional_payoff"):
-                story_bible.emotional_payoff = parsed.get("emotional_payoff")
-            if parsed.get("reflection_theme"):
-                story_bible.reflection_theme = parsed.get("reflection_theme")
-            if parsed.get("ending"):
-                story_bible.ending = parsed.get("ending")
+            apply_story_bible_patch(story_bible, parsed)
+        else:
+            logger.warning(f"Story Bible repair response was not JSON; nothing applied: {raw_text[:160]!r}")
 
         story_bible.generation_request_id = str(uuid.uuid4())
         story_bible.generation_source = "REAL_AI"
@@ -977,6 +1075,7 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
         knowledge_summary = json.dumps(story_bible.knowledge_ledger or [], ensure_ascii=False)
         clues_summary = json.dumps(story_bible.structured_clues or story_bible.clues or [], ensure_ascii=False)
         causal_summary = json.dumps(story_bible.causal_chains or [], ensure_ascii=False)
+        reveal_proof_summary = json.dumps(story_bible.reveal_justifications or {}, ensure_ascii=False)
 
         clean_title = re.sub(r"^(?:Tập\s+)?EP_?[A-Z0-9_]*\d+\s*[-:]?\s*", "", str(story_bible.title or ""), flags=re.IGNORECASE).strip()
         protag_name = story_bible.protagonist.get("name", "Tuấn") if isinstance(story_bible.protagonist, dict) else str(story_bible.protagonist or "Tuấn")
@@ -1012,7 +1111,12 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
             f"13. TÊN MINH CHỈ DÀNH CHO MC: Không được đặt tên hoặc mã MINH cho bất kỳ nhân vật nào trong câu chuyện.\n"
             f"14. KHÔNG KỂ LẠI: Mỗi hành động điều tra, cuộc gọi, cuộc gặp và phát hiện chỉ được kể một lần. Phần 2 phải nối đúng hành động cuối Phần 1, không khởi động lại một vòng điều tra.\n"
             f"15. KỶ LUẬT KẾT LUẬN: Tin nhắn, lịch sử cuộc gọi, lời đồn hoặc lời thú nhận đơn độc chỉ là dấu hiệu. Không gọi là bằng chứng không thể chối cãi nếu chưa có chi tiết độc lập có thể kiểm chứng.\n"
-            f"16. TRÁCH NHIỆM NHÂN VẬT: Bối cảnh hôn nhân giải thích hoàn cảnh nhưng không biến sự xa cách của người bị phản bội thành nguyên nhân hoặc lỗi cho lựa chọn nói dối/ngoại tình của người kia."
+            f"16. TRÁCH NHIỆM NHÂN VẬT: Bối cảnh hôn nhân giải thích hoàn cảnh nhưng không biến sự xa cách của người bị phản bội thành nguyên nhân hoặc lỗi cho lựa chọn nói dối/ngoại tình của người kia.\n"
+            f"17. CÂU TIẾNG VIỆT HOÀN CHỈNH: Mỗi phân đoạn phải đúng chủ-vị, đúng người đang cảm xúc; cấm câu gãy như 'còn Mai thì.' hoặc ghép sai kiểu 'đau lòng vào tim Tuấn'.\n"
+            f"18. KHÔNG CHÉP STORY BIBLE: Không nối nguyên văn các trường cause/decision/action/consequence/why/motivation/how thành lời đọc. Hãy chuyển chúng thành cảnh, hành động hoặc đối thoại tự nhiên.\n"
+            f"19. HUYẾT THỐNG: Không kết luận đứa trẻ không phải con của chồng nếu chưa kể rõ xét nghiệm ADN hoặc mốc tuổi thai/thụ thai được đối chiếu. Lời thú nhận đơn độc chỉ tạo nghi vấn.\n"
+            f"20. PHÁP LÝ GIA ĐÌNH: Không viết 'văn bản từ bỏ quyền làm cha' hay thủ tục tức thời tự chế. Nếu cần, nhân vật chỉ nói sẽ nhờ luật sư/tòa án giải quyết việc ly hôn và xác định cha con."
+            + "\n" + writer_rules_block(21)
         )
 
         # ---------------- PART 1: ACTS 1 to 5 (~40 to 50 Segments) ----------------
@@ -1027,7 +1131,7 @@ Thông tin Story Bible:
 - Bí mật cốt lõi: {story_bible.secret}
 - Câu hỏi bí ẩn: {story_bible.mystery_question}
 - Giả thuyết sai ban đầu: {story_bible.false_lead}
-- Chuỗi manh mối có cấu trúc (CHỈ chứng minh trong giới hạn what_it_proves, KHÔNG nhảy cóc sang kết luận cuối):
+- Chuỗi manh mối có cấu trúc (mỗi manh mối chỉ chứng minh trong giới hạn what_it_proves, KHÔNG nhảy cóc sang kết luận cuối; thể hiện giới hạn đó qua suy nghĩ/do dự của nhân vật, KHÔNG viết câu phân tích kiểu 'manh mối này chứng minh…'):
 {clues_summary}
 - Sổ cái nhận thức nhân vật (Knowledge Ledger):
 {knowledge_summary}
@@ -1124,8 +1228,10 @@ KỶ LUẬT NỐI MẠCH:
 Nội dung Bước ngoặt, Chuỗi Nhân Quả & Hóa giải cảm xúc của Story Bible:
 - Bước ngoặt 1 (Reveal 1): {story_bible.reveal_1}
 - Bước ngoặt 2 (Reveal 2): {story_bible.reveal_2}
-- Chuỗi nhân quả bắt buộc (CAUSE -> DECISION -> ACTION -> CONSEQUENCE - giải thích rõ tại sao giải pháp thông thường là bất khả thi):
+- Chuỗi nhân quả (CHỈ ĐỂ BẠN HIỂU, KHÔNG ĐỌC LẠI; chỉ thể hiện qua lời thú nhận, nhân chứng hoặc tài liệu nhân vật chính thấy):
 {causal_summary}
+- Căn cứ bắt buộc cho các Reveal (phải kể thành diễn biến tự nhiên, không chép nguyên trường dữ liệu):
+{reveal_proof_summary}
 - Sổ cái nhận thức nhân vật (Knowledge Ledger - TUYỆT ĐỐI KHÔNG MÂU THUẪN):
 {knowledge_summary}
 - Cao trào cảm xúc: {story_bible.emotional_payoff}
@@ -1141,7 +1247,7 @@ Cấu trúc Phân bổ Phần 2 (khoảng 40-50 phân đoạn, bắt đầu từ
    - Sự thật Bước ngoặt 1 được mở ra rõ ràng qua chứng cứ xác thực.
    - BẮT BUỘC: delivery_profile='REVEAL', importance='critical', audience_address=false (KHÔNG hỏi khán giả).
 3. Act 7: SECOND REVEAL / CAUSAL EXPLANATION (khoảng 10-12 phân đoạn, rơi vào vị trí khoảng 75-90% toàn bộ câu chuyện):
-   - Bước ngoặt 2 giải thích đầy đủ chuỗi nhân quả: Nguyên nhân (WHY) -> Lý do không thể làm cách bình thường (MOTIVATION) -> Cơ chế thực hiện thực tế (HOW) -> Hệ quả (CONSEQUENCE).
+{ACT7_CAUSAL_INSTRUCTION}
    - Tuân thủ chặt chẽ Knowledge Ledger: không viết "không ai biết / kể cả người vợ" nếu trong truyện có người thân biết sự thật.
    - BẮT BUỘC: audience_address=false. Các phân đoạn mở nút thắt chính dùng delivery_profile='REVEAL' (speed=0.92), các phân đoạn giải thích hoàn cảnh dùng delivery_profile='NORMAL'.
 4. Act 8: EMOTIONAL PAYOFF & RESOLUTION (khoảng 10-12 phân đoạn):
@@ -1190,11 +1296,16 @@ Mọi object trước đó không được cảm ơn thính giả hoặc chào t
             )
             in_tok2 += retry_in
             out_tok2 += retry_out
-            p2_data = _parse_script_segment_array(raw_retry)
+            p2_data = _parse_script_segment_array(raw_retry) or p2_data
+        if not p2_data:
+            raise RuntimeError("Gemini returned an empty or invalid Part 2 script.")
         if not _has_one_final_signoff(p1_data + p2_data):
-            raise RuntimeError("Gemini script does not contain exactly one final sign-off after retry; script rejected.")
+            logger.warning("[Gemini] Part 2 sign-off misplaced after retry; normalizing the closing segment.")
+            p2_data = _normalize_final_signoff(p2_data)
         if has_repeated_narrative_block(p1_data + p2_data):
-            raise RuntimeError("Gemini Part 2 still repeats a narrative block from Part 1 after retry; script rejected.")
+            # Script QC flags REPEATED_NARRATIVE_BLOCK and auto-repair cuts the
+            # duplicate, so keep the script instead of discarding the whole run.
+            logger.warning("[Gemini] Part 2 still repeats a Part 1 block after retry; leaving it to QC auto-repair.")
 
         combined_data = p1_data + p2_data
         segments: List[ScriptSegment] = []
@@ -1269,7 +1380,7 @@ Mọi object trước đó không được cảm ơn thính giả hoặc chào t
             total_words=total_words,
             status="DRAFT",
             generation_request_id=str(uuid.uuid4()),
-            prompt_version="script-v3.1",
+            prompt_version="script-v3.2",
             generation_source="REAL_AI",
             model_name=self.last_used_model or model or self.default_model,
             provider_name="GeminiScriptAIProvider",
@@ -1277,6 +1388,19 @@ Mọi object trước đó không được cảm ơn thính giả hoặc chào t
             updated_at=time.time(),
         )
         return script, in_tok1 + in_tok2, out_tok1 + out_tok2
+
+    def complete_json(self, system_instruction: str, prompt: str, model: Optional[str] = None) -> Tuple[str, int, int]:
+        """Single JSON completion used by QC review and segment rewriting."""
+        # Review and targeted rewrites need careful reading more than variety.
+        # Stick to the model that last judged this job: different models grade
+        # differently, so switching judges between repair rounds stops QC from
+        # converging. The chain still falls back if that model becomes unusable.
+        result = self._call_generate_content(
+            prompt=prompt, model=model or self._sticky_review_model or None, response_json=True,
+            system_instruction=system_instruction, temperature=0.2, thinking_budget=4096, allow_lite_models=False,
+        )
+        self._sticky_review_model = self.last_used_model
+        return result
 
     def review_script(
         self,
@@ -1298,12 +1422,9 @@ Mọi object trước đó không được cảm ơn thính giả hoặc chào t
         model: Optional[str] = None,
     ) -> Tuple[FullScript, int, int]:
         """Performs targeted script revisions to resolve QC issues without hardcoded sentence injection."""
-        from apps.script_factory.script_qc import apply_targeted_repairs
+        from apps.script_factory.segment_rewriter import revise_with_ai
 
-        script.revision_round += 1
-        script = apply_targeted_repairs(script, story_bible, qc_report)
-
-        script.total_words = sum(len(s.text.split()) for s in script.segments)
-        script.updated_at = time.time()
-        return script, 100, 100
-
+        return revise_with_ai(
+            script, story_bible, qc_report,
+            lambda system, prompt: self.complete_json(system, prompt, model=model),
+        )

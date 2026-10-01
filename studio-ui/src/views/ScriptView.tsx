@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   FileText,
   Eye,
@@ -105,16 +105,21 @@ export const ScriptView: React.FC<Props> = ({
     'Đang kiểm định QC và tính toán độ dài lời dẫn...',
   ];
 
-  const fetchScriptData = (clearError = true) => {
+  const activeProjectIdRef = useRef(projectId);
+
+  const fetchScriptData = (clearError = true, targetProjectId = projectId) => {
     setLoading(true);
     if (clearError) setErrorMessage('');
     return Promise.all([
-      fetch(`/api/projects/${projectId}/script`).then((r) => r.json()),
-      fetch(`/api/projects/${projectId}/script/full`).then((r) => r.json()),
-      fetch(`/api/projects/${projectId}/script/qc`).then((r) => (r.ok ? r.json() : null)),
-      fetch(`/api/projects/${projectId}`).then((r) => r.json()),
+      fetch(`/api/projects/${targetProjectId}/script`).then((r) => r.json()),
+      fetch(`/api/projects/${targetProjectId}/script/full`).then((r) => r.json()),
+      fetch(`/api/projects/${targetProjectId}/script/qc`).then((r) => (r.ok ? r.json() : null)),
+      fetch(`/api/projects/${targetProjectId}`).then((r) => r.json()),
     ])
       .then(([segs, full, qc, proj]) => {
+        if (activeProjectIdRef.current !== targetProjectId) {
+          return;
+        }
         setSegments(Array.isArray(segs) ? segs : []);
         setFullText(full?.text || '');
         setArtifactStatus(normalizeArtifactStatus(full));
@@ -126,11 +131,16 @@ export const ScriptView: React.FC<Props> = ({
         }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        if (activeProjectIdRef.current === targetProjectId) {
+          setLoading(false);
+        }
+      });
   };
 
   useEffect(() => {
-    fetchScriptData();
+    activeProjectIdRef.current = projectId;
+    fetchScriptData(true, projectId);
   }, [projectId]);
 
   const handleGenerateScript = async (force: boolean = false) => {
@@ -413,23 +423,15 @@ export const ScriptView: React.FC<Props> = ({
               <p className="text-[11px] text-[#3B82F6] mt-0.5">
                 {generationStages[generationStep]}
               </p>
+              <p className="text-[10px] text-[#64748B] mt-1">
+                Thời gian thực tế phụ thuộc model và quota (thường 2–8 phút). Xem tiến trình thật trong Nhật ký xử lý ở cột bên phải.
+              </p>
             </div>
-          </div>
-
-          <div className="w-full bg-[#0B0F17] rounded-full h-2 overflow-hidden border border-[#28354D]">
-            <div
-              className="bg-[#3B82F6] h-full transition-all duration-500 rounded-full"
-              style={{
-                width: `${Math.round(((generationStep + 1) / generationStages.length) * 100)}%`,
-              }}
-            />
-          </div>
-          <div className="flex justify-between text-[10px] text-[#64748B]">
-            <span>Giai đoạn {generationStep + 1} / {generationStages.length}</span>
-            <span>{Math.round(((generationStep + 1) / generationStages.length) * 100)}%</span>
           </div>
         </div>
       )}
+
+
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-4">
@@ -492,7 +494,7 @@ export const ScriptView: React.FC<Props> = ({
             </div>
 
             {/* Continuous reading paragraphs */}
-            <div className="text-sm text-[#E2E8F0] leading-relaxed space-y-4 font-serif">
+            <div className="text-sm text-[#E2E8F0] leading-relaxed space-y-4 font-['Noto_Serif','Times_New_Roman',serif]">
               {fullText ? (
                 fullText.split('\n\n').map((paragraph, i) => (
                   <p key={i} className="indent-6 leading-7">

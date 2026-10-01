@@ -70,7 +70,7 @@ def test_gemini_retries_part_one_when_it_signs_off_early(monkeypatch):
     assert output_tokens == 60
 
 
-def test_gemini_rejects_script_when_second_part_still_has_early_signoff(monkeypatch):
+def test_gemini_normalizes_signoff_when_second_part_still_has_early_signoff(monkeypatch):
     provider = GeminiScriptAIProvider(api_key="fake")
     valid_part_one = [
         _segment("001", "Nam bắt đầu tìm hiểu dấu hiệu lạ.", "HOOK"),
@@ -89,8 +89,12 @@ def test_gemini_rejects_script_when_second_part_still_has_early_signoff(monkeypa
     monkeypatch.setattr(provider, "_call_generate_content", fake_call)
     monkeypatch.setattr("apps.script_factory.providers.gemini_provider.time.sleep", lambda _seconds: None)
 
-    with pytest.raises(RuntimeError, match="exactly one final sign-off"):
-        provider.write_script(_bible(), {}, {})
+    script, _in, _out = provider.write_script(_bible(), {}, {})
+    texts = [segment.text for segment in script.segments]
+    signoffs = [i for i, text in enumerate(texts) if "hẹn gặp lại" in text]
+    assert signoffs == [len(texts) - 1]
+    assert [s.delivery_profile for s in script.segments].count("ENDING") == 1
+    assert "Sau đó Nam lại tiếp tục điều tra." in texts
 
 
 def test_gemini_retries_part_two_when_it_restarts_part_one(monkeypatch):

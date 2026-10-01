@@ -1,12 +1,14 @@
 import React from 'react';
 import { Sliders, Video, Image as ImageIcon, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { SceneItem, ScriptSegment } from '../types';
+import { LiveLogPanel } from './LiveLogPanel';
 
 interface Props {
   selectedScene?: SceneItem | null;
   selectedSegment?: ScriptSegment | null;
   advancedMode: boolean;
   onToggleSceneMode?: (sceneId: string, currentMode: string) => void;
+  projectId?: string | null;
 }
 
 export const RightInspector: React.FC<Props> = ({
@@ -14,9 +16,10 @@ export const RightInspector: React.FC<Props> = ({
   selectedSegment,
   advancedMode,
   onToggleSceneMode,
+  projectId,
 }) => {
   return (
-    <aside className="w-80 border-l border-[#28354D] bg-[#111827] flex flex-col select-none overflow-y-auto">
+    <aside className="w-80 border-l border-[#28354D] bg-[#111827] flex flex-col select-none min-h-0">
       {/* Header */}
       <div className="h-10 border-b border-[#28354D] px-3.5 flex items-center justify-between">
         <div className="flex items-center space-x-1.5 text-xs font-semibold text-[#F8FAFC]">
@@ -31,7 +34,8 @@ export const RightInspector: React.FC<Props> = ({
       </div>
 
       {/* Content */}
-      <div className="p-3.5 space-x-0 space-y-4 text-xs">
+      {/* Inspector details take what they need (up to half); the live log fills the rest. */}
+      <div className="p-3.5 space-x-0 space-y-4 text-xs shrink-0 max-h-[50%] overflow-y-auto">
         {selectedScene ? (
           <>
             {/* Visual Mode Selector */}
@@ -195,11 +199,13 @@ export const RightInspector: React.FC<Props> = ({
             </div>
           </>
         ) : (
-          <div className="py-12 text-center text-[#64748B]">
+          <div className="py-2 text-center text-[#64748B]">
             <p>Chọn một Scene hoặc Đoạn kịch bản để xem thông tin chi tiết.</p>
           </div>
         )}
       </div>
+
+      <LiveLogPanel projectId={projectId} />
     </aside>
   );
 };

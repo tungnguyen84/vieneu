@@ -8,6 +8,7 @@ import re
 import shutil
 import sys
 import threading
+import time
 from pathlib import Path
 from typing import Any, BinaryIO, Dict, List, Optional
 
@@ -123,17 +124,21 @@ class AudioService:
     def get_audio_stem_path(self, project_id: str, stem: str = "final") -> Optional[Path]:
         stem = (stem or "final").lower().strip()
         project_audio = self._project_audio_dir(project_id)
-        legacy_audio = PILOT_03_AUDIO / project_id
+        is_legacy = project_id in {"EP003", "EP011"}
+        legacy_audio = (PILOT_03_AUDIO / project_id) if is_legacy else None
 
         if stem == "music":
             music_candidates = [
                 project_audio / "music_mix.wav",
                 project_audio / "master" / "music_mix.wav",
                 project_audio / "mix" / "music_mix.wav",
-                legacy_audio / "audio" / "music_mix.wav",
-                legacy_audio / "master" / "music_mix.wav",
-                legacy_audio / "music_mix.wav",
             ]
+            if legacy_audio and legacy_audio.exists():
+                music_candidates.extend([
+                    legacy_audio / "audio" / "music_mix.wav",
+                    legacy_audio / "master" / "music_mix.wav",
+                    legacy_audio / "music_mix.wav",
+                ])
             for c in music_candidates:
                 if c.exists():
                     return c
@@ -147,34 +152,37 @@ class AudioService:
                 project_audio / "narration.mp3",
                 project_audio / "tts" / "master" / "voice_master.wav",
                 project_audio / "tts" / "narration.wav",
-                legacy_audio / "audio" / "narration_dry.wav",
-                legacy_audio / "audio" / "narration_dry.mp3",
-                legacy_audio / "narration_dry.wav",
-                legacy_audio / "narration_dry.mp3",
-                legacy_audio / "narration.wav",
-                legacy_audio / "master" / "voice_master.wav",
                 project_audio / f"{project_id}_imported_master.wav",
                 project_audio / f"{project_id}_imported_master.mp3",
             ]
+            if legacy_audio and legacy_audio.exists():
+                dry_candidates.extend([
+                    legacy_audio / "audio" / "narration_dry.wav",
+                    legacy_audio / "audio" / "narration_dry.mp3",
+                    legacy_audio / "narration_dry.wav",
+                    legacy_audio / "narration_dry.mp3",
+                    legacy_audio / "narration.wav",
+                    legacy_audio / "master" / "voice_master.wav",
+                ])
             for c in dry_candidates:
                 if c.exists():
                     return c
             return None
 
-        # stem == "final" (Bản mix hoàn chỉnh ưu tiên final_mix có BGM, nếu chưa có thì fallback về narration)
+        # stem == "final"
+        # 1. Check if narration is newer than final_mix (narration was regenerated)
+        dry_path = self.get_audio_stem_path(project_id, stem="dry")
+        final_file = project_audio / "final_mix.wav"
+        if final_file.exists() and dry_path and dry_path.exists():
+            if dry_path.stat().st_mtime > final_file.stat().st_mtime:
+                # Narration was updated AFTER final_mix was rendered! Prioritize fresh narration.
+                return dry_path
+
         final_candidates = [
             project_audio / "final_mix.wav",
             project_audio / "final_mix.mp3",
             project_audio / "master" / "final_mix.wav",
             project_audio / "master" / "final_mix.mp3",
-            legacy_audio / "audio" / "final_mix.wav",
-            legacy_audio / "audio" / "final_mix.mp3",
-            legacy_audio / "final_mix.wav",
-            legacy_audio / "final_mix.mp3",
-            legacy_audio / "master" / "final_mix.wav",
-            legacy_audio / "master" / "final_mix.mp3",
-            legacy_audio / f"{project_id}_audio_formula_v1_master.wav",
-            legacy_audio / "audio_master" / "final_mix.wav",
             project_audio / "narration.wav",
             project_audio / "narration.mp3",
             project_audio / "narration_dry.wav",
@@ -182,18 +190,29 @@ class AudioService:
             project_audio / f"{project_id}_imported_master.wav",
             project_audio / f"{project_id}_imported_master.mp3",
             project_audio / f"{project_id}_imported_master.m4a",
-            legacy_audio / "narration.wav",
-            legacy_audio / "narration_dry.wav",
-            legacy_audio / "master.wav",
         ]
+        if legacy_audio and legacy_audio.exists():
+            final_candidates.extend([
+                legacy_audio / "audio" / "final_mix.wav",
+                legacy_audio / "audio" / "final_mix.mp3",
+                legacy_audio / "final_mix.wav",
+                legacy_audio / "final_mix.mp3",
+                legacy_audio / "master" / "final_mix.wav",
+                legacy_audio / "master" / "final_mix.mp3",
+                legacy_audio / f"{project_id}_audio_formula_v1_master.wav",
+                legacy_audio / "audio_master" / "final_mix.wav",
+                legacy_audio / "narration.wav",
+                legacy_audio / "narration_dry.wav",
+                legacy_audio / "master.wav",
+            ])
+
         for candidate in final_candidates:
             if candidate.exists():
                 return candidate
-        for directory in (project_audio, legacy_audio):
-            if directory.exists():
-                masters = sorted(directory.rglob("*final_mix*.wav")) + sorted(directory.rglob("*master*.wav")) + sorted(directory.glob("*.wav"))
-                if masters:
-                    return masters[0]
+        if project_audio.exists():
+            masters = sorted(project_audio.rglob("*final_mix*.wav")) + sorted(project_audio.rglob("*master*.wav")) + sorted(project_audio.glob("*.wav"))
+            if masters:
+                return masters[0]
         return None
 
     def get_audio_master_path(self, project_id: str) -> Optional[Path]:
@@ -287,6 +306,18 @@ class AudioService:
                 }
                 for c in cue_sheet_data
             ]
+            bgm_vol = 0.0
+            if "bgm_volume_db" in mix_report_data:
+                bgm_vol = float(mix_report_data["bgm_volume_db"])
+            else:
+                config_path = project_audio / "mix_config.json"
+                if config_path.exists():
+                    try:
+                        cfg = json.loads(config_path.read_text(encoding="utf-8"))
+                        bgm_vol = float(cfg.get("bgm_volume_db") or 0.0)
+                    except Exception:
+                        pass
+
             bgm_info = {
                 "coverage_percent": cov.get("coverage_percent", 0.0),
                 "music_duration_sec": cov.get("music_duration_sec", 0.0),
@@ -296,6 +327,7 @@ class AudioService:
                 "target_recommendation": cov.get("target_recommendation", "30% – 38%"),
                 "is_high_coverage": cov.get("is_high_coverage", False),
                 "ducking_enabled": mix_report_data.get("ducking_enabled", True),
+                "bgm_volume_db": bgm_vol,
                 "master_integrated_lufs": mix_report_data.get("master_integrated_lufs", -14.0),
                 "master_true_peak_db": mix_report_data.get("master_true_peak_db", -1.0),
                 "cues": music_cues_summary,
@@ -327,7 +359,7 @@ class AudioService:
             "channels": metadata["channels"],
             "format": master.suffix.lstrip(".").upper(),
             "file_path": str(master),
-            "waveform_peaks": self._generate_peaks(duration),
+            "waveform_peaks": self._generate_peaks(duration, audio_path=master),
             "markers": markers,
             "has_bgm": has_bgm,
             "bgm_info": bgm_info,
@@ -341,16 +373,31 @@ class AudioService:
             "script_lineage": lineage,
         }
 
-    def _generate_peaks(self, duration: float, count: int = 120) -> List[float]:
-        import random
-        rng = random.Random(int(duration * 1000))
-        peaks = []
-        for index in range(count):
-            ratio = index / count
-            boost = 1.3 if (0.62 <= ratio <= 0.68 or 0.82 <= ratio <= 0.88) else 1.0
-            base = 0.25 + 0.55 * abs(math.sin(index * 0.18)) * rng.uniform(0.6, 1.0)
-            peaks.append(round(min(1.0, max(0.08, base * boost)), 3))
-        return peaks
+    def _generate_peaks(self, duration: float, count: int = 120, audio_path: Optional[Path] = None) -> List[float]:
+        if audio_path and audio_path.exists():
+            try:
+                import soundfile as sf
+                import numpy as np
+                data, sr = sf.read(str(audio_path), dtype="float32")
+                if data.ndim > 1:
+                    data = np.mean(data, axis=1)
+                total_samples = len(data)
+                if total_samples > 0:
+                    samples_per_bin = max(1, total_samples // count)
+                    peaks = []
+                    for i in range(count):
+                        start_idx = i * samples_per_bin
+                        end_idx = min(total_samples, start_idx + samples_per_bin)
+                        if start_idx < total_samples:
+                            chunk = data[start_idx:end_idx]
+                            val = float(np.max(np.abs(chunk))) if len(chunk) > 0 else 0.05
+                            peaks.append(round(min(1.0, max(0.05, val)), 3))
+                        else:
+                            peaks.append(0.05)
+                    return peaks
+            except Exception:
+                pass
+        return [0.05] * count
 
     def list_voices(self) -> Dict[str, Any]:
         saved_ids = set()
@@ -437,7 +484,7 @@ class AudioService:
         return {"voice_id": voice_id, **self.list_voices()}
 
     def auto_mix_background_music(
-        self, project_id: str, enable_ducking: bool = True, target_lufs: float = -14.0
+        self, project_id: str, enable_ducking: bool = True, target_lufs: float = -14.0, bgm_volume_db: float = 0.0
     ) -> Dict[str, Any]:
         require_current_full_script(project_id, PROJECTS_DIR)
         from apps.music_engine import (
@@ -594,7 +641,7 @@ class AudioService:
             total_episode_sec=total_duration
         )
 
-        # 6. Render & Master final mix (-14 LUFS, -1 dBTP)
+        # 6. Render & Master final mix (-14 LUFS, -1 dBTP, additive bgm_volume_db)
         ok, msg, mix_report = build_final_mix(
             project_dir=project_audio,
             voice_master_path=active_voice_path,
@@ -604,10 +651,22 @@ class AudioService:
             ducking_db=-2.5,
             target_lufs=target_lufs,
             true_peak_db=-1.0,
-            sample_rate=48000
+            sample_rate=48000,
+            bgm_volume_db=bgm_volume_db,
         )
         if not ok:
             raise RuntimeError(f"Hòa âm BGM thất bại: {msg}")
+
+        # Save mix config
+        mix_config = {
+            "enable_ducking": enable_ducking,
+            "target_lufs": target_lufs,
+            "bgm_volume_db": bgm_volume_db,
+            "updated_at": time.time(),
+        }
+        (project_audio / "mix_config.json").write_text(
+            json.dumps(mix_config, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
         # 7. Đồng bộ ra thư mục gốc của audio
         master_dir = project_audio / "master"

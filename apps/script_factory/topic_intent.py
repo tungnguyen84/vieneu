@@ -238,6 +238,10 @@ class TopicIntent:
                 "nhân tình", "người tình", "lén lút", "lừa dối", "phản bội", "ly hôn", "ngoài luồng",
                 "mối quan hệ tình cảm", "quan hệ tình cảm bí mật", "mối quan hệ bí mật",
                 "vượt qua ranh giới đồng nghiệp", "không chung thủy", "che giấu mối quan hệ",
+                # Shown rather than labelled: the writer prompt forbids naming the
+                # affair outright, so centrality must also credit described behaviour.
+                "hẹn hò", "thân mật", "qua lại với", "mối quan hệ với", "vượt mức đồng nghiệp",
+                "vượt quá giới hạn", "quan hệ riêng tư", "cuộc hẹn riêng", "dối trá",
             ]
         elif is_family and not any(k in self.original_topic.lower() for k in ["gửi tiền", "cuộc gọi", "đã mất", "8 năm", "5 năm"]):
             strict_theme_tokens = list(dict.fromkeys(primary_tokens + ["gia đình", "người thân", "ruột thịt", "máu mủ", "mái ấm", "bố mẹ", "cha mẹ", "con cái", "ông bà", "anh em", "vợ chồng", "bí mật gia đình"]))
@@ -316,7 +320,9 @@ class TopicIntent:
         reveal_context_hits = sum(1 for ct in context_tokens if ct in cleaned_reveals)
 
         # Check if reveals are hijacked by foreign medical/land tropes
-        has_hijacked_reveals = any(tr in cleaned_reveals for tr in ["phẫu thuật", "bệnh viện", "bán mảnh đất", "đất hương hỏa", "viện phí", "100.000.000", "bệnh án"])
+        # "bệnh viện" alone is not a hijack: childbirth or a DNA test happens there in
+        # perfectly on-topic affair stories. Surgery/fees/records/land sales are the trope.
+        has_hijacked_reveals = any(tr in cleaned_reveals for tr in ["phẫu thuật", "bán mảnh đất", "đất hương hỏa", "viện phí", "100.000.000", "bệnh án"])
 
         if has_hijacked_reveals and is_infidelity:
             reveal_align = 0.0
@@ -346,7 +352,6 @@ class TopicIntent:
         if is_infidelity_topic:
             foreign_tropes = [
                 ("phẫu thuật", 25.0),
-                ("bệnh viện", 15.0),
                 ("bán mảnh đất", 25.0),
                 ("đất hương hỏa", 25.0),
                 ("viện phí", 20.0),

@@ -102,6 +102,24 @@ class StoryQCEngine:
         self.novelty_engine = novelty_engine or NoveltyEngine()
         self.plausibility_engine = PlausibilityEngine()
         self.provider = provider
+        self._bible_review_cache: Dict[str, Dict[str, Any]] = {}
+
+    def _semantic_bible_review(self, bible: StoryBible) -> Optional[Dict[str, Any]]:
+        """LLM plot-logic review, cached per Story Bible content (audits repeat often)."""
+        complete_json = getattr(self.provider, "complete_json", None)
+        if not callable(complete_json):
+            return None
+        from apps.script_factory.semantic_review import review_story_bible_logic, story_bible_content_hash
+        key = story_bible_content_hash(bible)
+        if key not in self._bible_review_cache:
+            try:
+                self._bible_review_cache[key] = review_story_bible_logic(
+                    bible, lambda system, prompt: complete_json(system, prompt)
+                )
+            except Exception as exc:
+                logger.warning(f"[StoryQCEngine] Semantic Story Bible review failed: {exc}")
+                return {"status": "ERROR", "error": str(exc), "issues": []}
+        return self._bible_review_cache[key]
 
     def audit_idea(
         self,
@@ -745,6 +763,24 @@ class StoryQCEngine:
                 target=v3_iss.get("target", "story_bible"),
             )
 
+        # 7. SEMANTIC PLOT LOGIC (LLM): reveals the narrator cannot know, illegal
+        # endings, verdicts without proof. Feeds the existing AI repair rounds.
+        semantic = self._semantic_bible_review(bible)
+        if semantic and semantic.get("status") == "ERROR":
+            _add_issue(
+                rule="SEMANTIC_REVIEW_FAILED",
+                message=f"Kiểm tra semantic logic Story Bible thất bại: {semantic.get('error')}",
+                severity="CRITICAL",
+                target="story_bible",
+            )
+        for sem_issue in (semantic or {}).get("issues", []):
+            _add_issue(
+                rule=sem_issue["rule"],
+                message=f"{sem_issue['message']} (Trích: \"{sem_issue['excerpt']}\")",
+                severity="CRITICAL",
+                target=sem_issue.get("target", "story_bible"),
+            )
+
         status = "PASS" if not issues else "FAIL"
         if status == "FAIL":
             bible.status = ApprovalStatus.NEEDS_LOGIC_REWRITE.value
@@ -807,17 +843,48 @@ class StoryQCEngine:
         if active_provider and hasattr(active_provider, "repair_story_bible") and report.issues:
             cur_bible = bible
             cur_report = report
+            round_issues = list(report.issues)
             for round_idx in range(3):
                 try:
                     logger.info(f"[StoryQCEngine] Running AI repair round {round_idx + 1}/3 with {len(cur_report.issues)} issues...")
-                    repaired, _, _ = active_provider.repair_story_bible(cur_bible, cur_report.issues)
+                    targets = {
+                        str(iss.get("target")) for iss in cur_report.issues
+                        if isinstance(iss, dict) and iss.get("target") and hasattr(cur_bible, str(iss.get("target")))
+                    }
+                    before = {t: json.dumps(getattr(cur_bible, t), ensure_ascii=False, default=str) for t in targets}
+                    repaired, _, _ = active_provider.repair_story_bible(cur_bible, round_issues)
+                    untouched = sorted(
+                        t for t in targets
+                        if json.dumps(getattr(repaired, t), ensure_ascii=False, default=str) == before[t]
+                    )
                     recheck = self.audit_story_bible(repaired)
                     repaired.story_qc_report = recheck.to_dict()
                     cur_bible = repaired
                     cur_report = recheck
+                    logger.info(
+                        f"[StoryQCEngine] Sau vòng sửa {round_idx + 1}: {recheck.status}"
+                        + (f" — còn {', '.join(recheck.rule_codes)}" if recheck.rule_codes else "")
+                    )
                     if recheck.status == "PASS" or not any(iss.get("severity") == "CRITICAL" for iss in recheck.issues):
                         logger.info(f"[StoryQCEngine] AI repair round {round_idx + 1} passed (status: {recheck.status})!")
                         return cur_bible
+                    # Models told "do not change the plot" often return the flagged
+                    # field verbatim; say so explicitly in the next round.
+                    round_issues = list(recheck.issues)
+                    if untouched:
+                        logger.warning(f"[StoryQCEngine] AI không sửa trường bị báo lỗi: {', '.join(untouched)}")
+                        round_issues += [
+                            {
+                                "rule": "FIELD_NOT_REPAIRED",
+                                "severity": "CRITICAL",
+                                "target": field_name,
+                                "message": (
+                                    f"Vòng sửa trước KHÔNG thay đổi trường '{field_name}' nên lỗi vẫn còn. BẮT BUỘC viết lại "
+                                    f"nội dung trường '{field_name}' (giữ ý chính của câu chuyện) để khắc phục các lỗi nhắm vào nó."
+                                ),
+                            }
+                            for field_name in untouched
+                        ]
                 except Exception as e:
                     logger.warning(f"[StoryQCEngine] Provider repair_story_bible round {round_idx + 1} failed: {e}.")
                     break

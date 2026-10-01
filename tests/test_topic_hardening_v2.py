@@ -216,7 +216,7 @@ def test_internal_template_labels_block_tts():
 def test_production_never_silently_uses_mock_provider():
     """6. In production mode (APP_ENV != 'test'), missing credentials raise explicit error."""
     with patch.dict(os.environ, {"APP_ENV": "production", "PYTEST_CURRENT_TEST": ""}):
-        with patch("studio.backend.services.generation_service.get_active_api_key", return_value=""):
+        with patch("studio.backend.services.generation_service.get_active_api_key", return_value=""),                 patch("studio.backend.services.generation_service.get_active_api_keys", return_value=[]):
             srv = GenerationService()
             with pytest.raises(RuntimeError) as exc_info:
                 srv.get_provider()

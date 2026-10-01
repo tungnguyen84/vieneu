@@ -38,6 +38,9 @@ def test_set_default_provider_persists_and_reports():
 def test_get_configured_ai_provider_resolution():
     """Verifies get_configured_ai_provider respects explicit overrides and default settings."""
     os.environ["APP_ENV"] = "test"
+    # Credentials come from the isolated test secrets file (see conftest), not the machine.
+    save_provider_credentials(provider_id="openai_compatible", api_key="sk-test-only", base_url="http://mock-llm.local/v1")
+    save_provider_credentials(provider_id="gemini", api_key="AIza-test-only")
 
     # Explicit provider override
     p_openai = get_configured_ai_provider(provider_id="openai_compatible", model_id="my-custom-model")
@@ -113,3 +116,12 @@ def test_server_set_default_endpoint():
     assert resp.status_code == 200
     data = resp.json()
     assert data["default_provider"] == "gemini"
+
+
+def test_saving_credentials_keeps_backups_of_previous_settings():
+    from studio.backend import credentials
+
+    save_provider_credentials(provider_id="gemini", api_key="AIza-first")
+    save_provider_credentials(provider_id="gemini", api_key="AIza-second")
+    backups = list((credentials.SECRETS_DIR / "backups").glob("providers-*.enc"))
+    assert backups, "previous settings must be backed up before overwrite"

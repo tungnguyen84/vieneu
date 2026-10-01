@@ -3,7 +3,7 @@
   "project": {
     "series": "Sau Cánh Cửa",
     "production_id": "PRODUCTION_PILOT_03",
-    "exported_at": 1790757370.357,
+    "exported_at": 1790782875.576,
     "export_status": "GOOGLE_FLOW_EXPORT_READY"
   },
   "episodes": [
@@ -466,7 +466,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_002",
@@ -510,7 +518,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_003",
@@ -550,7 +566,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_004",
@@ -590,7 +607,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_005",
@@ -626,7 +651,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_006",
@@ -676,7 +702,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_007",
@@ -720,7 +754,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_008",
@@ -764,7 +799,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_009",
@@ -807,7 +850,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_010",
@@ -845,7 +896,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_011",
@@ -883,7 +935,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_012",
@@ -923,7 +976,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_013",
@@ -967,7 +1028,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_014",
@@ -1007,7 +1076,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_015",
@@ -1047,7 +1124,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_016",
@@ -1089,7 +1174,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_017",
@@ -1129,7 +1222,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_018",
@@ -1167,7 +1268,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_019",
@@ -1213,7 +1315,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_020",
@@ -1255,7 +1365,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_CHU_MINH",
+              "name": "Chú Minh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_021",
@@ -1299,7 +1423,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_CHU_MINH",
+              "name": "Chú Minh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_022",
@@ -1339,7 +1471,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_CHU_MINH",
+              "name": "Chú Minh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_023",
@@ -1379,7 +1519,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_024",
@@ -1424,7 +1572,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_CHU_MINH",
+              "name": "Chú Minh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_025",
@@ -1462,7 +1624,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_026",
@@ -1498,7 +1661,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_027",
@@ -1538,7 +1702,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_CHU_MINH",
+              "name": "Chú Minh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_028",
@@ -1578,7 +1750,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_029",
@@ -1626,7 +1806,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_BA_HAO_YOUNG",
+              "name": "Bà Hảo (Young 1970s-1990s)",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_BA_THOA_YOUNG",
+              "name": "Bà Thoa (Young 1970s-1990s)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_030",
@@ -1664,7 +1858,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_031",
@@ -1706,7 +1901,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_032",
@@ -1742,7 +1938,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_033",
@@ -1782,7 +1979,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_034",
@@ -1822,7 +2020,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_035",
@@ -1864,7 +2070,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_CHU_MINH",
+              "name": "Chú Minh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_036",
@@ -1904,7 +2124,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_037",
@@ -1944,7 +2165,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_038",
@@ -1990,7 +2212,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_039",
@@ -2036,7 +2266,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_BA_THOA_ELDER",
+              "name": "Bà Thoa (Elder)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_040",
@@ -2084,7 +2328,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_BA_THOA_ELDER",
+              "name": "Bà Thoa (Elder)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_041",
@@ -2126,7 +2384,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_BA_THOA_ELDER",
+              "name": "Bà Thoa (Elder)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_042",
@@ -2162,7 +2434,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_043",
@@ -2198,7 +2471,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_044",
@@ -2246,7 +2520,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_MAI",
+              "name": "Mai",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_CHU_MINH",
+              "name": "Chú Minh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_045",
@@ -2288,7 +2576,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         }
       ],
       "qc_summary": {
@@ -2797,7 +3086,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_002",
@@ -2841,7 +3138,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_003",
@@ -2877,7 +3182,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_004",
@@ -2913,7 +3219,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_005",
@@ -2953,7 +3260,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_006",
@@ -2993,7 +3308,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_NAM_PRESENT",
+              "name": "Nam (Present)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_007",
@@ -3033,7 +3356,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_008",
@@ -3083,7 +3414,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_009",
@@ -3125,7 +3464,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_010",
@@ -3169,7 +3509,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_011",
@@ -3209,7 +3557,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_012",
@@ -3251,7 +3600,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_NAM_PRESENT",
+              "name": "Nam (Present)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_013",
@@ -3291,7 +3654,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_014",
@@ -3337,7 +3708,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_015",
@@ -3381,7 +3760,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_016",
@@ -3423,7 +3810,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_017",
@@ -3463,7 +3851,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_018",
@@ -3503,7 +3899,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_019",
@@ -3549,7 +3953,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_020",
@@ -3589,7 +4001,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_021",
@@ -3631,7 +4051,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_NURSE_OLD",
+              "name": "Y tá trưởng bệnh viện Nam Định",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_022",
@@ -3671,7 +4105,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_023",
@@ -3717,7 +4159,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_024",
@@ -3763,7 +4213,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_025",
@@ -3801,7 +4259,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_026",
@@ -3837,7 +4296,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_027",
@@ -3875,7 +4335,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_028",
@@ -3915,7 +4376,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_029",
@@ -3955,7 +4424,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_THAO_2012",
+              "name": "Thảo (2012)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_030",
@@ -3995,7 +4472,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_NAM_YOUNG_2012",
+              "name": "Nam (Young 2012)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_031",
@@ -4036,7 +4521,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_032",
@@ -4076,7 +4562,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_033",
@@ -4118,7 +4605,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_NAM_YOUNG_2012",
+              "name": "Nam (Young 2012)",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_BE_AN_INFANT_2012",
+              "name": "Bé An (Infant 2012-2013)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_034",
@@ -4156,7 +4657,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_035",
@@ -4196,7 +4698,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_NAM_PRESENT",
+              "name": "Nam (Present)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_036",
@@ -4236,7 +4746,15 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_037",
@@ -4272,7 +4790,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_038",
@@ -4326,7 +4845,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_NAM_PRESENT",
+              "name": "Nam (Present)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_039",
@@ -4368,7 +4901,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_NAM_PRESENT",
+              "name": "Nam (Present)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_040",
@@ -4410,7 +4957,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_NAM_PRESENT",
+              "name": "Nam (Present)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_041",
@@ -4446,7 +5007,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         },
         {
           "scene_id": "SC_042",
@@ -4488,7 +5050,21 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_NAM_PRESENT",
+              "name": "Nam (Present)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_043",
@@ -4532,7 +5108,27 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_NAM_PRESENT",
+              "name": "Nam (Present)",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_BE_AN_PRESENT",
+              "name": "Bé An (Present)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_044",
@@ -4582,7 +5178,27 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": [
+            {
+              "character_id": "CHAR_LINH",
+              "name": "Linh",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_NAM_PRESENT",
+              "name": "Nam (Present)",
+              "reference_required": true,
+              "reference_media_id": null
+            },
+            {
+              "character_id": "CHAR_BE_AN_PRESENT",
+              "name": "Bé An (Present)",
+              "reference_required": true,
+              "reference_media_id": null
+            }
+          ]
         },
         {
           "scene_id": "SC_045",
@@ -4624,7 +5240,8 @@
           "image_status": "NOT_GENERATED",
           "image_media_id": null,
           "video_status": "NOT_GENERATED",
-          "video_media_id": null
+          "video_media_id": null,
+          "character_dependencies": []
         }
       ],
       "qc_summary": {

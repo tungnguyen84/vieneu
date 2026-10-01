@@ -6,6 +6,8 @@ import hashlib
 import json
 import os
 import platform
+import re
+import time
 from pathlib import Path
 from cryptography.fernet import Fernet
 
@@ -46,8 +48,11 @@ SUPPORTED_PROVIDERS = [
     {
         "id": "gemini",
         "name": "Google Gemini",
-        "default_model": "gemini-2.5-flash",
-        "models": ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-pro", "gemini-1.5-flash"],
+        "default_model": "gemini-3.8-flash",
+        "models": [
+            "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash",
+            "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-flash-latest",
+        ],
         "needs_key": True,
         "env_var": "GEMINI_API_KEY",
     },
@@ -106,11 +111,45 @@ def _load_raw_secrets() -> Dict[str, Any]:
         return {"providers": {}, "default_provider": "gemini", "default_model": "gemini-2.5-flash"}
 
 
+_SECRETS_BACKUPS_KEPT = 5
+
+
+def _backup_secrets_file() -> None:
+    """Keeps the previous encrypted settings so an accidental overwrite is recoverable."""
+    if not SECRETS_FILE.exists():
+        return
+    backup_dir = SECRETS_DIR / "backups"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    (backup_dir / f"providers-{stamp}.enc").write_bytes(SECRETS_FILE.read_bytes())
+    for old in sorted(backup_dir.glob("providers-*.enc"))[:-_SECRETS_BACKUPS_KEPT]:
+        old.unlink(missing_ok=True)
+
+
 def _save_raw_secrets(data: Dict[str, Any]) -> None:
     SECRETS_DIR.mkdir(parents=True, exist_ok=True)
+    _backup_secrets_file()
     f = Fernet(_get_encryption_key())
     encrypted = f.encrypt(json.dumps(data, ensure_ascii=False).encode("utf-8"))
     SECRETS_FILE.write_bytes(encrypted)
+
+
+def parse_api_keys(raw: Any) -> List[str]:
+    """Splits pasted keys (one per line, or comma/semicolon/space separated) and de-duplicates."""
+    if isinstance(raw, (list, tuple)):
+        parts = [str(k) for k in raw]
+    else:
+        parts = re.split(r"[\s,;]+", str(raw or ""))
+    keys: List[str] = []
+    for part in parts:
+        key = part.strip().strip("\"'")
+        if key and key not in keys:
+            keys.append(key)
+    return keys
+
+
+def _stored_keys(prov_data: Dict[str, Any]) -> List[str]:
+    return parse_api_keys(prov_data.get("api_keys") or prov_data.get("api_key") or [])
 
 
 def mask_key(key: Optional[str]) -> str:
@@ -132,7 +171,8 @@ def get_public_providers_status() -> Dict[str, Any]:
         pid = p["id"]
         prov_data = saved.get(pid, {})
         env_val = os.getenv(p.get("env_var", ""), "")
-        api_key = prov_data.get("api_key") or env_val
+        keys = _stored_keys(prov_data) or parse_api_keys(env_val)
+        api_key = keys[0] if keys else ""
 
         is_connected = bool(api_key or (not p["needs_key"] and prov_data.get("base_url")))
         if is_connected:
@@ -151,7 +191,11 @@ def get_public_providers_status() -> Dict[str, Any]:
             "model_id": curr_m,
             "available_models": p["models"],
             "models": p["models"],
-            "masked_key": mask_key(api_key) if api_key else "Chưa cấu hình",
+            "masked_key": (
+                mask_key(api_key) + (f" (+{len(keys) - 1} key)" if len(keys) > 1 else "")
+            ) if api_key else "Chưa cấu hình",
+            "key_count": len(keys),
+            "masked_keys": [mask_key(k) for k in keys],
             "base_url": prov_data.get("base_url", "http://localhost:11434/v1" if pid == "local" else ""),
             "needs_key": p["needs_key"],
             "needs_base_url": p.get("needs_base_url", False),
@@ -189,11 +233,14 @@ def save_provider_credentials(
         data["providers"] = {}
 
     stored_prov = data["providers"].get(pid, {})
-    clean_key = api_key.strip() if api_key else stored_prov.get("api_key", "")
+    # A non-empty paste replaces the whole key list; empty keeps what is stored.
+    keys = parse_api_keys(api_key) if api_key and api_key.strip() else _stored_keys(stored_prov)
+    clean_key = keys[0] if keys else ""
     clean_base = base_url.strip() if base_url is not None else stored_prov.get("base_url", "")
 
     data["providers"][pid] = {
         "api_key": clean_key,
+        "api_keys": keys,
         "model": chosen_model,
         "base_url": clean_base,
     }
@@ -272,10 +319,22 @@ def test_provider_connection(
     pid = (provider_id or provider or "gemini").strip().lower()
     data = _load_raw_secrets()
     stored = data.get("providers", {}).get(pid, {})
-    if api_key is not None:
-        actual_key = api_key.strip()
+    if api_key is not None and api_key.strip():
+        keys = parse_api_keys(api_key)
     else:
-        actual_key = (stored.get("api_key") or os.getenv(f"{pid.upper()}_API_KEY", "")).strip()
+        keys = _stored_keys(stored) or parse_api_keys(os.getenv(f"{pid.upper()}_API_KEY", ""))
+    if len(keys) > 1:
+        results = [
+            test_provider_connection(provider_id=pid, api_key=k, model=model, base_url=base_url) for k in keys
+        ]
+        ok = [r for r in results if r.get("success")]
+        lines = [f"{mask_key(k)}: {'OK' if r.get('success') else r.get('message')}" for k, r in zip(keys, results)]
+        return {
+            "success": bool(ok),
+            "message": f"{len(ok)}/{len(keys)} key hoạt động. " + " | ".join(lines),
+            "model": results[0].get("model"),
+        }
+    actual_key = keys[0] if keys else ""
     actual_model = (model or stored.get("model") or "gemini-2.5-flash").strip()
     actual_url = (base_url or stored.get("base_url", "")).strip()
 
@@ -369,11 +428,17 @@ def test_provider_connection(
     return {"success": True, "message": f"Cấu hình {pid} hợp lệ ✓", "model": actual_model}
 
 
-def get_active_api_key(provider_id: str) -> Optional[str]:
-    """Returns plaintext key for active generation."""
+def get_active_api_keys(provider_id: str) -> List[str]:
+    """Returns every configured plaintext key, in rotation order."""
     data = _load_raw_secrets()
     prov_data = data.get("providers", {}).get(provider_id, {})
-    return prov_data.get("api_key") or os.getenv(f"{provider_id.upper()}_API_KEY")
+    return _stored_keys(prov_data) or parse_api_keys(os.getenv(f"{provider_id.upper()}_API_KEY", ""))
+
+
+def get_active_api_key(provider_id: str) -> Optional[str]:
+    """Returns the first plaintext key for active generation."""
+    keys = get_active_api_keys(provider_id)
+    return keys[0] if keys else None
 
 
 def fetch_available_models(provider_id: Optional[str] = None, provider: Optional[str] = None) -> Dict[str, Any]:

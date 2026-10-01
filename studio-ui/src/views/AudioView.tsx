@@ -61,6 +61,7 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
   const [globalSpeed, setGlobalSpeed] = useState(1.0);
   const [enableMusicInTts, setEnableMusicInTts] = useState(true);
   const [enableDucking, setEnableDucking] = useState(true);
+  const [bgmVolumeDb, setBgmVolumeDb] = useState<number>(0.0);
   const [selectedStem, setSelectedStem] = useState<'final' | 'dry' | 'music'>('final');
   const [modeTab, setModeTab] = useState<'master' | 'tts' | 'import'>('master');
   const [busy, setBusy] = useState('');
@@ -78,6 +79,9 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
     if (!response.ok) throw new Error(await getError(response, 'Không tải được thông tin audio'));
     const data = await response.json();
     setAudioInfo(data);
+    if (data.bgm_info && typeof data.bgm_info.bgm_volume_db === 'number') {
+      setBgmVolumeDb(data.bgm_info.bgm_volume_db);
+    }
   };
 
   const refreshVoices = async () => {
@@ -162,6 +166,7 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
       body: JSON.stringify({
         enable_ducking: enableDucking,
         target_lufs: -14.0,
+        bgm_volume_db: bgmVolumeDb,
       }),
     });
     if (!response.ok) throw new Error(await getError(response, 'Chèn nhạc nền thất bại'));
@@ -169,8 +174,9 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
     setAudioInfo(data);
     setSelectedStem('final');
     setStreamVersion((value) => value + 1);
+    const gainStr = bgmVolumeDb > 0 ? `+${bgmVolumeDb.toFixed(1)}` : bgmVolumeDb.toFixed(1);
     setMessage(
-      `Đã tự động chèn nhạc nền chuẩn Audio Formula V1 thành công! Độ phủ: ${data.bgm_info?.coverage_percent || 0}% (Chuẩn 30-38%), Master: -14 LUFS.`
+      `Đã tự động chèn nhạc nền chuẩn Audio Formula V1 thành công! Độ phủ: ${data.bgm_info?.coverage_percent || 0}% (Chuẩn 30-38%), Master: -14 LUFS, BGM Gain: ${gainStr} dB.`
     );
   });
 
@@ -211,8 +217,15 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
         </div>
         <button
           onClick={onApproveAudio}
-          disabled={!hasAudio}
-          className="flex items-center space-x-1.5 bg-[#10B981] disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+          disabled={!hasAudio || (scriptStatus && (!scriptStatus.is_current || !scriptStatus.audio_gate_allowed))}
+          title={
+            !hasAudio
+              ? 'Chưa có audio master để duyệt'
+              : scriptStatus && (!scriptStatus.is_current || !scriptStatus.audio_gate_allowed)
+              ? 'Audio Gate đang khóa: Script chưa đạt chuẩn hoặc bị thay đổi'
+              : 'Duyệt Audio Stage'
+          }
+          className="flex items-center space-x-1.5 bg-[#10B981] disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors cursor-pointer disabled:cursor-not-allowed"
         >
           <CheckCircle2 size={14} />
           <span>Duyệt Audio Stage</span>
@@ -424,6 +437,69 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
                     </div>
                   </div>
 
+                  {/* BGM Tuning Controls (Persistent Volume & Ducking) */}
+                  <div className="bg-[#0B0F17] p-3 rounded border border-[#28354D] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-[#CBD5E1]">🎚️ Điều chỉnh âm lượng & hòa âm BGM:</span>
+                      <button
+                        onClick={autoMixBgm}
+                        disabled={!!busy}
+                        className="flex items-center space-x-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white text-xs font-medium px-3 py-1 rounded transition-colors"
+                      >
+                        <RotateCcw size={12} className={busy === 'automix' ? 'animate-spin' : ''} />
+                        <span>{busy === 'automix' ? 'Đang hòa âm...' : 'Áp dụng & Hòa âm lại'}</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                      <div>
+                        <div className="flex items-center justify-between text-xs text-[#94A3B8] mb-1">
+                          <span>Âm lượng Nhạc nền (BGM Gain):</span>
+                          <span className="font-mono font-bold text-[#F8FAFC]">
+                            {bgmVolumeDb > 0 ? `+${bgmVolumeDb.toFixed(1)}` : bgmVolumeDb.toFixed(1)} dB
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="range"
+                            min="-24"
+                            max="6"
+                            step="0.5"
+                            value={bgmVolumeDb}
+                            onChange={(e) => setBgmVolumeDb(parseFloat(e.target.value))}
+                            className="flex-1 accent-[#3B82F6]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setBgmVolumeDb(0.0)}
+                            className="text-[10px] bg-[#1E293B] hover:bg-[#334155] text-[#94A3B8] hover:text-white px-2 py-0.5 rounded cursor-pointer transition-colors"
+                            title="Đặt lại mức chuẩn 0.0 dB của Audio Formula V1"
+                          >
+                            Reset (0 dB)
+                          </button>
+                        </div>
+                        <span className="text-[10px] text-[#64748B] block mt-1">
+                          Mức 0.0 dB giữ nguyên cân bằng âm phổ chuẩn Sau Cánh Cửa. Tăng/giảm dB tác động trực tiếp vào WAV master.
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col justify-center">
+                        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={enableDucking}
+                            onChange={(e) => setEnableDucking(e.target.checked)}
+                            className="accent-[#3B82F6]"
+                          />
+                          <span>Tự động giảm nhẹ nhạc nền khi MC nói (Gentle Ducking -2.5dB)</span>
+                        </label>
+                        <span className="text-[10px] text-[#64748B] ml-5 mt-0.5">
+                          Tự dập nhạc xuống -2.5 dB khi phát hiện giọng dẫn và trả về mượt mà ở các khoảng nghỉ.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Visual Cue Timeline */}
                   {bgmInfo.cues && bgmInfo.cues.length > 0 && (
                     <div className="space-y-1.5 pt-1">
@@ -468,20 +544,50 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
               ) : (
                 <div className="bg-[#0B0F17] p-4 rounded border border-[#EAB308]/30 space-y-3">
                   <p className="text-xs text-[#CBD5E1] leading-relaxed">
-                    Bản thu hiện tại chưa được ghép nhạc nền (đang là giọng đọc mộc). Nhấn nút bên dưới để tự động phân
+                    Bản thu hiện tại chưa được ghép nhạc nền (đang là giọng đọc mộc). Bạn có thể chỉnh âm lượng nhạc nền mong muốn bên dưới và nhấn nút để tự động phân
                     tích kịch bản, chèn 6 track nhạc chuẩn Sau Cánh Cửa từ thư viện <code>music_library/</code> (Intro,
                     Mystery, Tension, Reveal 100% Dry, Emotional Payoff, Outro) với độ phủ 30–38% và chuẩn hóa âm lượng -14
                     LUFS.
                   </p>
-                  <div className="flex items-center space-x-4 pt-1">
-                    <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={enableDucking}
-                        onChange={(e) => setEnableDucking(e.target.checked)}
-                      />
-                      <span>Tự động giảm nhẹ nhạc nền khi MC nói (Gentle Ducking -2.5dB)</span>
-                    </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 border-t border-[#28354D]/60 pt-3">
+                    <div>
+                      <div className="flex items-center justify-between text-xs text-[#94A3B8] mb-1">
+                        <span>Âm lượng Nhạc nền (BGM Gain):</span>
+                        <span className="font-mono font-bold text-[#F8FAFC]">
+                          {bgmVolumeDb > 0 ? `+${bgmVolumeDb.toFixed(1)}` : bgmVolumeDb.toFixed(1)} dB
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="range"
+                          min="-24"
+                          max="6"
+                          step="0.5"
+                          value={bgmVolumeDb}
+                          onChange={(e) => setBgmVolumeDb(parseFloat(e.target.value))}
+                          className="flex-1 accent-[#3B82F6]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setBgmVolumeDb(0.0)}
+                          className="text-[10px] bg-[#1E293B] hover:bg-[#334155] text-[#94A3B8] hover:text-white px-2 py-0.5 rounded cursor-pointer transition-colors"
+                          title="Đặt lại mức chuẩn 0.0 dB của Audio Formula V1"
+                        >
+                          Reset (0 dB)
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex flex-col justify-center">
+                      <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={enableDucking}
+                          onChange={(e) => setEnableDucking(e.target.checked)}
+                          className="accent-[#3B82F6]"
+                        />
+                        <span>Tự động giảm nhẹ nhạc nền khi MC nói (Gentle Ducking -2.5dB)</span>
+                      </label>
+                    </div>
                   </div>
                   <button
                     onClick={autoMixBgm}

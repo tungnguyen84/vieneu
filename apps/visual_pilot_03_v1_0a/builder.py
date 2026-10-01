@@ -418,7 +418,7 @@ def export_flow_package(ep_data_module: Any, scenes: List[dict], overlays: List[
                 sc["visual_mode"],
                 "YES" if sc["visual_mode"] == "VIDEO_RECOMMENDED" else "NO",
                 sc.get("video_value_scores", {}).get("total_score", 0),
-                ";".join(sc["character_refs_required"]),
+                ";".join(c if isinstance(c, str) else c.get("character_id", "") for c in sc["character_refs_required"]),
                 sc["location_ref"],
                 ";".join(sc["prop_refs"]),
                 sc["prompt_version"],

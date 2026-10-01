@@ -1987,18 +1987,20 @@ def build_final_mix(
     target_lufs: float = -14.0,
     true_peak_db: float = -1.0,
     sample_rate: int = REFERENCE_SAMPLE_RATE,
-    target_peak_db: Optional[float] = None
+    target_peak_db: Optional[float] = None,
+    bgm_volume_db: float = 0.0
 ) -> Tuple[bool, str, dict]:
     """
     Quy trình hòa âm & Master hoàn thiện:
     1. Đọc voice_master.wav.
     2. Render music_bed theo cue_sheet.
-    3. Áp dụng gentle ducking (nếu bật).
-    4. Xuất master/music_mix.wav.
-    5. Cộng tổng: final_mix_pre_master.wav = voice_master + music_mix.
-    6. 2-pass Loudness Normalization sang -14 LUFS, -1 dBTP.
-    7. Xuất master/final_mix.wav và master/final_mix.mp3 (320kbps).
-    8. Lưu mix/cue_sheet.json và mix/mix_report.json.
+    3. Áp dụng bgm_volume_db offset (nếu khác 0 dB).
+    4. Áp dụng gentle ducking (nếu bật).
+    5. Xuất master/music_mix.wav.
+    6. Cộng tổng: final_mix_pre_master.wav = voice_master + music_mix.
+    7. 2-pass Loudness Normalization sang -14 LUFS, -1 dBTP.
+    8. Xuất master/final_mix.wav và master/final_mix.mp3 (320kbps).
+    9. Lưu mix/cue_sheet.json và mix/mix_report.json.
     """
     if target_peak_db is not None:
         true_peak_db = target_peak_db
@@ -2033,6 +2035,11 @@ def build_final_mix(
         project_overrides=project_overrides,
         sample_rate=sample_rate
     )
+
+    # 1b. Apply additive BGM volume offset in dB (0 dB preserves Audio Formula V1 exactly)
+    if bgm_volume_db != 0.0:
+        gain_linear = 10.0 ** (bgm_volume_db / 20.0)
+        music_bed = music_bed * gain_linear
 
     # 2. Ducking nếu bật
     if enable_ducking:
@@ -2093,6 +2100,7 @@ def build_final_mix(
         "warning_message": cov_stats["warning_message"],
         "ducking_enabled": enable_ducking,
         "ducking_db": ducking_db if enable_ducking else 0.0,
+        "bgm_volume_db": bgm_volume_db,
         "master_integrated_lufs": final_stats["integrated_lufs"],
         "master_true_peak_db": final_stats["true_peak_db"],
         "master_lra": final_stats["lra"],

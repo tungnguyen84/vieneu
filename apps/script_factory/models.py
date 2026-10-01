@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import fields, asdict, dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -210,6 +210,84 @@ class StoryBible:
         return cls(**filtered)
 
 
+
+# Identity and lineage stay fixed when an AI repair returns a revised Story Bible.
+_STORY_BIBLE_PROTECTED_FIELDS = {
+    "episode_id", "title", "source_idea_id", "public_episode_number", "original_user_topic",
+    "topic_intent", "topic_adherence", "status", "story_qc_report", "generation_source",
+    "generation_request_id", "prompt_version", "model_name", "provider_name", "generated_at",
+    "approved_by", "approved_at", "last_modified_at",
+}
+
+
+def story_bible_repair_targets_clause(issues: List[Dict[str, Any]]) -> str:
+    """Names the flagged Story Bible fields so a repair actually rewrites them.
+
+    Repair prompts list structural fields to complete; without this, models
+    return those and leave the flagged field (e.g. ``ending``) untouched.
+    """
+    known = {f.name for f in fields(StoryBible)} - _STORY_BIBLE_PROTECTED_FIELDS
+    targets: List[str] = []
+    for issue in issues or []:
+        target = str(issue.get("target", "")) if isinstance(issue, dict) else ""
+        if target in known and target not in targets:
+            targets.append(target)
+    # Returning the whole Story Bible is long enough that some models refuse or
+    # truncate it ("too large for one message"); a patch of changed fields is
+    # short and is applied by ``apply_story_bible_patch``.
+    output_rule = (
+        "\n\nĐỊNH DẠNG TRẢ VỀ: CHỈ một JSON object chứa các trường bạn đã sửa hoặc bổ sung (dùng đúng tên trường "
+        "như Story Bible hiện tại). KHÔNG lặp lại các trường không thay đổi, KHÔNG viết lời giải thích ngoài JSON."
+    )
+    if not targets:
+        return output_rule
+    names = ", ".join(targets)
+    return (
+        f"\n\nTRƯỜNG ĐANG BỊ LỖI CẦN VIẾT LẠI: {names}.\n"
+        f"JSON trả về BẮT BUỘC chứa các trường {names} với nội dung ĐÃ SỬA (khác bản hiện tại) để khắc phục đúng "
+        "các lỗi nhắm vào chúng; giữ nguyên ý chính và kết cục của câu chuyện."
+        + output_rule
+    )
+
+
+def apply_story_bible_patch(bible: "StoryBible", patch: Dict[str, Any]) -> "StoryBible":
+    """Applies every plot field an AI repair returned, in place.
+
+    Providers used to copy a hand-picked subset of fields, so a fix to e.g.
+    ``ending`` was silently dropped and the same QC issue came back every round.
+    Empty values and values whose shape does not match the field are ignored.
+    """
+    if not isinstance(patch, dict):
+        return bible
+    for f in fields(bible):
+        name = f.name
+        if name in _STORY_BIBLE_PROTECTED_FIELDS or name not in patch:
+            continue
+        value = patch[name]
+        if value in (None, "", [], {}):
+            continue
+        current = getattr(bible, name)
+        if name == "critical_facts":
+            if not isinstance(value, list):
+                continue
+            value = [
+                LockedFact(
+                    fact_id=str(item.get("fact_id") or f"FACT_{index + 1:03d}"),
+                    field=str(item.get("field", "fact")),
+                    value=str(item.get("value", "")),
+                    description=str(item.get("description", "")),
+                    status="LOCKED",
+                )
+                for index, item in enumerate(value)
+                if isinstance(item, dict)
+            ]
+            if not value:
+                continue
+        elif current not in (None, "", [], {}) and not isinstance(value, type(current)):
+            continue
+        setattr(bible, name, value)
+    return bible
+
 @dataclass
 class ScriptSegment:
     id: str
@@ -279,6 +357,9 @@ class QCReport:
     revision_requests: List[str] = field(default_factory=list)
     evidence_issues: List[Dict[str, Any]] = field(default_factory=list)
     checked_at: float = field(default_factory=time.time)
+    qc_version: Optional[str] = None
+    semantic_review: Optional[Dict[str, Any]] = None
+    script_content_hash: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

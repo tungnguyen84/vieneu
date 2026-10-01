@@ -23,6 +23,7 @@ logger = logging.getLogger("VieNeu.ScriptQC")
 
 SERIES_BIBLE_PATH = Path("script_factory/series_bible.json")
 STORY_FORMULA_PATH = Path("script_factory/story_formula_v1.json")
+SCRIPT_QC_VERSION = "script-qc-v4.2"
 
 
 def _vietnamese_integer_words(value: int) -> Optional[str]:
@@ -95,6 +96,7 @@ class ScriptQCEngine:
         past_scripts: Optional[List[FullScript]] = None,
         model: Optional[str] = None,
         release_map: Optional[InformationReleaseMap] = None,
+        semantic_review: Optional[Dict[str, Any]] = None,
     ) -> QCReport:
         """Executes full QC audit."""
         self.cost_ctrl.check_budget_pre_flight(episode_id=script.episode_id)
@@ -278,10 +280,24 @@ class ScriptQCEngine:
                                 if word_num and f"{word_num} {unit}" in all_text.lower():
                                     found = True
                                     break
-                    if not found and len(val) > 25:
+                    if not found:
+                        # Try digit to Vietnamese word conversion
+                        val_words = val_lower
+                        for d_str, w_str in num_words.items():
+                            val_words = re.sub(rf"\b{d_str}\b", w_str, val_words)
+                        if val_words in all_text.lower():
+                            found = True
+                    if not found:
+                        # Try Vietnamese word to digit conversion
+                        val_digits = val_lower
+                        for d_str, w_str in num_words.items():
+                            val_digits = re.sub(rf"\b{w_str}\b", d_str, val_digits)
+                        if val_digits in all_text.lower():
+                            found = True
+                    if not found and len(val) >= 15:
                         key_words = [w for w in re.findall(r"\b\w{3,}\b", val_lower) if w not in ["người", "những", "trong", "được", "không", "thực", "hiện"]]
                         match_count = sum(1 for kw in key_words if kw in all_text.lower())
-                        found = (match_count / max(1, len(key_words))) >= 0.4
+                        found = (match_count / max(1, len(key_words))) >= 0.6
                     if not found and ("năm" in fact.description.lower() or "year" in fact.field.lower() or "timeline" in fact.field.lower()):
                         desc_years = set(re.findall(r"\b(?:19|20)\d{2}\b", fact.description))
                         if desc_years and len(desc_years & set(re.findall(r"\b(?:19|20)\d{2}\b", all_text))) >= min(2, len(desc_years)):
@@ -356,6 +372,11 @@ class ScriptQCEngine:
                 "first_end": repeated_block["first_end"],
                 "second_start": second_start,
                 "second_end": repeated_block["second_end"],
+                # The whole retold block must change together; fixing only its
+                # first segment leaves the repetition in place round after round.
+                "related_segment_ids": [
+                    s.id for s in script.segments[second_start + 1:repeated_block["second_end"]]
+                ],
             })
             repetition_issues.append(
                 f"Repeated narrative block: segments {first_id} and {second_id} restart the same event sequence."
@@ -363,6 +384,35 @@ class ScriptQCEngine:
             revision_requests.append(
                 f"Remove the repeated event sequence beginning at segment {second_id}; continue directly to new evidence or reveal."
             )
+
+        # 4.2 ADJACENT SEGMENT ECHO
+        # Chunked generation often restates the last beat of a segment as the
+        # opening of the next one ("... bắt máy." -> "Đầu dây bên kia bắt máy, ...").
+        def _sentences(text: str) -> List[str]:
+            return [s for s in re.split(r"(?<=[.!?…])\s+", text.strip()) if s.strip()]
+
+        def _ngrams(sentence: str, n: int = 5) -> set:
+            words = re.findall(r"\w+", sentence.casefold())
+            return {tuple(words[i:i + n]) for i in range(len(words) - n + 1)}
+
+        for prev_seg, next_seg in zip(script.segments, script.segments[1:]):
+            prev_sents, next_sents = _sentences(prev_seg.text), _sentences(next_seg.text)
+            if not prev_sents or not next_sents:
+                continue
+            shared = _ngrams(prev_sents[-1]) & _ngrams(next_sents[0])
+            if shared:
+                phrase = " ".join(sorted(shared)[0])
+                evidence_issues.append({
+                    "segment_id": next_seg.id,
+                    "excerpt": next_seg.text[:120],
+                    "rule": "ADJACENT_SEGMENT_ECHO",
+                    "related_segment_ids": [prev_seg.id],
+                    "severity": "HIGH",
+                    "recommended_action": "Bỏ phần nhắc lại ở đầu phân đoạn sau và nối tiếp bằng diễn biến mới.",
+                    "message": f"Phân đoạn [{next_seg.id}] mở đầu bằng việc lặp lại hành động vừa kể ở [{prev_seg.id}] ('{phrase}').",
+                })
+                repetition_issues.append(f"[{next_seg.id}] echoes the closing beat of [{prev_seg.id}]: '{phrase}'.")
+                revision_requests.append(f"Remove the restated beat at the start of segment {next_seg.id}.")
 
         # 5. STRUCTURE AUDIT (Check acts representation)
         has_hook = any(s.delivery_profile == "HOOK" for s in script.segments)
@@ -560,6 +610,14 @@ class ScriptQCEngine:
             "những giọt nước mắt muộn màng",
             "tiếng khóc xé lòng",
             "vết thương sâu hoắm",
+            "vén bức màn dối trá",
+            "lời cảnh tỉnh",
+            "cái tát trời giáng",
+            "sự thật nghiệt ngã",
+            "đau đớn tột cùng",
+            "hạnh phúc vô bờ",
+            "xé toạc thành từng mảnh",
+            "phơi bày dưới ánh sáng",
         ]
         cliche_hits: List[Tuple[str, str, str]] = []
         severe_v2_hits: List[Tuple[str, str, str]] = []
@@ -663,7 +721,110 @@ class ScriptQCEngine:
                 repetition_issues.append(f"Ending semantic repetition detected across {len(moral_segs)} closing segments.")
                 revision_requests.append("Compress semantically repetitive reflection segments in closing act into a single takeaway.")
 
-        # 11. LEGAL CLAIM SAFETY AUDIT
+        # 11. NATURAL PROSE, STRUCTURED-DATA LEAKAGE & PROOF REALISM
+        malformed_patterns = [
+            r"khiến\s+[^.!?]{0,45}\s+đau\s+lòng\s+vào\s+(?:trái\s+)?tim",
+            r"khiến\s+[^.!?]{0,30}\s+như\s+bị\s+bàng\s+hoàng\s+sửng\s+sốt",
+            r"\b(?:em|anh|chị|cô)\.\s+(?:em|anh|chị|cô)\b",
+            r"\bcòn\s+[^.!?]{1,35}\s+thì\.\s*$",
+            r"^sự\s+sụp\s+đổ\s+[^.!?]{5,90}\s+khi\s+[^.!?]+\.\s*$",
+        ]
+        # A sentence that resumes in lowercase after a full stop ("sếp Hùng. ở công ty")
+        # is a truncated ellipsis; TTS reads it as two broken sentences.
+        lowercase_restart = re.compile(
+            r"(?<![A-ZĐ])[^\W\d_]{2,}\.\s+[a-zđàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]"
+        )
+        # "là1 phần"; times such as "17h30" are fine.
+        glued_digit = re.compile(r"(?<![\w])[a-zđàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]{2,}\d")
+        for segment in script.segments:
+            if glued_digit.search(segment.text) or lowercase_restart.search(segment.text) or any(re.search(pattern, segment.text, re.IGNORECASE) for pattern in malformed_patterns):
+                evidence_issues.append({
+                    "segment_id": segment.id,
+                    "excerpt": segment.text[:120],
+                    "rule": "MALFORMED_VIETNAMESE_PROSE",
+                    "severity": "CRITICAL",
+                    "recommended_action": "Viết lại thành câu tiếng Việt hoàn chỉnh, đúng chủ-vị và đúng đối tượng cảm xúc; không ghép các mảnh câu máy móc.",
+                    "message": f"Phân đoạn [{segment.id}] có câu gãy nghĩa hoặc quan hệ chủ thể sai.",
+                })
+                logic_issues.append(f"[{segment.id}] Malformed Vietnamese prose.")
+                revision_requests.append(f"Rewrite malformed Vietnamese prose in segment {segment.id}.")
+
+        # Narration that grades evidence like an audit report ("Manh mối thứ ba
+        # này chứng minh…") is a prompt artefact, not storytelling.
+        analyst_pattern = re.compile(
+            r"(?:manh\s+mối|chi\s+tiết|bằng\s+chứng)\s+(?:thứ\s+\w+|đầu\s+tiên|cuối\s+cùng|\d+)\s+(?:này\s+)?"
+            r"(?:từ\s+[^.,]{1,30}\s+)?(?:chỉ\s+)?(?:chứng\s+minh|cho\s+thấy|xác\s+nhận)"
+            r"|\bchưa\s+chứng\s+minh\s+được\b",
+            re.IGNORECASE,
+        )
+        for segment in script.segments:
+            if analyst_pattern.search(segment.text):
+                evidence_issues.append({
+                    "segment_id": segment.id,
+                    "excerpt": segment.text[:120],
+                    "rule": "ANALYST_NARRATION",
+                    "severity": "HIGH",
+                    "recommended_action": "Bỏ giọng phân tích kiểu biên bản; thể hiện giới hạn bằng chứng qua suy nghĩ hoặc câu hỏi của nhân vật.",
+                    "message": f"Phân đoạn [{segment.id}] kể như biên bản phân tích bằng chứng thay vì kể chuyện.",
+                })
+                logic_issues.append(f"[{segment.id}] Analyst-style evidence narration.")
+                revision_requests.append(f"Rewrite analyst-style narration in segment {segment.id}.")
+
+        causal_values: List[Tuple[str, str]] = []
+        for chain_index, chain in enumerate(story_bible.causal_chains or []):
+            if not isinstance(chain, dict):
+                continue
+            for field_name in ("cause", "decision", "action", "consequence", "why", "motivation", "how"):
+                value = str(chain.get(field_name, "") or "").strip()
+                if len(value.split()) >= 8:
+                    causal_values.append((f"causal_chains[{chain_index}].{field_name}", value))
+        for segment in script.segments:
+            normalized_segment = re.sub(r"\s+", " ", segment.text).casefold()
+            copied_fields = [
+                field_name for field_name, value in causal_values
+                if re.sub(r"\s+", " ", value).casefold().rstrip(".") in normalized_segment
+            ]
+            if len(copied_fields) >= 2:
+                evidence_issues.append({
+                    "segment_id": segment.id,
+                    "excerpt": segment.text[:120],
+                    "rule": "STRUCTURED_STORY_DATA_LEAKAGE",
+                    "severity": "CRITICAL",
+                    "recommended_action": "Chuyển dữ kiện nhân quả thành hành động, đối thoại hoặc lời kể tự nhiên; không ghép nguyên văn nhiều trường Story Bible.",
+                    "message": f"Phân đoạn [{segment.id}] chép nguyên văn {len(copied_fields)} trường dữ liệu có cấu trúc từ Story Bible.",
+                    "copied_fields": copied_fields,
+                })
+                logic_issues.append(f"[{segment.id}] Structured Story Bible fields leaked into spoken prose.")
+                revision_requests.append(f"Naturalize structured Story Bible data in segment {segment.id}.")
+
+        full_script_text = " ".join(segment.text for segment in script.segments).lower()
+        definitive_paternity_claim = bool(re.search(
+            r"(?:đứa\s+(?:bé|con)[^.!?]{0,45}(?:không\s+(?:phải|thể\s+là)\s+con\s+của|không\s+hề\s+có\s+huyết\s+thống)|"
+            r"không\s+phải\s+máu\s+mủ\s+của|"
+            r"không\s+(?:có|hề\s+có)\s+(?:bất\s+kỳ\s+)?(?:mối\s+)?(?:liên\s+hệ\s+)?huyết\s+thống)",
+            full_script_text,
+        ))
+        paternity_proof_markers = (
+            "xét nghiệm adn", "kết quả adn", "đối chiếu thời điểm thụ thai",
+            "tuổi thai", "ngày thụ thai", "thời điểm thụ thai", "kết quả xét nghiệm huyết thống",
+        )
+        if definitive_paternity_claim and not any(marker in full_script_text for marker in paternity_proof_markers):
+            target_segment = next(
+                (segment for segment in script.segments if re.search(r"không\s+(?:phải|thể\s+là)\s+con\s+của|không\s+phải\s+máu\s+mủ|không\s+(?:có|hề\s+có)\s+[^.!?]{0,25}huyết\s+thống", segment.text, re.IGNORECASE)),
+                script.segments[-1],
+            )
+            evidence_issues.append({
+                "segment_id": target_segment.id,
+                "excerpt": target_segment.text[:120],
+                "rule": "UNSUPPORTED_PATERNITY_CLAIM",
+                "severity": "CRITICAL",
+                "recommended_action": "Chỉ nêu nghi vấn cho tới khi có xét nghiệm ADN hoặc mốc tuổi thai/thụ thai được đối chiếu rõ ràng trong câu chuyện.",
+                "message": "Kịch bản kết luận huyết thống chắc chắn nhưng không kể ra căn cứ sinh học hoặc mốc thụ thai đủ kiểm chứng.",
+            })
+            logic_issues.append("Definitive paternity claim lacks biological or conception-timeline proof.")
+            revision_requests.append("Add verifiable paternity proof or keep the claim explicitly uncertain.")
+
+        # 12. LEGAL CLAIM SAFETY AUDIT
         unsafe_legal_patterns = [
             (r"tòa\s+án\s+tuyên\s+bố\s+vô\s+hiệu\s+ngay\s+lập\s+tức", "tuyên bố pháp lý tức thời của tòa án"),
             (r"công\s+an\s+bắt\s+giữ\s+khẩn\s+cấp\s+ngay\s+tại", "thủ tục bắt giữ hình sự khẩn cấp không xác thực"),
@@ -672,6 +833,7 @@ class ScriptQCEngine:
             (r"khẳng\s+định\s+quyền\s+sở\s+hữu\s+hợp\s+pháp\s+tuyệt\s+đối", "khẳng định pháp lý tuyệt đối từ giấy tờ cũ"),
             (r"tờ\s+giấy\s+này\s+chứng\s+minh\s+hoàn\s+toàn\s+quyền\s+sở\s+hữu", "khẳng định quyền sở hữu pháp lý tuyệt đối"),
             (r"vô\s+hiệu\s+hóa\s+hoàn\s+toàn\s+về\s+mặt\s+pháp\s+lý\s+ngay\s+tại\s+chỗ", "kết luận pháp lý tại chỗ thiếu căn cứ"),
+            (r"(?:văn\s+bản\s+)?từ\s+bỏ\s+(?:mọi\s+|toàn\s+bộ\s+)?quyền\s+(?:làm\s+cha|nuôi\s+con|của\s+người\s+cha)", "coi việc xác định/không công nhận quan hệ cha con là một giấy từ bỏ đơn phương"),
         ]
         for s in script.segments:
             for pat, desc in unsafe_legal_patterns:
@@ -680,7 +842,7 @@ class ScriptQCEngine:
                         "segment_id": s.id,
                         "excerpt": s.text[:100],
                         "rule": "LEGAL_CLAIM_SAFETY",
-                        "severity": "HIGH",
+                        "severity": "CRITICAL",
                         "recommended_action": "Diễn đạt dưới góc độ tâm lý, tình cảm gia đình hoặc manh mối cần xác minh, tránh phán quyết pháp lý chủ quan.",
                         "message": f"Phân đoạn [{s.id}] đưa ra khẳng định pháp lý thiếu an toàn ({desc})."
                     })
@@ -688,7 +850,7 @@ class ScriptQCEngine:
                     revision_requests.append(f"Soften assertive legal claim in segment {s.id} to emotional/social narrative framing.")
                     break
 
-        # 12. INTERNAL EPISODE ID != PUBLIC EPISODE NUMBER AUDIT (INTERNAL_EPISODE_ID_SPOKEN)
+        # 13. INTERNAL EPISODE ID != PUBLIC EPISODE NUMBER AUDIT (INTERNAL_EPISODE_ID_SPOKEN)
         pub_ep_num = getattr(story_bible, "public_episode_number", None)
         internal_code_pat = re.compile(
             r"\b(?:mã\s+số\s+)?(EP_?[A-Z0-9_]*\d+|IDEA_\d+|PROJ_[A-Z0-9_]+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b",
@@ -1004,6 +1166,25 @@ class ScriptQCEngine:
                 logic_issues.append(f"[{p_iss['rule']}] {p_iss['message']}")
 
         # Compute status
+        # 14. SEMANTIC STORY-LOGIC REVIEW (LLM, quote-anchored)
+        # ``semantic_review`` may be passed in to reuse a review of identical text.
+        if semantic_review is None:
+            semantic_review = self._run_semantic_review(script, story_bible, model)
+        if (semantic_review or {}).get("status") == "ERROR":
+            evidence_issues.append({
+                "segment_id": None,
+                "excerpt": "",
+                "rule": "SEMANTIC_REVIEW_FAILED",
+                "severity": "CRITICAL",
+                "recommended_action": "Chạy lại QC (Auto-Repair) khi model AI đủ mạnh khả dụng trở lại (thường do hết quota ngày); không duyệt kịch bản khi chưa kiểm tra logic.",
+                "message": f"Không chạy được QC logic cốt truyện: {semantic_review.get('error')}",
+            })
+            logic_issues.append(f"[SEMANTIC_REVIEW_FAILED] Không chạy được QC logic cốt truyện: {semantic_review.get('error')}")
+        for issue in (semantic_review or {}).get("issues", []):
+            evidence_issues.append(dict(issue))
+            logic_issues.append(f"[{issue.get('segment_id')}] {issue.get('rule')}: {issue.get('message')}")
+            revision_requests.append(f"Fix {issue.get('rule')} in segment {issue.get('segment_id')}: {issue.get('recommended_action')}")
+
         critical_rule_set = {
             "TIMELINE_FACT_CONTRADICTION",
             "RELATIONSHIP_TIMELINE_CONTRADICTION",
@@ -1018,6 +1199,14 @@ class ScriptQCEngine:
             "DUPLICATE_SIGNOFF",
             "CONTENT_AFTER_SIGNOFF",
             "REPEATED_NARRATIVE_BLOCK",
+            "MALFORMED_VIETNAMESE_PROSE",
+            "STRUCTURED_STORY_DATA_LEAKAGE",
+            "UNSUPPORTED_PATERNITY_CLAIM",
+            "LEGAL_CLAIM_SAFETY",
+            "SEMANTIC_REVIEW_FAILED",
+            "GENERIC_PHILOSOPHICAL_HOOK",
+            "OBJECT_CONTINUITY_CONTRADICTION",
+            "QC_REPORT_TONE_LEAKAGE",
         }
         has_critical_failure = (
             any(
@@ -1053,6 +1242,10 @@ class ScriptQCEngine:
             "DUPLICATE_SIGNOFF",
             "CONTENT_AFTER_SIGNOFF",
             "REPEATED_NARRATIVE_BLOCK",
+            "MALFORMED_VIETNAMESE_PROSE",
+            "STRUCTURED_STORY_DATA_LEAKAGE",
+            "UNSUPPORTED_PATERNITY_CLAIM",
+            "LEGAL_CLAIM_SAFETY",
         }
         has_hard_fail = any(iss.get("rule") in hard_fail_rules for iss in evidence_issues)
         has_issues = bool(fact_conflicts or logic_issues or repetition_issues or evidence_issues)
@@ -1080,6 +1273,7 @@ class ScriptQCEngine:
             "topic_adherence": script_topic_score,
         }
 
+        from apps.script_factory.semantic_review import script_content_hash
         report = QCReport(
             episode_id=script.episode_id,
             status=status,
@@ -1090,10 +1284,48 @@ class ScriptQCEngine:
             revision_requests=revision_requests,
             evidence_issues=evidence_issues,
             checked_at=time.time(),
+            qc_version=SCRIPT_QC_VERSION,
+            semantic_review=semantic_review,
+            script_content_hash=script_content_hash(script),
         )
 
+        semantic_state = (semantic_review or {}).get("status")
+        logger.info(
+            f"[ScriptQC] {script.episode_id}: {status} — {len(evidence_issues)} lỗi"
+            + (f" ({', '.join(sorted({str(i.get('rule')) for i in evidence_issues})[:8])})" if evidence_issues else "")
+            + f"; QC logic: {semantic_state}"
+            + (f" bằng {semantic_review.get('model')}" if semantic_review and semantic_review.get('model') else "")
+        )
         self.save_qc_report(report)
         return report
+
+    def _run_semantic_review(
+        self, script: FullScript, story_bible: StoryBible, model: Optional[str]
+    ) -> Optional[Dict[str, Any]]:
+        """Runs the LLM logic review when the provider supports JSON completion."""
+        complete_json = getattr(self.provider, "complete_json", None)
+        if not callable(complete_json) or not script.segments:
+            return {"status": "NOT_RUN", "issues": [], "advisories": []}
+        from apps.script_factory.semantic_review import review_script_logic
+        try:
+            review = review_script_logic(
+                script, story_bible,
+                lambda system, prompt: complete_json(system, prompt, model=model),
+            )
+        except Exception as exc:
+            logger.warning(f"[ScriptQC] Semantic review failed for {script.episode_id}: {exc}")
+            return {"status": "ERROR", "error": str(exc), "issues": [], "advisories": []}
+        review["model"] = getattr(self.provider, "last_used_model", None) or model
+        try:
+            in_tok, out_tok = review.get("tokens", [0, 0])
+            self.cost_ctrl.record_operation(
+                operation="semantic_review", episode_id=script.episode_id,
+                provider=getattr(self.provider, "provider_name", "unknown"), model=review["model"] or "default",
+                status="SUCCESS", latency_sec=0.0, input_tokens=in_tok, output_tokens=out_tok,
+            )
+        except Exception:
+            pass
+        return review
 
     def save_qc_report(self, report: QCReport) -> Path:
         """Saves QC report to episodes/EPXXX/qc_report.json."""
@@ -1119,8 +1351,14 @@ def apply_targeted_repairs(
     script: FullScript,
     story_bible: StoryBible,
     qc_report: QCReport,
+    preserve_segment_ids: Optional[set] = None,
 ) -> FullScript:
-    """Applies targeted repairs to specific segments flagged by QC without regenerating the entire script."""
+    """Applies targeted repairs to specific segments flagged by QC without regenerating the entire script.
+
+    ``preserve_segment_ids`` are segments an AI rewrite just fixed; the template
+    replacements below must not overwrite them with generic sentences.
+    """
+    preserved = set(preserve_segment_ids or ())
     seg_map = {s.id: s for s in script.segments}
     protag = (
         story_bible.protagonist.get("name", "nhân vật chính")
@@ -1138,6 +1376,12 @@ def apply_targeted_repairs(
     # duplicate bridge. The first REVEAL after that bridge is preserved.
     if "REPEATED_NARRATIVE_BLOCK" in issue_rules:
         repeated = find_repeated_narrative_block(script.segments)
+        if repeated and any(
+            s.id in preserved for s in script.segments[repeated["second_start"]:repeated["second_end"]]
+        ):
+            # The AI just rewrote the retold block into new events; cutting it
+            # would delete that work. The next QC pass re-checks it.
+            repeated = None
         if repeated:
             cut_start = int(repeated["second_start"])
             reset_pattern = re.compile(
@@ -1159,7 +1403,7 @@ def apply_targeted_repairs(
 
     # Repair a slow/generic hook using facts that already exist in the Story
     # Bible. This changes presentation only and never invents a new clue.
-    if "HOOK_TOO_SLOW" in issue_rules and script.segments:
+    if "HOOK_TOO_SLOW" in issue_rules and script.segments and script.segments[0].id not in preserved:
         clue_source = story_bible.structured_clues or story_bible.clues or []
         first_clue = ""
         if clue_source:
@@ -1194,6 +1438,8 @@ def apply_targeted_repairs(
     for conflict in qc_report.fact_conflicts:
         ctype = conflict.get("type")
         sid = conflict.get("segment_id")
+        if sid in preserved:
+            continue
         if ctype == "HOOK_FACT_CONTRADICTION" and sid in seg_map:
             seg = seg_map[sid]
             seg.text = (

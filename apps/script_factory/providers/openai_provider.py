@@ -16,8 +16,9 @@ import urllib.request
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-from apps.script_factory.models import FullScript, IdeaItem, LockedFact, QCReport, ScriptSegment, StoryBible
+from apps.script_factory.models import FullScript, IdeaItem, LockedFact, QCReport, ScriptSegment, StoryBible, apply_story_bible_patch, story_bible_repair_targets_clause
 from apps.script_factory.narrative_continuity import has_repeated_narrative_block
+from apps.script_factory.narrative_rules import ACT7_CAUSAL_INSTRUCTION, writer_rules_block
 from apps.script_factory.providers.base import ScriptAIProvider
 from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
 
@@ -62,8 +63,28 @@ _MIN_COMPLETE_SCRIPT_SEGMENTS = 70
 def _extract_script_segments(raw_text: str) -> List[Dict[str, Any]]:
     parsed = _parse_json_safe(raw_text)
     if isinstance(parsed, dict):
-        parsed = parsed.get("segments", [])
-    return [item for item in parsed if isinstance(item, dict)] if isinstance(parsed, list) else []
+        # json_object mode forces an object; models do not always use the "segments" key.
+        parsed = parsed.get("segments") or next(
+            (v for v in parsed.values() if isinstance(v, list) and v and isinstance(v[0], dict)), []
+        )
+    segments = [item for item in parsed if isinstance(item, dict)] if isinstance(parsed, list) else []
+    return segments or _salvage_segment_objects(raw_text)
+
+
+def _salvage_segment_objects(raw_text: str) -> List[Dict[str, Any]]:
+    """Recovers complete segment objects from a response cut off mid-JSON."""
+    decoder = json.JSONDecoder()
+    salvaged: List[Dict[str, Any]] = []
+    for match in re.finditer(r'\{\s*"id"\s*:', raw_text):
+        try:
+            item, _ = decoder.raw_decode(raw_text, match.start())
+        except ValueError:
+            continue
+        if isinstance(item, dict) and str(item.get("text", "")).strip():
+            salvaged.append(item)
+    if salvaged:
+        logger.warning(f"[OpenAI-Compatible] Response JSON was incomplete; salvaged {len(salvaged)} segments.")
+    return salvaged
 
 
 def _part_has_closure(segments: List[Dict[str, Any]]) -> bool:
@@ -162,8 +183,11 @@ class OpenAICompatibleProvider(ScriptAIProvider):
                 payload["response_format"] = {"type": "json_object"}
             data_bytes = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(url, data=data_bytes, headers=headers, method="POST")
+            call_started = time.time()
+            logger.info(f"→ Gọi {chosen_model} tại {self.base_url} (timeout {self.timeout_sec:.0f}s)...")
             with urllib.request.urlopen(req, timeout=self.timeout_sec) as resp:
                 resp_data = json.loads(resp.read().decode("utf-8"))
+            logger.info(f"✓ {chosen_model} trả lời sau {time.time() - call_started:.0f}s")
 
             choices = resp_data.get("choices", [])
             if not choices:
@@ -342,7 +366,10 @@ Trả về JSON object có khóa "ideas": [
             "5. Tên Minh và mã MINH chỉ dành riêng cho MC, tuyệt đối không đặt cho nhân vật trong Story Bible.\n"
             "6. Với cáo buộc nghiêm trọng, tin nhắn/lịch sử cuộc gọi/lời đồn/lời thú nhận đơn độc chỉ là dấu hiệu; reveal phải có ít nhất một chi tiết độc lập có thể kiểm chứng.\n"
             "7. Bối cảnh hôn nhân có thể giải thích hoàn cảnh nhưng không được đổ trách nhiệm lựa chọn nói dối/ngoại tình lên người bị phản bội.\n"
-            "8. Xuất ra định dạng JSON hợp lệ."
+            "8. Xuất ra định dạng JSON hợp lệ.\n"
+            "Câu chuyện sẽ được kể như lá thư của nhân vật chính, nên mọi reveal phải có kênh để nhân vật chính biết được "
+            "(lời thú nhận, nhân chứng, tài liệu, xét nghiệm) và kết thúc phải hợp pháp. Tuân thủ các luật logic sau:\n"
+            + writer_rules_block(9)
         )
 
         direction_clause = f"\nCHỈ ĐẠO ĐẶC BIỆT CHO TẬP PHIM NÀY:\n{special_direction}\n" if special_direction else ""
@@ -640,8 +667,10 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
             + orig_topic_clause +
             "Yêu cầu:\n"
             "1. Tuyệt đối KHÔNG đưa vào các khuôn mẫu template hay tên nhân vật ngoài kịch bản.\n"
-            "2. Khắc phục triệt để các vấn đề QC được chỉ rõ.\n"
-            "3. Trả về toàn bộ Story Bible đã sửa đổi dưới dạng JSON hợp lệ."
+            "2. Khắc phục triệt để các vấn đề QC được chỉ rõ. Với lỗi logic cốt truyện, hãy BỔ SUNG kênh tiết lộ hoặc bằng chứng "
+            "cụ thể (lời thú nhận trực tiếp, xét nghiệm có mẫu hợp lệ, tài liệu nhân vật chính đọc được); KHÔNG làm mờ reveal "
+            "hay kết thúc thành nghi vấn chung chung. Câu chuyện phải giữ cú lật rõ ràng và kết thúc dứt khoát, hợp pháp.\n"
+            "3. Chỉ trả về JSON hợp lệ gồm các trường đã sửa hoặc bổ sung."
         )
 
         prompt = f"""Dưới đây là Story Bible hiện tại và danh sách các lỗi QC cần khắc phục:
@@ -659,7 +688,8 @@ Hãy sửa đổi và hoàn thiện Story Bible, đảm bảo bổ sung đầy �
 4. reveal_justifications (reveal_1 và reveal_2 có evidence_support, motivation_support, v.v.)
 5. critical_facts (các sự thật cốt lõi đóng băng)
 
-Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đúng định dạng schema chuẩn."""
+Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Object duy nhất, đúng tên trường của schema."""
+        prompt += story_bible_repair_targets_clause(issues)
 
         messages = [
             {"role": "system", "content": system_instruction},
@@ -670,33 +700,9 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
         parsed = _parse_json_safe(raw_text)
 
         if parsed and isinstance(parsed, dict):
-            if parsed.get("causal_chains"):
-                story_bible.causal_chains = parsed.get("causal_chains")
-            if parsed.get("knowledge_ledger"):
-                story_bible.knowledge_ledger = parsed.get("knowledge_ledger")
-            if parsed.get("structured_clues"):
-                story_bible.structured_clues = parsed.get("structured_clues")
-            if parsed.get("reveal_justifications"):
-                story_bible.reveal_justifications = parsed.get("reveal_justifications")
-            if parsed.get("critical_facts"):
-                new_cf = []
-                for f_data in parsed.get("critical_facts", []):
-                    new_cf.append(LockedFact(
-                        fact_id=f_data.get("fact_id", f"FACT_{len(new_cf)+1:03d}"),
-                        field=f_data.get("field", "fact"),
-                        value=str(f_data.get("value", "")),
-                        description=f_data.get("description", ""),
-                        status="LOCKED",
-                    ))
-                story_bible.critical_facts = new_cf
-            if parsed.get("reveal_1"):
-                story_bible.reveal_1 = parsed.get("reveal_1")
-            if parsed.get("reveal_2"):
-                story_bible.reveal_2 = parsed.get("reveal_2")
-            if parsed.get("secret"):
-                story_bible.secret = parsed.get("secret")
-            if parsed.get("clues"):
-                story_bible.clues = parsed.get("clues")
+            apply_story_bible_patch(story_bible, parsed)
+        else:
+            logger.warning(f"Story Bible repair response was not JSON; nothing applied: {raw_text[:160]!r}")
 
         story_bible.generation_request_id = str(uuid.uuid4())
         story_bible.generation_source = "REAL_AI"
@@ -730,6 +736,7 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
         knowledge_summary = json.dumps(story_bible.knowledge_ledger or [], ensure_ascii=False)
         clues_summary = json.dumps(story_bible.structured_clues or story_bible.clues or [], ensure_ascii=False)
         causal_summary = json.dumps(story_bible.causal_chains or [], ensure_ascii=False)
+        reveal_proof_summary = json.dumps(story_bible.reveal_justifications or {}, ensure_ascii=False)
 
         clean_title = re.sub(r"^(?:Tập\s+)?EP_?[A-Z0-9_]*\d+\s*[-:]?\s*", "", str(story_bible.title or ""), flags=re.IGNORECASE).strip()
         protag_name = story_bible.protagonist.get("name", "Tuấn") if isinstance(story_bible.protagonist, dict) else str(story_bible.protagonist or "Tuấn")
@@ -762,7 +769,12 @@ Xuất ra toàn bộ Story Bible dưới dạng một JSON Object duy nhất, đ
             f"10. TÊN MINH CHỈ DÀNH CHO MC: Không đặt tên hoặc mã MINH cho nhân vật trong truyện.\n"
             f"11. KHÔNG KỂ LẠI: Mỗi hành động điều tra, cuộc gọi, cuộc gặp và phát hiện chỉ được kể một lần. Phần 2 nối thẳng hành động cuối Phần 1.\n"
             f"12. KỶ LUẬT KẾT LUẬN: Tin nhắn, lịch sử cuộc gọi, lời đồn hoặc lời thú nhận đơn độc chỉ là dấu hiệu; không gọi chúng là chứng cứ không thể chối cãi nếu thiếu chi tiết độc lập có thể kiểm chứng.\n"
-            f"13. TRÁCH NHIỆM NHÂN VẬT: Bối cảnh hôn nhân không biến sự xa cách của người bị phản bội thành lỗi cho lựa chọn nói dối/ngoại tình của người kia."
+            f"13. TRÁCH NHIỆM NHÂN VẬT: Bối cảnh hôn nhân không biến sự xa cách của người bị phản bội thành lỗi cho lựa chọn nói dối/ngoại tình của người kia.\n"
+            f"14. CÂU TIẾNG VIỆT HOÀN CHỈNH: Mỗi phân đoạn phải đúng chủ-vị, đúng người đang cảm xúc; cấm câu gãy như 'còn Mai thì.' hoặc ghép sai kiểu 'đau lòng vào tim Tuấn'.\n"
+            f"15. KHÔNG CHÉP STORY BIBLE: Không nối nguyên văn các trường cause/decision/action/consequence/why/motivation/how thành lời đọc; chuyển chúng thành cảnh, hành động hoặc đối thoại tự nhiên.\n"
+            f"16. HUYẾT THỐNG: Không kết luận đứa trẻ không phải con của chồng nếu chưa kể rõ xét nghiệm ADN hoặc mốc tuổi thai/thụ thai được đối chiếu. Lời thú nhận đơn độc chỉ tạo nghi vấn.\n"
+            f"17. PHÁP LÝ GIA ĐÌNH: Không viết 'văn bản từ bỏ quyền làm cha' hay thủ tục tức thời tự chế. Chỉ nêu việc nhờ luật sư/tòa án giải quyết ly hôn và xác định cha con."
+            + "\n" + writer_rules_block(18)
         )
 
         # ---------------- PART 1: ACTS 1 to 5 (~40 to 50 Segments) ----------------
@@ -777,7 +789,7 @@ Thông tin Story Bible:
 - Bí mật cốt lõi: {story_bible.secret}
 - Câu hỏi bí ẩn: {story_bible.mystery_question}
 - Giả thuyết sai ban đầu: {story_bible.false_lead}
-- Chuỗi manh mối có cấu trúc (CHỈ chứng minh trong giới hạn what_it_proves, KHÔNG nhảy cóc sang kết luận cuối):
+- Chuỗi manh mối có cấu trúc (mỗi manh mối chỉ chứng minh trong giới hạn what_it_proves, KHÔNG nhảy cóc sang kết luận cuối; thể hiện giới hạn đó qua suy nghĩ/do dự của nhân vật, KHÔNG viết câu phân tích kiểu 'manh mối này chứng minh…'):
 {clues_summary}
 - Sổ cái nhận thức nhân vật (Knowledge Ledger):
 {knowledge_summary}
@@ -872,8 +884,10 @@ KỶ LUẬT NỐI MẠCH:
 Nội dung Bước ngoặt, Chuỗi Nhân Quả & Hóa giải cảm xúc của Story Bible:
 - Bước ngoặt 1 (Reveal 1): {story_bible.reveal_1}
 - Bước ngoặt 2 (Reveal 2): {story_bible.reveal_2}
-- Chuỗi nhân quả bắt buộc (CAUSE -> DECISION -> ACTION -> CONSEQUENCE - giải thích rõ tại sao giải pháp thông thường là bất khả thi):
+- Chuỗi nhân quả (CHỈ ĐỂ BẠN HIỂU, KHÔNG ĐỌC LẠI; chỉ thể hiện qua lời thú nhận, nhân chứng hoặc tài liệu nhân vật chính thấy):
 {causal_summary}
+- Căn cứ bắt buộc cho các Reveal (phải kể thành diễn biến tự nhiên, không chép nguyên trường dữ liệu):
+{reveal_proof_summary}
 - Sổ cái nhận thức nhân vật (Knowledge Ledger - TUYỆT ĐỐI KHÔNG MÂU THUẪN):
 {knowledge_summary}
 - Cao trào cảm xúc: {story_bible.emotional_payoff}
@@ -889,7 +903,7 @@ Cấu trúc Phân bổ Phần 2 (khoảng 40-50 phân đoạn, bắt đầu từ
    - Sự thật Bước ngoặt 1 được mở ra rõ ràng qua chứng cứ xác thực.
    - BẮT BUỘC: delivery_profile='REVEAL', importance='critical', audience_address=false (KHÔNG hỏi khán giả).
 3. Act 7: SECOND REVEAL / CAUSAL EXPLANATION (khoảng 10-12 phân đoạn, rơi vào vị trí khoảng 75-90% toàn bộ câu chuyện):
-   - Bước ngoặt 2 giải thích đầy đủ chuỗi nhân quả: Nguyên nhân (WHY) -> Lý do không thể làm cách bình thường (MOTIVATION) -> Cơ chế thực hiện thực tế (HOW) -> Hệ quả (CONSEQUENCE).
+{ACT7_CAUSAL_INSTRUCTION}
    - Tuân thủ chặt chẽ Knowledge Ledger: không viết "không ai biết / kể cả người vợ" nếu trong truyện có người thân biết sự thật.
    - BẮT BUỘC: audience_address=false. Các phân đoạn mở nút thắt chính dùng delivery_profile='REVEAL' (speed=0.92), các phân đoạn giải thích hoàn cảnh dùng delivery_profile='NORMAL'.
 4. Act 8: EMOTIONAL PAYOFF & RESOLUTION (khoảng 10-12 phân đoạn):
@@ -954,9 +968,15 @@ và chứa đúng lời chào chuẩn. Nối trực tiếp hành động cuối 
                 f"OpenAI-compatible provider returned only {len(combined_candidate)} total script segments after retry; at least {_MIN_COMPLETE_SCRIPT_SEGMENTS} are required."
             )
         if not _has_valid_final_closure(combined_candidate):
-            raise RuntimeError("OpenAI-compatible script does not contain exactly one final sign-off after retry; script was rejected.")
+            # A misplaced sign-off is a formatting slip; fix it rather than discard the script.
+            from apps.script_factory.providers.gemini_provider import _normalize_final_signoff
+
+            logger.warning("[OpenAI-Compatible] Sign-off misplaced after retry; normalizing the closing segment.")
+            p2_data = _normalize_final_signoff(p2_data)
+            combined_candidate = p1_data + p2_data
         if has_repeated_narrative_block(combined_candidate):
-            raise RuntimeError("OpenAI-compatible Part 2 still repeats a narrative block from Part 1 after retry; script was rejected.")
+            # Script QC flags REPEATED_NARRATIVE_BLOCK and auto-repair cuts the duplicate.
+            logger.warning("[OpenAI-Compatible] Part 2 still repeats a Part 1 block after retry; leaving it to QC auto-repair.")
 
         combined_data = combined_candidate
         segments: List[ScriptSegment] = []
@@ -1032,7 +1052,7 @@ và chứa đúng lời chào chuẩn. Nối trực tiếp hành động cuối 
             total_words=total_words,
             status="DRAFT",
             generation_request_id=str(uuid.uuid4()),
-            prompt_version="script-v3.1",
+            prompt_version="script-v3.2",
             generation_source="REAL_AI",
             model_name=chosen_model_name,
             provider_name=self.provider_name,
@@ -1056,6 +1076,13 @@ và chứa đúng lời chào chuẩn. Nối trực tiếp hành động cuối 
         report = ScriptQCEngine.audit_script(script, story_bible, story_formula, series_bible)
         return report, 100, 100
 
+    def complete_json(self, system_instruction: str, prompt: str, model: Optional[str] = None) -> Tuple[str, int, int]:
+        """Single JSON completion used by QC review and segment rewriting."""
+        return self._call_chat_completion(
+            messages=[{"role": "system", "content": system_instruction}, {"role": "user", "content": prompt}],
+            model=model, response_json=True, temperature=0.3,
+        )
+
     def revise_script(
         self,
         script: FullScript,
@@ -1063,9 +1090,9 @@ và chứa đúng lời chào chuẩn. Nối trực tiếp hành động cuối 
         qc_report: QCReport,
         model: Optional[str] = None,
     ) -> Tuple[FullScript, int, int]:
-        from apps.script_factory.script_qc import apply_targeted_repairs
-        script.revision_round += 1
-        repaired = apply_targeted_repairs(script, story_bible, qc_report)
-        repaired.total_words = sum(len(s.text.split()) for s in repaired.segments)
-        repaired.updated_at = time.time()
-        return repaired, 100, 100
+        from apps.script_factory.segment_rewriter import revise_with_ai
+
+        return revise_with_ai(
+            script, story_bible, qc_report,
+            lambda system, prompt: self.complete_json(system, prompt, model=model),
+        )

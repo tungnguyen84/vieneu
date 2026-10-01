@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
+import shutil
+import subprocess
 import threading
 import time
 from pathlib import Path
@@ -11,9 +14,13 @@ from typing import Any, Callable, Dict, List, Optional
 from studio.backend.db import get_db_connection
 from studio.backend.models import JobStatus
 
+logger = logging.getLogger("VieNeu.RenderService")
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 OUTPUT_DIR = BASE_DIR / "final"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+PROJECTS_DIR = BASE_DIR / "projects"
+PILOT_03_VISUAL = BASE_DIR / "production_pilot_03_visual_v1_0a"
 
 
 class RenderService:
@@ -26,7 +33,7 @@ class RenderService:
             if project_id in self._active_renders:
                 return self._active_renders[project_id]
 
-        # Check DB history
+        # Check DB history - only trust if output file exists on disk!
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -34,18 +41,23 @@ class RenderService:
                 (project_id,)
             )
             r = cursor.fetchone()
-            if r:
-                return {
-                    "is_rendering": False,
-                    "progress": 100.0,
-                    "stage": "COMPLETE",
-                    "output_file": r["output_path"],
-                    "status": r["status"],
-                    "qc_summary": json.loads(r["qc_summary"]) if r["qc_summary"] else None
-                }
+            if r and r["output_path"]:
+                out_path = BASE_DIR / r["output_path"]
+                if out_path.exists() and out_path.is_file() and out_path.stat().st_size > 0:
+                    return {
+                        "is_rendering": False,
+                        "progress": 100.0,
+                        "stage": "COMPLETE",
+                        "output_file": r["output_path"],
+                        "status": r["status"],
+                        "qc_summary": json.loads(r["qc_summary"]) if r["qc_summary"] else None
+                    }
 
-        # Check existing final render file
-        final_mp4s = list(OUTPUT_DIR.glob(f"*{project_id}*.mp4"))
+        # Check existing final render file on disk
+        final_mp4s = [
+            p for p in OUTPUT_DIR.glob(f"*{project_id}*.mp4")
+            if p.is_file() and p.stat().st_size > 0
+        ]
         if final_mp4s:
             return {
                 "is_rendering": False,
@@ -112,49 +124,98 @@ class RenderService:
         render_id: str,
         progress_cb: Optional[Callable[[Dict[str, Any]], None]]
     ) -> None:
-        stages = [
-            ("PREPARING_ASSETS", "Chuẩn bị tài nguyên và cấu hình assembler...", 12.0, 1.5),
-            ("DYNAMIC_STILL_ENGINE", "Chạy Dynamic Still Engine V9.3.2 (38 scenes)...", 35.0, 2.5),
-            ("VIDEO_NORMALIZATION", "Chuẩn hóa video Omni 1080p 30fps...", 52.0, 2.0),
-            ("TIMELINE_ASSEMBLY", "Ghép nối timeline theo master audio clock...", 74.0, 2.0),
-            ("OVERLAY_RENDER", "Render các lớp documentary overlay...", 86.0, 1.5),
-            ("AUDIO_MUX", "Mux audio mix final vào video stream...", 94.0, 1.5),
-            ("FINAL_QC", "Chạy kiểm định chất lượng Final QC...", 100.0, 1.0)
-        ]
-
         start_t = time.time()
         out_name = f"{project_id}_FINAL_V9_3_2.mp4"
         out_path = OUTPUT_DIR / out_name
 
         try:
-            for stage_code, label, target_progress, duration in stages:
-                with self._lock:
-                    if self._active_renders[project_id].get("cancel_requested"):
-                        return
-                    cur_state = self._active_renders[project_id]
-                    cur_state["stage"] = stage_code
-                    cur_state["stage_label"] = label
-                    cur_state["progress"] = target_progress
-                    cur_state["elapsed_sec"] = round(time.time() - start_t, 1)
-                    cur_state["logs"].append(f"[{round(time.time() - start_t, 1)}s] {label}")
+            # Stage 1: Validate dependencies
+            with self._lock:
+                cur = self._active_renders[project_id]
+                cur["stage"] = "PREPARING_ASSETS"
+                cur["stage_label"] = "Kiểm tra Audio Master và Visual Plan..."
+                cur["progress"] = 10.0
+                cur["logs"].append("Kiểm tra Audio Master...")
+            if progress_cb:
+                progress_cb(self._active_renders[project_id])
 
+            from studio.backend.services.audio_service import AudioService
+            audio_path = AudioService().get_audio_master_path(project_id)
+            if not audio_path or not audio_path.exists():
+                raise FileNotFoundError(
+                    f"Chưa có Audio Master cho tập {project_id}. "
+                    "Vui lòng tạo TTS và hòa âm nhạc nền trước khi render video."
+                )
+
+            # Check Visual Plan
+            plan_path = PROJECTS_DIR / project_id / "visual_plan.json"
+            if not plan_path.exists():
+                plan_path = PILOT_03_VISUAL / project_id / "visual_plan.json"
+            if not plan_path.exists():
+                raise FileNotFoundError(
+                    f"Chưa có Visual Plan cho tập {project_id}. "
+                    "Vui lòng lập Visual Plan ở bước Visual trước khi render video."
+                )
+
+            # Check Google Flow assets (images/videos)
+            assets_dir = PROJECTS_DIR / project_id / "assets"
+            flow_zip = None
+            for candidate_zip in [
+                PROJECTS_DIR / project_id / "google_flow_export.zip",
+                PROJECTS_DIR / project_id / "New_Project_FULL_EXPORT.zip",
+                BASE_DIR / f"{project_id}_FULL_EXPORT.zip",
+            ]:
+                if candidate_zip.exists():
+                    flow_zip = candidate_zip
+                    break
+
+            has_assets = (assets_dir.exists() and any(assets_dir.iterdir())) or (flow_zip is not None)
+            
+            # If assets are missing and output MP4 doesn't exist, fail with clear error
+            if not has_assets and not out_path.exists():
+                raise FileNotFoundError(
+                    "Không thể Render: Chưa có tài nguyên hình ảnh/video từ Google Flow. "
+                    "Hãy tải lên gói xuất Google Flow (ZIP) hoặc các file media vào thư mục assets/ trước khi Render."
+                )
+
+            # If real assembler is applicable
+            if flow_zip and flow_zip.exists():
+                from apps.visual_engine.final_auto_assembler import assemble_full_episode
+                with self._lock:
+                    cur = self._active_renders[project_id]
+                    cur["stage"] = "TIMELINE_ASSEMBLY"
+                    cur["stage_label"] = "Đang chạy Final Auto Assembler ghép video..."
+                    cur["progress"] = 50.0
+                    cur["logs"].append(f"Chạy assembler từ gói ZIP {flow_zip.name}...")
                 if progress_cb:
                     progress_cb(self._active_renders[project_id])
 
-                time.sleep(duration)
+                success, msg, rep = assemble_full_episode(
+                    zip_path=flow_zip,
+                    audio_master_path=audio_path,
+                    output_mp4_path=out_path
+                )
+                if not success:
+                    raise RuntimeError(f"Lỗi ghép video: {msg}")
 
-            # Mark completed
-            duration_sec = 288.75 if project_id == "EP003" else 285.34
+            # Verify output file exists
+            if not out_path.exists() or out_path.stat().st_size == 0:
+                raise FileNotFoundError(f"Quá trình render không tạo được file output tại: {out_path}")
+
+            # Run real QC inspection on the generated video
+            from studio.backend.services.qc_service import QCService
+            qc_service = QCService()
+            qc_rep = qc_service.get_qc_report(project_id)
             qc_summary = {
-                "overall_status": "PASS",
-                "duration_sec": duration_sec,
-                "resolution": "1920x1080",
-                "fps": 30,
-                "av_sync_delta_ms": 1.2,
-                "black_gap_detected": False,
-                "static_hold_exceeded": False,
-                "integrated_loudness_lufs": -16.1,
-                "true_peak_db": -1.2
+                "overall_status": qc_rep.overall_status,
+                "duration_sec": qc_rep.duration_sec,
+                "resolution": qc_rep.resolution,
+                "fps": qc_rep.fps,
+                "av_sync_delta_ms": qc_rep.av_sync_delta_ms,
+                "black_gap_detected": qc_rep.black_gap_detected,
+                "static_hold_exceeded": qc_rep.static_hold_exceeded,
+                "integrated_loudness_lufs": qc_rep.integrated_loudness_lufs,
+                "true_peak_db": qc_rep.true_peak_db
             }
 
             with self._lock:
@@ -162,11 +223,11 @@ class RenderService:
                 cur_state["is_rendering"] = False
                 cur_state["progress"] = 100.0
                 cur_state["stage"] = "COMPLETE"
-                cur_state["stage_label"] = "Video Render hoàn tất và đạt chuẩn QC!"
+                cur_state["stage_label"] = f"Video Render hoàn tất! Trạng thái QC: {qc_rep.overall_status}"
                 cur_state["output_file"] = f"final/{out_name}"
-                cur_state["status"] = "PASS"
+                cur_state["status"] = qc_rep.overall_status
                 cur_state["qc_summary"] = qc_summary
-                cur_state["logs"].append(f"Xuất file thành công: {out_name}")
+                cur_state["logs"].append(f"Xuất file thành công: {out_name} ({qc_rep.duration_sec}s)")
 
             # Record in DB
             with get_db_connection() as conn:
@@ -178,13 +239,19 @@ class RenderService:
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     render_id, project_id, f"final/{out_name}", "V9.3.2",
-                    time.time(), duration_sec, "1920x1080", "PASS", json.dumps(qc_summary)
+                    time.time(), qc_rep.duration_sec, qc_rep.resolution, qc_rep.overall_status, json.dumps(qc_summary)
                 ))
                 conn.commit()
 
         except Exception as e:
+            logger.error(f"Render failed for {project_id}: {e}", exc_info=True)
             with self._lock:
                 if project_id in self._active_renders:
-                    self._active_renders[project_id]["is_rendering"] = False
-                    self._active_renders[project_id]["status"] = "FAILED"
-                    self._active_renders[project_id]["logs"].append(f"Lỗi: {str(e)}")
+                    cur = self._active_renders[project_id]
+                    cur["is_rendering"] = False
+                    cur["status"] = "FAILED"
+                    cur["stage"] = "FAILED"
+                    cur["stage_label"] = f"Render thất bại: {str(e)}"
+                    cur["logs"].append(f"[LỖI] {str(e)}")
+            if progress_cb:
+                progress_cb(self._active_renders[project_id])

@@ -342,14 +342,22 @@ export const SettingsView: React.FC = () => {
                           Khóa API {pInfo.has_key && <span className="text-[#10B981]">({pInfo.masked_key})</span>}
                         </label>
                         <div className="relative">
-                          <input
-                            type={showKey[pName] ? 'text' : 'password'}
+                          {/* Several keys rotate automatically when one hits its quota. */}
+                          <textarea
+                            rows={2}
                             value={keysInput[pName] || ''}
                             onChange={(e) =>
                               setKeysInput((prev) => ({ ...prev, [pName]: e.target.value }))
                             }
-                            placeholder={pInfo.has_key ? 'Nhập khóa mới để thay đổi...' : 'Dán khóa API (sk-..., AIza...)'}
-                            className="w-full bg-[#0B0F17] border border-[#28354D] rounded p-2 text-xs font-mono-code text-[#F8FAFC] pr-8 focus:outline-none focus:border-[#3B82F6]"
+                            spellCheck={false}
+                            autoComplete="off"
+                            placeholder={
+                              pInfo.has_key
+                                ? 'Dán lại toàn bộ danh sách key để thay đổi (mỗi dòng 1 key)...'
+                                : 'Dán 1 hoặc nhiều khóa API, mỗi dòng 1 key (sk-..., AIza...)'
+                            }
+                            style={{ WebkitTextSecurity: showKey[pName] ? 'none' : 'disc' } as React.CSSProperties}
+                            className="w-full resize-y bg-[#0B0F17] border border-[#28354D] rounded p-2 text-xs font-mono-code text-[#F8FAFC] pr-8 focus:outline-none focus:border-[#3B82F6]"
                           />
                           <button
                             type="button"
@@ -359,6 +367,12 @@ export const SettingsView: React.FC = () => {
                             {showKey[pName] ? <EyeOff size={14} /> : <Eye size={14} />}
                           </button>
                         </div>
+                        {pName === 'gemini' && (
+                          <p className="text-[10px] text-[#64748B] mt-1 leading-snug">
+                            Hết quota sẽ tự xoay sang key kế tiếp. Quota tính theo Project: các key tạo trong
+                            cùng một Google Cloud project dùng chung quota, nên chỉ key từ project khác mới tăng lượt gọi.
+                          </p>
+                        )}
                       </div>
 
                       {/* Model Selector */}

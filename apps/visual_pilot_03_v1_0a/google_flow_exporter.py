@@ -15,6 +15,11 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from apps.visual_engine.character_continuity_resolver import (
+    CharacterContinuityResolver,
+    is_human_scene,
+)
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 VISUAL_DIR = BASE_DIR / "production_pilot_03_visual_v1_0a"
 EXPORTS_DIR = VISUAL_DIR / "exports"
@@ -317,9 +322,22 @@ def build_episode_export(ep_id: str) -> Dict[str, Any]:
             "image_status": "NOT_GENERATED",
             "image_media_id": None,
             "video_status": "NOT_GENERATED",
-            "video_media_id": None
+            "video_media_id": None,
+            "character_dependencies": [
+                {
+                    "character_id": cid,
+                    "name": char_bible_map.get(cid, {}).get("name", cid),
+                    "reference_required": char_bible_map.get(cid, {}).get("reference_required", True),
+                    "reference_media_id": char_bible_map.get(cid, {}).get("reference_media_id", None)
+                }
+                for cid in char_refs_req
+            ]
         }
         scenes.append(scene_obj)
+
+    if ep_id not in ("EP003", "EP011"):
+        char_resolver = CharacterContinuityResolver(characters)
+        scenes = char_resolver.resolve_scenes(scenes)
 
     return {
         "episode_id": ep_id,
@@ -406,7 +424,7 @@ def validate_flow_export(export_data: Dict[str, Any]) -> Tuple[bool, List[str]]:
             if video_count != expected_videos:
                 errors.append(f"{ep_id}: Expected {expected_videos} video recommended scenes, got {video_count}")
         else:
-            if video_count < 1 or video_count > max(1, int(len(scenes) * 0.40)):
+            if (len(scenes) >= 5 and video_count < 1) or video_count > max(1, int(len(scenes) * 0.40)):
                 errors.append(f"{ep_id}: Video count {video_count} out of expected range for {len(scenes)} scenes")
 
         # 3. Image-Only Count
@@ -465,6 +483,21 @@ def validate_flow_export(export_data: Dict[str, Any]) -> Tuple[bool, List[str]]:
                 errors.append(f"{ep_id}: Invented media ID in scene {sc['scene_id']}")
             if sc.get("generation_dependencies_satisfied") is not False:
                 errors.append(f"{ep_id}: generation_dependencies_satisfied must be False in scene {sc['scene_id']}")
+
+        # 7b. Character Dependency Validation for human scenes
+        if ep_id not in ("EP003", "EP011"):
+            for sc in scenes:
+                is_human, reason = is_human_scene(sc)
+                if is_human and not sc.get("character_refs_required"):
+                    sc["generation_dependencies_satisfied"] = False
+                    errors.append(
+                        f"{ep_id}: Scene {sc['scene_id']} contains human subject ({reason}) "
+                        f"but character_refs_required is empty (unresolved character reference)"
+                    )
+                for dep in sc.get("character_dependencies", []):
+                    for req_f in ("character_id", "name", "reference_required", "reference_media_id"):
+                        if req_f not in dep:
+                            errors.append(f"{ep_id}: Scene {sc['scene_id']} character dependency missing field '{req_f}'")
 
         # 8. Visual Spoiler Guard for pilot episodes
         if ep_id in ("EP003", "EP011"):

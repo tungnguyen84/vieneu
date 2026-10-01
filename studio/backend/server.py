@@ -39,6 +39,7 @@ from studio.backend.services.audio_service import AudioService
 from studio.backend.services.flow_service import FlowService
 from studio.backend.services.generation_service import GenerationService
 from studio.backend.services.job_service import JobService
+from studio.backend.services import live_log
 from studio.backend.services.qc_service import QCService
 from studio.backend.services.render_service import RenderService
 from studio.backend.services.script_service import ScriptService
@@ -46,6 +47,8 @@ from studio.backend.services.artifact_lineage import (
     mark_full_script_stale,
     mark_story_bible_stale,
     require_current_full_script,
+    validate_full_script,
+    script_content_hash,
 )
 from studio.backend.services.timeline_service import TimelineService
 from studio.backend.services.visual_service import VisualService
@@ -54,6 +57,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DIST_DIR = BASE_DIR / "studio-ui" / "dist"
 
 app = FastAPI(title="Sau Cánh Cửa Studio API", version="1.0.0")
+live_log.install()
 
 # Enable CORS for local dev
 app.add_middleware(
@@ -231,6 +235,53 @@ class StageUpdateRequest(BaseModel):
 
 @app.post("/api/projects/{project_id}/stage", response_model=ProjectMetadata)
 def update_stage(project_id: str, req: StageUpdateRequest):
+    # Enforce domain gates on stage promotions
+    if req.status in [StageStatus.APPROVED, StageStatus.COMPLETE]:
+        if req.stage_id == StageId.SCRIPT:
+            try:
+                lineage = require_current_full_script(
+                    project_id,
+                    BASE_DIR / "projects",
+                    require_approved=False,
+                    require_clean_qc=True,
+                )
+                if lineage.get("qc_status") != "PASS":
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Không thể duyệt Script chưa đạt chuẩn QC (trạng thái: {lineage.get('qc_status') or 'MISSING'}).",
+                    )
+                script_path = BASE_DIR / "projects" / project_id / "script" / "full_script.json"
+                if script_path.exists():
+                    sc_data = json.loads(script_path.read_text(encoding="utf-8"))
+                    from studio.backend.services.artifact_lineage import script_content_hash
+                    sc_hash = script_content_hash(sc_data)
+                    sc_data["approved_content_hash"] = sc_hash
+                    script_path.write_text(json.dumps(sc_data, ensure_ascii=False, indent=2), encoding="utf-8")
+                    p_path = BASE_DIR / "projects" / project_id / "project.json"
+                    if p_path.exists():
+                        p_data = json.loads(p_path.read_text(encoding="utf-8"))
+                        p_data["approved_script_content_hash"] = sc_hash
+                        p_path.write_text(json.dumps(p_data, ensure_ascii=False, indent=2), encoding="utf-8")
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc))
+        elif req.stage_id == StageId.AUDIO:
+            lineage = validate_full_script(project_id, BASE_DIR / "projects")
+            if not lineage.get("audio_gate_allowed"):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Audio Gate: {lineage.get('audio_gate_reason') or 'Kịch bản chưa sẵn sàng cho Audio'}",
+                )
+            audio_path = audio_srv.get_audio_master_path(project_id)
+            if not audio_path or not audio_path.exists():
+                raise HTTPException(status_code=400, detail="Chưa có file Audio Master để duyệt Audio Stage.")
+        elif req.stage_id in [StageId.RENDER, StageId.QC]:
+            qc_rep = qc_srv.get_qc_report(project_id)
+            if qc_rep.overall_status != "PASS":
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Không thể duyệt Render/QC: video chưa đạt QC (trạng thái: {qc_rep.overall_status}).",
+                )
+
     return pm.update_stage_status(project_id, req.stage_id, req.status)
 
 
@@ -330,12 +381,13 @@ class GenerateStoryRequest(BaseModel):
 @app.post("/api/projects/{project_id}/story/generate")
 def generate_project_story(project_id: str, req: GenerateStoryRequest):
     try:
-        res = gen_srv.generate_story_bible(
-            project_id,
-            topic=req.topic or "",
-            provider_id=req.provider,
-            model_id=req.model,
-        )
+        with live_log.project_scope(project_id, "Tạo Cốt truyện (Story Bible)"):
+            res = gen_srv.generate_story_bible(
+                project_id,
+                topic=req.topic or "",
+                provider_id=req.provider,
+                model_id=req.model,
+            )
         pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.STALE)
         pm.update_stage_status(project_id, StageId.STORY, StageStatus.NEEDS_REVIEW)
         return res
@@ -365,7 +417,8 @@ def repair_project_story(project_id: str, req: Optional[GenerateStoryRequest] = 
     try:
         prov = req.provider if req else None
         model = req.model if req else None
-        res = gen_srv.repair_story_bible(project_id, provider_id=prov, model_id=model)
+        with live_log.project_scope(project_id, "Sửa Cốt truyện (Story Bible)"):
+            res = gen_srv.repair_story_bible(project_id, provider_id=prov, model_id=model)
         pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.STALE)
         pm.update_stage_status(project_id, StageId.STORY, StageStatus.NEEDS_REVIEW)
         return res
@@ -409,11 +462,12 @@ def generate_project_script(project_id: str, req: GenerateScriptRequest):
             if not bible_path.exists():
                 raise HTTPException(status_code=400, detail="Story Bible chưa được duyệt hoặc chưa tồn tại. Vui lòng duyệt Story Bible trước khi tạo kịch bản!")
 
-        res = gen_srv.generate_full_script(
-            project_id,
-            provider_id=req.provider,
-            model_id=req.model,
-        )
+        with live_log.project_scope(project_id, "Viết kịch bản"):
+            res = gen_srv.generate_full_script(
+                project_id,
+                provider_id=req.provider,
+                model_id=req.model,
+            )
         pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.NEEDS_REVIEW)
         return res
     except HTTPException:
@@ -427,7 +481,8 @@ def generate_project_script(project_id: str, req: GenerateScriptRequest):
 @app.post("/api/projects/{project_id}/script/repair")
 def repair_project_script(project_id: str):
     try:
-        res = gen_srv.auto_repair_script(project_id)
+        with live_log.project_scope(project_id, "Sửa tự động kịch bản (Auto-Repair)"):
+            res = gen_srv.auto_repair_script(project_id)
         return res
     except HTTPException:
         raise
@@ -450,6 +505,18 @@ def approve_project_script(project_id: str):
                 status_code=400,
                 detail=f"Không thể duyệt kịch bản chưa vượt qua QC (trạng thái: {status.get('qc_status') or 'MISSING'}).",
             )
+        script_path = BASE_DIR / "projects" / project_id / "script" / "full_script.json"
+        if script_path.exists():
+            sc_data = json.loads(script_path.read_text(encoding="utf-8"))
+            from studio.backend.services.artifact_lineage import script_content_hash
+            sc_hash = script_content_hash(sc_data)
+            sc_data["approved_content_hash"] = sc_hash
+            script_path.write_text(json.dumps(sc_data, ensure_ascii=False, indent=2), encoding="utf-8")
+            p_path = BASE_DIR / "projects" / project_id / "project.json"
+            if p_path.exists():
+                p_data = json.loads(p_path.read_text(encoding="utf-8"))
+                p_data["approved_script_content_hash"] = sc_hash
+                p_path.write_text(json.dumps(p_data, ensure_ascii=False, indent=2), encoding="utf-8")
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.APPROVED)
@@ -521,14 +588,18 @@ def import_audio(project_id: str, file: UploadFile = File(...)):
 class AutoMixRequest(BaseModel):
     enable_ducking: bool = True
     target_lufs: float = -14.0
+    bgm_volume_db: float = 0.0
 
 
 @app.post("/api/projects/{project_id}/audio/auto-mix")
 def auto_mix_audio(project_id: str, req: Optional[AutoMixRequest] = None):
     ducking = req.enable_ducking if req else True
     lufs = req.target_lufs if req else -14.0
+    bgm_vol = req.bgm_volume_db if req else 0.0
     try:
-        res = audio_srv.auto_mix_background_music(project_id, enable_ducking=ducking, target_lufs=lufs)
+        res = audio_srv.auto_mix_background_music(
+            project_id, enable_ducking=ducking, target_lufs=lufs, bgm_volume_db=bgm_vol
+        )
         if pm.get_project(project_id):
             pm.update_stage_status(project_id, StageId.AUDIO, StageStatus.NEEDS_REVIEW)
         return res
@@ -711,6 +782,12 @@ def get_qc(project_id: str):
 
 
 # ---------------- JOBS & SYSTEM ----------------
+@app.get("/api/projects/{project_id}/logs")
+def get_project_live_log(project_id: str, since: int = 0):
+    """Live pipeline log for a project; poll with ``since`` = last seen ``seq``."""
+    return live_log.read(project_id, since)
+
+
 @app.get("/api/jobs")
 def list_jobs(project_id: Optional[str] = None):
     return job_srv.list_jobs(project_id)

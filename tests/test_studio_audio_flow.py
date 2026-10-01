@@ -11,7 +11,8 @@ from studio.backend.services.audio_service import AudioService
 from studio.backend.services.flow_service import FlowService
 from studio.backend.services.script_service import ScriptService
 from studio.backend.services.visual_service import VisualService
-from studio.backend.services.artifact_lineage import story_content_hash
+from studio.backend.services.artifact_lineage import story_content_hash, script_content_hash
+from apps.script_factory.script_qc import SCRIPT_QC_VERSION
 
 
 def _add_real_lineage(project: Path, script: dict) -> dict:
@@ -26,6 +27,7 @@ def _add_real_lineage(project: Path, script: dict) -> dict:
     story_dir = project / "story"
     story_dir.mkdir(parents=True, exist_ok=True)
     (story_dir / "story_bible.json").write_text(json.dumps(story), encoding="utf-8")
+    script_hash = script_content_hash(script)
     script.update({
         "generation_source": "REAL_AI",
         "generation_request_id": "22222222-2222-4222-8222-222222222222",
@@ -35,7 +37,27 @@ def _add_real_lineage(project: Path, script: dict) -> dict:
         "model_name": "gemini-test",
         "provider_name": "GeminiScriptAIProvider",
         "artifact_status": "CURRENT",
+        "approved_content_hash": script_hash,
     })
+    script_dir = project / "script"
+    script_dir.mkdir(parents=True, exist_ok=True)
+    qc = {
+        "episode_id": project.name,
+        "qc_version": SCRIPT_QC_VERSION,
+        "status": "PASS",
+        "overall_status": "PASS",
+        "script_content_hash": script_hash,
+        "semantic_review": {"status": "RUN", "issues": []},
+        "issues": [],
+    }
+    (script_dir / "qc_report.json").write_text(json.dumps(qc, ensure_ascii=False), encoding="utf-8")
+    proj_meta = {
+        "project_id": project.name,
+        "title": "Tập kiểm thử",
+        "stage_statuses": {"03_script": "APPROVED"},
+        "approved_script_content_hash": script_hash,
+    }
+    (project / "project.json").write_text(json.dumps(proj_meta, ensure_ascii=False), encoding="utf-8")
     return script
 
 
@@ -85,7 +107,7 @@ def test_audio_generation_uses_segment_speeds_and_selected_voice(tmp_path, monke
     monkeypatch.setattr(audio_module, "generate_single_segment_takes", fake_generate)
     monkeypatch.setattr(audio_module, "build_master_audio", fake_master)
 
-    result = service.generate_narration("EP900", "020", contextual_speed=True)
+    result = service.generate_narration("EP900", "020", contextual_speed=True, enable_music=False)
 
     assert seen == [(0.98, "020"), (0.92, "020")]
     assert result["generation"]["segments"] == 2
@@ -144,16 +166,15 @@ def test_visual_plan_is_built_from_current_project(tmp_path, monkeypatch):
     visual = tmp_path / "visual"
     project = projects / "EP903"
     (project / "script").mkdir(parents=True)
-    (project / "project.json").write_text(json.dumps({"title": "Tập riêng"}), encoding="utf-8")
-    (project / "story_bible.json").write_text(json.dumps({
-        "protagonist": {"char_id": "THANH", "name": "Thanh", "age": 32, "description": "Người vợ đi tìm sự thật"},
-        "supporting_characters": [{"char_id": "KHOA", "name": "Khoa", "age": 34, "description": "Người chồng giữ bí mật"}],
-    }), encoding="utf-8")
     (project / "location_bible.json").write_text(json.dumps({"locations": ["Căn hộ của Thanh và Khoa", "Tiệm bánh của Hương"]}), encoding="utf-8")
-    (project / "script" / "full_script.json").write_text(json.dumps({"segments": [
-        {"id": f"{index:03d}", "text": f"Thanh phát hiện bí mật số {index} trong căn hộ.", "delivery_profile": "MYSTERY", "speed": 0.96}
-        for index in range(1, 11)
-    ]}), encoding="utf-8")
+    script = _add_real_lineage(project, {
+        "episode_id": "EP903",
+        "segments": [
+            {"id": f"{index:03d}", "text": f"Thanh phát hiện bí mật số {index} trong căn hộ.", "delivery_profile": "MYSTERY", "speed": 0.96}
+            for index in range(1, 11)
+        ],
+    })
+    (project / "script" / "full_script.json").write_text(json.dumps(script, ensure_ascii=False), encoding="utf-8")
     audio = project / "audio" / "narration.wav"
     audio.parent.mkdir(parents=True)
     audio.write_bytes(b"audio")

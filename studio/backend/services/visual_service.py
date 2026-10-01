@@ -13,6 +13,7 @@ from studio.backend.models import (
     PropItem,
     SceneItem,
 )
+from apps.visual_engine.character_continuity_resolver import CharacterContinuityResolver
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 VISUAL_DIR = BASE_DIR / "production_pilot_03_visual_v1_0a"
@@ -406,6 +407,16 @@ class VisualService:
         if not script_path.exists():
             raise FileNotFoundError("Chưa có kịch bản để lập Visual Plan")
 
+        # Check lineage if project.json or qc_report.json exists
+        if (project_dir / "project.json").exists() or (project_dir / "script" / "qc_report.json").exists():
+            from studio.backend.services.artifact_lineage import require_current_full_script
+            require_current_full_script(
+                project_id,
+                PROJECTS_DIR,
+                require_approved=True,
+                require_clean_qc=True,
+            )
+
         from studio.backend.services.audio_service import AudioService
         audio_path = AudioService().get_audio_master_path(project_id)
         if not audio_path:
@@ -514,19 +525,47 @@ class VisualService:
 
         loc_engine = LocationContinuityEngine(locations)
 
-        # 3. Timeline & Segments Mapping
-        weights = []
-        for segment in segments:
-            words = max(1, len(str(segment.get("text") or "").split()))
-            speed = max(0.88, min(1.05, float(segment.get("speed") or 1.0)))
-            weights.append(words / (2.7 * speed) + float(segment.get("pause_after") or 0.25))
-        weight_total = sum(weights)
+        # 3. Timeline & Segments Mapping using real segment_timing if available
+        timing_file = None
+        for candidate in [
+            project_dir / "audio" / "segment_timing.json",
+            project_dir / "segment_timing.json",
+            project_dir / "reports" / "segment_timing.json",
+            Path("production_pilot_03") / project_id / "audio" / "segment_timing.json",
+            Path("production_pilot_03") / project_id / "segment_timing.json",
+        ]:
+            if candidate.exists():
+                timing_file = candidate
+                break
+
         segment_times = []
-        cursor = 0.0
-        for index, (segment, weight) in enumerate(zip(segments, weights)):
-            end = audio_duration if index == len(segments) - 1 else cursor + audio_duration * weight / weight_total
-            segment_times.append((cursor, end, segment))
-            cursor = end
+        if timing_file:
+            try:
+                timing_data = json.loads(timing_file.read_text(encoding="utf-8"))
+                if isinstance(timing_data, list) and len(timing_data) == len(segments):
+                    for idx, (seg, t) in enumerate(zip(segments, timing_data)):
+                        s_start = float(t.get("speech_start_sec", 0.0))
+                        if idx == len(segments) - 1:
+                            s_end = audio_duration
+                        else:
+                            s_end = float(t.get("speech_end_sec", s_start)) + float(t.get("pause_after", 0.25) or 0.25)
+                        segment_times.append((s_start, s_end, seg))
+            except Exception:
+                segment_times = []
+
+        if not segment_times:
+            # Fallback to proportional heuristic if segment_timing is not available
+            weights = []
+            for segment in segments:
+                words = max(1, len(str(segment.get("text") or "").split()))
+                speed = max(0.88, min(1.05, float(segment.get("speed") or 1.0)))
+                weights.append(words / (2.7 * speed) + float(segment.get("pause_after") or 0.25))
+            weight_total = sum(weights)
+            cursor = 0.0
+            for index, (segment, weight) in enumerate(zip(segments, weights)):
+                end = audio_duration if index == len(segments) - 1 else cursor + audio_duration * weight / weight_total
+                segment_times.append((cursor, end, segment))
+                cursor = end
 
         scene_count = min(45, len(segments))
         boundaries = [round(index * len(segments) / scene_count) for index in range(scene_count + 1)]
@@ -546,17 +585,18 @@ class VisualService:
         plan_scenes = []
         previous_loc_id = None
         characters_map = {c["character_id"]: c for c in characters}
+        char_resolver = CharacterContinuityResolver(characters)
 
         for scene_index, group in enumerate(scene_groups):
             start_time = round(group[0][0], 3)
-            end_time = round(group[-1][1], 3)
+            end_time = round(audio_duration, 3) if scene_index == len(scene_groups) - 1 else round(group[-1][1], 3)
             texts = [str(item[2].get("text") or "") for item in group]
             combined = " ".join(texts).strip()
             lower = combined.lower()
             profiles = [str(item[2].get("delivery_profile") or "NORMAL").upper() for item in group]
             dominant_profile = max(set(profiles), key=profiles.count)
 
-            visible = [char["character_id"] for char in characters if char["name"].lower() in lower]
+            visible = char_resolver.match_characters_in_text(combined)
 
             # Semantic location inference with continuity tracking
             loc_id, loc_source, loc_evidence, loc_confidence = loc_engine.resolve(
@@ -609,6 +649,9 @@ class VisualService:
                 "image_motion": {"type": "SLOW_PUSH_IN" if is_video else "KEN_BURNS_SLOW_PAN"},
             })
 
+        # Run Character Continuity Resolver post-scene generation pass
+        plan_scenes = char_resolver.resolve_scenes(plan_scenes)
+
         target_dir = VISUAL_DIR / project_id
         target_dir.mkdir(parents=True, exist_ok=True)
         plan = {
@@ -658,6 +701,9 @@ class VisualService:
                 image_prompt=s.get("image_prompt", ""),
                 video_prompt=vp_text,
                 visible_characters=s.get("visible_characters", []),
+                character_refs_required=s.get("character_refs_required", []),
+                character_dependencies=s.get("character_dependencies", []),
+                generation_dependencies_satisfied=s.get("generation_dependencies_satisfied", False),
                 location_id=s.get("location_id"),
                 location_confidence=s.get("location_confidence"),
                 location_evidence=s.get("location_evidence"),

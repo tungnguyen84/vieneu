@@ -34,9 +34,14 @@ class AutoRevisionManager:
         story_bible: StoryBible,
         qc_report: QCReport,
         model: Optional[str] = None,
+        max_rounds: int = MAX_REVISION_ROUNDS,
     ) -> Tuple[FullScript, QCReport]:
-        """Runs targeted revision and re-checks with QC."""
-        if script.revision_round >= MAX_REVISION_ROUNDS:
+        """Runs targeted revision and re-checks with QC.
+
+        ``max_rounds`` is the absolute round ceiling; callers that start a fresh
+        repair session on an already-revised script pass a raised ceiling.
+        """
+        if script.revision_round >= max_rounds:
             # The round limit protects paid model calls. Safe deterministic
             # repairs (hook/ending/profile normalization) may still resolve a
             # legacy artifact without consuming another AI request.
@@ -95,7 +100,7 @@ class AutoRevisionManager:
 
         if new_qc_report.status == "PASS":
             revised_script.status = ApprovalStatus.QC_PASS
-        elif revised_script.revision_round >= MAX_REVISION_ROUNDS:
+        elif revised_script.revision_round >= max_rounds:
             revised_script.status = ApprovalStatus.USER_REVIEW_REQUIRED
         else:
             revised_script.status = ApprovalStatus.NEEDS_REVISION

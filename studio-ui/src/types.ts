@@ -144,7 +144,7 @@ export interface AssetSceneItem {
 }
 
 export interface FinalQCReport {
-  overall_status: 'PASS' | 'WARNING' | 'FAIL';
+  overall_status: 'PASS' | 'WARNING' | 'FAIL' | 'NOT_RUN';
   duration_sec: number;
   resolution: string;
   fps: number;

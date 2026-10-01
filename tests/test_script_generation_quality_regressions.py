@@ -100,7 +100,7 @@ def test_story_qc_rejects_indirect_evidence_as_conclusive_proof() -> None:
     assert len(proof_issues) == 2
 
 
-def _run_auto_repair_service(tmp_path: Path, monkeypatch, pass_on_round: int) -> dict:
+def _run_auto_repair_service(tmp_path: Path, monkeypatch, pass_on_round: int, starting_round: int = 0) -> dict:
     project = tmp_path / "EP_AUTO"
     (project / "script").mkdir(parents=True)
     (project / "story").mkdir(parents=True)
@@ -109,6 +109,7 @@ def _run_auto_repair_service(tmp_path: Path, monkeypatch, pass_on_round: int) ->
         title="Tự sửa một lần bấm",
         host={"id": "MINH"},
         segments=[_segment(1, "Một chi tiết cần được sửa lại.", "HOOK")],
+        revision_round=starting_round,
     )
     bible = StoryBible(episode_id="EP_AUTO", title=script.title, protagonist={"name": "Lan"})
     (project / "script" / "full_script.json").write_text(
@@ -134,7 +135,7 @@ def _run_auto_repair_service(tmp_path: Path, monkeypatch, pass_on_round: int) ->
         def __init__(self, **_kwargs):
             pass
 
-        def auto_revise_and_recheck(self, script, story_bible, qc_report):
+        def auto_revise_and_recheck(self, script, story_bible, qc_report, max_rounds=3):
             script.revision_round += 1
             return script, FakeQC().run_qc(script, story_bible)
 
@@ -159,3 +160,9 @@ def test_auto_repair_one_click_stops_at_three_rounds_with_reason(tmp_path: Path,
     assert result["completed"] is False
     assert result["rounds_attempted"] == 3
     assert result["remaining_rules"] == ["TEST_REMAINING"]
+
+
+def test_auto_repair_click_after_round_limit_gets_fresh_rounds(tmp_path: Path, monkeypatch) -> None:
+    result = _run_auto_repair_service(tmp_path, monkeypatch, pass_on_round=5, starting_round=3)
+    assert result["completed"] is True
+    assert result["rounds_attempted"] == 2

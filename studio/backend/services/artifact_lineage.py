@@ -66,6 +66,9 @@ def story_content_hash(story: Dict[str, Any]) -> str:
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
+from apps.script_factory.semantic_review import script_content_hash
+
+
 def find_template_leakage(script: Dict[str, Any]) -> List[Dict[str, Any]]:
     text = "\n".join(
         str(segment.get("text", ""))
@@ -155,15 +158,18 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
     # Audio Gate requirements:
     # 1. Script is current (is_current)
     # 2. Stage status is APPROVED (or COMPLETED / LOCKED)
-    # 3. 0 unresolved CRITICAL QC issues in qc_report.json
+    # 3. Valid QC report exists with status PASS and matching script content hash
+    # 4. 0 unresolved CRITICAL QC issues in qc_report.json
     qc_path = project_dir / "script" / "qc_report.json"
     qc = _read_json(qc_path) if qc_path.exists() else {}
+
+    current_script_hash = script_content_hash(script) if script else None
 
     stage_statuses = project.get("stage_statuses") if isinstance(project.get("stage_statuses"), dict) else {}
     script_stage_status = stage_statuses.get("03_script") or script.get("status")
 
     critical_qc_issues: List[str] = []
-    qc_status = str(qc.get("status", "")).upper()
+    qc_status = str(qc.get("status") or qc.get("overall_status") or "").upper()
     has_critical_failure = bool(qc.get("has_critical_failure") or qc_status == "FAIL")
 
     for issue in qc.get("evidence_issues", []) + qc.get("fact_conflicts", []) + qc.get("issues", []):
@@ -175,19 +181,56 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
                 "CHARACTER_KNOWLEDGE_CONTRADICTION", "EVIDENCE_DOES_NOT_PROVE_CLAIM", "REVEAL_UNDERJUSTIFIED",
                 "SCRIPT_FACT_DRIFT", "FINAL_SCRIPT_TOPIC_DRIFT", "INTERNAL_TEMPLATE_LEAKAGE",
                 "PREMATURE_SIGNOFF", "DUPLICATE_SIGNOFF", "CONTENT_AFTER_SIGNOFF", "MISSING_FINAL_SIGNOFF",
+                "SEMANTIC_REVIEW_FAILED", "GENERIC_PHILOSOPHICAL_HOOK", "OBJECT_CONTINUITY_CONTRADICTION",
+                "QC_REPORT_TONE_LEAKAGE",
             ]:
                 has_critical_failure = True
                 msg = issue.get("message") or issue.get("rule") or "Lỗi QC nghiêm trọng"
                 critical_qc_issues.append(f"[{rule_code}] {msg}")
 
     audio_gate_reasons: List[str] = []
+    from apps.script_factory.script_qc import SCRIPT_QC_VERSION
+
+    # 1. Require QC Report existence
+    if not qc_path.exists() or not qc:
+        audio_gate_reasons.append("Chưa có báo cáo QC kịch bản (cần chạy QC trước khi duyệt)")
+    else:
+        if qc.get("qc_version") != SCRIPT_QC_VERSION:
+            audio_gate_reasons.append(
+                f"Báo cáo QC được chấm bằng bộ luật cũ ({qc.get('qc_version') or 'không rõ'}); cần chạy lại QC {SCRIPT_QC_VERSION}"
+            )
+        if qc_status != "PASS":
+            audio_gate_reasons.append(f"Kịch bản chưa đạt chuẩn QC (trạng thái: {qc_status or 'CHƯA_ĐẠT'})")
+
+        # Verify hash match between script and QC report
+        qc_script_hash = qc.get("script_content_hash")
+        if qc_script_hash and current_script_hash and qc_script_hash != current_script_hash:
+            audio_gate_reasons.append("Nội dung kịch bản đã bị thay đổi sau lần QC cuối; cần chạy lại QC")
+            reasons.append("Nội dung kịch bản đã bị thay đổi sau lần QC cuối")
+
+        # Check semantic review status
+        sem_rev = qc.get("semantic_review")
+        if isinstance(sem_rev, dict):
+            sem_status = sem_rev.get("status")
+            if sem_status == "ERROR":
+                audio_gate_reasons.append(f"QC logic cốt truyện (semantic review) bị lỗi: {sem_rev.get('error')}")
+            elif sem_status == "NOT_RUN":
+                audio_gate_reasons.append("QC logic cốt truyện (semantic review) chưa được chạy")
+
+        if has_critical_failure:
+            crit_detail = "; ".join(critical_qc_issues[:2]) if critical_qc_issues else "Báo cáo QC ở trạng thái FAIL"
+            audio_gate_reasons.append(f"Kịch bản có lỗi QC mức CRITICAL chưa được giải quyết ({crit_detail})")
+
     if not is_current:
         audio_gate_reasons.append(f"Kịch bản không hợp lệ hoặc lỗi thời ({'; '.join(reasons)})")
-    if has_critical_failure:
-        crit_detail = "; ".join(critical_qc_issues[:2]) if critical_qc_issues else "Báo cáo QC ở trạng thái FAIL"
-        audio_gate_reasons.append(f"Kịch bản có lỗi QC mức CRITICAL chưa được giải quyết ({crit_detail})")
+
     if script_stage_status not in ["APPROVED", "COMPLETED", "LOCKED"]:
         audio_gate_reasons.append(f"Kịch bản chưa được phê duyệt ở bước Script (trạng thái: {script_stage_status or 'DRAFT'})")
+    else:
+        # Check approved hash matches
+        approved_hash = script.get("approved_content_hash") or project.get("approved_script_content_hash")
+        if approved_hash and current_script_hash and approved_hash != current_script_hash:
+            audio_gate_reasons.append("Nội dung kịch bản đã bị thay đổi sau khi phê duyệt; cần phê duyệt lại")
 
     audio_gate_allowed = len(audio_gate_reasons) == 0
     audio_gate_reason = " | ".join(audio_gate_reasons) if audio_gate_reasons else None

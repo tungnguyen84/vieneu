@@ -287,6 +287,7 @@ export const App: React.FC = () => {
           selectedSegment={selectedSegment}
           advancedMode={advancedMode}
           onToggleSceneMode={handleToggleSceneMode}
+          projectId={currentProject?.project_id}
         />
       </div>
 

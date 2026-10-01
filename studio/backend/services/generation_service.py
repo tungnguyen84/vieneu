@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import copy
 import json
 import logging
 import os
@@ -19,7 +20,7 @@ from apps.script_factory.providers.router import ModelRouter, RouterConfig
 from apps.script_factory.script_qc import ScriptQCEngine
 from apps.script_factory.script_writer import ScriptWriter
 from apps.script_factory.story_planner import StoryPlanner
-from studio.backend.credentials import get_active_api_key, get_public_providers_status
+from studio.backend.credentials import get_active_api_key, get_active_api_keys, get_public_providers_status
 from studio.backend.services.artifact_lineage import (
     mark_full_script_stale,
     require_current_full_script,
@@ -29,6 +30,45 @@ from studio.backend.services.artifact_lineage import (
 logger = logging.getLogger("SCCStudio.GenerationService")
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 PROJECTS_DIR = BASE_DIR / "projects"
+
+
+def _qc_problem_score(report) -> Tuple[int, int]:
+    """Lower is better: (CRITICAL issues, all issues)."""
+    issues = [i for i in [*report.evidence_issues, *report.fact_conflicts] if isinstance(i, dict)]
+    critical = sum(1 for i in issues if str(i.get("severity", "")).upper() == "CRITICAL")
+    if report.status == "FAIL":
+        critical = max(critical, 1)
+    total = len(issues) + len(report.logic_issues) + len(report.repetition_issues)
+    return critical, total
+
+
+def _revise_keeping_best(rev_manager, script, story_bible, qc_report, round_ceiling: int):
+    """Runs AI revision rounds up to ``round_ceiling`` and returns the best round.
+
+    Revisions mutate the script in place and a later rewrite can make things
+    worse, so each round works on a copy and the version with the fewest QC
+    problems wins. The returned script carries the last consumed round number.
+    """
+    current_script, current_qc = script, qc_report
+    best_script, best_qc = copy.deepcopy(script), qc_report
+    while current_qc.status != "PASS":
+        previous_round = current_script.revision_round
+        logger.info(f"Vòng sửa kịch bản {current_script.revision_round + 1}/{round_ceiling}...")
+        current_script, current_qc = rev_manager.auto_revise_and_recheck(
+            script=copy.deepcopy(current_script),
+            story_bible=story_bible,
+            qc_report=current_qc,
+            max_rounds=round_ceiling,
+        )
+        if _qc_problem_score(current_qc) <= _qc_problem_score(best_qc):
+            best_script, best_qc = copy.deepcopy(current_script), current_qc
+        if current_qc.status == "PASS" or current_script.revision_round >= round_ceiling:
+            break
+        # Defensive stop for a provider that returns without consuming a round.
+        if current_script.revision_round <= previous_round:
+            break
+    best_script.revision_round = current_script.revision_round
+    return best_script, best_qc
 
 
 def get_configured_ai_provider(provider_id: Optional[str] = None, model_id: Optional[str] = None):
@@ -43,9 +83,9 @@ def get_configured_ai_provider(provider_id: Optional[str] = None, model_id: Opti
     is_test_env = not is_production and (os.environ.get("APP_ENV") == "test")
 
     if target_p == "gemini":
-        gemini_key = get_active_api_key("gemini")
-        if gemini_key:
-            return GeminiScriptAIProvider(api_key=gemini_key, default_model=model or "gemini-2.5-flash")
+        gemini_keys = get_active_api_keys("gemini")
+        if gemini_keys:
+            return GeminiScriptAIProvider(api_keys=gemini_keys, default_model=model or "gemini-2.5-flash")
         elif is_test_env:
             from tests.mocks.mock_script_provider import MockScriptAIProvider
             return MockScriptAIProvider(default_model=model or "gemini-2.5-flash")
@@ -95,7 +135,7 @@ def get_configured_ai_provider(provider_id: Optional[str] = None, model_id: Opti
     # Secondary checks
     gemini_key = get_active_api_key("gemini")
     if gemini_key:
-        return GeminiScriptAIProvider(api_key=gemini_key, default_model=model or "gemini-2.5-flash")
+        return GeminiScriptAIProvider(api_keys=get_active_api_keys("gemini"), default_model=model or "gemini-2.5-flash")
 
     openai_key = get_active_api_key("openai")
     if openai_key:
@@ -483,7 +523,10 @@ class GenerationService:
         # Ensure Story Bible passes Story Logic & Reveal Justification Gate before ScriptWriter runs
         from apps.script_factory.story_qc import StoryQCEngine
         story_qc = StoryQCEngine(provider=provider)
+        logger.info(f"Dùng provider {provider.provider_name} / {getattr(provider, 'default_model', '?')}")
+        logger.info("Kiểm tra logic Cốt truyện (Story Bible)...")
         bible_qc = story_qc.audit_story_bible(story_bible)
+        logger.info(f"Cốt truyện: {bible_qc.status}" + (f" — {', '.join(bible_qc.rule_codes)}" if bible_qc.rule_codes else ""))
         if (
             bible_qc.status != "PASS"
             or not story_bible.causal_chains
@@ -496,6 +539,7 @@ class GenerationService:
                     f"Story Bible trôi dạt chủ đề: {'; '.join(bible_qc.logic_issues)}. "
                     f"Bị chặn bởi Cross-Stage Topic Gate 2! Vui lòng tạo lại hoặc chỉnh sửa Story Bible."
                 )
+            logger.info("Cốt truyện chưa đạt, đang để AI tự sửa (tối đa 3 vòng)...")
             story_bible = story_qc.repair_story_bible(story_bible, bible_qc)
             repaired_qc = story_qc.audit_story_bible(story_bible)
             if repaired_qc.status != "PASS":
@@ -524,20 +568,19 @@ class GenerationService:
             f"title='{story_bible.title}', provider={provider.provider_name}, "
             f"model={getattr(provider, 'default_model', 'unknown')}, source={prov_source}"
         )
+        logger.info("Đang viết kịch bản (phần 1 rồi phần 2)...")
         writer = ScriptWriter(provider=provider, cost_controller=self.cost_ctrl, episodes_root=PROJECTS_DIR)
         script = writer.generate_script_from_bible(story_bible)
 
         # Run automated QC and auto-repair if any issue is found
         qc_engine = ScriptQCEngine(provider=provider, cost_controller=self.cost_ctrl, episodes_root=PROJECTS_DIR)
+        logger.info(f"Đã viết {len(script.segments)} phân đoạn. Đang chạy QC kịch bản...")
         qc_report = qc_engine.run_qc(script=script, story_bible=story_bible)
         if qc_report.status != "PASS":
             rev_manager = AutoRevisionManager(provider=provider, cost_controller=self.cost_ctrl, qc_engine=qc_engine)
-            while qc_report.status != "PASS" and script.revision_round < MAX_REVISION_ROUNDS:
-                script, qc_report = rev_manager.auto_revise_and_recheck(
-                    script=script,
-                    story_bible=story_bible,
-                    qc_report=qc_report,
-                )
+            script, qc_report = _revise_keeping_best(
+                rev_manager, script, story_bible, qc_report, round_ceiling=MAX_REVISION_ROUNDS,
+            )
 
         # Attach generation_source and trace to script and project metadata
         script_dict = script.to_dict()
@@ -641,22 +684,11 @@ class GenerationService:
             revised_script, final_qc = script, qc_report
             revised_script.status = "QC_PASS"
         else:
-            revised_script, final_qc = script, qc_report
-            while final_qc.status != "PASS":
-                previous_round = revised_script.revision_round
-                revised_script, final_qc = rev_manager.auto_revise_and_recheck(
-                    script=revised_script,
-                    story_bible=story_bible,
-                    qc_report=final_qc,
-                )
-                if final_qc.status == "PASS":
-                    break
-                if revised_script.revision_round >= MAX_REVISION_ROUNDS:
-                    break
-                # Defensive stop for a provider that returns without consuming
-                # a revision round; otherwise this endpoint could loop forever.
-                if revised_script.revision_round <= previous_round:
-                    break
+            # Each click gets a fresh budget of AI rounds.
+            revised_script, final_qc = _revise_keeping_best(
+                rev_manager, script, story_bible, qc_report,
+                round_ceiling=starting_round + MAX_REVISION_ROUNDS,
+            )
 
         # Auto-repair is allowed only inside the current Story lineage and must
         # preserve all lineage metadata when the dataclass is serialized again.
@@ -705,7 +737,7 @@ class GenerationService:
             "message": (
                 "Kịch bản đã vượt qua QC."
                 if completed
-                else "Đã tự sửa đến giới hạn 3 vòng nhưng kịch bản vẫn chưa đạt QC. Hãy xem lỗi còn lại hoặc tạo lại từ Story Bible."
+                else f"Đã tự sửa {MAX_REVISION_ROUNDS} vòng trong lần này và giữ bản ít lỗi nhất, nhưng kịch bản vẫn chưa đạt QC. Bấm Auto-Repair lần nữa để sửa tiếp, hoặc sửa tay các đoạn còn lỗi."
             ),
             "word_count": total_words,
             "segments": len(revised_script.segments)

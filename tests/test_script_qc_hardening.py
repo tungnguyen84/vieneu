@@ -262,7 +262,7 @@ def test_qc_detects_melodramatic_cliche_density_and_unsafe_legal_claim(qc_env):
     script = FullScript(episode_id="EP_QC_PROSE", title="Sự thật", host={"id": "MINH", "voice": "Binh"}, segments=segs)
 
     report = qc.run_qc(script, bible)
-    assert report.status == "NEEDS_REVISION"
+    assert report.status == "FAIL"  # unsafe legal claims are a hard fail
     rules = {iss.get("rule") for iss in report.evidence_issues}
     assert "MELODRAMATIC_CLICHE_DENSITY" in rules
     assert "LEGAL_CLAIM_SAFETY" in rules
@@ -313,7 +313,7 @@ def test_auto_repair_resolves_hardened_qc_violations(qc_env):
     script = FullScript(episode_id="EP_QC_REPAIR", title="Hàn gắn", host={"id": "MINH", "voice": "Binh"}, segments=segs)
 
     initial_report = qc.run_qc(script, bible)
-    assert initial_report.status == "NEEDS_REVISION"
+    assert initial_report.status == "FAIL"  # unsafe legal claim is a hard fail, still repairable
 
     revised_script, final_report = rev.auto_revise_and_recheck(script, bible, initial_report)
     assert final_report.status == "PASS"

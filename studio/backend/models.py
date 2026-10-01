@@ -146,6 +146,9 @@ class SceneItem(BaseModel):
     image_prompt: str = ""
     video_prompt: Optional[str] = None
     visible_characters: List[str] = Field(default_factory=list)
+    character_refs_required: List[str] = Field(default_factory=list)
+    character_dependencies: List[Dict[str, Any]] = Field(default_factory=list)
+    generation_dependencies_satisfied: bool = False
     location_id: Optional[str] = None
     location_confidence: Optional[str] = None
     location_evidence: Optional[str] = None
