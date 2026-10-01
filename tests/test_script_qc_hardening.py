@@ -724,3 +724,70 @@ def test_objective_logic_rules_block_when_critical(qc_env):
         issue = {"rule": rule, "severity": "CRITICAL", "message": "Objective logic error"}
         assert is_blocking_logic_issue(issue) is True, f"{rule} should be blocking"
 
+
+def test_hook_discovery_timeline_contradiction(qc_env):
+    """EP2010 regression: Hook says found on 'tối hôm ấy' but body narrates discovery on 'sáng hôm sau'."""
+    qc: ScriptQCEngine = qc_env["qc"]
+    bible = StoryBible(
+        episode_id="EP_HOOK_TIME_BUG",
+        title="Chiếc Kẹp Pha Lê Trong Túi Áo Khoác Của Chồng",
+        protagonist={"name": "Lan", "char_id": "LAN"},
+    )
+    segments = [
+        ScriptSegment(id="001", speaker="MINH", text="Lan nhớ cảm giác đứng trong phòng giặt đồ tối hôm ấy, chiếc kẹp nhỏ nằm giữa lòng bàn tay.", delivery_profile="HOOK"),
+        ScriptSegment(id="002", speaker="MINH", text="Mọi chuyện bắt đầu từ những nghi ngờ về cuộc hôn nhân của mình.", delivery_profile="NORMAL"),
+        ScriptSegment(id="003", speaker="MINH", text="Quý vị sẽ phản ứng thế nào khi rơi vào hoàn cảnh ấy?", delivery_profile="COMMENT", audience_address=True),
+        ScriptSegment(id="004", speaker="MINH", text="Tối hôm đó, Nam về nhà muộn hơn thường lệ và treo áo khoác lên ghế.", delivery_profile="NORMAL"),
+        ScriptSegment(id="005", speaker="MINH", text="Sáng hôm sau, Lan lấy chiếc áo khoác ấy để giặt và phát hiện chiếc kẹp tóc pha lê trong túi áo.", delivery_profile="MYSTERY"),
+        ScriptSegment(id="006", speaker="MINH", text="Sự thật được phơi bày: Nam đã thú nhận toàn bộ sự thật.", delivery_profile="REVEAL", importance="critical"),
+        ScriptSegment(id="007", speaker="MINH", text="Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", delivery_profile="ENDING"),
+    ]
+    script = FullScript(
+        episode_id="EP_HOOK_TIME_BUG",
+        title=bible.title,
+        host={"id": "MINH", "name": "MC Minh"},
+        segments=segments,
+    )
+    report = qc.run_qc(script, bible)
+    assert report.status != "PASS"
+    all_issues = [*report.evidence_issues, *report.fact_conflicts]
+    assert any(
+        i.get("rule") == "TIMELINE_ORDER_ERROR" or i.get("type") == "HOOK_TIMELINE_CONTRADICTION"
+        for i in all_issues
+    )
+
+
+def test_prop_location_contradiction(qc_env):
+    """EP2010 regression: Prop placed on table in earlier segment is later described as in pocket."""
+    qc: ScriptQCEngine = qc_env["qc"]
+    bible = StoryBible(
+        episode_id="EP_PROP_LOC_BUG",
+        title="Chiếc Kẹp Pha Lê Trong Túi Áo Khoác Của Chồng",
+        protagonist={"name": "Lan", "char_id": "LAN"},
+    )
+    segments = [
+        ScriptSegment(id="001", speaker="MINH", text="Lan tìm thấy chiếc kẹp tóc pha lê và đặt ra nhiều câu hỏi.", delivery_profile="HOOK"),
+        ScriptSegment(id="002", speaker="MINH", text="Chào mừng quý vị đến với Sau Cánh Cửa.", delivery_profile="NORMAL"),
+        ScriptSegment(id="003", speaker="MINH", text="Quý vị có từng trải qua cảm giác này?", delivery_profile="COMMENT", audience_address=True),
+        ScriptSegment(id="004", speaker="MINH", text="Lan lấy chiếc áo khoác của chồng đi giặt.", delivery_profile="NORMAL"),
+        ScriptSegment(id="005", speaker="MINH", text="Cô lấy chiếc kẹp tóc ra khỏi túi áo khoác.", delivery_profile="NORMAL"),
+        ScriptSegment(id="006", speaker="MINH", text="Cô đặt chiếc kẹp lên bàn, nhìn nó rất lâu rồi mới gọi tên chồng trong đầu.", delivery_profile="MYSTERY"),
+        ScriptSegment(id="007", speaker="MINH", text="Trong túi áo, ngoài chiếc kẹp pha lê, cô tìm thấy một tờ giấy vẽ gấp tư.", delivery_profile="MYSTERY"),
+        ScriptSegment(id="008", speaker="MINH", text="Sự thật được xác thực: Đó là sự nhầm lẫn của con trẻ.", delivery_profile="REVEAL", importance="critical"),
+        ScriptSegment(id="009", speaker="MINH", text="Cảm ơn quý vị đã lắng nghe câu chuyện hôm nay.", delivery_profile="ENDING"),
+    ]
+    script = FullScript(
+        episode_id="EP_PROP_LOC_BUG",
+        title=bible.title,
+        host={"id": "MINH", "name": "MC Minh"},
+        segments=segments,
+    )
+    report = qc.run_qc(script, bible)
+    assert report.status != "PASS"
+    all_issues = [*report.evidence_issues, *report.fact_conflicts]
+    assert any(
+        i.get("rule") == "PROP_LOCATION_CONTRADICTION" or i.get("type") == "PROP_LOCATION_CONTRADICTION"
+        for i in all_issues
+    )
+
+

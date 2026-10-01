@@ -74,6 +74,7 @@ def test_gemini_retries_part_one_when_it_signs_off_early(monkeypatch):
 
     assert len(calls) == 3
     assert "YÊU CẦU SỬA BẮT BUỘC" in calls[1]
+    assert script.writer_strategy == "two_pass_seamed"
     assert [segment.delivery_profile for segment in script.segments].count("ENDING") == 1
     assert script.segments[-1].delivery_profile == "ENDING"
     assert input_tokens == 30
@@ -100,6 +101,7 @@ def test_gemini_normalizes_signoff_when_second_part_still_has_early_signoff(monk
     monkeypatch.setattr("apps.script_factory.providers.gemini_provider.time.sleep", lambda _seconds: None)
 
     script, _in, _out = provider.write_script(_bible(), {}, {})
+    assert script.writer_strategy == "two_pass_seamed"
     texts = [segment.text for segment in script.segments]
     signoffs = [i for i, text in enumerate(texts) if "hẹn gặp lại" in text]
     assert signoffs == [len(texts) - 1]
@@ -146,6 +148,7 @@ def test_gemini_retries_part_two_when_it_restarts_part_one(monkeypatch):
     monkeypatch.setattr("apps.script_factory.providers.gemini_provider.time.sleep", lambda _seconds: None)
 
     script, _, _ = provider.write_script(_bible(), {}, {})
+    assert script.writer_strategy == "two_pass_seamed"
 
     assert len(calls) == 3
     assert "kể lại một chuỗi sự kiện" in calls[-1]

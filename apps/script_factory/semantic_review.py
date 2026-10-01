@@ -23,7 +23,7 @@ logger = logging.getLogger("VieNeu.SemanticReview")
 
 # call_llm(system_instruction, prompt) -> (raw_text, input_tokens, output_tokens)
 LLMCall = Callable[[str, str], Tuple[str, int, int]]
-SEMANTIC_REVIEW_VERSION = "semantic-v8-reveal-leak"
+SEMANTIC_REVIEW_VERSION = "semantic-v9-unified-policy"
 
 REVIEW_CALIBRATION = (
     "NGƯỠNG BÁO LỖI: chỉ báo mâu thuẫn hoặc thiếu mắt xích làm người nghe không hiểu được sự kiện, "
@@ -107,10 +107,14 @@ def _retry_review_once(result: Dict[str, Any], retry: Callable[[], Dict[str, Any
 def build_prompt(script: FullScript, story_bible: StoryBible) -> str:
     protagonist = story_bible.protagonist if isinstance(story_bible.protagonist, dict) else {}
     numbered = "\n".join(f"[{s.id}] {s.text}" for s in script.segments)
+    skeleton = story_bible.narrative_skeleton if isinstance(story_bible.narrative_skeleton, dict) else {}
+    trigger_text = str(skeleton.get("trigger", "") or "").strip()
     return (
         f"Nhân vật gửi thư (góc nhìn duy nhất): {protagonist.get('name') or story_bible.protagonist}\n\n"
         f"Bộ luật cần kiểm tra:\n{reviewer_checklist()}\n\n"
-        f"Tiêu đề phải được trả trong câu chuyện: {script.title}\n"
+        f"Tiêu đề kịch bản: {script.title}\n"
+        f"Tiêu đề Story Bible: {story_bible.title}\n"
+        f"Trigger mở đầu (Narrative Skeleton): {trigger_text}\n"
         "ĐỊNH DẠNG MC: lời chào chương trình, giới thiệu lá thư, bình luận và câu hỏi giao lưu của MC "
         "được phép nằm ngoài góc nhìn Hoa/Tuấn/người gửi thư. Chúng không tự nó là lỗi POV hay analyst narration. "
         "Chỉ đánh giá góc nhìn hạn chế khi kể các SỰ KIỆN trong câu chuyện. Một nhân chứng nói 'có vẻ', 'có thể' "
@@ -121,8 +125,10 @@ def build_prompt(script: FullScript, story_bible: StoryBible) -> str:
         f"Kịch bản (mỗi dòng là một phân đoạn có id):\n{numbered}\n\n"
         "Cách làm: đọc lần lượt từng phân đoạn và đối chiếu với TỪNG luật:\n"
         "1. POV & Logic: người kể có tự thuật nội tâm/động cơ của nhân vật khác không; có kết luận sớm trước bằng chứng không; vật chứng có phi thực tế không.\n"
-        "2. Hook mở đầu: đoạn đầu tiên [001] có mở bằng triết lý chung chung sáo rỗng không (phải mở bằng nhân vật/hành động/vật cụ thể).\n"
-        "3. Tính nhất quán đồ vật: đạo cụ, hiện vật có bị mâu thuẫn giữa các đoạn không.\n"
+        "2. Hook mở đầu & Timeline: đoạn đầu tiên [001] có mở bằng triết lý chung chung không (phải mở bằng nhân vật/hành động/vật cụ thể). "
+        "Mốc thời gian và địa điểm phát hiện manh mối ở Hook (ví dụ 'tối hôm ấy' vs 'sáng hôm sau') PHẢI KHỚP với cảnh phát hiện thực tế trong thân truyện (TIMELINE_ORDER_ERROR).\n"
+        "3. Tính nhất quán đồ vật & Trạng thái (OBJECT_CONTINUITY_CONTRADICTION): theo dõi AI đang giữ đồ vật, vị trí đồ vật. "
+        "Khi một vật đã được lấy ra khỏi túi/xe/ngăn kéo và đặt lên bàn/kệ, các cảnh sau KHÔNG được kể như thể vật đó vẫn đang nằm trong túi/xe nếu không có hành động cất trở lại.\n"
         "4. Giọng kể: có bị mang giọng văn 'báo cáo kiểm tra QC' (như lặp 'chỉ chứng minh... hoàn toàn không chứng minh...') hay câu cú gãy, dị thường không.\n\n"
         "5. Lập tiến trình nội bộ theo từng cảnh: nhân vật ở đâu, đã mở/đọc/gặp gì, biết điều gì từ bằng chứng nào. "
         "Đối chiếu từng câu với trạng thái trước: tìm hành động xảy ra trước điều kiện và trạng thái hiểu biết bị quay lùi. "
@@ -203,17 +209,32 @@ def review_script_logic(
         # are cheap to fix and costly to air, so they block even when the judge is
         # only fairly sure; quotes are already verified. Taste calls never block.
         objective = is_blocking_logic_issue({"rule": rule})
-        issue = {
-            "segment_id": seg_id,
-            "related_segment_ids": related,
-            "excerpt": quote[:160],
-            "rule": rule,
-            "severity": "CRITICAL" if (confident or objective) else "MEDIUM",
-            "source": "SEMANTIC_REVIEW",
-            "message": f"Phân đoạn [{seg_id}] vi phạm {rule}: {str(item.get('problem', '')).strip()}",
-            "recommended_action": str(item.get("fix", "")).strip(),
-        }
-        (blocking if (confident or objective) else advisories).append(issue)
+        if objective:
+            issue = {
+                "segment_id": seg_id,
+                "related_segment_ids": related,
+                "excerpt": quote[:160],
+                "rule": rule,
+                "severity": "CRITICAL",
+                "blocking": True,
+                "source": "SEMANTIC_REVIEW",
+                "message": f"Phân đoạn [{seg_id}] vi phạm {rule}: {str(item.get('problem', '')).strip()}",
+                "recommended_action": str(item.get("fix", "")).strip(),
+            }
+            blocking.append(issue)
+        else:
+            issue = {
+                "segment_id": seg_id,
+                "related_segment_ids": related,
+                "excerpt": quote[:160],
+                "rule": rule,
+                "severity": "WARNING",
+                "blocking": False,
+                "source": "SEMANTIC_REVIEW",
+                "message": f"Phân đoạn [{seg_id}] lưu ý về phong cách ({rule}): {str(item.get('problem', '')).strip()}",
+                "recommended_action": str(item.get("fix", "")).strip(),
+            }
+            advisories.append(issue)
     if dropped:
         logger.info(f"[SemanticReview] {script.episode_id}: dropped {dropped} unanchored findings")
     result = {
@@ -252,14 +273,41 @@ def review_script_logic(
 
 
 def carry_over_semantic_review(previous_report: Dict[str, Any], script: FullScript, story_bible: Optional[StoryBible] = None) -> Optional[Dict[str, Any]]:
-    """Reuses a previous semantic review when the script text has not changed."""
+    """Reuses a previous semantic review when the script text has not changed.
+    
+    Reclassifies all findings under the current policy so that objective defects
+    cannot hide in advisories and bypass the QC/lineage gate.
+    """
     review = previous_report.get("semantic_review") if isinstance(previous_report, dict) else None
     if (isinstance(review, dict) and review.get("status") == "RUN"
             and review.get("review_version") == SEMANTIC_REVIEW_VERSION
             and review.get("passes") == 2
             and (story_bible is None or review.get("story_hash") == story_bible_content_hash(story_bible))
             and review.get("script_hash") == script_content_hash(script)):
-        return review
+        reclassified = dict(review)
+        raw_issues = list(review.get("issues") or [])
+        raw_advisories = list(review.get("advisories") or [])
+        all_findings = raw_issues + raw_advisories
+
+        clean_blocking: List[Dict[str, Any]] = []
+        clean_advisories: List[Dict[str, Any]] = []
+        for finding in all_findings:
+            if not isinstance(finding, dict):
+                continue
+            if is_blocking_logic_issue(finding):
+                item = dict(finding)
+                item["severity"] = "CRITICAL"
+                item["blocking"] = True
+                clean_blocking.append(item)
+            else:
+                item = dict(finding)
+                item["severity"] = "WARNING"
+                item["blocking"] = False
+                clean_advisories.append(item)
+
+        reclassified["issues"] = clean_blocking
+        reclassified["advisories"] = clean_advisories
+        return reclassified
     return None
 
 
@@ -270,16 +318,17 @@ def carry_over_semantic_review(previous_report: Dict[str, Any], script: FullScri
 # ---------------------------------------------------------------------------
 
 STORY_BIBLE_REVIEW_FIELDS = (
+    "title", "narrative_skeleton", "topic_intent",
     "secret", "false_lead", "clues", "structured_clues", "reveal_1", "reveal_2",
     "causal_chains", "reveal_justifications", "knowledge_ledger", "emotional_payoff", "ending",
     "protagonist", "supporting_characters", "timeline", "facts", "critical_facts", "relationships", "premise",
     "original_user_topic",
 )
 
-STORY_BIBLE_HASH_FIELDS = (
+STORY_BIBLE_HASH_FIELDS = tuple(dict.fromkeys([
     *STORY_BIBLE_REVIEW_FIELDS,
     "protagonist", "supporting_characters", "timeline", "facts", "critical_facts", "relationships", "premise"
-)
+]))
 
 # Rules about how a scene is narrated (order, repetition, wording) only exist
 # once there is a script; the Story Bible is judged on design-level logic.
@@ -335,12 +384,19 @@ def build_story_bible_prompt(bible: StoryBible) -> str:
     data = bible.to_dict()
     protagonist = bible.protagonist if isinstance(bible.protagonist, dict) else {}
     plot = {k: data.get(k) for k in STORY_BIBLE_HASH_FIELDS if data.get(k)}
+    skeleton = bible.narrative_skeleton if isinstance(bible.narrative_skeleton, dict) else {}
+    trigger_text = str(skeleton.get("trigger", "") or "").strip()
     return (
         f"Nhân vật gửi thư (góc nhìn duy nhất): {protagonist.get('name') or bible.protagonist}\n\n"
+        f"Tiêu đề Story Bible: {bible.title}\n"
+        f"Trigger mở đầu (Narrative Skeleton): {trigger_text}\n\n"
         "Bộ luật logic cần kiểm tra (CHỈ các luật này):\n"
         + reviewer_checklist(STORY_BIBLE_RULES) + "\n\n"
         + REVIEW_CALIBRATION
         +
+        "Yêu cầu nhất quán cốt lõi: Tiêu đề và Trigger phải thuộc cùng một câu chuyện logic với manh mối (clues), "
+        "bước ngoặt (reveals) và hồi kết. Đạo cụ dẫn dắt nghi ngờ ở tiêu đề/trigger phải được giải thích trung thực, "
+        "không được đổi sang một vật chứng khác mà bỏ lửng lời hứa ban đầu.\n\n"
         "Lưu ý: các trường secret, causal_chains, knowledge_ledger, reveal_justifications là SỰ THẬT HẬU TRƯỜNG "
         "cho người viết, không được đọc lên, nên KHÔNG áp dụng POV_KNOWLEDGE_VIOLATION cho chúng và không coi là kết luận sớm. "
         "Chỉ báo POV khi một reveal/ending đưa ra điều nhân vật chính không thể biết và Story Bible không có kênh tiết lộ nào. "

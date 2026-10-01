@@ -825,6 +825,7 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
         # One call writes the whole episode as tagged lines: no Part 1 / Part 2
         # seam to retell scenes across. Falls back to the two-call writer below
         # when the reply is truncated or malformed.
+        actual_strategy = "single_pass"
         combined_data, in_tok1, out_tok1 = write_single_pass(
             lambda system, prompt: self._call_chat_completion(
                 [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
@@ -838,6 +839,7 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
         )
         in_tok2 = out_tok2 = 0
         if combined_data is None:
+            actual_strategy = "two_pass_seamed"
             if not scene_outline:
                 scene_outline = build_scene_outline(
                     story_bible, lambda system, prompt: self.complete_json(system, prompt, model=model)
@@ -1129,7 +1131,7 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
             model_name=chosen_model_name,
             requested_model=model or self.default_model,
             actual_model=chosen_model_name,
-            writer_strategy="single_pass" if combined_data is not None else "two_pass_seamed",
+            writer_strategy=actual_strategy,
             scene_outline=scene_outline,
             provider_name=self.provider_name,
             created_at=time.time(),

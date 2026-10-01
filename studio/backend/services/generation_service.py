@@ -771,10 +771,12 @@ class GenerationService:
         revised_data = revised_script.to_dict()
         for key in (
             "generation_source", "generation_request_id", "prompt_version",
-            "model_name", "provider_name", "source_story_generation_request_id",
+            "model_name", "provider_name", "requested_model", "actual_model",
+            "writer_strategy", "source_story_generation_request_id",
             "source_story_content_hash",
         ):
-            revised_data[key] = original_script_data.get(key)
+            if original_script_data.get(key) is not None:
+                revised_data[key] = original_script_data.get(key)
         revised_data["artifact_status"] = "CURRENT" if final_qc.status == "PASS" else "NEEDS_REVISION"
         if final_qc.status == "PASS":
             revised_data.pop("stale_reason", None)
@@ -784,7 +786,7 @@ class GenerationService:
             revised_data["generation_request_id"] = str(uuid.uuid4())
             revised_data["model_name"] = revised_script.model_name
             revised_data["provider_name"] = getattr(provider, "provider_name", None)
-            revised_data["prompt_version"] = "script-v3.5-complete-story-context"
+            revised_data["prompt_version"] = "script-v3.6-grounded-repair"
             revised_data["generated_at"] = time.time()
         _assert_story_snapshot(story_path, source_story_hash, story_bible.generation_request_id)
         current_script_data = json.loads(script_path.read_text(encoding='utf-8'))

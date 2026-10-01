@@ -563,6 +563,144 @@ class ScriptQCEngine:
                     revision_requests.append(f"Rewrite Hook segment {hs.id} to remove false assertion '{matched_hook}' that contradicts Reveal.")
                     break
 
+        # 6.6 HOOK VS BODY DISCOVERY TIMELINE AUDIT (HOOK_TIMELINE_CONTRADICTION)
+        tod_patterns = [
+            ("NIGHT", re.compile(r"\b(tối\s+hôm\s+ấy|tối\s+hôm\s+đó|tối\s+đó|đêm\s+ấy|đêm\s+đó|nửa\s+đêm|buổi\s+tối\s+hôm\s+ấy|buổi\s+tối\s+đó)\b", re.IGNORECASE)),
+            ("MORNING", re.compile(r"\b(sáng\s+hôm\s+sau|sáng\s+hôm\s+đó|sáng\s+ấy|buổi\s+sáng\s+hôm\s+sau|buổi\s+sáng\s+đó|sáng\s+sớm\s+hôm\s+sau)\b", re.IGNORECASE)),
+            ("AFTERNOON", re.compile(r"\b(chiều\s+hôm\s+ấy|chiều\s+hôm\s+đó|buổi\s+chiều\s+hôm\s+ấy)\b", re.IGNORECASE)),
+            ("NOON", re.compile(r"\b(trưa\s+hôm\s+ấy|trưa\s+hôm\s+đó|buổi\s+trưa)\b", re.IGNORECASE)),
+        ]
+        prop_stems = [
+            "kẹp", "chiếc kẹp", "thỏi son", "son", "chìa khóa", "bức thư", "lá thư", "thư",
+            "nhẫn", "sổ", "hóa đơn", "biên lai", "vali", "điện thoại", "khăn", "ảnh", "áo khoác",
+        ]
+        prop_re = re.compile(r"\b(" + "|".join(re.escape(p) for p in prop_stems) + r")\b", re.IGNORECASE)
+
+        hook_candidates = [
+            (idx, s) for idx, s in enumerate(script.segments[:6])
+            if s.delivery_profile == "HOOK" or idx < 3
+        ]
+
+        for h_idx, hs in hook_candidates:
+            hs_prop_m = prop_re.search(hs.text)
+            if not hs_prop_m:
+                continue
+            matched_prop = hs_prop_m.group(1).lower()
+            hook_tod = None
+            for tod_name, tod_pat in tod_patterns:
+                m_tod = tod_pat.search(hs.text)
+                if m_tod:
+                    hook_tod = (tod_name, m_tod.group(1))
+                    break
+            if not hook_tod:
+                continue
+
+            for bs in script.segments[h_idx + 1:]:
+                if bs.delivery_profile in ("HOOK", "ENDING"):
+                    continue
+                bs_lower = bs.text.lower()
+                has_discovery_action = any(
+                    act in bs_lower for act in ["lấy ra", "tìm thấy", "phát hiện", "chạm phải", "thấy", "lấy chiếc", "mở ra"]
+                )
+                if not has_discovery_action or matched_prop not in bs_lower:
+                    continue
+                body_tod = None
+                for tod_name, tod_pat in tod_patterns:
+                    m_tod = tod_pat.search(bs.text)
+                    if m_tod:
+                        body_tod = (tod_name, m_tod.group(1))
+                        break
+                if body_tod and body_tod[0] != hook_tod[0]:
+                    is_flashback = any(fb in bs_lower for fb in ["nhớ lại", "hồi tưởng", "lúc trước", "khi nãy", "trước đó"])
+                    if not is_flashback:
+                        fact_conflicts.append({
+                            "fact_id": "HOOK_BODY_TIMELINE_CONTRADICTION",
+                            "segment_id": hs.id,
+                            "type": "HOOK_TIMELINE_CONTRADICTION",
+                            "rule": "HOOK_TIMELINE_CONTRADICTION",
+                            "expected": body_tod[1],
+                            "found": hook_tod[1],
+                            "description": f"Hook [{hs.id}] kể phát hiện {matched_prop} vào '{hook_tod[1]}', nhưng cảnh phát hiện thực tế tại [{bs.id}] diễn ra vào '{body_tod[1]}'.",
+                        })
+                        evidence_issues.append({
+                            "segment_id": hs.id,
+                            "related_segment_ids": [bs.id],
+                            "excerpt": hs.text[:120],
+                            "rule": "HOOK_TIMELINE_CONTRADICTION",
+                            "type": "HOOK_TIMELINE_CONTRADICTION",
+                            "severity": "CRITICAL",
+                            "recommended_action": f"Đồng bộ thời gian phát hiện manh mối giữa Hook [{hs.id}] và thân truyện [{bs.id}] (sửa [{hs.id}] thành '{body_tod[1]}').",
+                            "message": f"Phân đoạn Hook [{hs.id}] mâu thuẫn thời gian với phân đoạn [{bs.id}]: Hook kể '{hook_tod[1]}' trong khi thân truyện diễn ra vào '{body_tod[1]}'.",
+                        })
+                        logic_issues.append(f"[{hs.id}] Hook timeline mismatch with [{bs.id}]: '{hook_tod[1]}' vs '{body_tod[1]}'.")
+                        revision_requests.append(f"Synchronize discovery time in Hook {hs.id} with body segment {bs.id}.")
+                        break
+
+        # 6.8 PROP LOCATION & CONTINUITY STATE AUDIT (PROP_LOCATION_CONTRADICTION / OBJECT_CONTINUITY_CONTRADICTION)
+        container_pats = [
+            ("túi áo", re.compile(r"\b(túi\s+áo\s+khoác|túi\s+áo)\b", re.IGNORECASE)),
+            ("túi xách", re.compile(r"\b(túi\s+xách|túi\s+cầm\s+tay)\b", re.IGNORECASE)),
+            ("ví", re.compile(r"\b(ví\s+tiền|chiếc\s+ví|trong\s+ví)\b", re.IGNORECASE)),
+            ("cốp xe", re.compile(r"\b(cốp\s+xe|hộc\s+xe)\b", re.IGNORECASE)),
+            ("ngăn kéo", re.compile(r"\b(ngăn\s+kéo|hộc\s+bàn)\b", re.IGNORECASE)),
+        ]
+        placed_pats = [
+            re.compile(r"\bđặt\s+(?:lại\s+)?(?:chiếc\s+|thỏi\s+|tấm\s+|bức\s+|cuốn\s+|lá\s+)?(?:\w+\s+)?(?:kẹp|son|nhẫn|thư|sổ|hóa\s+đơn|ảnh|khăn|chìa\s+khóa|ví)\s+(?:lên|xuống|vào)\s+(bàn|kệ|giường|mặt\s+bàn|tủ|hộp|ngăn\s+kéo)\b", re.IGNORECASE),
+            re.compile(r"\b(?:cất|để)\s+(?:chiếc\s+|thỏi\s+|tấm\s+|bức\s+|cuốn\s+|lá\s+)?(?:\w+\s+)?(?:kẹp|son|nhẫn|thư|sổ|hóa\s+đơn|ảnh|khăn|chìa\s+khóa|ví)\s+(?:lên|vào)\s+(bàn|kệ|hộp)\b", re.IGNORECASE),
+        ]
+        return_to_container_pat = re.compile(r"\b(?:bỏ|cất|nhét|cho|đút)\s+(?:lại|trở\s+lại)?\s*(?:vào|vào\s+lại)\s+(?:túi|ví|cốp|ngăn\s+kéo)\b", re.IGNORECASE)
+
+        extracted_and_placed = {}
+        for seg in script.segments:
+            seg_lower = seg.text.lower()
+            for pat in placed_pats:
+                if pat.search(seg.text):
+                    prop_m = prop_re.search(seg.text)
+                    if prop_m:
+                        p_name = prop_m.group(1).lower()
+                        cur_idx = script.segments.index(seg)
+                        for c_name, c_pat in container_pats:
+                            if c_pat.search(seg_lower) or any(c_pat.search(s.text.lower()) for s in script.segments[max(0, cur_idx-3):cur_idx]):
+                                extracted_and_placed[(p_name, c_name)] = (seg.id, seg.text[:100])
+                                break
+
+            if return_to_container_pat.search(seg_lower):
+                extracted_and_placed.clear()
+
+            for (p_name, c_name), (placed_id, placed_excerpt) in list(extracted_and_placed.items()):
+                if int(seg.id) <= int(placed_id):
+                    continue
+                is_flashback = any(fb in seg_lower for fb in ["nhớ lại", "hồi tưởng", "lúc trước", "khi nãy", "hình ảnh"])
+                contradictory_mention = (
+                    f"ngoài {p_name}" in seg_lower or f"ngoài chiếc {p_name}" in seg_lower
+                ) and (c_name in seg_lower or "túi" in seg_lower)
+                still_in_container = (
+                    f"trong {c_name}" in seg_lower or f"trong túi" in seg_lower
+                ) and (
+                    f"vẫn còn {p_name}" in seg_lower or f"còn có {p_name}" in seg_lower
+                )
+                if (contradictory_mention or still_in_container) and not is_flashback:
+                    fact_conflicts.append({
+                        "fact_id": "PROP_LOCATION_CONTRADICTION",
+                        "segment_id": seg.id,
+                        "type": "PROP_LOCATION_CONTRADICTION",
+                        "expected": f"{p_name} đã lấy ra khỏi {c_name} ở [{placed_id}]",
+                        "found": f"nhắc {p_name} như vẫn còn trong {c_name}",
+                        "description": f"Phân đoạn [{seg.id}] kể {p_name} vẫn nằm trong {c_name}, trong khi ở [{placed_id}] đã được lấy ra đặt lên bàn/kệ mà không có cảnh cất lại.",
+                    })
+                    evidence_issues.append({
+                        "segment_id": seg.id,
+                        "related_segment_ids": [placed_id],
+                        "excerpt": seg.text[:120],
+                        "rule": "PROP_LOCATION_CONTRADICTION",
+                        "severity": "CRITICAL",
+                        "recommended_action": f"Sửa phân đoạn [{seg.id}] để không nhắc {p_name} như thể vẫn còn nằm trong {c_name}, vì ở [{placed_id}] {p_name} đã được lấy ra đặt lên bàn.",
+                        "message": f"Phân đoạn [{seg.id}] vi phạm vị trí đạo cụ (PROP_LOCATION_CONTRADICTION): kể {p_name} trong {c_name}, trái với [{placed_id}] nơi {p_name} đã được lấy ra.",
+                    })
+                    logic_issues.append(f"[{seg.id}] Prop location contradiction with [{placed_id}]: {p_name} in {c_name}.")
+                    revision_requests.append(f"Fix segment {seg.id} prop location contradiction with {placed_id}.")
+                    break
+
         # 7. CHARACTER FACT VIOLATION AUDIT (Family structure / gender / role consistency)
         bible_text_lower = json.dumps(story_bible.to_dict(), ensure_ascii=False).lower()
         has_daughter_or_sister_in_bible = any(
@@ -1327,6 +1465,8 @@ class ScriptQCEngine:
             "SEMANTIC_REVIEW_FAILED",
             "GENERIC_PHILOSOPHICAL_HOOK",
             "OBJECT_CONTINUITY_CONTRADICTION",
+            "HOOK_TIMELINE_CONTRADICTION",
+            "PROP_LOCATION_CONTRADICTION",
         }
         hard_fail_rules = {
             "FINAL_SCRIPT_TOPIC_DRIFT",
@@ -1341,6 +1481,8 @@ class ScriptQCEngine:
             "STRUCTURED_STORY_DATA_LEAKAGE",
             "UNSUPPORTED_PATERNITY_CLAIM",
             "LEGAL_CLAIM_SAFETY",
+            "HOOK_TIMELINE_CONTRADICTION",
+            "PROP_LOCATION_CONTRADICTION",
         }
 
         # TIERED VERDICT. An LLM judge always finds something in 90 segments, so
@@ -1353,22 +1495,26 @@ class ScriptQCEngine:
             "GARBLED_VIETNAMESE", "UNRESOLVED_SETUP", "SEMANTIC_REVIEW_PENDING",
             "POV_KNOWLEDGE_VIOLATION", "TIMELINE_ORDER_ERROR", "REPEATED_DISCOVERY",
             "REPEATED_SCENE_DIALOGUE", "UNRESOLVED_CORE_PROP", "PROP_LOCATION_CONTRADICTION",
+            "HOOK_TIMELINE_CONTRADICTION", "OBJECT_CONTINUITY_CONTRADICTION", "ACTION_SEQUENCE_INVERSION",
+            "KNOWLEDGE_STATE_REGRESSION", "CHARACTER_IDENTITY_CONTRADICTION", "TOPIC_TRUTH_DRIFT",
         }
-        from apps.script_factory.narrative_rules import JUDGEMENT_RULES as judgement_rules
+        from apps.script_factory.narrative_rules import JUDGEMENT_RULES as judgement_rules, is_blocking_logic_issue
 
         def _blocks(issue: Dict[str, Any]) -> bool:
-            rule = issue.get("rule")
-            if rule in hard_fail_rules or rule in objective_rules:
+            rule = str(issue.get("rule") or issue.get("type") or "").strip().upper()
+            if rule in hard_fail_rules or rule in objective_rules or is_blocking_logic_issue({"rule": rule}):
                 return True
             return issue.get("severity") == "CRITICAL" and rule not in judgement_rules
 
         warnings = [dict(iss, blocking=False) for iss in evidence_issues if not _blocks(iss)]
         evidence_issues = [iss for iss in evidence_issues if _blocks(iss)]
-        warnings += [
-            dict(adv, severity="WARNING", blocking=False)
-            for adv in (semantic_review or {}).get("advisories", [])
-            if isinstance(adv, dict)
-        ]
+        for adv in (semantic_review or {}).get("advisories", []):
+            if not isinstance(adv, dict):
+                continue
+            if _blocks(adv):
+                evidence_issues.append(dict(adv, severity="CRITICAL", blocking=True))
+            else:
+                warnings.append(dict(adv, severity="WARNING", blocking=False))
 
         has_critical_failure = (
             any(
@@ -1378,6 +1524,8 @@ class ScriptQCEngine:
                     "RELATIONSHIP_CONFLICT",
                     "BLOCKED_PREMATURE_REVEAL",
                     "HOOK_FACT_CONTRADICTION",
+                    "HOOK_TIMELINE_CONTRADICTION",
+                    "PROP_LOCATION_CONTRADICTION",
                     "CHARACTER_FACT_VIOLATION",
                     "UNGROUNDED_CHARACTER_HALLUCINATION",
                     "CAUSAL_GAP",
@@ -1388,12 +1536,14 @@ class ScriptQCEngine:
                     "INTERNAL_TEMPLATE_LEAKAGE",
                     "RELATIONSHIP_TIMELINE_CONTRADICTION",
                     "TIMELINE_FACT_CONTRADICTION",
+                    "TIMELINE_ORDER_ERROR",
+                    "OBJECT_CONTINUITY_CONTRADICTION",
                     "REVEAL_UNDERJUSTIFIED",
                     "SCRIPT_FACT_DRIFT",
                 ]
                 for c in fact_conflicts
             )
-            or any(iss.get("severity") == "CRITICAL" or iss.get("rule") in critical_rule_set for iss in evidence_issues)
+            or any(iss.get("severity") == "CRITICAL" or iss.get("rule") in critical_rule_set or _blocks(iss) for iss in evidence_issues)
         )
         has_hard_fail = any(iss.get("rule") in hard_fail_rules for iss in evidence_issues)
         has_issues = bool(fact_conflicts or logic_issues or repetition_issues or evidence_issues)

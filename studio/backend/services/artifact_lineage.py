@@ -229,15 +229,21 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
                 semantic_story_hash = None
             if not semantic_story_hash or sem_rev.get("story_hash") != semantic_story_hash:
                 audio_gate_reasons.append("QC logic không thuộc Story Bible hiện tại")
-            # Misquoted findings are discarded by design and editor-level
-            # findings are warnings; only objective logic defects block.
             from apps.script_factory.narrative_rules import is_blocking_logic_issue
 
-            if any(is_blocking_logic_issue(i) for i in sem_rev.get("issues") or [] if isinstance(i, dict)):
+            all_semantic_findings = [
+                *(sem_rev.get("issues") or []),
+                *(sem_rev.get("advisories") or []),
+            ]
+            if any(is_blocking_logic_issue(i) for i in all_semantic_findings if isinstance(i, dict)):
                 audio_gate_reasons.append("QC logic còn lỗi khách quan cần sửa (bằng chứng, pháp lý, chính tả...)")
 
-        if has_critical_failure:
-            crit_detail = "; ".join(critical_qc_issues[:2]) if critical_qc_issues else "Báo cáo QC ở trạng thái FAIL"
+        for item in [*qc.get("evidence_issues", []), *qc.get("warnings", [])]:
+            if isinstance(item, dict) and is_blocking_logic_issue(item) and item.get("severity") == "CRITICAL":
+                audio_gate_reasons.append(f"Kịch bản có lỗi khách quan chưa sửa: {item.get('rule')}")
+
+        if has_critical_failure or qc_status in ("FAIL", "NEEDS_REVISION"):
+            crit_detail = "; ".join(critical_qc_issues[:2]) if critical_qc_issues else f"Báo cáo QC ở trạng thái {qc_status or 'FAIL'}"
             audio_gate_reasons.append(f"Kịch bản có lỗi QC mức CRITICAL chưa được giải quyết ({crit_detail})")
 
     qc_gate_reasons = list(audio_gate_reasons)

@@ -271,3 +271,81 @@ def test_objective_findings_block_even_at_medium_confidence():
     ]))
     rules = {i["rule"]: i["severity"] for i in review["issues"]}
     assert rules.get("OBJECT_CONTINUITY_CONTRADICTION") == "CRITICAL"
+
+
+def test_carry_over_reclassifies_objective_advisories_and_blocks_qc_and_audio(tmp_path):
+    script = _script()
+    bible = _bible()
+    # Codex reproduction case: review has valid version and passes=2, issues=[] but advisories has TIMELINE_ORDER_ERROR
+    previous = {
+        "semantic_review": {
+            "status": "RUN",
+            "passes": 2,
+            "review_version": SEMANTIC_REVIEW_VERSION,
+            "script_hash": script_content_hash(script),
+            "story_hash": story_bible_content_hash(bible),
+            "issues": [],
+            "advisories": [
+                {
+                    "rule": "TIMELINE_ORDER_ERROR",
+                    "segment_id": "002",
+                    "quote": "làm xét nghiệm ADN một mình",
+                    "severity": "CRITICAL",
+                    "confidence": "high",
+                    "problem": "Lỗi đảo ngược dòng thời gian",
+                }
+            ],
+        }
+    }
+    carried = carry_over_semantic_review(previous, script, bible)
+    assert carried is not None
+    # Must reclassify objective advisory into issues
+    assert any(i["rule"] == "TIMELINE_ORDER_ERROR" for i in carried["issues"])
+
+    # Run QC with this carried-over review: must NOT be PASS
+    engine = ScriptQCEngine(provider=_ReviewingProvider(), cost_controller=CostController(), episodes_root=tmp_path)
+    qc_report = engine.run_qc(script, bible, semantic_review=carried)
+    assert qc_report.status != "PASS"
+    assert any(i["rule"] == "TIMELINE_ORDER_ERROR" for i in qc_report.evidence_issues)
+
+    # Lineage Audio Gate check: must block audio
+    proj_dir = tmp_path / "EP_GATE"
+    proj_dir.mkdir(parents=True)
+    script_dir = proj_dir / "script"
+    script_dir.mkdir()
+    story_dir = proj_dir / "story"
+    story_dir.mkdir()
+
+    import json
+    from dataclasses import asdict
+    (script_dir / "full_script.json").write_text(json.dumps(script.to_dict(), ensure_ascii=False), encoding="utf-8")
+    (story_dir / "story_bible.json").write_text(json.dumps(bible.to_dict(), ensure_ascii=False), encoding="utf-8")
+    qc_dict = asdict(qc_report)
+    qc_dict["script_content_hash"] = script_content_hash(script)
+    (script_dir / "qc_report.json").write_text(json.dumps(qc_dict, ensure_ascii=False), encoding="utf-8")
+    (proj_dir / "project.json").write_text(json.dumps({
+        "project_id": "EP_GATE",
+        "stage_statuses": {"03_script": "APPROVED"},
+        "approved_script_content_hash": script_content_hash(script),
+    }), encoding="utf-8")
+
+    from studio.backend.services.artifact_lineage import validate_full_script
+    status = validate_full_script("EP_GATE", tmp_path)
+    assert status["audio_gate_allowed"] is False
+
+
+def test_title_and_trigger_change_invalidates_story_semantic_hash():
+    bible = _bible()
+    h1 = story_bible_content_hash(bible)
+
+    # Changing title must change hash
+    bible.title = "Tiêu đề hoàn toàn mới về bí mật gia đình"
+    h2 = story_bible_content_hash(bible)
+    assert h1 != h2
+
+    # Changing trigger in narrative_skeleton must change hash
+    bible = _bible()
+    bible.narrative_skeleton = {"trigger": "Chiếc áo khoác để quên trong xe"}
+    h3 = story_bible_content_hash(bible)
+    assert h1 != h3
+

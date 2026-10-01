@@ -83,6 +83,7 @@ def test_openai_compatible_retries_part_one_that_closes_early(monkeypatch):
     assert len(calls) == 3
     assert "YÊU CẦU SỬA BẮT BUỘC" in calls[1]
     assert len(script.segments) == 70
+    assert script.writer_strategy == "two_pass_seamed"
     assert [s.delivery_profile for s in script.segments].count("ENDING") == 1
     assert script.segments[-1].delivery_profile == "ENDING"
     assert input_tokens == 30
@@ -109,6 +110,7 @@ def test_openai_compatible_normalizes_sender_thanks_before_final_signoff(monkeyp
 
     script, _, _ = provider.write_script(_bible(), {}, {})
 
+    assert script.writer_strategy == "two_pass_seamed"
     assert script.segments[-2].delivery_profile == "COMMENT"
     assert script.segments[-1].delivery_profile == "ENDING"
     assert [s.delivery_profile for s in script.segments].count("ENDING") == 1
