@@ -7,6 +7,16 @@ from apps.script_factory.narrative_continuity import has_repeated_narrative_bloc
 from apps.script_factory.providers.gemini_provider import GeminiScriptAIProvider
 
 
+@pytest.fixture(autouse=True)
+def _no_scene_outline(monkeypatch):
+    """These tests script the exact sequence of part-1/part-2 model replies;
+    the single-pass and scene-outline calls are covered by tests/test_scene_outline.py and tests/test_single_pass_writer.py."""
+    for module in ("apps.script_factory.providers.gemini_provider", "apps.script_factory.providers.openai_provider"):
+        monkeypatch.setattr(f"{module}.build_scene_outline", lambda *args, **kwargs: None)
+        monkeypatch.setattr(f"{module}.write_single_pass", lambda *args, **kwargs: (None, 0, 0))
+
+
+
 def _segment(segment_id: str, text: str, profile: str = "NORMAL") -> dict:
     return {
         "id": segment_id,

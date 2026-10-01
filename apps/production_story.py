@@ -455,7 +455,7 @@ def generate_single_segment_takes(
             takes_info[str(take_idx)] = str(take_path.relative_to(project_dir))
 
         except Exception as e:
-            logger.error(f"Lỗi khi sinh take {take_idx} cho segment {seg_id}: {e}")
+            logger.exception(f"Lỗi khi sinh take {take_idx} cho segment {seg_id}: {e}")
             return False, f"Segment {seg_id} Take {take_idx} error: {str(e)}", {}
 
     # Mặc định chọn Take 1 vào selected/{seg_id}.wav

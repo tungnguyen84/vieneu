@@ -409,6 +409,11 @@ def test_provider_connection(
                 return {"success": False, "message": "API key không hợp lệ."}
             elif e.code == 429:
                 return {"success": False, "message": "Hết quota OpenAI hoặc bị giới hạn lượt gọi."}
+            if e.code == 404:
+                return {"success": False, "message": (
+                    f"{api_base} không phải API OpenAI-compatible (HTTP 404). Proxy có thể chưa chạy "
+                    "hoặc cổng đã bị ứng dụng khác chiếm."
+                )}
             return {"success": False, "message": f"Lỗi máy chủ OpenAI ({e.code})."}
         except Exception:
             return {"success": False, "message": "Không thể kết nối mạng đến OpenAI."}

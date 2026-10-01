@@ -121,10 +121,11 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
     if not source_story_hash or source_story_hash != current_story_hash:
         reasons.append("Nội dung Story Bible đã thay đổi sau khi Full Script được tạo")
     artifact_state = str(script.get("artifact_status", "")).upper()
+    quality_draft_reason = "Full Script chưa vượt qua QC và cần được tạo hoặc sửa lại"
     if artifact_state == "STALE":
         reasons.append(str(script.get("stale_reason") or "Full Script đã được đánh dấu stale"))
     elif artifact_state in {"NEEDS_REVISION", "REJECTED"}:
-        reasons.append("Full Script chưa vượt qua QC và cần được tạo hoặc sửa lại")
+        reasons.append(quality_draft_reason)
 
     segments = script.get("segments") if isinstance(script.get("segments"), list) else []
     valid_segments = [s for s in segments if isinstance(s, dict) and str(s.get("text", "")).strip()]
@@ -153,7 +154,7 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
     # Preserve order while removing duplicate reasons.
     reasons = list(dict.fromkeys(reason for reason in reasons if reason))
     is_current = not reasons
-    generated_at = script.get("created_at") or script.get("generated_at") or script.get("updated_at")
+    generated_at = script.get("generated_at") or script.get("created_at") or script.get("updated_at")
 
     # Audio Gate requirements:
     # 1. Script is current (is_current)
@@ -181,8 +182,9 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
                 "CHARACTER_KNOWLEDGE_CONTRADICTION", "EVIDENCE_DOES_NOT_PROVE_CLAIM", "REVEAL_UNDERJUSTIFIED",
                 "SCRIPT_FACT_DRIFT", "FINAL_SCRIPT_TOPIC_DRIFT", "INTERNAL_TEMPLATE_LEAKAGE",
                 "PREMATURE_SIGNOFF", "DUPLICATE_SIGNOFF", "CONTENT_AFTER_SIGNOFF", "MISSING_FINAL_SIGNOFF",
-                "SEMANTIC_REVIEW_FAILED", "GENERIC_PHILOSOPHICAL_HOOK", "OBJECT_CONTINUITY_CONTRADICTION",
-                "QC_REPORT_TONE_LEAKAGE",
+                "SEMANTIC_REVIEW_FAILED", "OBJECT_CONTINUITY_CONTRADICTION",
+                "POV_KNOWLEDGE_VIOLATION", "TIMELINE_ORDER_ERROR", "REPEATED_DISCOVERY",
+                "REPEATED_SCENE_DIALOGUE", "UNRESOLVED_CORE_PROP", "PROP_LOCATION_CONTRADICTION",
             ]:
                 has_critical_failure = True
                 msg = issue.get("message") or issue.get("rule") or "Lỗi QC nghiêm trọng"
@@ -204,23 +206,42 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
 
         # Verify hash match between script and QC report
         qc_script_hash = qc.get("script_content_hash")
-        if qc_script_hash and current_script_hash and qc_script_hash != current_script_hash:
+        if not qc_script_hash or qc_script_hash != current_script_hash:
             audio_gate_reasons.append("Nội dung kịch bản đã bị thay đổi sau lần QC cuối; cần chạy lại QC")
             reasons.append("Nội dung kịch bản đã bị thay đổi sau lần QC cuối")
 
         # Check semantic review status
         sem_rev = qc.get("semantic_review")
-        if isinstance(sem_rev, dict):
-            sem_status = sem_rev.get("status")
-            if sem_status == "ERROR":
-                audio_gate_reasons.append(f"QC logic cốt truyện (semantic review) bị lỗi: {sem_rev.get('error')}")
-            elif sem_status == "NOT_RUN":
-                audio_gate_reasons.append("QC logic cốt truyện (semantic review) chưa được chạy")
+        from apps.script_factory.semantic_review import SEMANTIC_REVIEW_VERSION, story_bible_content_hash
+        from apps.script_factory.models import StoryBible
+        if not isinstance(sem_rev, dict) or sem_rev.get("status") != "RUN":
+            audio_gate_reasons.append("QC logic cốt truyện chưa có kết quả hợp lệ; cần chạy lại review")
+        else:
+            if sem_rev.get("script_hash") != current_script_hash:
+                audio_gate_reasons.append("QC logic không thuộc nội dung kịch bản hiện tại")
+            if sem_rev.get("review_version") != SEMANTIC_REVIEW_VERSION:
+                audio_gate_reasons.append("QC logic dùng bộ luật cũ; cần kiểm tra lại tính tự nhiên và diễn tiến")
+            if sem_rev.get("passes") != 2:
+                audio_gate_reasons.append("QC logic chưa hoàn thành lượt kiểm tra diễn tiến độc lập")
+            try:
+                semantic_story_hash = story_bible_content_hash(StoryBible.from_dict(story))
+            except (TypeError, ValueError, KeyError):
+                semantic_story_hash = None
+            if not semantic_story_hash or sem_rev.get("story_hash") != semantic_story_hash:
+                audio_gate_reasons.append("QC logic không thuộc Story Bible hiện tại")
+            # Misquoted findings are discarded by design and editor-level
+            # findings are warnings; only objective logic defects block.
+            from apps.script_factory.narrative_rules import is_blocking_logic_issue
+
+            if any(is_blocking_logic_issue(i) for i in sem_rev.get("issues") or [] if isinstance(i, dict)):
+                audio_gate_reasons.append("QC logic còn lỗi khách quan cần sửa (bằng chứng, pháp lý, chính tả...)")
 
         if has_critical_failure:
             crit_detail = "; ".join(critical_qc_issues[:2]) if critical_qc_issues else "Báo cáo QC ở trạng thái FAIL"
             audio_gate_reasons.append(f"Kịch bản có lỗi QC mức CRITICAL chưa được giải quyết ({crit_detail})")
 
+    qc_gate_reasons = list(audio_gate_reasons)
+    is_current = not reasons
     if not is_current:
         audio_gate_reasons.append(f"Kịch bản không hợp lệ hoặc lỗi thời ({'; '.join(reasons)})")
 
@@ -229,16 +250,17 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
     else:
         # Check approved hash matches
         approved_hash = script.get("approved_content_hash") or project.get("approved_script_content_hash")
-        if approved_hash and current_script_hash and approved_hash != current_script_hash:
+        if not approved_hash or approved_hash != current_script_hash:
             audio_gate_reasons.append("Nội dung kịch bản đã bị thay đổi sau khi phê duyệt; cần phê duyệt lại")
 
     audio_gate_allowed = len(audio_gate_reasons) == 0
     audio_gate_reason = " | ".join(audio_gate_reasons) if audio_gate_reasons else None
+    needs_revision = artifact_state in {"NEEDS_REVISION", "REJECTED"} and reasons == [quality_draft_reason]
 
     return {
         "project_id": project_id,
-        "artifact_status": "CURRENT" if is_current else "STALE",
-        "status_label": "CURRENT" if is_current else STALE_LABEL,
+        "artifact_status": "CURRENT" if is_current else ("NEEDS_REVISION" if needs_revision else "STALE"),
+        "status_label": "CURRENT" if is_current else ("QC CHƯA ĐẠT — CẦN SỬA KỊCH BẢN" if needs_revision else STALE_LABEL),
         "is_current": is_current,
         "stale_reasons": reasons,
         "audio_gate_allowed": audio_gate_allowed,
@@ -246,11 +268,17 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
         "critical_qc_count": len(critical_qc_issues),
         "critical_qc_issues": critical_qc_issues,
         "qc_status": qc_status or None,
+        "qc_gate_reasons": qc_gate_reasons,
+        "qc_gate_allowed": not qc_gate_reasons and is_current,
+        "script_content_hash": current_script_hash,
         "script_stage_status": script_stage_status,
         "generation_source": script.get("generation_source"),
         "generated_by": "Gemini" if "gemini" in str(script.get("provider_name", "")).lower() else script.get("provider_name"),
         "provider_name": script.get("provider_name"),
         "model_name": script.get("model_name"),
+        "requested_model": script.get("requested_model") or script.get("model_name"),
+        "actual_model": script.get("actual_model") or script.get("model_name"),
+        "writer_strategy": script.get("writer_strategy"),
         "generation_request_id": script_request_id,
         "prompt_version": script.get("prompt_version"),
         "generated_at": generated_at,
@@ -281,6 +309,8 @@ def require_current_full_script(
     if require_clean_qc and status.get("critical_qc_count", 0) > 0:
         details = "; ".join(status.get("critical_qc_issues", []))
         raise ValueError(f"Kịch bản bị chặn do có lỗi QC CRITICAL: {details}")
+    if require_clean_qc and status.get("qc_gate_reasons"):
+        raise ValueError(f"QC Gate: {' | '.join(status['qc_gate_reasons'])}")
     if require_approved and not status.get("audio_gate_allowed", True):
         raise ValueError(f"Audio Gate: {status.get('audio_gate_reason')}")
     return status
@@ -318,6 +348,32 @@ def mark_full_script_stale(project_id: str, projects_dir: Path, reason: str) -> 
         })
         project_path.write_text(json.dumps(project, ensure_ascii=False, indent=2), encoding="utf-8")
     return True
+
+
+def invalidate_script_approval(project_id: str, projects_dir: Path) -> None:
+    """Invalidate approval and downstream stages after edits or a QC version change."""
+    project_dir = projects_dir / project_id
+    script_path = project_dir / "script" / "full_script.json"
+    script = _read_json(script_path)
+    script.pop("approved_content_hash", None)
+    if script:
+        script_path.write_text(json.dumps(script, ensure_ascii=False, indent=2), encoding="utf-8")
+    path = project_dir / "project.json"
+    project = _read_json(path)
+    if not project:
+        return
+    project.pop("approved_script_content_hash", None)
+    statuses = project.setdefault("stage_statuses", {})
+    statuses["03_script"] = "DRAFT"
+    for key in ("04_audio", "05_visual", "06_flow", "08_timeline", "09_render", "10_qc"):
+        statuses[key] = "STALE"
+    project["updated_at"] = time.time()
+    path.write_text(json.dumps(project, ensure_ascii=False, indent=2), encoding="utf-8")
+    from studio.backend.db import get_db_connection
+    with get_db_connection() as conn:
+        conn.execute("UPDATE projects SET stage_statuses = ?, updated_at = ? WHERE project_id = ?",
+                     (json.dumps(statuses), project["updated_at"], project_id))
+        conn.commit()
 
 
 def mark_story_bible_stale(project_id: str, projects_dir: Path, reason: str) -> bool:

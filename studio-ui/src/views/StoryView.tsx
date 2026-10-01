@@ -36,22 +36,12 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
   const [generating, setGenerating] = useState(false);
   const [repairingLogic, setRepairingLogic] = useState(false);
   const [advancedMode, setAdvancedMode] = useState(false);
-  const [generationStep, setGenerationStep] = useState<number>(0);
   const [customTopic, setCustomTopic] = useState<string>('');
   const [showManualEdit, setShowManualEdit] = useState<boolean>(false);
   const [isApproved, setIsApproved] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [repairSuccess, setRepairSuccess] = useState<string>('');
 
-  const generationStages = [
-    'Đang phân tích premise và tìm mâu thuẫn trung tâm...',
-    'Đang xây dựng nhân vật, tính cách và mối quan hệ...',
-    'Đang tạo bí ẩn cốt lõi và chuỗi manh mối (clues)...',
-    'Đang khóa cấu trúc timeline và lịch sử sự kiện...',
-    'Đang xây dựng bước ngoặt 1 (Reveal 1 tại ~60-75% thời lượng)...',
-    'Đang xây dựng bước ngoặt 2 (Reveal 2 tại ~75-90% thời lượng)...',
-    'Đang kiểm tra tính logic và thiết lập Fact Lock...',
-  ];
 
   const fetchBible = () => {
     setLoading(true);
@@ -59,9 +49,6 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
       .then((res) => res.json())
       .then((data: StoryBibleSection) => {
         setBible(data);
-        if (data.premise && !data.premise.includes('chưa có Story Bible')) {
-          setCustomTopic(data.premise);
-        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -70,6 +57,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
       .then((res) => res.json())
       .then((p) => {
         setProjectData(p);
+        setCustomTopic(p.original_user_topic || p.selected_idea?.original_user_topic || p.topic || '');
         if (p.stage_statuses && p.stage_statuses['02_story'] === 'APPROVED') {
           setIsApproved(true);
         } else {
@@ -84,25 +72,21 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
   }, [projectId]);
 
   const handleGenerateStory = async () => {
+    if (generating || repairingLogic) return;
     setGenerating(true);
     setErrorMessage('');
-    setGenerationStep(0);
+    setRepairSuccess('');
 
-    const interval = setInterval(() => {
-      setGenerationStep((prev) => {
-        if (prev < generationStages.length - 1) return prev + 1;
-        return prev;
-      });
-    }, 700);
 
     try {
       const res = await fetch(`/api/projects/${projectId}/story/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: customTopic }),
+        // An existing generated premise must never replace the user's topic.
+        body: JSON.stringify({ topic: showManualEdit || !projectData?.selected_idea
+          ? customTopic : projectData.selected_idea.original_user_topic || projectData.original_user_topic || '' }),
       });
 
-      clearInterval(interval);
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.detail || 'Lỗi khi tạo Story Bible');
@@ -110,7 +94,6 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
 
       fetchBible();
     } catch (e: any) {
-      clearInterval(interval);
       setErrorMessage(e.message || 'Lỗi kết nối AI khi tạo cốt truyện');
     } finally {
       setGenerating(false);
@@ -118,6 +101,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
   };
 
   const handleRepairLogic = async () => {
+    if (generating || repairingLogic) return;
     setRepairingLogic(true);
     setErrorMessage('');
     setRepairSuccess('');
@@ -134,7 +118,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
       const data = await res.json();
       setRepairSuccess(
         data.status === 'PASS'
-          ? 'AI đã sửa logic thành công: Đạt chuẩn 100% không còn mâu thuẫn!'
+          ? 'Cốt truyện đã vượt qua các kiểm tra QC hiện tại.'
           : `AI đã hoàn tất sửa logic (Trạng thái: ${data.status}).`
       );
       fetchBible();
@@ -147,14 +131,18 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
 
   const handleApproveAndProceed = async () => {
     try {
-      await fetch(`/api/projects/${projectId}/story/approve`, { method: 'POST' });
+      const response = await fetch(`/api/projects/${projectId}/story/approve`, { method: 'POST' });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Story Bible chưa được duyệt');
+      }
       setIsApproved(true);
       onApproveStory();
       if (onNavigate) {
         onNavigate('script');
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      setErrorMessage(e.message || 'Không thể duyệt Story Bible');
     }
   };
 
@@ -207,7 +195,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
               <BookOpen size={18} className="text-[#E11D48]" />
               <span>Cốt truyện & Fact Lock (Story Bible Stage)</span>
             </h2>
-            {isApproved ? (
+            {isApproved && bible?.story_qc_report?.status === 'PASS' ? (
               <span className="text-[10px] bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40 px-2 py-0.5 rounded font-bold flex items-center space-x-1">
                 <CheckCircle2 size={11} />
                 <span>ĐÃ DUYỆT (LOCKED)</span>
@@ -227,7 +215,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
           {hasValidBible && (
             <button
               onClick={handleGenerateStory}
-              disabled={generating}
+              disabled={generating || repairingLogic}
               className="bg-[#161F36] hover:bg-[#1E293B] border border-[#28354D] text-[#CBD5E1] text-xs px-3 py-1.5 rounded flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 transition-colors"
             >
               <RefreshCw size={13} className={generating ? 'animate-spin' : ''} />
@@ -238,6 +226,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
           {hasValidBible && (
             <button
               onClick={handleApproveAndProceed}
+              disabled={bible?.story_qc_report?.status !== 'PASS' || generating || repairingLogic}
               className="flex items-center space-x-1.5 text-xs font-bold px-3.5 py-1.5 rounded shadow cursor-pointer transition-colors bg-[#10B981] hover:bg-[#059669] text-white"
             >
               <CheckCircle2 size={14} />
@@ -249,6 +238,11 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
       </div>
 
       {/* Error message */}
+      {bible?.mystery_core?.startsWith('STALE') && (
+        <div className="p-3 rounded bg-[#EF4444]/15 border border-[#EF4444]/30 text-xs text-[#FCA5A5]">
+          {bible.mystery_core}
+        </div>
+      )}
       {errorMessage && (
         <div className="p-3 rounded bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center space-x-2 text-xs text-[#FCA5A5]">
           <AlertCircle size={15} className="shrink-0 text-[#EF4444]" />
@@ -274,23 +268,12 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
                 Đang phát triển Story Bible bằng AI (Script Factory Story Planner)...
               </h3>
               <p className="text-[11px] text-[#3B82F6] mt-0.5">
-                {generationStages[generationStep]}
+                Đang chờ AI tạo nội dung và kiểm định QC. Tiến trình thật nằm trong Nhật ký xử lý bên phải.
               </p>
             </div>
           </div>
 
-          <div className="w-full bg-[#0B0F17] rounded-full h-2 overflow-hidden border border-[#28354D]">
-            <div
-              className="bg-[#3B82F6] h-full transition-all duration-500 rounded-full"
-              style={{
-                width: `${Math.round(((generationStep + 1) / generationStages.length) * 100)}%`,
-              }}
-            />
-          </div>
-          <div className="flex justify-between text-[10px] text-[#64748B]">
-            <span>Bước {generationStep + 1} / {generationStages.length}</span>
-            <span>{Math.round(((generationStep + 1) / generationStages.length) * 100)}%</span>
-          </div>
+
         </div>
       )}
 
@@ -422,7 +405,8 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
       {/* CASE 3: VALID STORY BIBLE GENERATED - REVIEW CARDS */}
       {hasValidBible && (() => {
         const qcReport = bible?.story_qc_report;
-        const qcStatus = qcReport?.status || 'PASS';
+        const qcStatus = qcReport?.status || 'NOT_RUN';
+        const reviewUnavailable = qcReport?.rule_codes?.includes('SEMANTIC_REVIEW_FAILED');
         const qcIssues = qcReport?.issues || [];
         const ruleCodes = qcReport?.rule_codes || [];
         const hasCriticalFailure = qcStatus === 'FAIL' || qcIssues.some((it: any) => it.severity === 'CRITICAL');
@@ -502,15 +486,15 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
                       </h3>
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                          qcStatus === 'PASS' && !hasCriticalFailure
+                          reviewUnavailable ? 'bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/40' : qcStatus === 'PASS' && !hasCriticalFailure
                             ? 'bg-[#10B981]/20 text-[#10B981] border-[#10B981]/40'
                             : hasCriticalFailure
                             ? 'bg-[#EF4444]/20 text-[#EF4444] border-[#EF4444]/40'
                             : 'bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/40'
                         }`}
                       >
-                        {qcStatus === 'PASS' && !hasCriticalFailure
-                          ? 'HOÀN HẢO (PASS)'
+                        {reviewUnavailable ? 'CHƯA KIỂM ĐỊNH — CẦN CHẠY QC' : qcStatus === 'PASS' && !hasCriticalFailure
+                          ? 'QC ĐẠT (PASS)'
                           : hasCriticalFailure
                           ? 'MÂU THUẪN LOGIC (CRITICAL FAIL)'
                           : 'CẦN CHỈNH SỬA (NEEDS_REVISION)'}
@@ -526,7 +510,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
                   <button
                     type="button"
                     onClick={handleRepairLogic}
-                    disabled={repairingLogic}
+                    disabled={repairingLogic || generating}
                     className="bg-[#E11D48] hover:bg-[#BE123C] disabled:opacity-50 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center space-x-1.5 shadow transition-colors cursor-pointer"
                   >
                     {repairingLogic ? (
@@ -534,7 +518,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
                     ) : (
                       <Wrench size={13} />
                     )}
-                    <span>{repairingLogic ? 'AI Đang Sửa Logic...' : 'AI SỬA LOGIC'}</span>
+                    <span>{repairingLogic ? 'Đang xử lý...' : reviewUnavailable ? 'KIỂM TRA LẠI QC' : 'AI SỬA LOGIC'}</span>
                   </button>
 
                   <button
@@ -554,7 +538,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
               </div>
 
               {/* 7 Normal UI Checks Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {qcStatus === 'PASS' && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 {normalChecks.map((chk) => (
                   <div
                     key={chk.id}
@@ -582,12 +566,12 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
                           chk.passed ? 'text-[#94A3B8]' : 'text-[#FCA5A5] font-medium'
                         }`}
                       >
-                        {chk.desc}
+                        {chk.passed ? 'Không phát hiện lỗi trong lần QC hiện tại' : chk.desc}
                       </div>
                     </div>
                   </div>
                 ))}
-              </div>
+              </div>}
 
               {/* Advanced Diagnostics Breakdown */}
               {advancedMode && (
@@ -808,6 +792,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
 
             <button
               onClick={handleApproveAndProceed}
+              disabled={bible?.story_qc_report?.status !== 'PASS' || generating || repairingLogic}
               className="bg-[#10B981] hover:bg-[#059669] text-white text-xs font-bold px-5 py-2.5 rounded-lg flex items-center space-x-2 shadow cursor-pointer transition-colors"
             >
               <CheckCircle2 size={15} />

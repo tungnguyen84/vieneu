@@ -59,6 +59,15 @@ class TopicIntent:
         opt_bullets = "\n".join(f"  - {el}" for el in self.optional_elements) if self.optional_elements else "  - Các chi tiết đời thực liên quan"
         forbid_bullets = "\n".join(f"  - KHÔNG biến tướng sang: {el}" for el in self.forbidden_drift) if self.forbidden_drift else "  - Không biến tướng sang các chủ đề ngẫu nhiên khác"
 
+        truth_constraint = ''
+        if any(term in self.original_topic.casefold() for term in ('ngoại tình', 'vụng trộm', 'tiểu tam')) and not any(
+            term in self.original_topic.casefold() for term in ('nghi ngờ', 'hiểu lầm', 'tưởng')
+        ):
+            truth_constraint = (
+                '\nSỰ THẬT CỐT LÕI: đây là ngoại tình thật. Không được lật thành anh em ruột, cứu giúp bí mật, '
+                'mộng mị hay bằng chứng ngoại tình giả. False lead chỉ được sai về người, thời điểm, động cơ hoặc '
+                'quy mô che giấu; không phủ định chính chủ đề người dùng. Reveal phải phát triển sự thật này.\n'
+            )
         return (
             f"=== CHỦ ĐỀ BẮT BUỘC TỪ NGƯỜI DÙNG (AUTHORITATIVE USER TOPIC) ===\n"
             f"Chủ đề gốc của người dùng: \"{self.original_topic}\"\n"
@@ -75,7 +84,7 @@ class TopicIntent:
             f"- Người dùng là người quyết định đề tài. Tuyệt đối KHÔNG thay thế bằng các chủ đề mặc định của Series Bible (như bí mật thừa kế, tìm cha thất lạc, con nuôi...) trừ khi chính chủ đề người dùng yêu cầu.\n"
             f"- Sự đa dạng giữa các ý tưởng phải đến từ: nhân vật khác nhau, chứng cứ khác nhau, động cơ khác nhau, hoàn cảnh khác nhau, nhận định sai lầm khác nhau, cơ chế vạch trần khác nhau và hệ quả cảm xúc khác nhau.\n"
             f"- Tất cả các ý tưởng được sinh ra PHẢI giữ vững chủ đề cốt lõi trên.\n"
-            f"================================================================"
+            + truth_constraint + "================================================================"
         )
 
     def evaluate_content_adherence(self, idea_or_text: Any, stage: str = "auto") -> Dict[str, Any]:
@@ -242,6 +251,7 @@ class TopicIntent:
                 # affair outright, so centrality must also credit described behaviour.
                 "hẹn hò", "thân mật", "qua lại với", "mối quan hệ với", "vượt mức đồng nghiệp",
                 "vượt quá giới hạn", "quan hệ riêng tư", "cuộc hẹn riêng", "dối trá",
+                "ngoài hôn nhân", "quan hệ ngoài", "người đàn ông khác", "người phụ nữ khác",
             ]
         elif is_family and not any(k in self.original_topic.lower() for k in ["gửi tiền", "cuộc gọi", "đã mất", "8 năm", "5 năm"]):
             strict_theme_tokens = list(dict.fromkeys(primary_tokens + ["gia đình", "người thân", "ruột thịt", "máu mủ", "mái ấm", "bố mẹ", "cha mẹ", "con cái", "ông bà", "anh em", "vợ chồng", "bí mật gia đình"]))
@@ -341,6 +351,33 @@ class TopicIntent:
         # (e.g. medical surgery/100M VND/selling land when topic is workplace infidelity)
         # ----------------------------------------------------
         drift_hits: List[str] = []
+        # A suspected affair resolving as siblings is not the requested affair.
+        # Only inspect the explicit truth fields, never a character's early denial.
+        truth = ""
+        if stage in ("story_bible", "idea"):
+            if isinstance(idea_or_text, dict):
+                truth = str(idea_or_text.get("secret") or idea_or_text.get('central_secret') or "")
+                if stage == 'idea':
+                    truth += ' ' + str(idea_or_text.get('reveal_1') or '') + ' ' + str(idea_or_text.get('reveal_2') or '')
+            else:
+                truth = str(getattr(idea_or_text, "secret", None) or getattr(idea_or_text, 'central_secret', ''))
+                if stage == 'idea':
+                    truth += ' ' + str(getattr(idea_or_text, 'reveal_1', '')) + ' ' + str(getattr(idea_or_text, 'reveal_2', ''))
+        explicit_affair_topic = is_infidelity and not any(term in self.original_topic.lower() for term in ("nghi ngờ", "hiểu lầm", "tưởng"))
+        denial_pattern = re.compile(
+            r"không\s+phải\s+(?:là\s+)?(?:tình\s+nhân|ngoại\s+tình|người\s+tình)|"
+            r"không\s+(?:hề\s+)?(?:có\s+(?:chuyện\s+|mối\s+quan\s+hệ\s+)?)?(?:ngoại\s+tình|yêu\s+đương\s+vụng\s+trộm)|"
+            r"không\s+hề\s+có\s+quan\s+hệ\s+(?:thể\s+xác\s+hay\s+)?tình\s+cảm\s+bất\s+chính", re.IGNORECASE)
+        actual_affair = bool(re.search(
+            r"(?:đang|đã)\s+(?:có\s+mối\s+quan\s+hệ\s+)?ngoại\s+tình|mối\s+quan\s+hệ\s+bất\s+chính\s+thực\s+sự", truth, re.IGNORECASE))
+        # A wrong suspected partner can be a valid false lead: rejecting one
+        # relationship does not deny the real affair identified elsewhere.
+        truth_drift = explicit_affair_topic and any(
+            not (actual_affair and re.match(r'\s+với\b', truth[match.end():], re.IGNORECASE))
+            for match in denial_pattern.finditer(truth)
+        )
+        if truth_drift:
+            drift_hits.append("truth_negates_requested_affair")
         for drift in self.forbidden_drift:
             drift_lower = drift.lower().strip()
             if drift_lower and drift_lower in full_lower:
@@ -376,6 +413,8 @@ class TopicIntent:
             + reveal_align * 0.30
         )
         final_score = max(0.0, min(100.0, round(base_composite - drift_penalty, 1)))
+        if truth_drift:
+            final_score, reveal_align = min(final_score, 40.0), 0.0
 
         # Pass condition: score >= 75.0 AND centrality >= 50.0 AND reveal_align >= 40.0
         status = "PASS" if (final_score >= 75.0 and centrality >= 50.0 and reveal_align >= 40.0) else "FAIL"

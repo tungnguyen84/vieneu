@@ -30,7 +30,9 @@ def cleanup_test_project():
 def test_ai_idea_to_story_to_script_e2e():
     pid = "EPTESTIDEAFLOW"
 
-    with patch.object(GenerationService, "get_provider", return_value=MockScriptAIProvider()):
+    with patch.object(GenerationService, "get_provider", return_value=MockScriptAIProvider()), patch.object(
+        MockScriptAIProvider, 'complete_json', return_value=('{"issues":[]}', 1, 1), create=True
+    ):
         # 1. Create project
         create_resp = client.post("/api/projects/create", json={
             "episode_id": pid,
@@ -49,9 +51,17 @@ def test_ai_idea_to_story_to_script_e2e():
         ideas = ideas_resp.json().get("ideas", [])
         assert len(ideas) >= 1
         chosen_idea = ideas[0]
+        restored = client.get(f"/api/projects/{pid}/ideas").json()
+        assert restored['ideas'] == ideas
+        assert restored['direction'] == 'BÍ MẬT GIA ĐÌNH'
 
         # 3. Select AI Idea - transitions to Story stage
-        sel_resp = client.post(f"/api/projects/{pid}/ideas/select", json={"idea": chosen_idea})
+        # Older UI submitted only these fields; backend must recover the whole
+        # current project idea, including clues, cast, reveal_2 and AI trace.
+        sel_resp = client.post(f"/api/projects/{pid}/ideas/select", json={"idea": {
+            'idea_id': chosen_idea['idea_id'], 'title': chosen_idea['title'],
+            'premise': chosen_idea['premise'],
+        }})
         assert sel_resp.status_code == 200, sel_resp.text
 
         # Verify project.json stores selected_idea
@@ -60,6 +70,9 @@ def test_ai_idea_to_story_to_script_e2e():
         with open(p_json, "r", encoding="utf-8") as f:
             meta = json.load(f)
         assert meta.get("selected_idea") is not None
+        assert meta['selected_idea'] == chosen_idea
+        assert meta['stage_statuses']['04_audio'] == 'STALE'
+        assert client.get(f"/api/projects/{pid}/ideas").json()['selected_idea_id'] == chosen_idea['idea_id']
         assert (meta["selected_idea"].get("title") or meta["selected_idea"].get("working_title")) == (chosen_idea.get("title") or chosen_idea.get("working_title"))
 
         # 4. Check Story Bible Section endpoint before generating
@@ -76,6 +89,7 @@ def test_ai_idea_to_story_to_script_e2e():
         assert "premise" in bible_data
         assert "characters" in bible_data
         assert "critical_facts" in bible_data
+        assert bible_data['source_idea_id'] == chosen_idea['idea_id']
 
         # Check story endpoint after generation
         story_post = client.get(f"/api/projects/{pid}/story")

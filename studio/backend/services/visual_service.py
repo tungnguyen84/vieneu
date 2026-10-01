@@ -14,6 +14,7 @@ from studio.backend.models import (
     SceneItem,
 )
 from apps.visual_engine.character_continuity_resolver import CharacterContinuityResolver
+from studio.backend.services.artifact_files import file_sha256
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 VISUAL_DIR = BASE_DIR / "production_pilot_03_visual_v1_0a"
@@ -272,64 +273,23 @@ def _compose_scene_image_prompt(
     characters_map: Dict[str, Dict[str, Any]]
 ) -> str:
     """Creates a specific cinematic visual moment for the keyframe rather than dumping raw narration."""
-    t_low = combined_text.lower()
-
-    if any(k in t_low for k in ("ngưỡng cửa", "trước cửa", "chuông cửa", "mở chốt", "cánh cửa vừa hé", "bước vào trong")):
-        moment = (
-            "A tense nighttime scene at an apartment entrance door; a Vietnamese woman standing firmly in hallway shadows outside, "
-            "viewed as the heavy timber apartment door opens slightly from inside with subtle interior light spilling into the corridor"
-        )
-    elif any(k in t_low for k in ("điện thoại của cô bỗng rung", "màn hình sáng lên", "tin nhắn", "anh đang đợi em ở vũng tàu", "anh nhớ em")):
-        moment = (
-            "A 32-year-old Vietnamese man sitting in a dimly lit modern living room at night, staring with a troubled gaze "
-            "at an illuminated smartphone resting on a low coffee table; soft screen glow illuminating his contemplative face while a figure sleeps peacefully in background"
-        )
-    elif any(k in t_low for k in ("túi xách chanel", "đồng hồ hiệu dior", "món đồ xa xỉ", "quà tặng từ một khách hàng")):
-        moment = (
-            "A high-end luxury designer leather handbag and an elegant wristwatch resting conspicuously on an apartment coffee table; "
-            "subtle ambient indoor light emphasizing their expensive materials against a modest domestic background"
-        )
-    elif any(k in t_low for k in ("chúng ta cần nói chuyện rõ ràng", "đưa ra một chiếc điện thoại", "hình ảnh chụp lén", "vợ của lâm")):
-        moment = (
-            "A dramatic confrontation in a contemporary Vietnamese apartment living room; an unexpected female visitor standing with sharp gaze "
-            "holding out a glowing phone screen toward a shaken couple seated on a fabric sofa"
-        )
-    elif any(k in t_low for k in ("co rúm lại", "bắt quả tang", "ngấn lệ", "thú nhận", "trái tim anh tan nát", "khóc")):
-        moment = (
-            "An emotionally shattered scene in an apartment living room; a distressed Vietnamese woman seated on a sofa with face buried in hands in deep shame, "
-            "while a man stands nearby looking away in stunned disbelief under dim warm room lighting"
-        )
-    elif any(k in t_low for k in ("bước ra khỏi căn nhà", "mảnh vỡ", "quay lưng")):
-        moment = (
-            "A solemn moment in an apartment entryway; an assertive woman turning toward the front door to depart, "
-            "leaving behind a fractured domestic scene in the quiet amber glow of the living room"
-        )
-    elif any(k in t_low for k in ("quyết định ly hôn", "buông bỏ", "ngọn lửa yêu thương", "cánh cửa mà ta tin", "sau cánh cửa")):
-        moment = (
-            "A quiet, melancholic living room scene in soft daylight; an introspective Vietnamese man looking toward a large window, "
-            "with packed luggage near the entrance door symbolizing emotional closure and solemn resolution"
-        )
-    elif any(k in t_low for k in ("tự hào về gia đình", "căn hộ chung cư", "bảy năm", "ánh đèn vàng ấm áp", "phòng khách")):
-        moment = (
-            "A contemporary Vietnamese couple in their comfortable high-rise apartment living room; "
-            "tasteful modern interior design, warm ambient evening light casting soft shadows across the living space"
-        )
-    elif any(k in t_low for k in ("phòng tắm", "lén lút", "về nhà muộn")):
-        moment = (
-            "An atmosphere of domestic unease; a closed bathroom door with light glowing from underneath, "
-            "while an observant husband stands in the dimly lit hallway listening intently with quiet suspicion"
-        )
-    else:
-        moment = (
-            "An authentic documentary scene capturing a quiet dramatic moment in a Vietnamese interior; "
-            "subtle atmospheric lighting and restrained human emotion"
-        )
-
     clean_loc = re.sub(r"\(.*?\)", "", location_name).strip()
-
+    identities = []
+    for cid in visible_characters:
+        char = characters_map.get(cid, {})
+        gender = char.get("gender")
+        noun = "woman" if gender == "FEMALE" else "man" if gender == "MALE" else "person"
+        identities.append(f"{char.get('name') or cid}, Vietnamese {noun}; preserve this character reference")
+    sentences = re.split(r"(?<=[.!?])\s+", combined_text.strip())
+    action_words = ("bước", "mở", "nhìn", "cầm", "đọc", "ngồi", "đứng", "rời", "đặt", "khóc", "gặp")
+    moment = next((line for line in sentences if any(word in line.lower() for word in action_words)),
+                  "A restrained quiet moment; show only the listed characters in the established setting.")
     return (
-        f"Vietnamese cinematic documentary realism, 35mm photography, natural film grain, authentic setting: {clean_loc}. "
-        f"{moment}. Restrained dramatic lighting, realistic Vietnamese character identity, balanced 16:9 composition, no captions, no watermark."
+        f"Vietnamese cinematic documentary realism, 35mm photography, natural film grain. Setting: {clean_loc}. "
+        f"Visible cast ONLY: {'; '.join(identities) or 'no identifiable character'}. "
+        f"Depict this concrete moment from the source scene: {moment[:450]}. "
+        "Do not invent a spouse, visitor, age, gender, object or event absent from the source. "
+        "Preserve reference identities and wardrobe; balanced 16:9 composition, no captions, no watermark."
     )
 
 
@@ -341,53 +301,13 @@ def _compose_scene_video_prompt(
     dominant_profile: str
 ) -> Dict[str, str]:
     """Generates a scene-specific dynamic video prompt adhering strictly to Start/Action/Camera/End."""
-    t_low = combined_text.lower()
     clean_loc = re.sub(r"\(.*?\)", "", location_name).strip()
-
-    if any(k in t_low for k in ("ngưỡng cửa", "chuông cửa", "mở chốt", "cánh cửa vừa hé", "bước vào trong")):
-        start = "Preserve exact keyframe: Hùng standing before the apartment entrance door at midnight, his hand grasping the lock handle."
-        action = "Hùng unlocks the deadbolt and slowly pulls the door open; Thanh steps decisively across the threshold, her cold gaze scanning the living room."
-        camera = "Slow restrained push-in tracking the visitor's forward step into the hallway."
-        end = "Thanh stops firmly inside the entryway; Hùng turns around behind her with a startled expression."
-    elif any(k in t_low for k in ("điện thoại của cô bỗng rung", "màn hình sáng lên", "tin nhắn", "anh đang đợi em ở vũng tàu", "anh nhớ em")):
-        start = "Preserve exact keyframe: Hùng sitting near the coffee table in the dim living room, the phone screen vibrating with a new notification."
-        action = "Hùng leans forward slowly, hesitating for a second before picking up the illuminated smartphone; his eyes widen with growing tension as he reads the message."
-        camera = "Slow restrained push-in toward Hùng's face and the glowing phone display."
-        end = "Hùng holds the phone motionless, his face tightened in silent disbelief; hold on expression."
-    elif any(k in t_low for k in ("chúng ta cần nói chuyện rõ ràng", "đưa ra một chiếc điện thoại", "hình ảnh chụp lén", "vợ của lâm")):
-        start = "Preserve exact keyframe: Thanh standing firmly in the living room holding out the smartphone, facing Mai seated on the sofa."
-        action = "Thanh extends her arm, presenting the illuminated screen directly toward Mai; Mai recoils slightly, her face draining of color as she looks up."
-        camera = "Restrained medium two-shot with subtle lateral drift emphasizing the emotional confrontation."
-        end = "Mai lowers her head trembling, unable to look back up; Thanh remains completely motionless."
-    elif any(k in t_low for k in ("co rúm lại", "bắt quả tang", "ngấn lệ", "thú nhận", "trái tim anh tan nát", "khóc")):
-        start = "Preserve exact keyframe: Mai sitting on the sofa with eyes welled with tears, Hùng standing frozen beside her."
-        action = "Mai slowly covers her face with both hands, her shoulders shuddering with quiet sobs; Hùng takes a slow half-step backward in shock."
-        camera = "Slow cinematic pull-out capturing the expanding emotional void between the couple."
-        end = "Mai weeps quietly with head bowed; Hùng looks away into the shadows with hollow defeat."
-    elif any(k in t_low for k in ("bước ra khỏi căn nhà", "mảnh vỡ", "quay lưng")):
-        start = "Preserve exact keyframe: Thanh turning toward the apartment entrance door after speaking her final words."
-        action = "Thanh walks steadily toward the exit without pausing; she opens the heavy front door and steps out, pulling the door closed behind her."
-        camera = "Static wide framing from the living room observing the closing doorway."
-        end = "The front door clicks shut, leaving Hùng standing in heavy silence amidst the quiet room."
-    elif any(k in t_low for k in ("phòng tắm", "lén lút", "về nhà muộn")):
-        start = "Preserve exact keyframe: Mai stepping into the bathroom with her phone in hand, Hùng seated in the living room."
-        action = "Mai closes the bathroom door firmly; Hùng turns his head toward the closed door, his expression shifting from calm to quiet suspicion."
-        camera = "Slow restrained push-in toward Hùng's attentive gaze."
-        end = "Hùng stares at the closed door in contemplation as a sliver of light glows from beneath it."
-    else:
-        start = f"Preserve exact subjects, wardrobe, and setting from the approved keyframe in {clean_loc}."
-        action = "The character shifts posture slowly, looking toward the window with restrained emotional intensity reflecting the narrative beat."
-        camera = "Slow cinematic lateral drift maintaining stable 24fps framing."
-        end = "Hold on the contemplative expression, no new characters or objects entering the frame."
-
-    full = f"Start: {start} Action: {action} Camera: {camera} End: {end} Zero generated dialogue, no subtitles, no text, no watermark."
-    return {
-        "start_state": start,
-        "action": action,
-        "camera": camera,
-        "end_state": end,
-        "full_prompt": full
-    }
+    start = f"Preserve the exact approved keyframe, character references and setting {clean_loc}. Visible cast: {', '.join(visible_characters)}."
+    action = f"Animate only the action already depicted in the keyframe from this source scene: {combined_text[:450]}. Do not add characters or a new event."
+    camera = "Slow restrained documentary camera movement, stable facial identity, no sudden cuts."
+    end = "End on the same established scene with natural motion settling; no text overlays or audible dialogue."
+    return {"start": start, "action": action, "camera": camera, "end": end,
+            "full_prompt": f"START: {start} ACTION: {action} CAMERA: {camera} END: {end}"}
 
 
 class VisualService:
@@ -525,47 +445,16 @@ class VisualService:
 
         loc_engine = LocationContinuityEngine(locations)
 
-        # 3. Timeline & Segments Mapping using real segment_timing if available
-        timing_file = None
-        for candidate in [
-            project_dir / "audio" / "segment_timing.json",
-            project_dir / "segment_timing.json",
-            project_dir / "reports" / "segment_timing.json",
-            Path("production_pilot_03") / project_id / "audio" / "segment_timing.json",
-            Path("production_pilot_03") / project_id / "segment_timing.json",
-        ]:
-            if candidate.exists():
-                timing_file = candidate
-                break
-
+        # Use the same measured, content-bound timeline as the music mixer.
+        timing_data = AudioService().get_measured_timing(project_id)
+        audio_binding = AudioService().require_current_audio(project_id)
         segment_times = []
-        if timing_file:
-            try:
-                timing_data = json.loads(timing_file.read_text(encoding="utf-8"))
-                if isinstance(timing_data, list) and len(timing_data) == len(segments):
-                    for idx, (seg, t) in enumerate(zip(segments, timing_data)):
-                        s_start = float(t.get("speech_start_sec", 0.0))
-                        if idx == len(segments) - 1:
-                            s_end = audio_duration
-                        else:
-                            s_end = float(t.get("speech_end_sec", s_start)) + float(t.get("pause_after", 0.25) or 0.25)
-                        segment_times.append((s_start, s_end, seg))
-            except Exception:
-                segment_times = []
-
-        if not segment_times:
-            # Fallback to proportional heuristic if segment_timing is not available
-            weights = []
-            for segment in segments:
-                words = max(1, len(str(segment.get("text") or "").split()))
-                speed = max(0.88, min(1.05, float(segment.get("speed") or 1.0)))
-                weights.append(words / (2.7 * speed) + float(segment.get("pause_after") or 0.25))
-            weight_total = sum(weights)
-            cursor = 0.0
-            for index, (segment, weight) in enumerate(zip(segments, weights)):
-                end = audio_duration if index == len(segments) - 1 else cursor + audio_duration * weight / weight_total
-                segment_times.append((cursor, end, segment))
-                cursor = end
+        for idx, (seg, timing) in enumerate(zip(segments, timing_data)):
+            s_start = 0.0 if idx == 0 else float(timing["speech_start_sec"])
+            s_end = audio_duration if idx == len(segments) - 1 else float(timing_data[idx + 1]["speech_start_sec"])
+            if s_end <= s_start or s_start < 0 or s_end > audio_duration + 0.001:
+                raise ValueError("Measured timing không hợp lệ cho Visual Plan")
+            segment_times.append((s_start, s_end, seg))
 
         scene_count = min(45, len(segments))
         boundaries = [round(index * len(segments) / scene_count) for index in range(scene_count + 1)]
@@ -651,10 +540,26 @@ class VisualService:
 
         # Run Character Continuity Resolver post-scene generation pass
         plan_scenes = char_resolver.resolve_scenes(plan_scenes)
+        # The resolver may carry characters into a pronoun-only scene. Compose
+        # prompts AFTER that decision so the prompt and exported references agree.
+        for scene in plan_scenes:
+            group = scene_groups[scene["order"] - 1]
+            text = " ".join(str(item[2].get("text") or "") for item in group)
+            loc = loc_engine.loc_by_id.get(scene["location_id"]) or locations[0]
+            profile = str(group[0][2].get("delivery_profile") or "NORMAL").upper()
+            scene["image_prompt"] = _compose_scene_image_prompt(scene["order"] - 1, text,
+                scene["visible_characters"], loc["name"], profile, characters_map)
+            if scene["video_prompt"]:
+                scene["video_prompt"] = _compose_scene_video_prompt(scene["order"] - 1, text,
+                    scene["visible_characters"], loc["name"], profile)["full_prompt"]
+
 
         target_dir = VISUAL_DIR / project_id
         target_dir.mkdir(parents=True, exist_ok=True)
         plan = {
+            "audio_sha256": file_sha256(audio_path),
+            "source_script_content_hash": audio_binding["script_content_hash"],
+            "source_story_content_hash": audio_binding["story_content_hash"],
             "episode_id": project_id,
             "title": project_meta.get("title") or script_data.get("title") or project_id,
             "audio_duration_sec": round(audio_duration, 3),

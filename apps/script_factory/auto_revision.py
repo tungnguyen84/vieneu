@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import time
+import uuid
 from typing import Optional, Tuple
 
 from apps.script_factory.cost_control import CostController
@@ -47,7 +48,8 @@ class AutoRevisionManager:
             # legacy artifact without consuming another AI request.
             from apps.script_factory.script_qc import apply_targeted_repairs
 
-            repaired_script = apply_targeted_repairs(script, story_bible, qc_report)
+            repaired_script = apply_targeted_repairs(script, story_bible, qc_report,
+                allow_prose_templates=script.generation_source != 'REAL_AI')
             repaired_report = self.qc_engine.run_qc(repaired_script, story_bible, model=model)
             if repaired_report.status == "PASS":
                 repaired_script.status = ApprovalStatus.QC_PASS
@@ -62,6 +64,8 @@ class AutoRevisionManager:
         self.cost_ctrl.check_budget_pre_flight(episode_id=script.episode_id)
 
         t0 = time.time()
+        from apps.script_factory.semantic_review import script_content_hash
+        before_hash = script_content_hash(script)
         try:
             revised_script, in_tokens, out_tokens = self.provider.revise_script(
                 script=script,
@@ -69,6 +73,11 @@ class AutoRevisionManager:
                 qc_report=qc_report,
                 model=model,
             )
+            if script_content_hash(revised_script) != before_hash:
+                revised_script.generation_request_id = str(uuid.uuid4())
+                revised_script.model_name = getattr(self.provider, 'last_used_model', None) or model or getattr(self.provider, 'default_model', None)
+                revised_script.provider_name = self.provider.provider_name
+                revised_script.prompt_version = 'script-v3.4-grounded-repair'
             lat = time.time() - t0
             self.cost_ctrl.record_operation(
                 operation="revise_script",

@@ -245,7 +245,9 @@ def test_story_bible_generation_and_approval():
         premise="Người cháu phát hiện lá thư tống tiền năm 1990 gửi cho ông nội.",
     )
 
-    with patch.object(GenerationService, "get_provider", return_value=MockScriptAIProvider()):
+    with patch.object(GenerationService, "get_provider", return_value=MockScriptAIProvider()), patch.object(
+        MockScriptAIProvider, 'complete_json', return_value=('{"issues":[]}', 1, 1), create=True
+    ):
         # 1. Generate Story Bible
         res_gen = client.post(
             f"/api/projects/{TEST_EP_ID}/story/generate",
@@ -359,7 +361,7 @@ def test_script_generation_and_auto_repair_flow():
         assert res_app.status_code == 400
         assert "STALE" in res_app.json()["detail"]
         proj = pm.get_project(TEST_EP_ID)
-        assert proj.stage_statuses["03_script"] == "NEEDS_REVIEW"
+        assert proj.stage_statuses["03_script"] == "DRAFT"
 
 
 def test_import_existing_script_text():

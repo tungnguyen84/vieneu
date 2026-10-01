@@ -8,6 +8,7 @@ import logging
 import os
 import shutil
 import time
+import uuid
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -25,6 +26,8 @@ from studio.backend.services.artifact_lineage import (
     mark_full_script_stale,
     require_current_full_script,
     story_content_hash,
+    script_content_hash,
+    invalidate_script_approval,
 )
 
 logger = logging.getLogger("SCCStudio.GenerationService")
@@ -32,14 +35,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 PROJECTS_DIR = BASE_DIR / "projects"
 
 
-def _qc_problem_score(report) -> Tuple[int, int]:
-    """Lower is better: (CRITICAL issues, all issues)."""
+def _assert_story_snapshot(story_path: Path, expected_hash: str, request_id: str):
+    current = json.loads(story_path.read_text(encoding='utf-8'))
+    if story_content_hash(current) != expected_hash or current.get('generation_request_id') != request_id:
+        raise ValueError("Cốt truyện đã thay đổi trong lúc viết; không lưu Script vào lineage mới. Vui lòng tạo lại kịch bản.")
+
+
+def _qc_problem_score(report) -> Tuple[int, int, int]:
+    """Lower is better; an unavailable reviewer cannot prove improvement."""
     issues = [i for i in [*report.evidence_issues, *report.fact_conflicts] if isinstance(i, dict)]
     critical = sum(1 for i in issues if str(i.get("severity", "")).upper() == "CRITICAL")
     if report.status == "FAIL":
         critical = max(critical, 1)
     total = len(issues) + len(report.logic_issues) + len(report.repetition_issues)
-    return critical, total
+    unavailable = (getattr(report, 'semantic_review', None) or {}).get('status') == 'ERROR'
+    return int(unavailable), critical, total
 
 
 def _revise_keeping_best(rev_manager, script, story_bible, qc_report, round_ceiling: int):
@@ -51,18 +61,51 @@ def _revise_keeping_best(rev_manager, script, story_bible, qc_report, round_ceil
     """
     current_script, current_qc = script, qc_report
     best_script, best_qc = copy.deepcopy(script), qc_report
+    seen = {script_content_hash(script)}
+    stalled_rounds = 0
+    def problem_keys(report):
+        issues = [*report.evidence_issues, *report.fact_conflicts,
+                  *report.logic_issues, *report.repetition_issues]
+        return {json.dumps({k: issue.get(k) for k in ('rule', 'target', 'segment_id', 'segment_ids')},
+                           sort_keys=True, default=str) if isinstance(issue, dict) else str(issue)
+                for issue in issues}
     while current_qc.status != "PASS":
+        if (getattr(current_qc, 'semantic_review', None) or {}).get('status') == 'ERROR':
+            logger.warning('Auto-repair paused: semantic reviewer failed; retain draft and recheck QC.')
+            break
         previous_round = current_script.revision_round
+        previous_qc = current_qc
         logger.info(f"Vòng sửa kịch bản {current_script.revision_round + 1}/{round_ceiling}...")
-        current_script, current_qc = rev_manager.auto_revise_and_recheck(
-            script=copy.deepcopy(current_script),
-            story_bible=story_bible,
-            qc_report=current_qc,
-            max_rounds=round_ceiling,
-        )
-        if _qc_problem_score(current_qc) <= _qc_problem_score(best_qc):
+        try:
+            current_script, current_qc = rev_manager.auto_revise_and_recheck(
+                script=copy.deepcopy(current_script),
+                story_bible=story_bible,
+                qc_report=current_qc,
+                max_rounds=round_ceiling,
+            )
+        except Exception:
+            logger.exception('Auto-repair failed; retaining the best draft and its failing QC report')
+            break
+        fingerprint = script_content_hash(current_script)
+        repeated = fingerprint in seen
+        changed_problems = problem_keys(current_qc) != problem_keys(previous_qc)
+        if current_qc.status == "PASS" or (not repeated and (
+            _qc_problem_score(current_qc) < _qc_problem_score(best_qc) or (
+                _qc_problem_score(current_qc) == _qc_problem_score(best_qc) and changed_problems
+            )
+        )):
             best_script, best_qc = copy.deepcopy(current_script), current_qc
+        if not repeated and (_qc_problem_score(current_qc) < _qc_problem_score(previous_qc) or (
+            _qc_problem_score(current_qc) == _qc_problem_score(previous_qc) and changed_problems
+        )):
+            stalled_rounds = 0
+        else:
+            stalled_rounds += 1
+        seen.add(fingerprint)
         if current_qc.status == "PASS" or current_script.revision_round >= round_ceiling:
+            break
+        if repeated or stalled_rounds >= 2:
+            logger.warning("Auto-repair stopped: no quality improvement; Story/targeted review required")
             break
         # Defensive stop for a provider that returns without consuming a round.
         if current_script.revision_round <= previous_round:
@@ -225,6 +268,7 @@ class GenerationService:
             if str(protag).strip().lower() in ("nhân vật chính", "protagonist"):
                 protag = "Tuấn"
             results.append({
+                **idea.to_dict(),
                 "idea_id": idea.idea_id,
                 "title": title,
                 "working_title": title,
@@ -244,13 +288,18 @@ class GenerationService:
                 "emotional_payoff": getattr(idea, "emotional_payoff", emotional_angle),
                 "reflection_theme": getattr(idea, "reflection_theme", ""),
                 "novelty_score": round(float(n_score), 1),
-                "novelty_status": "APPROVED",
-                "is_duplicate": False,
+                "novelty_status": idea.status,
+                "is_duplicate": idea.status == 'BLOCKED_DUPLICATE',
                 "original_user_topic": getattr(idea, "original_user_topic", user_topic or None),
                 "topic_intent": getattr(idea, "topic_intent", topic_intent_obj.to_dict() if topic_intent_obj else None),
                 "topic_adherence_score": adherence_sc if adherence_sc is not None else (100.0 if user_topic else None),
                 "generation_source": prov_source,
             })
+        project_dir = PROJECTS_DIR / project_id
+        project_dir.mkdir(parents=True, exist_ok=True)
+        (project_dir / 'idea_bank.json').write_text(json.dumps({
+            'project_id': project_id, 'direction': user_topic, 'ideas': results,
+        }, ensure_ascii=False, indent=2), encoding='utf-8')
         return results
 
     def generate_story_bible(
@@ -397,7 +446,7 @@ class GenerationService:
             story_bible.topic_adherence = top_score
 
         bible_dict = story_bible.to_dict()
-        bible_dict["premise"] = clean_topic or story_bible.secret
+        bible_dict["premise"] = hook or story_bible.secret
         bible_dict["characters"] = [story_bible.protagonist, *story_bible.supporting_characters]
         bible_dict["fact_lock"] = [f.to_dict() if hasattr(f, 'to_dict') else f for f in story_bible.critical_facts]
         bible_dict["original_user_topic"] = story_bible.original_user_topic
@@ -425,6 +474,7 @@ class GenerationService:
             PROJECTS_DIR,
             "Story Bible was regenerated; Full Script must be regenerated from the new lineage",
         )
+        invalidate_script_approval(project_id, PROJECTS_DIR)
 
         if p_json.exists():
             try:
@@ -467,12 +517,19 @@ class GenerationService:
 
         provider = self.get_provider(provider_id=provider_id, model_id=model_id)
         from apps.script_factory.story_qc import StoryQCEngine
+        from apps.script_factory.semantic_review import story_bible_content_hash
+        before_hash = story_bible_content_hash(story_bible)
         story_qc = StoryQCEngine(provider=provider)
         bible_qc = story_qc.audit_story_bible(story_bible)
         repaired_bible = story_qc.repair_story_bible(story_bible, bible_qc)
         recheck_qc = story_qc.audit_story_bible(repaired_bible)
 
-        repaired_data = repaired_bible.to_dict()
+        changed = (before_hash != story_bible_content_hash(repaired_bible)
+                   or story_bible.generation_request_id != repaired_bible.generation_request_id)
+        repaired_data = {**bible_data, **repaired_bible.to_dict()}
+        if changed:
+            repaired_data['characters'] = [repaired_bible.protagonist, *repaired_bible.supporting_characters]
+            repaired_data['fact_lock'] = [fact.to_dict() for fact in repaired_bible.critical_facts]
         repaired_data["story_qc_report"] = recheck_qc.to_dict()
         repaired_data["artifact_status"] = "CURRENT"
 
@@ -482,11 +539,17 @@ class GenerationService:
             with open(target, "w", encoding="utf-8") as f:
                 json.dump(repaired_data, f, ensure_ascii=False, indent=2)
 
+        if changed:
+            mark_full_script_stale(project_id, PROJECTS_DIR, "Story Bible was repaired; Full Script must be regenerated")
+        if changed or recheck_qc.status != 'PASS':
+            invalidate_script_approval(project_id, PROJECTS_DIR)
+
         return {
             "story_bible": repaired_data,
             "qc_report": recheck_qc.to_dict(),
             "status": recheck_qc.status,
             "issues": recheck_qc.issues,
+            "story_changed": changed,
         }
 
     def generate_full_script(
@@ -497,17 +560,6 @@ class GenerationService:
         stage_callback: Optional[Callable[[str, int], None]] = None
     ) -> Dict[str, Any]:
         """Writes full script using Script Factory V1.3.1a and runs Script QC + Auto-Repair."""
-        stages = [
-            ("Đang kiểm tra Story Logic & Reveal Justification Gate...", 10),
-            ("Đang viết Hook mở màn cuốn hút...", 20),
-            ("Đang phát triển bí ẩn và thiết lập tình huống ban đầu...", 35),
-            ("Đang xây dựng manh mối và quá trình tìm kiếm sự thật...", 50),
-            ("Đang viết Reveal 1 (Bước ngoặt lớn đầu tiên)...", 65),
-            ("Đang viết Reveal 2 (Lật mở chân tướng sự thật)...", 80),
-            ("Đang hoàn thiện cảm xúc và đoạn kết chiêm nghiệm...", 90),
-            ("Đang kiểm định QC và tự động chuẩn hóa văn phong...", 100),
-        ]
-
         proj_dir = PROJECTS_DIR / project_id
         story_path = proj_dir / "story" / "story_bible.json"
         if not story_path.exists():
@@ -557,18 +609,28 @@ class GenerationService:
                     json.dump(repaired_story_data, f, ensure_ascii=False, indent=2)
             bible_data = repaired_story_data
 
-        # Progress simulation
-        for label, pct in stages:
-            if stage_callback:
-                stage_callback(label, pct)
-            time.sleep(0.05)
+        source_story_hash = story_content_hash(bible_data)
 
         logger.debug(
             f"[Lineage Stage=SCRIPT] project_id={project_id}, original_user_topic='{story_bible.original_user_topic}', "
             f"title='{story_bible.title}', provider={provider.provider_name}, "
             f"model={getattr(provider, 'default_model', 'unknown')}, source={prov_source}"
         )
-        logger.info("Đang viết kịch bản (phần 1 rồi phần 2)...")
+        logger.info("Đang viết kịch bản (viết một lần cả tập; chỉ chia 2 phần nếu bị cắt cụt)...")
+        if not getattr(story_bible, "scene_outline", None):
+            try:
+                from apps.script_factory.scene_outline import build_scene_outline
+                if hasattr(provider, "complete_json") and callable(provider.complete_json):
+                    m_name = getattr(provider, "default_model", None)
+                    story_bible.scene_outline = build_scene_outline(
+                        story_bible,
+                        lambda system, prompt: provider.complete_json(system, prompt, model=m_name)
+                    )
+                    if story_bible.scene_outline:
+                        logger.info(f"Đã lập kế hoạch {len(story_bible.scene_outline)} cảnh cho kịch bản.")
+            except Exception as e:
+                logger.warning(f"Could not pre-build scene outline for Story Bible: {e}")
+
         writer = ScriptWriter(provider=provider, cost_controller=self.cost_ctrl, episodes_root=PROJECTS_DIR)
         script = writer.generate_script_from_bible(story_bible)
 
@@ -590,8 +652,8 @@ class GenerationService:
         script_dict["model_name"] = getattr(script, "model_name", None)
         script_dict["provider_name"] = getattr(script, "provider_name", None)
         script_dict["source_story_generation_request_id"] = story_bible.generation_request_id
-        current_story_data = json.loads(story_path.read_text(encoding="utf-8"))
-        script_dict["source_story_content_hash"] = story_content_hash(current_story_data)
+        _assert_story_snapshot(story_path, source_story_hash, story_bible.generation_request_id)
+        script_dict["source_story_content_hash"] = source_story_hash
         script_dict["artifact_status"] = "CURRENT" if qc_report.status == "PASS" else "NEEDS_REVISION"
         script_dict.pop("stale_reason", None)
         script_dict.pop("stale_reasons", None)
@@ -643,6 +705,7 @@ class GenerationService:
             except Exception:
                 pass
 
+        invalidate_script_approval(project_id, PROJECTS_DIR)
         total_words = script.total_words or sum(len(s.text.split()) for s in script.segments)
         return {
             "script": script_dict,
@@ -658,7 +721,8 @@ class GenerationService:
             }
         }
 
-    def auto_repair_script(self, project_id: str) -> Dict[str, Any]:
+    def auto_repair_script(self, project_id: str, provider_id: Optional[str] = None,
+                           model_id: Optional[str] = None) -> Dict[str, Any]:
         """Applies controlled auto-revision up to 3 rounds."""
         proj_dir = PROJECTS_DIR / project_id
         script_path = proj_dir / "script" / "full_script.json"
@@ -672,9 +736,21 @@ class GenerationService:
             original_script_data = json.load(f)
             script = FullScript.from_dict(original_script_data)
         with open(story_path, "r", encoding="utf-8") as f:
-            story_bible = StoryBible.from_dict(json.load(f))
+            story_data = json.load(f)
+            story_bible = StoryBible.from_dict(story_data)
+        source_story_hash = story_content_hash(story_data)
+        stale_reasons = list(original_script_data.get('stale_reasons') or [])
+        if original_script_data.get('stale_reason'):
+            stale_reasons.append(original_script_data['stale_reason'])
+        story_mismatch = (
+            original_script_data.get('source_story_generation_request_id') != story_bible.generation_request_id
+            or original_script_data.get('source_story_content_hash') != source_story_hash
+            or any("cốt truyện" in str(r).lower() or "story" in str(r).lower() for r in stale_reasons)
+        )
+        if original_script_data.get('generation_source') == 'REAL_AI' and story_mismatch:
+            raise ValueError("Kịch bản thuộc cốt truyện cũ; cần tạo Full Script mới, không sửa tiếp bản STALE.")
 
-        provider = self.get_provider()
+        provider = self.get_provider(provider_id=provider_id, model_id=model_id) if (provider_id or model_id) else self.get_provider()
         qc_engine = ScriptQCEngine(provider=provider, cost_controller=self.cost_ctrl)
         rev_manager = AutoRevisionManager(provider=provider, cost_controller=self.cost_ctrl, qc_engine=qc_engine)
 
@@ -700,6 +776,20 @@ class GenerationService:
         ):
             revised_data[key] = original_script_data.get(key)
         revised_data["artifact_status"] = "CURRENT" if final_qc.status == "PASS" else "NEEDS_REVISION"
+        if final_qc.status == "PASS":
+            revised_data.pop("stale_reason", None)
+            revised_data.pop("stale_reasons", None)
+        if script_content_hash(revised_data) != script_content_hash(original_script_data):
+            revised_data["parent_generation_request_id"] = original_script_data.get("generation_request_id")
+            revised_data["generation_request_id"] = str(uuid.uuid4())
+            revised_data["model_name"] = revised_script.model_name
+            revised_data["provider_name"] = getattr(provider, "provider_name", None)
+            revised_data["prompt_version"] = "script-v3.5-complete-story-context"
+            revised_data["generated_at"] = time.time()
+        _assert_story_snapshot(story_path, source_story_hash, story_bible.generation_request_id)
+        current_script_data = json.loads(script_path.read_text(encoding='utf-8'))
+        if script_content_hash(current_script_data) != script_content_hash(original_script_data):
+            raise ValueError("Kịch bản đã được chỉnh sửa trong lúc AI sửa; giữ bản hiện tại và chạy lại QC.")
         with open(script_path, "w", encoding="utf-8") as f:
             json.dump(revised_data, f, ensure_ascii=False, indent=2)
         with open(qc_path, "w", encoding="utf-8") as f:
@@ -711,17 +801,24 @@ class GenerationService:
                 "source_story_content_hash": revised_data.get("source_story_content_hash"),
                 "artifact_status": revised_data["artifact_status"],
             })
+            if final_qc.status == "PASS":
+                final_qc_data.pop("stale_reason", None)
+                final_qc_data.pop("stale_reasons", None)
             json.dump(final_qc_data, f, ensure_ascii=False, indent=2)
 
         project_path = proj_dir / "project.json"
         if project_path.exists():
             project_data = json.loads(project_path.read_text(encoding="utf-8"))
             project_data["script_artifact_status"] = revised_data["artifact_status"]
+            if final_qc.status == "PASS":
+                project_data.pop("script_stale_reason", None)
+                project_data.pop("script_stale_reasons", None)
             project_data["qc_status"] = final_qc.status
             project_data["updated_at"] = time.time()
             project_path.write_text(json.dumps(project_data, ensure_ascii=False, indent=2), encoding="utf-8")
 
         total_words = revised_script.total_words or sum(len(s.text.split()) for s in revised_script.segments)
+        invalidate_script_approval(project_id, PROJECTS_DIR)
         remaining_rules = sorted({
             str(issue.get("rule") or issue.get("type") or "UNKNOWN_QC")
             for issue in [*final_qc.evidence_issues, *final_qc.fact_conflicts]
@@ -734,10 +831,11 @@ class GenerationService:
             "qc_status": final_qc.status,
             "completed": completed,
             "remaining_rules": remaining_rules,
+            "qc_report": final_qc_data,
             "message": (
                 "Kịch bản đã vượt qua QC."
                 if completed
-                else f"Đã tự sửa {MAX_REVISION_ROUNDS} vòng trong lần này và giữ bản ít lỗi nhất, nhưng kịch bản vẫn chưa đạt QC. Bấm Auto-Repair lần nữa để sửa tiếp, hoặc sửa tay các đoạn còn lỗi."
+                else f"Đã giữ bản ít lỗi nhất sau {max(0, revised_script.revision_round - starting_round)} vòng. Kịch bản chưa đạt: {', '.join(remaining_rules)}. Cần xem các đoạn có chứng cứ lỗi hoặc sửa thiết kế Cốt truyện; không nên bấm Viết lại lặp vô hạn."
             ),
             "word_count": total_words,
             "segments": len(revised_script.segments)

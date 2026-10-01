@@ -87,6 +87,15 @@ class ScriptService:
             except Exception:
                 pass
 
+        if data.get('artifact_status') == 'STALE' or (
+            sel_idea and sel_idea.get('idea_id') and sel_idea['idea_id'] != data.get('source_idea_id')
+        ):
+            return StoryBibleSection(
+                premise=(sel_idea or {}).get('hook') or (sel_idea or {}).get('premise') or '',
+                mystery_core='STALE — REGENERATE REQUIRED: cốt truyện cũ không thuộc ý tưởng hiện tại.',
+                selected_idea=sel_idea, title=(sel_idea or {}).get('title', ''), has_story_bible=False,
+            )
+
         chars = data.get("characters", [])
         if not chars:
             all_chars = []
@@ -130,7 +139,7 @@ class ScriptService:
             clues=clues_list,
             reflection_theme=str(data.get("reflection_theme", "")),
             title=str(data.get("title", "")),
-            story_qc_report=data.get("story_qc_report") or self._compute_story_qc(data),
+            story_qc_report=self.get_story_qc(project_id),
             causal_chains=data.get("causal_chains", []),
             knowledge_ledger=data.get("knowledge_ledger", []),
             reveal_justifications=data.get("reveal_justifications", {}),
@@ -159,7 +168,38 @@ class ScriptService:
 
         with open(story_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        return data.get("story_qc_report") or self._compute_story_qc(data)
+        meta_path = proj_dir / 'project.json'
+        meta = json.loads(meta_path.read_text(encoding='utf-8')) if meta_path.exists() else {}
+        selected = meta.get('selected_idea') or {}
+        if data.get('artifact_status') == 'STALE' or (
+            selected.get('idea_id') and selected['idea_id'] != data.get('source_idea_id')
+        ):
+            return {'status': 'FAIL', 'rule_codes': ['STALE_STORY_BIBLE'],
+                    'issues': [{'rule': 'STALE_STORY_BIBLE', 'severity': 'CRITICAL',
+                                'message': 'STALE — REGENERATE REQUIRED: cốt truyện không thuộc ý tưởng hiện tại.'}]}
+        # A stored PASS cannot override newer deterministic rules or edited content.
+        current = self._compute_story_qc(data)
+        if current.get("status") == "FAIL":
+            return current
+        from apps.script_factory.models import StoryBible
+        from apps.script_factory.semantic_review import valid_story_semantic_review, SEMANTIC_REVIEW_VERSION, story_bible_content_hash
+        stored = data.get('story_qc_report') or {}
+        try:
+            bible = StoryBible.from_dict(data)
+        except (TypeError, ValueError, KeyError):
+            return {'status': 'FAIL', 'rule_codes': ['INVALID_STORY_BIBLE'],
+                    'issues': [{'rule': 'INVALID_STORY_BIBLE', 'severity': 'CRITICAL',
+                                'message': 'Story Bible thiếu trường bắt buộc; cần tạo lại cốt truyện.'}]}
+        if valid_story_semantic_review(bible, stored.get('semantic_review')):
+            return stored
+        review = stored.get('semantic_review') or {}
+        if (stored.get('status') == 'FAIL' and review.get('status') == 'RUN'
+                and review.get('review_version') == SEMANTIC_REVIEW_VERSION
+                and review.get('bible_hash') == story_bible_content_hash(bible)):
+            return stored
+        return {**current, 'status': 'FAIL', 'rule_codes': ['SEMANTIC_REVIEW_FAILED'],
+                'issues': [{'rule': 'SEMANTIC_REVIEW_FAILED', 'severity': 'CRITICAL',
+                            'message': 'Cốt truyện chưa có kiểm định semantic hiện hành gắn với nội dung này. Chọn Kiểm tra lại QC.'}]}
 
 
     def get_script_segments(self, project_id: str) -> List[ScriptSegment]:
@@ -325,7 +365,7 @@ class ScriptService:
         # story-logic review when the script text is unchanged; otherwise the
         # verdict cannot be PASS until a full QC (Auto-Repair) runs it again.
         from apps.script_factory.semantic_review import carry_over_semantic_review
-        semantic = carry_over_semantic_review(report, script) or {"status": "NOT_RUN", "issues": [], "advisories": []}
+        semantic = carry_over_semantic_review(report, script, story_bible) or {"status": "NOT_RUN", "issues": [], "advisories": []}
         fresh = asdict(engine.run_qc(script=script, story_bible=story_bible, semantic_review=semantic))
         if semantic.get("status") == "NOT_RUN" and fresh["status"] == "PASS":
             fresh["status"] = "NEEDS_REVISION"
@@ -345,6 +385,9 @@ class ScriptService:
         fresh["previous_qc_version"] = report.get("qc_version")
         with open(qc_path, "w", encoding="utf-8") as f:
             json.dump(fresh, f, ensure_ascii=False, indent=2)
+        if fresh["status"] != "PASS":
+            from studio.backend.services.artifact_lineage import invalidate_script_approval
+            invalidate_script_approval(project_id, PROJECTS_DIR)
         return fresh
 
     def import_script_text(self, project_id: str, text: str) -> List[ScriptSegment]:

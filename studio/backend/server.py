@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 import time
@@ -44,6 +45,7 @@ from studio.backend.services.qc_service import QCService
 from studio.backend.services.render_service import RenderService
 from studio.backend.services.script_service import ScriptService
 from studio.backend.services.artifact_lineage import (
+    invalidate_script_approval,
     mark_full_script_stale,
     mark_story_bible_stale,
     require_current_full_script,
@@ -237,7 +239,11 @@ class StageUpdateRequest(BaseModel):
 def update_stage(project_id: str, req: StageUpdateRequest):
     # Enforce domain gates on stage promotions
     if req.status in [StageStatus.APPROVED, StageStatus.COMPLETE]:
-        if req.stage_id == StageId.SCRIPT:
+        if req.stage_id == StageId.STORY:
+            qc = script_srv.get_story_qc(project_id)
+            if qc.get("status") != "PASS":
+                raise HTTPException(status_code=400, detail="Story Bible chưa đạt QC; cần sửa trước khi duyệt")
+        elif req.stage_id == StageId.SCRIPT:
             try:
                 lineage = require_current_full_script(
                     project_id,
@@ -265,6 +271,10 @@ def update_stage(project_id: str, req: StageUpdateRequest):
             except ValueError as exc:
                 raise HTTPException(status_code=400, detail=str(exc))
         elif req.stage_id == StageId.AUDIO:
+            try:
+                audio_srv.require_current_audio(project_id)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc))
             lineage = validate_full_script(project_id, BASE_DIR / "projects")
             if not lineage.get("audio_gate_allowed"):
                 raise HTTPException(
@@ -318,19 +328,52 @@ class SelectIdeaRequest(BaseModel):
     idea: Dict[str, Any]
 
 
+def _refresh_idea_topic_qc(idea: Dict[str, Any]) -> Dict[str, Any]:
+    from apps.script_factory.topic_intent import extract_topic_intent
+    result = dict(idea)
+    topic = result.get('original_user_topic')
+    if topic:
+        qc = extract_topic_intent(topic).evaluate_content_adherence(result, stage='idea')
+        result['topic_adherence_score'] = qc['score']
+        if qc['status'] != 'PASS':
+            result['status'] = 'BLOCKED_TOPIC_DRIFT'
+    return result
+
+
+@app.get("/api/projects/{project_id}/ideas")
+def get_project_ideas(project_id: str):
+    if not pm.get_project(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    project_dir = BASE_DIR / "projects" / project_id
+    bank = project_dir / 'idea_bank.json'
+    data = json.loads(bank.read_text(encoding='utf-8')) if bank.exists() else {'ideas': [], 'direction': ''}
+    data['ideas'] = [_refresh_idea_topic_qc(idea) for idea in data.get('ideas', [])]
+    meta = project_dir / 'project.json'
+    selected = json.loads(meta.read_text(encoding='utf-8')).get('selected_idea', {}) if meta.exists() else {}
+    return {**data, 'selected_idea_id': selected.get('idea_id', '')}
+
+
 @app.post("/api/projects/{project_id}/ideas/select")
 def select_project_idea(project_id: str, req: SelectIdeaRequest):
     p = pm.get_project(project_id)
     if not p:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    selected = req.idea
+    selected = dict(req.idea)
+    bank = BASE_DIR / "projects" / project_id / 'idea_bank.json'
+    if bank.exists():
+        candidates = json.loads(bank.read_text(encoding='utf-8')).get('ideas', [])
+        selected = next((dict(idea) for idea in candidates if idea.get('idea_id') == selected.get('idea_id')), selected)
+    selected = _refresh_idea_topic_qc(selected)
+    if selected.get('status') == 'BLOCKED_TOPIC_DRIFT':
+        raise HTTPException(status_code=400, detail='Ý tưởng bị chặn do lệch chủ đề; cần chọn ý tưởng khác')
     premise = selected.get("premise") or selected.get("hook") or ""
     title = selected.get("title")
 
     lineage_reason = "A new idea was selected; regenerate Story Bible and Full Script"
     mark_story_bible_stale(project_id, BASE_DIR / "projects", lineage_reason)
     mark_full_script_stale(project_id, BASE_DIR / "projects", lineage_reason)
+    invalidate_script_approval(project_id, BASE_DIR / "projects")
 
     proj_dir = BASE_DIR / "projects" / project_id
     story_dir = proj_dir / "story"
@@ -399,6 +442,9 @@ def generate_project_story(project_id: str, req: GenerateStoryRequest):
 
 @app.post("/api/projects/{project_id}/story/approve")
 def approve_project_story(project_id: str):
+    qc = script_srv.get_story_qc(project_id)
+    if qc.get("status") != "PASS":
+        raise HTTPException(status_code=400, detail="Story Bible chưa đạt QC; cần sửa các lỗi trước khi duyệt")
     return pm.update_stage_status(project_id, StageId.STORY, StageStatus.APPROVED)
 
 
@@ -419,8 +465,10 @@ def repair_project_story(project_id: str, req: Optional[GenerateStoryRequest] = 
         model = req.model if req else None
         with live_log.project_scope(project_id, "Sửa Cốt truyện (Story Bible)"):
             res = gen_srv.repair_story_bible(project_id, provider_id=prov, model_id=model)
-        pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.STALE)
-        pm.update_stage_status(project_id, StageId.STORY, StageStatus.NEEDS_REVIEW)
+        if res.get('story_changed'):
+            pm.update_stage_status(project_id, StageId.SCRIPT, StageStatus.STALE)
+        if res.get('story_changed') or res.get('status') != 'PASS':
+            pm.update_stage_status(project_id, StageId.STORY, StageStatus.NEEDS_REVIEW)
         return res
     except HTTPException:
         raise
@@ -479,10 +527,11 @@ def generate_project_script(project_id: str, req: GenerateScriptRequest):
 
 
 @app.post("/api/projects/{project_id}/script/repair")
-def repair_project_script(project_id: str):
+def repair_project_script(project_id: str, req: Optional[GenerateScriptRequest] = None):
     try:
         with live_log.project_scope(project_id, "Sửa tự động kịch bản (Auto-Repair)"):
-            res = gen_srv.auto_repair_script(project_id)
+            res = gen_srv.auto_repair_script(project_id, provider_id=req.provider if req else None,
+                                             model_id=req.model if req else None)
         return res
     except HTTPException:
         raise
@@ -620,15 +669,25 @@ class GenerateAudioRequest(BaseModel):
 @app.post("/api/projects/{project_id}/audio/generate")
 def generate_audio(project_id: str, req: GenerateAudioRequest):
     try:
-        result = audio_srv.generate_narration(
-            project_id,
-            voice_id=req.voice_id,
-            contextual_speed=req.contextual_speed,
-            global_speed=req.global_speed,
-            enable_music=req.enable_music,
-            segment_ids=req.segment_ids,
-        )
-        pm.update_stage_status(project_id, StageId.AUDIO, StageStatus.NEEDS_REVIEW)
+        with live_log.project_scope(project_id, 'Tạo Audio VieNeu'):
+            try:
+                result = audio_srv.generate_narration(
+                    project_id,
+                    voice_id=req.voice_id,
+                    contextual_speed=req.contextual_speed,
+                    global_speed=req.global_speed,
+                    enable_music=req.enable_music,
+                    segment_ids=req.segment_ids,
+                )
+            except Exception:
+                logging.getLogger('SCCStudio.AudioService').exception('Audio generation failed')
+                raise
+        if not result.get('preview'):
+            pm.update_stage_status(project_id, StageId.AUDIO, StageStatus.NEEDS_REVIEW)
+            with get_db_connection() as conn:
+                conn.execute('UPDATE projects SET duration_sec=? WHERE project_id=?',
+                             (result['duration_sec'], project_id))
+                conn.commit()
         return result
     except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -668,6 +727,10 @@ def generate_visual_plan(project_id: str):
     try:
         result = visual_srv.generate_visual_plan(project_id)
         pm.update_stage_status(project_id, StageId.VISUAL, StageStatus.NEEDS_REVIEW)
+        with get_db_connection() as conn:
+            conn.execute('UPDATE projects SET scene_count=?, image_count=?, video_count=? WHERE project_id=?',
+                         (result['scenes'], result['images'], result['videos'], project_id))
+            conn.commit()
         return result
     except (FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))

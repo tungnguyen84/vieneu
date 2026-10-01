@@ -84,7 +84,18 @@ class MockScriptAIProvider(ScriptAIProvider):
                 rev2 = f"Bí mật {secret.lower()}"
                 adherence_score = 100.0
 
-            clue1 = f"Dấu vết chữ viết tay và con dấu đã mờ trên phong bì cũ."
+            prop_found = next(
+                (p for p in ["áo khoác", "áo sơ mi", "áo mưa", "áo", "kẹp tóc", "son môi", "vết son", "chìa khóa",
+                             "bức thư", "lá thư", "sổ tay", "cuốn sổ", "nhẫn", "chiếc nhẫn", "hóa đơn", "biên lai",
+                             "vali", "điện thoại", "tin nhắn", "đồng hồ", "khăn tay", "bức ảnh", "tấm ảnh",
+                             "chiếc hộp", "hộp quà", "hồ sơ", "tập hồ sơ", "vé máy bay", "vé tàu", "cà vạt"]
+                 if p in title.lower()),
+                None
+            )
+            if prop_found:
+                clue1 = f"Dấu vết chữ viết tay và con dấu đã mờ trên {prop_found} cũ."
+            else:
+                clue1 = f"Dấu vết chữ viết tay và con dấu đã mờ trên phong bì cũ."
             clue2 = f"Lời khai mâu thuẫn của những người hàng xóm lớn tuổi."
             clue3 = f"Giấy tờ chứng từ xác thực tại cơ quan lưu trữ địa phương."
             rev1 = f"Người tưởng như xa lạ thực chất lại là người có quan hệ mật thiết."
@@ -153,9 +164,21 @@ class MockScriptAIProvider(ScriptAIProvider):
                 "relationship": idea.relationship
             }
         ]
+        prop_found = next(
+            (p for p in ["áo khoác", "áo sơ mi", "áo mưa", "áo", "kẹp tóc", "son môi", "vết son", "chìa khóa",
+                         "bức thư", "lá thư", "sổ tay", "cuốn sổ", "nhẫn", "chiếc nhẫn", "hóa đơn", "biên lai",
+                         "vali", "điện thoại", "tin nhắn", "đồng hồ", "khăn tay", "bức ảnh", "tấm ảnh",
+                         "chiếc hộp", "hộp quà", "hồ sơ", "tập hồ sơ", "vé máy bay", "vé tàu", "cà vạt"]
+             if p in (idea.working_title or "").lower() or p in (idea.original_user_topic or "").lower()),
+            None
+        )
+        clue1_val = idea.clue_1
+        if prop_found and prop_found not in clue1_val.lower():
+            clue1_val = f"Dấu vết chữ viết tay và con dấu đã mờ trên {prop_found} cũ."
+
         timeline = [
-            "10 năm trước: Biến cố gia đình ban đầu xảy ra và bí mật bắt đầu được hình thành.",
-            "Hiện tại: Nhân vật chính phát hiện manh mối đầu tiên và bắt đầu quá trình xác minh."
+            f"10 năm trước: Biến cố gia đình ban đầu xảy ra và {prop_found or 'bí mật'} bắt đầu được hình thành.",
+            f"Hiện tại: Nhân vật chính phát hiện {prop_found or 'manh mối đầu tiên'} và bắt đầu quá trình xác minh."
         ]
         locations = ["HOME", "OFFICE", "OLD_STREET", "ARCHIVE"]
         money_facts = [
@@ -179,19 +202,19 @@ class MockScriptAIProvider(ScriptAIProvider):
             critical_facts=critical_facts,
             secret=idea.central_secret,
             false_lead=idea.false_lead,
-            clues=[idea.clue_1, idea.clue_2, idea.clue_3],
+            clues=[clue1_val, idea.clue_2, idea.clue_3],
             reveal_1=idea.reveal_1,
             reveal_2=idea.reveal_2,
             emotional_payoff=idea.emotional_payoff,
             reflection_theme=idea.reflection_theme,
-            ending="Câu chuyện khép lại với niềm tin và sự hàn gắn.",
+            ending=f"Câu chuyện khép lại với niềm tin và sự hàn gắn khi {idea.protagonist} cất giữ {prop_found or 'kỷ vật'}.",
             causal_chains=[
                 {
                     "target": "reveal_1",
                     "cause": "Biến cố tai nạn nguy kịch 10 năm trước đòi hỏi chi phí phẫu thuật khẩn cấp.",
                     "decision": "Người thân quyết định bán mảnh đất hương hỏa và ký cam kết bảo mật khoản tiền 100.000.000 VND.",
                     "action": str(idea.reveal_1) if len(str(idea.reveal_1 or "").strip()) >= 8 else f"Thực hiện cam kết hành động: {idea.reveal_1 or 'Giao dịch cứu trợ'}",
-                    "consequence": f"{idea.protagonist} được cứu sống nhưng hiểu lầm về khoản giao dịch khi phát hiện phong bì cũ.",
+                    "consequence": f"{idea.protagonist} được cứu sống nhưng hiểu lầm về khoản giao dịch khi phát hiện {prop_found or 'phong bì cũ'}.",
                     "why": "Bảo vệ sinh mạng và tương lai của người con mà không tạo mặc cảm mắc nợ.",
                     "motivation": "Không thể công khai vào thời điểm đó vì sức khỏe tâm lý của nhân vật chính chưa ổn định, giải pháp thông thường là bất khả thi.",
                     "how": "Lưu giữ chứng từ gốc tại cơ quan lưu trữ địa phương suốt 10 năm.",
@@ -225,8 +248,8 @@ class MockScriptAIProvider(ScriptAIProvider):
             ],
             structured_clues=[
                 {
-                    "clue": idea.clue_1,
-                    "what_it_proves": "Chứng minh có một giao dịch 100.000.000 VND từ 10 năm trước được cất giữ kín đáo.",
+                    "clue": clue1_val,
+                    "what_it_proves": f"Chứng minh có một giao dịch 100.000.000 VND từ 10 năm trước liên quan đến {prop_found or 'vật chứng'} được cất giữ kín đáo.",
                     "what_it_does_NOT_prove": "Chưa chứng minh được mục đích tiêu cực hay hành vi phản bội lợi ích gia đình.",
                     "next_question": "Khoản tiền này được chuyển cho ai và nhằm mục đích gì?",
                 },
@@ -261,6 +284,36 @@ class MockScriptAIProvider(ScriptAIProvider):
             status="DRAFT"
         )
         return bible, 350, 750
+
+    def repair_story_bible(
+        self,
+        story_bible: StoryBible,
+        qc_issues: List[Any],
+        series_bible: Optional[Dict[str, Any]] = None,
+        model: Optional[str] = None,
+    ) -> Tuple[StoryBible, int, int]:
+        prop_catalog = [
+            "áo khoác", "áo sơ mi", "áo mưa", "áo", "kẹp tóc", "son môi", "vết son", "chìa khóa",
+            "bức thư", "lá thư", "sổ tay", "cuốn sổ", "nhẫn", "chiếc nhẫn", "hóa đơn", "biên lai",
+            "vali", "điện thoại", "tin nhắn", "đồng hồ", "khăn tay", "bức ảnh", "tấm ảnh",
+            "chiếc hộp", "hộp quà", "hồ sơ", "tập hồ sơ", "vé máy bay", "vé tàu", "cà vạt",
+        ]
+        title_str = str(story_bible.title or "").lower()
+        trigger_str = str(story_bible.narrative_skeleton.get("trigger", "") if story_bible.narrative_skeleton else "").lower()
+        prop = next((p for p in prop_catalog if p in title_str or p in trigger_str), None)
+        if prop:
+            if story_bible.clues:
+                if not any(prop in str(c).lower() for c in story_bible.clues):
+                    story_bible.clues[0] = f"Dấu vết chữ viết tay và con dấu đã mờ trên {prop} cũ."
+            else:
+                story_bible.clues = [f"Dấu vết chữ viết tay và con dấu đã mờ trên {prop} cũ."]
+            if story_bible.structured_clues:
+                story_bible.structured_clues[0]["clue"] = f"Dấu vết trên {prop} cũ."
+            if story_bible.timeline:
+                story_bible.timeline[0] = f"10 năm trước: Biến cố xảy ra liên quan đến {prop}."
+            if prop not in str(story_bible.ending or "").lower():
+                story_bible.ending = f"{story_bible.ending or 'Kết thúc'} sau khi cất giữ {prop}."
+        return story_bible, 100, 200
 
     def write_script(
         self,

@@ -11,6 +11,7 @@ export type StageId =
   | '10_qc';
 
 export type StageStatus =
+  | 'DRAFT'
   | 'NOT_STARTED'
   | 'IN_PROGRESS'
   | 'NEEDS_REVIEW'
@@ -150,12 +151,12 @@ export interface FinalQCReport {
   fps: number;
   video_codec: string;
   audio_codec: string;
-  av_sync_delta_ms: number;
-  black_gap_detected: boolean;
-  missing_scenes_count: number;
-  static_hold_exceeded: boolean;
-  integrated_loudness_lufs: number;
-  true_peak_db: number;
+  av_sync_delta_ms: number | null;
+  black_gap_detected: boolean | null;
+  missing_scenes_count: number | null;
+  static_hold_exceeded: boolean | null;
+  integrated_loudness_lufs: number | null;
+  true_peak_db: number | null;
   checks_summary: Array<{
     id: string;
     name: string;
@@ -188,6 +189,7 @@ export interface ProvidersStatus {
 }
 
 export interface IdeaItem {
+  status?: string;
   idea_id: string;
   title: string;
   hook: string;

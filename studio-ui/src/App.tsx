@@ -34,6 +34,7 @@ export const App: React.FC = () => {
   const [advancedMode, setAdvancedMode] = useState<boolean>(false);
   const [isNewEpisodeModalOpen, setIsNewEpisodeModalOpen] = useState<boolean>(false);
   const [isProjectManagerOpen, setIsProjectManagerOpen] = useState<boolean>(false);
+  const [stageError, setStageError] = useState('');
 
 
   const fetchProjects = (selectedId?: string) => {
@@ -61,6 +62,7 @@ export const App: React.FC = () => {
       setCurrentProject(proj);
       setSelectedScene(null);
       setSelectedSegment(null);
+      setStageError('');
     }
   };
 
@@ -88,6 +90,8 @@ export const App: React.FC = () => {
 
   const handleUpdateStage = async (stageId: string, status: string) => {
     if (!currentProject) return;
+    const projectId = currentProject.project_id;
+    setStageError('');
     try {
       const res = await fetch(`/api/projects/${currentProject.project_id}/stage`, {
         method: 'POST',
@@ -95,12 +99,15 @@ export const App: React.FC = () => {
         body: JSON.stringify({ stage_id: stageId, status }),
       });
       const updated: ProjectMetadata = await res.json();
-      setCurrentProject(updated);
+      if (!res.ok || updated.project_id !== projectId || !updated.stage_statuses) {
+        throw new Error((updated as any).detail || 'Không thể duyệt bước sản xuất');
+      }
+      setCurrentProject((current) => current?.project_id === projectId ? updated : current);
       setProjects((prev) =>
         prev.map((p) => (p.project_id === updated.project_id ? updated : p))
       );
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      setStageError(e.message || 'Không thể cập nhật trạng thái');
     }
   };
 
@@ -179,7 +186,8 @@ export const App: React.FC = () => {
         <Sidebar activeTab={activeTab} onSelectTab={(tab) => setActiveTab(tab)} />
 
         {/* Center Dynamic Stage View */}
-        <main className="flex-1 overflow-y-auto bg-[#0B0F17]">
+        <main key={currentProject?.project_id} className="flex-1 overflow-y-auto bg-[#0B0F17]">
+          {stageError && <div role="alert" className="m-4 rounded border border-red-700 bg-red-950 p-3 text-sm">{stageError}</div>}
           {activeTab === 'overview' && currentProject && (
             <OverviewView
               project={currentProject}

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 import json
 from pathlib import Path
 
@@ -10,8 +12,63 @@ from apps.script_factory.story_qc import StoryQCEngine
 from studio.backend.services import generation_service as generation_module
 
 
+@pytest.fixture(autouse=True)
+def _no_scene_outline(monkeypatch):
+    """These tests script the exact sequence of part-1/part-2 model replies;
+    the single-pass and scene-outline calls are covered by tests/test_scene_outline.py and tests/test_single_pass_writer.py."""
+    for module in ("apps.script_factory.providers.gemini_provider", "apps.script_factory.providers.openai_provider"):
+        monkeypatch.setattr(f"{module}.build_scene_outline", lambda *args, **kwargs: None)
+        monkeypatch.setattr(f"{module}.write_single_pass", lambda *args, **kwargs: (None, 0, 0))
+
+
+
+def test_story_repair_partial_knowledge_patch_preserves_sources_and_other_characters():
+    from apps.script_factory.models import apply_story_bible_patch, story_bible_repair_targets_clause
+    bible = StoryBible(episode_id="EP_LEDGER", title="Ledger", protagonist={"name": "Hoa"}, knowledge_ledger=[
+        {"character": "Hoa", "who_knows_what": "A clue", "knowledge_scope": "partial",
+         "when_they_learned_it": "Before the confrontation", "how_they_learned_it": "Thu sent the document"},
+        {"character": "Thu", "who_knows_what": "Her affair", "knowledge_scope": "full",
+         "when_they_learned_it": "From the beginning", "how_they_learned_it": "Personal experience"},
+    ])
+    apply_story_bible_patch(bible, {"knowledge_ledger": [
+        {"character": "Hoa", "who_knows_what": "A clue and her husband's admission"},
+    ]})
+    assert len(bible.knowledge_ledger) == 2
+    assert bible.knowledge_ledger[0]["how_they_learned_it"] == "Thu sent the document"
+    assert bible.knowledge_ledger[0]["when_they_learned_it"] == "Before the confrontation"
+    assert bible.knowledge_ledger[0]["who_knows_what"] == "A clue and her husband's admission"
+    assert bible.knowledge_ledger[1]["character"] == "Thu"
+    clause = story_bible_repair_targets_clause([{"rule": "POV_KNOWLEDGE_VIOLATION", "target": "clues"}])
+    assert "when_they_learned_it" in clause and "how_they_learned_it" in clause
+
+
 def _segment(index: int, text: str, profile: str = "NORMAL") -> ScriptSegment:
     return ScriptSegment(id=f"{index:03d}", speaker="MINH", text=text, delivery_profile=profile)
+
+
+def test_gemini_writer_both_parts_receive_timeline_and_complete_previous_scene(monkeypatch):
+    from apps.script_factory.providers import gemini_provider as module
+    prompts = []
+    long_scene = 'Hoa đọc hồ sơ trên bàn. ' * 20 + 'Thu gửi file qua email ẩn danh vào tối hôm trước.'
+    responses = [
+        [{'id': '001', 'text': long_scene, 'delivery_profile': 'HOOK'}],
+        [{'id': '002', 'text': 'Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.',
+          'delivery_profile': 'ENDING'}],
+    ]
+    provider = module.GeminiScriptAIProvider(api_key='test-only')
+    def call(**kwargs):
+        prompts.append(kwargs['prompt'])
+        return json.dumps(responses[len(prompts) - 1], ensure_ascii=False), 10, 10
+    monkeypatch.setattr(provider, '_call_generate_content', call)
+    monkeypatch.setattr(module.time, 'sleep', lambda _: None)
+    bible = StoryBible(episode_id='EP_CONTEXT', title='Gate', protagonist={'name': 'Hoa'},
+                       timeline=['Hoa sees Thu at the gate in May 2024'],
+                       clues=['clue'] * 4 + ['Anonymous email from Thu'])
+    provider.write_script(bible, {}, {})
+    assert len(prompts) == 2
+    assert all('Hoa sees Thu at the gate in May 2024' in prompt for prompt in prompts)
+    assert all('Anonymous email from Thu' in prompt for prompt in prompts)
+    assert long_scene in prompts[1]
 
 
 def test_detects_and_removes_distant_restarted_investigation() -> None:
@@ -97,10 +154,11 @@ def test_story_qc_rejects_indirect_evidence_as_conclusive_proof() -> None:
     )
     report = StoryQCEngine().audit_story_bible(bible)
     proof_issues = [issue for issue in report.issues if issue["rule"] == "REVEAL_PROOF_OVERCLAIM"]
-    assert len(proof_issues) == 2
+    assert len(proof_issues) == 1
+    assert proof_issues[0]['target'] == 'reveal_1.evidence_support'
 
 
-def _run_auto_repair_service(tmp_path: Path, monkeypatch, pass_on_round: int, starting_round: int = 0) -> dict:
+def _run_auto_repair_service(tmp_path: Path, monkeypatch, pass_on_round: int, starting_round: int = 0, improves: bool = True) -> dict:
     project = tmp_path / "EP_AUTO"
     (project / "script").mkdir(parents=True)
     (project / "story").mkdir(parents=True)
@@ -128,7 +186,7 @@ def _run_auto_repair_service(tmp_path: Path, monkeypatch, pass_on_round: int, st
             return QCReport(
                 episode_id=story_bible.episode_id,
                 status=status,
-                evidence_issues=[] if status == "PASS" else [{"rule": "TEST_REMAINING"}],
+                evidence_issues=[] if status == "PASS" else [{"rule": "TEST_REMAINING"}] * max(1, 6 - script.revision_round),
             )
 
     class FakeRevisionManager:
@@ -137,6 +195,8 @@ def _run_auto_repair_service(tmp_path: Path, monkeypatch, pass_on_round: int, st
 
         def auto_revise_and_recheck(self, script, story_bible, qc_report, max_rounds=3):
             script.revision_round += 1
+            if improves:
+                script.segments[0].text += f" Chi tiết đã sửa ở vòng {script.revision_round}."
             return script, FakeQC().run_qc(script, story_bible)
 
     monkeypatch.setattr(generation_module, "PROJECTS_DIR", tmp_path)
@@ -166,3 +226,10 @@ def test_auto_repair_click_after_round_limit_gets_fresh_rounds(tmp_path: Path, m
     result = _run_auto_repair_service(tmp_path, monkeypatch, pass_on_round=5, starting_round=3)
     assert result["completed"] is True
     assert result["rounds_attempted"] == 2
+
+
+def test_auto_repair_stops_when_provider_returns_unchanged_script(tmp_path: Path, monkeypatch) -> None:
+    result = _run_auto_repair_service(tmp_path, monkeypatch, pass_on_round=99, improves=False)
+    assert result["completed"] is False
+    assert result["rounds_attempted"] == 1
+    assert result["remaining_rules"] == ["TEST_REMAINING"]

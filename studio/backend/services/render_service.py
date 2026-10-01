@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import shutil
 import subprocess
@@ -13,6 +14,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from studio.backend.db import get_db_connection
 from studio.backend.models import JobStatus
+from studio.backend.services.artifact_files import file_sha256
 
 logger = logging.getLogger("VieNeu.RenderService")
 
@@ -27,10 +29,11 @@ class RenderService:
     def __init__(self):
         self._active_renders: Dict[str, Dict[str, Any]] = {}
         self._lock = threading.Lock()
+        self._cancel_events: Dict[str, threading.Event] = {}
 
     def get_render_status(self, project_id: str) -> Dict[str, Any]:
         with self._lock:
-            if project_id in self._active_renders:
+            if project_id in self._active_renders and self._active_renders[project_id].get("stage") != "COMPLETE":
                 return self._active_renders[project_id]
 
         # Check DB history - only trust if output file exists on disk!
@@ -44,18 +47,19 @@ class RenderService:
             if r and r["output_path"]:
                 out_path = BASE_DIR / r["output_path"]
                 if out_path.exists() and out_path.is_file() and out_path.stat().st_size > 0:
+                    qc = self._inspect_output(project_id, out_path)
                     return {
                         "is_rendering": False,
                         "progress": 100.0,
                         "stage": "COMPLETE",
                         "output_file": r["output_path"],
-                        "status": r["status"],
-                        "qc_summary": json.loads(r["qc_summary"]) if r["qc_summary"] else None
+                        "status": qc["overall_status"],
+                        "qc_summary": qc
                     }
 
         # Check existing final render file on disk
         final_mp4s = [
-            p for p in OUTPUT_DIR.glob(f"*{project_id}*.mp4")
+            p for p in OUTPUT_DIR.glob(f"{project_id}_*.mp4")
             if p.is_file() and p.stat().st_size > 0
         ]
         if final_mp4s:
@@ -64,7 +68,7 @@ class RenderService:
                 "progress": 100.0,
                 "stage": "READY",
                 "output_file": str(final_mp4s[0].relative_to(BASE_DIR)),
-                "status": "PASS"
+                "status": self._inspect_output(project_id, final_mp4s[0])["overall_status"]
             }
 
         return {
@@ -99,7 +103,10 @@ class RenderService:
         }
 
         with self._lock:
+            if self._active_renders.get(project_id, {}).get("is_rendering"):
+                raise ValueError("Tập này đang render")
             self._active_renders[project_id] = state
+            self._cancel_events[project_id] = threading.Event()
 
         # Launch background thread
         thread = threading.Thread(
@@ -115,8 +122,82 @@ class RenderService:
             if project_id in self._active_renders:
                 self._active_renders[project_id]["cancel_requested"] = True
                 self._active_renders[project_id]["status"] = "CANCELLED"
+                self._cancel_events[project_id].set()
                 return True
         return False
+
+    def _inspect_output(self, project_id: str, output: Path) -> Dict[str, Any]:
+        from studio.backend.services.qc_service import QCService
+        return QCService().get_qc_report(project_id, video_path=output).model_dump()
+
+    def _build_project_plan(self, project_id: str, plan_path: Path, audio_path: Path, flow_zip: Optional[Path], audio_binding=None):
+        from apps.visual_engine.final_auto_assembler import (
+            build_assembly_plan, inspect_and_extract_zip, normalize_scene_id,
+            validate_image_file, get_video_info, VALID_IMAGE_EXTS, VALID_VIDEO_EXTS,
+        )
+        import soundfile as sf
+
+        raw = json.loads(plan_path.read_text(encoding="utf-8"))
+        if raw.get("audio_sha256") != file_sha256(audio_path):
+            raise ValueError("Visual Plan STALE: không thuộc Audio Master hiện tại; cần lập lại Visual")
+        if audio_binding and (raw.get("source_script_content_hash") != audio_binding["script_content_hash"]
+                              or raw.get("source_story_content_hash") != audio_binding["story_content_hash"]):
+            raise ValueError("Visual Plan STALE: không thuộc Script/Story hiện tại")
+        scenes = raw.get("scenes", [])
+        if not scenes:
+            raise ValueError("Visual Plan không có cảnh")
+        audio_duration = sf.info(audio_path).duration
+        definitions = []
+        for scene in scenes:
+            start, end = float(scene["start_time"]), float(scene["end_time"])
+            if not all(math.isfinite(v) for v in (start, end)) or end <= start:
+                raise ValueError(f"Timing cảnh {scene['scene_id']} không hợp lệ")
+            motion = scene.get("image_motion", "SLOW_PUSH_IN")
+            if isinstance(motion, dict):
+                motion = motion.get("type", "SLOW_PUSH_IN")
+            definitions.append({**scene, "start_sec": start, "end_sec": end, "duration_sec": end - start,
+                                "image_motion": motion, "source_segment_ids": scene.get("source_segments") or ["001"]})
+        if abs(definitions[0]["start_sec"]) > 0.001 or abs(definitions[-1]["end_sec"] - audio_duration) > 0.02:
+            raise ValueError("Visual Plan không khớp Audio Master hiện tại; cần lập lại Visual")
+        for left, right in zip(definitions, definitions[1:]):
+            if abs(left["end_sec"] - right["start_sec"]) > 0.001:
+                raise ValueError("Visual Plan có khoảng trống hoặc cảnh chồng nhau")
+        if len({s['scene_id'] for s in definitions}) != len(definitions):
+            raise ValueError("Visual Plan có scene ID trùng nhau")
+
+        project = PROJECTS_DIR / project_id
+        images, videos = {}, {}
+        if flow_zip:
+            images, videos, _, _ = inspect_and_extract_zip(flow_zip, project / "render" / "imported_assets")
+        # Also support assets imported by the Studio assets endpoint.
+        for asset in (project / "assets").rglob("*"):
+            scene_id = normalize_scene_id(asset.name)
+            if asset.is_file() and scene_id:
+                if asset.suffix.lower() in VALID_IMAGE_EXTS:
+                    images[scene_id] = asset
+                elif asset.suffix.lower() in VALID_VIDEO_EXTS:
+                    videos[scene_id] = asset
+        for scene in definitions:
+            sid = scene["scene_id"]
+            # Both styles (SC001 / SC_001) resolve through the engine normalizer.
+            normalized = normalize_scene_id(sid)
+            for mapping in (images, videos):
+                if normalized in mapping:
+                    mapping[sid] = mapping[normalized]
+            image, video = images.get(sid), videos.get(sid)
+            if image and not validate_image_file(image)[0]:
+                raise ValueError(f"Ảnh cảnh {sid} bị hỏng")
+            if video and not get_video_info(video)[0]:
+                raise ValueError(f"Video cảnh {sid} bị hỏng")
+            if not image and not video:
+                raise FileNotFoundError(f"Thiếu media cho cảnh {sid}; cần import tài nguyên Google Flow")
+        overrides = {s["scene_id"]: "USE_IMAGE" for s in definitions if s.get("visual_mode") == "IMAGE_ONLY"}
+        plan = build_assembly_plan(images, videos, audio_path, manual_overrides=overrides, scene_definitions=definitions)
+        plan.episode_id = project_id
+        plan.project_slug = project_id
+        plan.total_audio_duration_sec = audio_duration
+        plan.av_delta_sec = abs(plan.total_visual_duration_sec - audio_duration)
+        return plan
 
     def _run_render_worker(
         self,
@@ -140,6 +221,7 @@ class RenderService:
                 progress_cb(self._active_renders[project_id])
 
             from studio.backend.services.audio_service import AudioService
+            audio_binding = AudioService().require_current_audio(project_id)
             audio_path = AudioService().get_audio_master_path(project_id)
             if not audio_path or not audio_path.exists():
                 raise FileNotFoundError(
@@ -172,31 +254,62 @@ class RenderService:
             has_assets = (assets_dir.exists() and any(assets_dir.iterdir())) or (flow_zip is not None)
             
             # If assets are missing and output MP4 doesn't exist, fail with clear error
-            if not has_assets and not out_path.exists():
+            if not has_assets:
                 raise FileNotFoundError(
                     "Không thể Render: Chưa có tài nguyên hình ảnh/video từ Google Flow. "
                     "Hãy tải lên gói xuất Google Flow (ZIP) hoặc các file media vào thư mục assets/ trước khi Render."
                 )
 
             # If real assembler is applicable
-            if flow_zip and flow_zip.exists():
+            if has_assets:
                 from apps.visual_engine.final_auto_assembler import assemble_full_episode
+                plan = self._build_project_plan(project_id, plan_path, audio_path, flow_zip, audio_binding)
                 with self._lock:
                     cur = self._active_renders[project_id]
                     cur["stage"] = "TIMELINE_ASSEMBLY"
                     cur["stage_label"] = "Đang chạy Final Auto Assembler ghép video..."
                     cur["progress"] = 50.0
-                    cur["logs"].append(f"Chạy assembler từ gói ZIP {flow_zip.name}...")
+                    cur["logs"].append(f"Chạy assembler từ {flow_zip.name if flow_zip else 'media đã import trong Assets'}...")
                 if progress_cb:
                     progress_cb(self._active_renders[project_id])
 
-                success, msg, rep = assemble_full_episode(
-                    zip_path=flow_zip,
-                    audio_master_path=audio_path,
-                    output_mp4_path=out_path
+                def update_progress(done, total, message):
+                    with self._lock:
+                        self._active_renders[project_id].update(
+                            progress=20 + 70 * done / max(1, total), stage_label=message,
+                            elapsed_sec=time.time() - start_t,
+                        )
+                    if progress_cb:
+                        progress_cb(self._active_renders[project_id])
+
+                # Render in a project-specific directory so the engine's reports
+                # and cache cannot be reused accidentally by another episode.
+                render_dir = PROJECTS_DIR / project_id / "render" / render_id
+                source_plan_hash, source_audio_hash = file_sha256(plan_path), file_sha256(audio_path)
+                result_path, rep = assemble_full_episode(
+                    plan=plan, output_mp4_path=render_dir / out_name,
+                    cache_dir=PROJECTS_DIR / project_id / "render" / "cache",
+                    cancel_event=self._cancel_events[project_id], progress_callback=update_progress,
                 )
-                if not success:
-                    raise RuntimeError(f"Lỗi ghép video: {msg}")
+                if self._cancel_events[project_id].is_set():
+                    raise RuntimeError("Render đã được hủy")
+                if not result_path.is_file() or result_path.stat().st_size == 0:
+                    raise RuntimeError("Assembler không tạo được video")
+                AudioService().require_current_audio(project_id)
+                if file_sha256(plan_path) != source_plan_hash or file_sha256(audio_path) != source_audio_hash:
+                    raise ValueError("Nguồn Visual/Audio thay đổi trong lúc render; video chưa được công bố")
+                shutil.copy2(result_path, out_path)
+                evidence = {
+                    "project_id": project_id,
+                    "visual_plan_path": str(plan_path.resolve()), "audio_path": str(audio_path.resolve()),
+                    "video_sha256": file_sha256(out_path),
+                    "expected_scene_ids": [s.scene_id for s in plan.scenes],
+                    "rendered_scene_ids": [s.scene_id for s in plan.scenes],
+                    "longest_accidental_static_hold_sec": rep.get("longest_accidental_static_hold_sec"),
+                    "visual_plan_sha256": source_plan_hash,
+                    "audio_sha256": source_audio_hash,
+                }
+                out_path.with_suffix(".studio_render.json").write_text(json.dumps(evidence), encoding="utf-8")
 
             # Verify output file exists
             if not out_path.exists() or out_path.stat().st_size == 0:
@@ -205,7 +318,7 @@ class RenderService:
             # Run real QC inspection on the generated video
             from studio.backend.services.qc_service import QCService
             qc_service = QCService()
-            qc_rep = qc_service.get_qc_report(project_id)
+            qc_rep = qc_service.get_qc_report(project_id, video_path=out_path)
             qc_summary = {
                 "overall_status": qc_rep.overall_status,
                 "duration_sec": qc_rep.duration_sec,
@@ -249,8 +362,9 @@ class RenderService:
                 if project_id in self._active_renders:
                     cur = self._active_renders[project_id]
                     cur["is_rendering"] = False
-                    cur["status"] = "FAILED"
-                    cur["stage"] = "FAILED"
+                    cancelled = self._cancel_events[project_id].is_set()
+                    cur["status"] = "CANCELLED" if cancelled else "FAILED"
+                    cur["stage"] = cur["status"]
                     cur["stage_label"] = f"Render thất bại: {str(e)}"
                     cur["logs"].append(f"[LỖI] {str(e)}")
             if progress_cb:

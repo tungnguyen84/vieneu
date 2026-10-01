@@ -11,13 +11,18 @@ export const QCView: React.FC<Props> = ({ projectId }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
+    setQcReport(null);
+    let active = true;
     fetch(`/api/projects/${projectId}/qc`)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error('QC failed'); return r.json(); })
       .then((data) => {
+        if (!active) return;
         setQcReport(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [projectId]);
 
   if (loading) {
@@ -99,7 +104,7 @@ export const QCView: React.FC<Props> = ({ projectId }) => {
         <div className="p-3.5 rounded bg-[#111827] border border-[#28354D]">
           <span className="text-[#64748B] block mb-1">Loudness (LUFS):</span>
           <strong className={`text-base font-mono-code ${isNotRun ? 'text-[#64748B]' : 'text-[#10B981]'}`}>
-            {isNotRun ? 'Chưa đo' : `${qcReport?.integrated_loudness_lufs} LUFS`}
+            {qcReport?.integrated_loudness_lufs == null ? 'Chưa đo' : `${qcReport.integrated_loudness_lufs} LUFS`}
           </strong>
           <span className="text-[10px] text-[#64748B] block mt-0.5">Tiêu chuẩn YouTube</span>
         </div>
@@ -107,7 +112,7 @@ export const QCView: React.FC<Props> = ({ projectId }) => {
         <div className="p-3.5 rounded bg-[#111827] border border-[#28354D]">
           <span className="text-[#64748B] block mb-1">Đỉnh âm (True Peak):</span>
           <strong className={`text-base font-mono-code ${isNotRun ? 'text-[#64748B]' : 'text-[#10B981]'}`}>
-            {isNotRun ? 'Chưa đo' : `${qcReport?.true_peak_db} dBTP`}
+            {qcReport?.true_peak_db == null ? 'Chưa đo' : `${qcReport.true_peak_db} dBTP`}
           </strong>
           <span className="text-[10px] text-[#64748B] block mt-0.5">Chống vỡ méo tiếng</span>
         </div>

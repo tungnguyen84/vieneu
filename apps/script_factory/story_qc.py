@@ -16,6 +16,7 @@ Implements Sections 8 to 20:
 from __future__ import annotations
 
 import json
+import copy
 import logging
 import re
 from dataclasses import asdict, dataclass, field
@@ -39,6 +40,7 @@ class StoryBibleQCReport:
     issues: List[Dict[str, Any]] = field(default_factory=list)
     logic_issues: List[str] = field(default_factory=list)
     rule_codes: List[str] = field(default_factory=list)
+    semantic_review: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -109,9 +111,12 @@ class StoryQCEngine:
         complete_json = getattr(self.provider, "complete_json", None)
         if not callable(complete_json):
             return None
-        from apps.script_factory.semantic_review import review_story_bible_logic, story_bible_content_hash
+        from apps.script_factory.semantic_review import review_story_bible_logic, story_bible_content_hash, valid_story_semantic_review
         key = story_bible_content_hash(bible)
-        if key not in self._bible_review_cache:
+        stored = (bible.story_qc_report or {}).get('semantic_review')
+        if valid_story_semantic_review(bible, stored):
+            return stored
+        if key not in self._bible_review_cache or self._bible_review_cache[key].get('status') == 'ERROR':
             try:
                 self._bible_review_cache[key] = review_story_bible_logic(
                     bible, lambda system, prompt: complete_json(system, prompt)
@@ -640,8 +645,9 @@ class StoryQCEngine:
                         )
 
             # A non-empty field is not automatically proof. For high-stakes
-            # accusations, messages, call logs, rumors, and a confession alone
-            # are leads; at least one independently verifiable detail is needed.
+            # Rumors and ambiguous signs are leads. An admission can establish
+            # a character's own affair, but cannot establish biological identity
+            # or a judicial finding. Semantic review checks the actual claim.
             high_stakes_text = " ".join(
                 str(value or "") for value in (bible.secret, bible.reveal_1, bible.reveal_2)
             ).lower()
@@ -657,6 +663,7 @@ class StoryQCEngine:
                     "ảnh", "video", "camera", "ghi âm", "đoạn hội thoại", "hóa đơn",
                     "đặt phòng", "định vị", "giao dịch", "chứng kiến trực tiếp", "bắt gặp",
                     "xét nghiệm", "adn", "hồ sơ", "chứng từ", "tài liệu gốc",
+                    "biên lai", "sao kê", "chuyển khoản", "thỏa thuận", "hợp đồng",
                 )
                 indirect_markers = (
                     "tin nhắn", "lịch sử cuộc gọi", "lời đồn", "nghe nói",
@@ -666,10 +673,21 @@ class StoryQCEngine:
                     if not isinstance(reveal_data, dict):
                         continue
                     evidence = str(reveal_data.get("evidence_support", "") or "").lower()
+                    reveal_text = str(getattr(bible, reveal_key, '') or '').lower()
+                    objective_claim = any(marker in reveal_text for marker in (
+                        'huyết thống', 'cha ruột', 'mẹ ruột', 'giết', 'chiếm đoạt', 'biển thủ',
+                    ))
+                    personal_admission = (
+                        not objective_claim
+                        and any(marker in reveal_text for marker in ('ngoại tình', 'vụng trộm', 'phản bội'))
+                        and any(marker in evidence for marker in ('lời thú nhận', 'thừa nhận', 'thú nhận'))
+                        and not any(marker in evidence for marker in ('không thừa nhận', 'không thú nhận'))
+                    )
                     if (
                         evidence
                         and any(marker in evidence for marker in indirect_markers)
                         and not any(marker in evidence for marker in direct_markers)
+                        and not personal_admission
                     ):
                         _add_issue(
                             "REVEAL_PROOF_OVERCLAIM",
@@ -737,7 +755,15 @@ class StoryQCEngine:
             bible_topic_score = topic_eval["score"]
             if bible_topic_score < 75.0 or getattr(bible, "topic_adherence", None) is None:
                 bible.topic_adherence = bible_topic_score
-            if topic_eval["status"] != "PASS" or bible_topic_score < 75.0:
+            # Keyword coverage of everyday clues (a train ticket, a receipt) is not
+            # topic drift: when the secret and the reveals are squarely on topic and
+            # no foreign trope appears, the story is on topic.
+            on_topic_core = (
+                topic_eval["topic_centrality_score"] >= 80
+                and topic_eval["topic_reveal_alignment"] >= 80
+                and not topic_eval.get("drift_terms")
+            )
+            if (topic_eval["status"] != "PASS" or bible_topic_score < 75.0) and not on_topic_core:
                 _add_issue(
                     "STORY_BIBLE_TOPIC_DRIFT",
                     f"Story Bible trôi dạt chủ đề: Điểm bám sát chỉ đạt {bible_topic_score}/100 "
@@ -762,6 +788,121 @@ class StoryQCEngine:
                 severity=v3_iss.get("severity", "CRITICAL"),
                 target=v3_iss.get("target", "story_bible"),
             )
+
+        # 6.5 PROCEDURAL EVIDENCE in the plot design (camera/statements handed over by
+        # a hotel, bank or building). Caught here so the repair redesigns the reveal.
+        from apps.script_factory.script_craft import procedural_evidence_hits
+        bible_texts = {field: str(getattr(bible, field, "") or "") for field in ("reveal_1", "reveal_2", "secret", "ending")}
+        bible_texts["clues"] = " ".join(str(c) for c in (bible.clues or []))
+        for field_name, text in bible_texts.items():
+            if procedural_evidence_hits([text]):
+                _add_issue(
+                    "INFEASIBLE_EVIDENCE",
+                    f"Trường {field_name} lấy bằng chứng nhờ khách sạn/ngân hàng/tòa nhà/công ty cung cấp dữ liệu riêng cho người hỏi; "
+                    "ngoài đời không xảy ra. Thay bằng bằng chứng đời thường (tận mắt thấy, người quen kể, đồ vật, máy dùng chung).",
+                    severity="CRITICAL",
+                    target=field_name,
+                )
+
+        # 6.7 CORE PROP & TRIGGER CONSISTENCY
+        # Verifies physical prop and location consistency between title, narrative_skeleton.trigger,
+        # clues, timeline, and reveals/ending.
+        title_str = str(bible.title or "").strip()
+        skeleton_dict = bible.narrative_skeleton if isinstance(bible.narrative_skeleton, dict) else {}
+        trigger_str = str(skeleton_dict.get("trigger", "") or "").strip()
+
+        prop_catalog = [
+            "áo khoác", "áo sơ mi", "áo len", "áo mưa", "áo", "kẹp tóc", "chiếc kẹp", "kẹp",
+            "son môi", "thỏi son", "vết son", "son", "chìa khóa", "bức thư", "lá thư", "thư",
+            "sổ tay", "cuốn sổ", "quyển sổ", "sổ", "nhẫn cưới", "chiếc nhẫn", "nhẫn",
+            "hóa đơn", "biên lai", "vali", "chiếc vali", "điện thoại", "tin nhắn", "đồng hồ",
+            "khăn tay", "chiếc khăn", "khăn", "bức ảnh", "tấm ảnh", "ảnh", "chiếc hộp", "hộp quà", "hộp",
+            "hồ sơ", "tập hồ sơ", "bộ hồ sơ", "vé máy bay", "vé tàu", "cà vạt", "mùi hương", "nước hoa",
+            "vòng tay", "dây chuyền", "sợi tóc", "thẻ ngân hàng", "ví tiền", "ví", "túi xách",
+        ]
+        prop_catalog.sort(key=lambda p: len(p), reverse=True)
+
+        location_catalog = [
+            ("xe", [r"\bxe\b", r"\bô tô\b", r"\bcốp xe\b", r"\bghế phụ\b", r"\bghế sau\b", r"\bgầm ghế\b"]),
+            ("phòng họp", [r"\bphòng họp\b", r"\bcuối tầng\b"]),
+            ("văn phòng", [r"\bvăn phòng\b", r"\bbàn làm việc\b", r"\bngăn kéo\b", r"\bcông ty\b"]),
+            ("phòng ngủ", [r"\bphòng ngủ\b", r"\bđầu giường\b", r"\btủ quần áo\b", r"\bgầm giường\b"]),
+            ("khách sạn", [r"\bkhách sạn\b", r"\bnhà nghỉ\b", r"\bphòng nghỉ\b"]),
+            ("quán cà phê", [r"\bquán cà phê\b", r"\bquán nước\b", r"\bquán ăn\b", r"\bnhà hàng\b"]),
+            ("nhà kho", [r"\bnhà kho\b", r"\bnhà cũ\b", r"\bgác xép\b"]),
+            ("bệnh viện", [r"\bbệnh viện\b", r"\bphòng khám\b", r"\bviện\b"]),
+        ]
+
+        def _find_primary_prop(text: str) -> Optional[str]:
+            matches = []
+            for p in prop_catalog:
+                m = re.search(r"\b" + re.escape(p) + r"\b", text, re.IGNORECASE)
+                if m:
+                    is_container = bool(re.search(r"\b(trong|dưới|sau|ở|tại)\s+(?:túi\s+|cốp\s+|ngăn\s+|hộp\s+)?" + re.escape(p) + r"\b", text, re.IGNORECASE))
+                    matches.append((1 if is_container else 0, m.start(), -len(p), p))
+            matches.sort()
+            return matches[0][3] if matches else None
+
+        prop_in_title = _find_primary_prop(title_str)
+        prop_in_trigger = _find_primary_prop(trigger_str)
+
+        loc_in_title = next(
+            (loc_name for loc_name, loc_pats in location_catalog if any(re.search(pat, title_str, re.IGNORECASE) for pat in loc_pats)),
+            None
+        )
+        loc_in_trigger = next(
+            (loc_name for loc_name, loc_pats in location_catalog if any(re.search(pat, trigger_str, re.IGNORECASE) for pat in loc_pats)),
+            None
+        )
+
+        if loc_in_title and loc_in_trigger and loc_in_title != loc_in_trigger:
+            title_pats = next(pats for name, pats in location_catalog if name == loc_in_title)
+            if not any(re.search(pat, trigger_str, re.IGNORECASE) for pat in title_pats):
+                _add_issue(
+                    "PROP_LOCATION_CONTRADICTION",
+                    f"Địa điểm xuất hiện của vật chứng mâu thuẫn: Tiêu đề đặt ở '{loc_in_title}', nhưng narrative_skeleton.trigger đặt ở '{loc_in_trigger}'. Cần thống nhất nơi phát hiện.",
+                    severity="CRITICAL",
+                    target="narrative_skeleton.trigger",
+                )
+
+        if prop_in_title and prop_in_trigger and prop_in_title != prop_in_trigger:
+            if not re.search(r"\b" + re.escape(prop_in_title) + r"\b", trigger_str, re.IGNORECASE):
+                _add_issue(
+                    "CORE_PROP_CONTRADICTION",
+                    f"Tiêu đề hứa hẹn vật chứng '{prop_in_title}', nhưng Trigger lại khởi đầu bằng vật chứng '{prop_in_trigger}' mà không kết nối; cốt truyện bị phân mảnh ngay từ đầu.",
+                    severity="CRITICAL",
+                    target="title",
+                )
+
+        primary_prop = prop_in_title or prop_in_trigger
+        if primary_prop:
+            prop_stem = re.sub(r"^(chiếc|tấm|bức|lá|cuốn|quyển|bộ|tập)\s+", "", primary_prop).strip()
+            prop_pats = [r"\b" + re.escape(primary_prop) + r"\b"]
+            if prop_stem and prop_stem != primary_prop:
+                prop_pats.append(r"\b" + re.escape(prop_stem) + r"\b")
+
+            clues_text = " ".join(str(c) for c in (bible.clues or [])) + " " + json.dumps(bible.structured_clues or [], ensure_ascii=False)
+            timeline_text = " ".join(str(t) for t in (bible.timeline or []))
+            resolution_text = f"{bible.reveal_1} {bible.reveal_2} {bible.secret} {bible.ending}".lower()
+
+            in_clues = any(re.search(pat, clues_text, re.IGNORECASE) for pat in prop_pats)
+            in_timeline = any(re.search(pat, timeline_text, re.IGNORECASE) for pat in prop_pats)
+            in_resolution = any(re.search(pat, resolution_text, re.IGNORECASE) for pat in prop_pats)
+
+            if not (in_clues or in_timeline):
+                _add_issue(
+                    "UNRESOLVED_CORE_PROP",
+                    f"Vật chứng cốt lõi '{primary_prop}' trong Tiêu đề/Trigger không được đưa vào chuỗi manh mối (clues hoặc timeline) để nhân vật kiểm chứng.",
+                    severity="CRITICAL",
+                    target="clues",
+                )
+            if not in_resolution:
+                _add_issue(
+                    "UNRESOLVED_CORE_PROP",
+                    f"Vật chứng cốt lõi '{primary_prop}' không có lời giải đáp hoặc hồi đáp trong Bước ngoặt (reveal_1, reveal_2) hay Kết thúc (ending).",
+                    severity="CRITICAL",
+                    target="reveal_2",
+                )
 
         # 7. SEMANTIC PLOT LOGIC (LLM): reveals the narrator cannot know, illegal
         # endings, verdicts without proof. Feeds the existing AI repair rounds.
@@ -791,6 +932,7 @@ class StoryQCEngine:
             issues=issues,
             logic_issues=logic_issues,
             rule_codes=rule_codes,
+            semantic_review=semantic,
         )
         bible.story_qc_report = report.to_dict()
         return report
@@ -808,6 +950,12 @@ class StoryQCEngine:
         """
         if report is None:
             report = self.audit_story_bible(bible)
+
+        # Transport/decoder failures say nothing about the plot. Do not rewrite
+        # a draft merely because its reviewer was unavailable.
+        if report.issues and all(issue.get('rule') == 'SEMANTIC_REVIEW_FAILED' for issue in report.issues):
+            bible.story_qc_report = report.to_dict()
+            return bible
 
         if "HOST_CHARACTER_NAME_COLLISION" in report.rule_codes:
             used_names = {
@@ -843,6 +991,14 @@ class StoryQCEngine:
         if active_provider and hasattr(active_provider, "repair_story_bible") and report.issues:
             cur_bible = bible
             cur_report = report
+            best_bible, best_report = copy.deepcopy(bible), report
+            from apps.script_factory.semantic_review import story_bible_content_hash
+            seen = {story_bible_content_hash(bible)}
+            stalled = 0
+            def severity(report):
+                return (report.status != 'PASS', sum(i.get('severity') == 'CRITICAL' for i in report.issues), len(report.issues))
+            def problem_keys(report):
+                return {(i.get('rule'), i.get('target')) for i in report.issues}
             round_issues = list(report.issues)
             for round_idx in range(3):
                 try:
@@ -852,13 +1008,37 @@ class StoryQCEngine:
                         if isinstance(iss, dict) and iss.get("target") and hasattr(cur_bible, str(iss.get("target")))
                     }
                     before = {t: json.dumps(getattr(cur_bible, t), ensure_ascii=False, default=str) for t in targets}
-                    repaired, _, _ = active_provider.repair_story_bible(cur_bible, round_issues)
+                    repaired, _, _ = active_provider.repair_story_bible(copy.deepcopy(cur_bible), round_issues)
                     untouched = sorted(
                         t for t in targets
                         if json.dumps(getattr(repaired, t), ensure_ascii=False, default=str) == before[t]
                     )
                     recheck = self.audit_story_bible(repaired)
                     repaired.story_qc_report = recheck.to_dict()
+                    for issue in recheck.issues:
+                        logger.info('[StoryQC %s] %s', issue.get('rule'), issue.get('message'))
+                    if recheck.issues and all(issue.get('rule') == 'SEMANTIC_REVIEW_FAILED' for issue in recheck.issues):
+                        repaired.story_qc_report = recheck.to_dict()
+                        return repaired
+                    if recheck.status == 'PASS':
+                        return repaired
+                    fingerprint = story_bible_content_hash(repaired)
+                    repeated = fingerprint in seen
+                    changed_problems = problem_keys(recheck) != problem_keys(cur_report)
+                    if not repeated and (severity(recheck) < severity(best_report) or (
+                        severity(recheck) == severity(best_report) and changed_problems
+                    )):
+                        best_bible, best_report = copy.deepcopy(repaired), recheck
+                    if not repeated and (severity(recheck) < severity(cur_report) or (
+                        severity(recheck) == severity(cur_report) and changed_problems
+                    )):
+                        stalled = 0
+                    else:
+                        stalled += 1
+                    if repeated or stalled >= 2:
+                        logger.warning('[StoryQCEngine] Repair stopped: repeated content or no QC improvement; retaining best draft.')
+                        return best_bible
+                    seen.add(fingerprint)
                     cur_bible = repaired
                     cur_report = recheck
                     logger.info(
@@ -888,8 +1068,7 @@ class StoryQCEngine:
                 except Exception as e:
                     logger.warning(f"[StoryQCEngine] Provider repair_story_bible round {round_idx + 1} failed: {e}.")
                     break
-            if cur_bible != bible:
-                return cur_bible
+            return best_bible
 
         protag_name = (
             bible.protagonist.get("name", "Nhân vật")

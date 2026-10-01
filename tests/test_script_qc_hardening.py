@@ -263,7 +263,7 @@ def test_qc_detects_melodramatic_cliche_density_and_unsafe_legal_claim(qc_env):
 
     report = qc.run_qc(script, bible)
     assert report.status == "FAIL"  # unsafe legal claims are a hard fail
-    rules = {iss.get("rule") for iss in report.evidence_issues}
+    rules = {iss.get("rule") for iss in [*report.evidence_issues, *report.warnings]}
     assert "MELODRAMATIC_CLICHE_DENSITY" in rules
     assert "LEGAL_CLAIM_SAFETY" in rules
 
@@ -292,7 +292,7 @@ def test_qc_detects_overlong_ending_proportion(qc_env):
     report = qc.run_qc(script, bible)
     assert report.status == "FAIL"
     assert any(iss.get("rule") == "PREMATURE_SIGNOFF" for iss in report.evidence_issues)
-    assert any(iss.get("rule") == "ENDING_PROPORTION_VIOLATION" for iss in report.evidence_issues)
+    assert any(iss.get("rule") == "ENDING_PROPORTION_VIOLATION" for iss in [*report.evidence_issues, *report.warnings])  # style: non-blocking warning
 
 
 def test_auto_repair_resolves_hardened_qc_violations(qc_env):
@@ -593,7 +593,7 @@ def test_melodrama_density_v2(qc_env):
 
     report = qc.run_qc(script, bible)
     assert report.status == "NEEDS_REVISION"
-    assert any(iss.get("rule") == "MELODRAMA_DENSITY_V2" for iss in report.evidence_issues)
+    assert any(iss.get("rule") == "MELODRAMA_DENSITY_V2" for iss in [*report.evidence_issues, *report.warnings])  # style: non-blocking warning
     assert report.scores.get("melodrama_density_v2", 100.0) < 70.0
 
     revised, final_rep = rev.auto_revise_and_recheck(script, bible, report)
@@ -629,8 +629,98 @@ def test_ending_semantic_repetition(qc_env):
 
     report = qc.run_qc(script, bible)
     assert report.status == "NEEDS_REVISION"
-    assert any(iss.get("rule") == "ENDING_SEMANTIC_REPETITION" for iss in report.evidence_issues)
+    assert any(iss.get("rule") == "ENDING_SEMANTIC_REPETITION" for iss in [*report.evidence_issues, *report.warnings])  # style: non-blocking warning
 
     revised, final_rep = rev.auto_revise_and_recheck(script, bible, report)
     assert final_rep.status == "PASS"
+
+
+
+def test_style_findings_are_warnings_and_do_not_block_pass(qc_env):
+    """A script whose only findings are judgement/style calls passes, with warnings attached."""
+    qc: ScriptQCEngine = qc_env["qc"]
+    report = qc.run_qc(FullScript(episode_id="EP_W", title="t", host={"id": "MINH"}, segments=_base_valid_segments()), StoryBible(episode_id="EP_W", title="t", protagonist={"name": "Tuấn"}))
+    blocking_rules = {i.get("rule") for i in report.evidence_issues}
+    assert all(i.get("blocking") is False for i in report.warnings)
+    assert not ({i.get("rule") for i in report.warnings} & blocking_rules)
+
+
+def test_on_topic_story_with_different_wording_is_not_topic_drift(qc_env):
+    """An affair story that says 'quan hệ ngoài hôn nhân' instead of 'ngoại tình' is on topic."""
+    qc: ScriptQCEngine = qc_env["qc"]
+    segs = _base_valid_segments()
+    segs[1].text = "Quân tìm thấy chiếc điện thoại cũ của vợ trong hộp đồ gia đình, với tin nhắn của một đồng nghiệp."
+    segs[5].text = "Lan thừa nhận cô đã có mối quan hệ ngoài hôn nhân với Đức, đồng nghiệp cùng công ty, suốt tám tháng."
+    bible = StoryBible(
+        episode_id="EP_TOPIC", title="Chiếc điện thoại", protagonist={"name": "Quân"},
+        original_user_topic="bí mật người vợ ngoại tình",
+        clues=["Tin nhắn với đồng nghiệp trong điện thoại cũ", "Lịch làm việc không khớp"],
+        reveal_1="Người nhắn tin là Đức, đồng nghiệp của Lan.",
+        reveal_2="Lan thừa nhận mối quan hệ ngoài hôn nhân với Đức.",
+    )
+    report = qc.run_qc(FullScript(episode_id="EP_TOPIC", title="t", host={"id": "MINH"}, segments=segs), bible)
+    assert not any(i.get("rule") == "FINAL_SCRIPT_TOPIC_DRIFT" for i in report.evidence_issues)
+
+
+def test_letter_voice_mixup_is_blocking(qc_env):
+    """Only the letter sender 'writes'; another character writing the letter is an objective error."""
+    qc: ScriptQCEngine = qc_env["qc"]
+    segs = _base_valid_segments()
+    segs[6].text = "Lan viết rằng lúc ấy anh vẫn muốn tin mọi chuyện chỉ liên quan đến công việc."
+    bible = StoryBible(
+        episode_id="EP_VOICE", title="t", protagonist={"name": "Dũng"},
+        supporting_characters=[{"name": "Trần Ngọc Lan", "role": "Vợ"}],
+    )
+    report = qc.run_qc(FullScript(episode_id="EP_VOICE", title="t", host={"id": "MINH"}, segments=segs), bible)
+    assert any(i.get("rule") == "LETTER_VOICE_MIXUP" for i in report.evidence_issues)
+    assert report.status != "PASS"
+
+
+def test_story_bible_prop_location_contradiction_blocks():
+    """EP2009 audit regression: coat in meeting room (title) vs coat in car (trigger) must block Story Bible."""
+    from apps.script_factory.story_qc import StoryQCEngine
+
+    bible = StoryBible(
+        episode_id="EP_PROP_LOC",
+        title="Chiếc Áo Khoác Trong Phòng Họp Cuối Tầng",
+        protagonist={"name": "Ngọc Anh", "age": 30},
+        narrative_skeleton={"trigger": "Ngọc Anh tìm thấy áo khoác nữ trong xe Quang."},
+        clues=["Hóa đơn sửa xe", "Lịch trình bất thường"],
+        reveal_1="Người đi cùng Quang là Thu Hà.",
+        reveal_2="Thu Hà thừa nhận mối quan hệ ngoài luồng.",
+        secret="Quang ngoại tình với Thu Hà.",
+        ending="Ngọc Anh quyết định ly hôn.",
+    )
+    report = StoryQCEngine().audit_story_bible(bible)
+    assert report.status == "FAIL"
+    assert "PROP_LOCATION_CONTRADICTION" in report.rule_codes
+
+
+def test_story_bible_unresolved_core_prop_blocks():
+    """EP2009 audit regression: core prop in title/trigger never explained in reveal/ending must block."""
+    from apps.script_factory.story_qc import StoryQCEngine
+
+    bible = StoryBible(
+        episode_id="EP_UNRESOLVED_PROP",
+        title="Chiếc Áo Khoác Trong Phòng Họp Cuối Tầng",
+        protagonist={"name": "Ngọc Anh", "age": 30},
+        narrative_skeleton={"trigger": "Ngọc Anh tìm thấy áo khoác nữ trong phòng họp cuối tầng."},
+        clues=["Kẹp tóc lạ", "Lịch họp bất thường"],  # does not check áo khoác
+        reveal_1="Người để quên kẹp tóc là Thu Hà.",  # does not resolve áo khoác
+        reveal_2="Thu Hà thừa nhận mối quan hệ ngoài luồng.",
+        secret="Quang ngoại tình với Thu Hà.",
+        ending="Ngọc Anh quyết định ly hôn.",
+    )
+    report = StoryQCEngine().audit_story_bible(bible)
+    assert report.status == "FAIL"
+    assert "UNRESOLVED_CORE_PROP" in report.rule_codes
+
+
+def test_objective_logic_rules_block_when_critical(qc_env):
+    """POV_KNOWLEDGE_VIOLATION, TIMELINE_ORDER_ERROR, REPEATED_DISCOVERY with CRITICAL severity must block."""
+    from apps.script_factory.narrative_rules import is_blocking_logic_issue
+
+    for rule in ["POV_KNOWLEDGE_VIOLATION", "TIMELINE_ORDER_ERROR", "REPEATED_DISCOVERY"]:
+        issue = {"rule": rule, "severity": "CRITICAL", "message": "Objective logic error"}
+        assert is_blocking_logic_issue(issue) is True, f"{rule} should be blocking"
 

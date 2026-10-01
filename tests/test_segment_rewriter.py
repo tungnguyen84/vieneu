@@ -99,3 +99,42 @@ def test_deterministic_hook_template_does_not_overwrite_ai_rewrite():
     bible = StoryBible(episode_id="EP_RW", title="t", protagonist={"name": "Tuấn"}, clues=["một manh mối"])
     repaired = apply_targeted_repairs(script, bible, report, preserve_segment_ids={"001"})
     assert repaired.segments[0].text.startswith("Tuấn xoay chiếc USB")
+
+
+def test_repair_context_includes_later_clue_channel_timeline_and_ending():
+    from apps.script_factory.segment_rewriter import build_prompt
+    bible = StoryBible(episode_id='EP_RW', title='t', protagonist={'name': 'Hoa'},
+                       timeline=['Hoa witnessed the gate scene in May 2024'],
+                       clues=['clue'] * 4 + ['Thu sent the recording by anonymous email'],
+                       ending='Thu later told Hoa about the company response')
+    prompt = build_prompt(_script(), bible, {'002': ['Fix the channel']})
+    assert 'Thu sent the recording by anonymous email' in prompt
+    assert 'Hoa witnessed the gate scene in May 2024' in prompt
+    assert 'Thu later told Hoa about the company response' in prompt
+
+
+def test_repeated_discovery_can_be_shortened_without_inventing_another_discovery():
+    script = _script()
+    script.segments[1].text = 'Hoa mở lại chiếc laptop, đọc lại bản nháp email đã xem, rồi một lần nữa phát hiện Thành đã lợi dụng Thu để giữ vị trí của mình.'
+    report = QCReport('EP_RW', 'NEEDS_REVISION', evidence_issues=[
+        {'segment_id':'002', 'rule':'REPEATED_DISCOVERY', 'message':'Email đã được đọc trước đó.'}])
+    transition = 'Hoa đặt máy tính xuống, chờ Thành về.'
+    def rewrite(_system, prompt):
+        assert 'được rút ngắn thành câu nối mạch' in prompt
+        return json.dumps({'segments':[{'id':'002', 'text':transition}]}), 1, 1
+    result, _, _, rewritten = rewrite_flagged_segments(script, StoryBible('EP_RW', 't', {'name':'Hoa'}), report, rewrite)
+    assert rewritten == {'002'} and result.segments[1].text == transition
+
+
+def test_repeated_scene_dialogue_can_be_shortened_without_length_rejection():
+    script = _script()
+    script.segments[1].text = 'Khải hỏi nhân viên bán hàng: "Những hôm My nói phải kiểm kê muộn, chị ấy thường rời cửa hàng lúc nào và đi cùng với ai?"'
+    report = QCReport('EP_RW', 'NEEDS_REVISION', evidence_issues=[
+        {'segment_id': '002', 'rule': 'REPEATED_SCENE_DIALOGUE', 'message': 'Cảnh này lặp lại cuộc trò chuyện ở [001].'}
+    ])
+    short_transition = 'Khải chào người bán hàng rồi bước ra xe.'
+    def rewrite(_system, prompt):
+        return json.dumps({'segments': [{'id': '002', 'text': short_transition}]}), 1, 1
+    result, _, _, rewritten = rewrite_flagged_segments(script, StoryBible('EP_RW', 't', {'name': 'Khải'}), report, rewrite)
+    assert rewritten == {'002'} and result.segments[1].text == short_transition
+

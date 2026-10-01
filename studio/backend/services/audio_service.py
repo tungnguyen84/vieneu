@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 import os
 import re
@@ -9,6 +10,7 @@ import shutil
 import sys
 import threading
 import time
+import uuid
 from pathlib import Path
 from typing import Any, BinaryIO, Dict, List, Optional
 
@@ -24,9 +26,12 @@ if VENV_SITE.exists() and str(VENV_SITE) not in sys.path:
 
 from apps.production_story import build_master_audio, generate_single_segment_takes, get_all_available_voices
 from studio.backend.services.artifact_lineage import require_current_full_script
+from studio.backend.services.artifact_files import file_sha256
+from studio.backend.services.audio_timing import measure_segment_timeline
 
 PROJECTS_DIR = BASE_DIR / "projects"
 PILOT_03_AUDIO = BASE_DIR / "production_pilot_03"
+logger = logging.getLogger('SCCStudio.AudioService')
 
 PROFILE_SPEEDS = {
     "HOOK": 0.98,
@@ -96,7 +101,7 @@ def normalize_script_segment(
         speed = max(0.88, min(1.05, float(global_speed)))
     seg["speed"] = max(0.88, min(1.05, speed))
 
-    seg["pause_before"] = float(seg.get("pause_before", 0.0) or 0.0)
+    seg["pause_before"] = float(seg.get("pause_before", 0.05) or 0.0)
     seg["pause_after"] = float(seg.get("pause_after", 0.25) or 0.25)
     seg["text"] = str(seg.get("text", "")).strip()
     seg["importance"] = str(seg.get("importance") or "normal").lower()
@@ -117,6 +122,42 @@ class AudioService:
     def _project_audio_dir(self, project_id: str) -> Path:
         return PROJECTS_DIR / project_id / "audio"
 
+    def require_current_audio(self, project_id: str) -> Dict[str, Any]:
+        lineage = require_current_full_script(project_id, PROJECTS_DIR)
+        audio_dir = self._project_audio_dir(project_id)
+        try:
+            report = json.loads((audio_dir / "generation_report.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            raise ValueError("Audio STALE: chưa có chứng cứ audio thuộc kịch bản hiện tại; cần tạo/import lại")
+        if (report.get("status") != "COMPLETE" or not report.get("full_episode")
+                or report.get("script_content_hash") != lineage["script_content_hash"]
+                or report.get("story_content_hash") != lineage["story_content_hash"]
+                or report.get("script_generation_request_id") != lineage["generation_request_id"]
+                or report.get("story_generation_request_id") != lineage["story_generation_request_id"]):
+            raise ValueError("Audio STALE: audio không thuộc toàn bộ kịch bản/Story Bible hiện tại")
+        dry = Path(report.get("narration_path", ""))
+        if not dry.is_file() or not report.get("narration_sha256") or file_sha256(dry) != report["narration_sha256"]:
+            raise ValueError("Audio STALE: file narration đã thay đổi hoặc không còn tồn tại")
+        if report.get("mix_sha256"):
+            final = audio_dir / "final_mix.wav"
+            if not final.is_file() or file_sha256(final) != report["mix_sha256"]:
+                raise ValueError("Audio STALE: bản mix đã thay đổi; cần hòa âm lại")
+        return report
+
+    def get_measured_timing(self, project_id: str) -> List[Dict[str, Any]]:
+        report = self.require_current_audio(project_id)
+        path = self._project_audio_dir(project_id) / "segment_timing.json"
+        if not path.is_file() or file_sha256(path) != report.get("timing_sha256"):
+            raise ValueError("Timing STALE: cần tạo lại narration hoặc cung cấp timing đã đo cho audio import")
+        events = json.loads(path.read_text(encoding="utf-8"))
+        script = json.loads(self._script_path(project_id).read_text(encoding="utf-8"))
+        ids = [normalize_script_segment(s, i)["id"] for i, s in enumerate(script["segments"])]
+        if not isinstance(events, list) or [e.get("id") for e in events] != ids:
+            raise ValueError("Timing không khớp ID/thứ tự phân đoạn hiện tại")
+        if any(e.get("timing_source") != "MEASURED_WAV" for e in events):
+            raise ValueError("Timing đang là ước tính, cần đo từ WAV thật")
+        return events
+
     def _script_path(self, project_id: str) -> Optional[Path]:
         path = PROJECTS_DIR / project_id / "script" / "full_script.json"
         return path if path.exists() else None
@@ -126,6 +167,17 @@ class AudioService:
         project_audio = self._project_audio_dir(project_id)
         is_legacy = project_id in {"EP003", "EP011"}
         legacy_audio = (PILOT_03_AUDIO / project_id) if is_legacy else None
+        try:
+            binding = json.loads((project_audio / "generation_report.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            binding = {}
+        if binding.get("status") == "COMPLETE":
+            if stem == "music" and not binding.get("mix_sha256"):
+                return None
+            if stem == "final" and not binding.get("mix_sha256"):
+                dry = Path(binding.get("narration_path", ""))
+                if dry.is_file():
+                    return dry
 
         if stem == "music":
             music_candidates = [
@@ -237,10 +289,16 @@ class AudioService:
 
         from studio.backend.services.artifact_lineage import validate_full_script
         lineage = validate_full_script(project_id, PROJECTS_DIR)
+        try:
+            self.require_current_audio(project_id)
+            audio_current, audio_reason = True, None
+        except ValueError as exc:
+            audio_current, audio_reason = False, str(exc)
 
         if not master:
             return {
                 "available": False,
+                "audio_current": False, "audio_stale_reason": audio_reason,
                 "duration_sec": 0.0,
                 "sample_rate": 0,
                 "channels": 0,
@@ -328,8 +386,8 @@ class AudioService:
                 "is_high_coverage": cov.get("is_high_coverage", False),
                 "ducking_enabled": mix_report_data.get("ducking_enabled", True),
                 "bgm_volume_db": bgm_vol,
-                "master_integrated_lufs": mix_report_data.get("master_integrated_lufs", -14.0),
-                "master_true_peak_db": mix_report_data.get("master_true_peak_db", -1.0),
+                "master_integrated_lufs": mix_report_data.get("master_integrated_lufs"),
+                "master_true_peak_db": mix_report_data.get("master_true_peak_db"),
                 "cues": music_cues_summary,
             }
 
@@ -354,6 +412,7 @@ class AudioService:
 
         return {
             "available": True,
+            "audio_current": audio_current, "audio_stale_reason": audio_reason,
             "duration_sec": round(duration, 3),
             "sample_rate": metadata["sample_rate"],
             "channels": metadata["channels"],
@@ -436,6 +495,7 @@ class AudioService:
         return {"voices": voices, "profile_speeds": PROFILE_SPEEDS}
 
     def import_audio_file(self, project_id: str, source: Path) -> Dict[str, Any]:
+        lineage = require_current_full_script(project_id, PROJECTS_DIR)
         if not source.exists():
             raise FileNotFoundError(f"Không tìm thấy file audio: {source}")
         extension = source.suffix.lower()
@@ -445,6 +505,22 @@ class AudioService:
         target_dir.mkdir(parents=True, exist_ok=True)
         destination = target_dir / f"{project_id}_imported_master{extension}"
         shutil.copy2(source, destination)
+        # Keep the imported narration separate from an older TTS dry stem.
+        dry = target_dir / "narration_dry.wav"
+        import subprocess
+        decoded = target_dir / f"import-{uuid.uuid4().hex}.wav"
+        try:
+            subprocess.run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", str(destination),
+                            "-vn", "-c:a", "pcm_s16le", str(decoded)], check=True, capture_output=True, timeout=300)
+            decoded.replace(dry)
+        finally:
+            decoded.unlink(missing_ok=True)
+        report = {"status": "COMPLETE", "full_episode": True, "origin": "IMPORTED",
+                  "script_content_hash": lineage["script_content_hash"], "story_content_hash": lineage["story_content_hash"],
+                  "script_generation_request_id": lineage["generation_request_id"],
+                  "story_generation_request_id": lineage["story_generation_request_id"],
+                  "narration_path": str(dry.resolve()), "narration_sha256": file_sha256(dry)}
+        (target_dir / "generation_report.json").write_text(json.dumps(report), encoding="utf-8")
         return self.get_audio_info(project_id)
 
     def save_upload(self, project_id: str, filename: str, source: BinaryIO, purpose: str) -> Path:
@@ -486,7 +562,7 @@ class AudioService:
     def auto_mix_background_music(
         self, project_id: str, enable_ducking: bool = True, target_lufs: float = -14.0, bgm_volume_db: float = 0.0
     ) -> Dict[str, Any]:
-        require_current_full_script(project_id, PROJECTS_DIR)
+        audio_binding = self.require_current_audio(project_id)
         from apps.music_engine import (
             generate_cue_sheet_from_segments,
             build_final_mix,
@@ -499,7 +575,7 @@ class AudioService:
         project_audio.mkdir(parents=True, exist_ok=True)
 
         # 1. Xác định voice audio mộc
-        voice_path = self.get_audio_stem_path(project_id, stem="dry")
+        voice_path = Path(audio_binding["narration_path"])
         if not voice_path or not voice_path.exists():
             voice_path = self.get_audio_master_path(project_id)
 
@@ -528,73 +604,7 @@ class AudioService:
             raise ValueError("File audio có thời lượng bằng 0.")
 
         # 3. Thu thập hoặc xây dựng timeline events
-        timeline_events = []
-        timing_file = None
-        for candidate_timing in [
-            project_audio / "segment_timing.json",
-            project_audio / "tts" / "segment_timing.json",
-            PILOT_03_AUDIO / project_id / "audio" / "segment_timing.json",
-            PILOT_03_AUDIO / project_id / "segment_timing.json",
-            PILOT_03_AUDIO / project_id / "reports" / "segment_timing.json",
-        ]:
-            if candidate_timing.exists():
-                timing_file = candidate_timing
-                break
-
-        if timing_file:
-            try:
-                raw_timings = json.loads(timing_file.read_text(encoding="utf-8"))
-                if isinstance(raw_timings, list) and raw_timings:
-                    timeline_events = raw_timings
-            except Exception:
-                timeline_events = []
-
-        if not timeline_events:
-            script_path = self._script_path(project_id)
-            if script_path and script_path.exists():
-                script_data = json.loads(script_path.read_text(encoding="utf-8"))
-                segments = script_data.get("segments", script_data if isinstance(script_data, list) else [])
-                if segments:
-                    total_words = sum(max(1, len(str(s.get("text", "")).split())) for s in segments)
-                    pause_budget = sum(float(s.get("pause_after", 0.18) or 0.18) for s in segments)
-                    speech_budget = max(5.0, total_duration - pause_budget)
-                    current_sec = 0.0
-                    for idx, seg in enumerate(segments):
-                        words = max(1, len(str(seg.get("text", "")).split()))
-                        seg_dur = (words / total_words) * speech_budget
-                        p_after = float(seg.get("pause_after", 0.18) or 0.18)
-                        p_before = float(seg.get("pause_before", 0.0) or 0.0)
-                        timeline_events.append({
-                            "id": str(seg.get("id") or seg.get("segment_id") or idx + 1).zfill(3),
-                            "speaker": seg.get("speaker", "MINH"),
-                            "delivery_profile": (seg.get("delivery_profile") or "NORMAL").upper(),
-                            "text": seg.get("text", ""),
-                            "speech_start_sec": current_sec,
-                            "speech_end_sec": current_sec + seg_dur,
-                            "duration_sec": seg_dur,
-                            "pause_before": p_before,
-                            "pause_after": p_after,
-                            "importance": str(seg.get("importance") or "normal").lower(),
-                            "music_cue": str(seg.get("music_cue") or "none"),
-                            "music_obj": seg.get("music", {}),
-                        })
-                        current_sec += seg_dur + p_after
-
-        if not timeline_events:
-            t1 = min(15.0, total_duration * 0.1)
-            t2 = total_duration * 0.35
-            t3 = total_duration * 0.65
-            t4 = total_duration * 0.8
-            t5 = max(t4 + 5.0, total_duration - 15.0)
-            timeline_events = [
-                {"id": "001", "delivery_profile": "HOOK", "speech_start_sec": 0.0, "speech_end_sec": t1, "speaker": "MINH", "text": "Mở đầu"},
-                {"id": "002", "delivery_profile": "MYSTERY", "speech_start_sec": t1 + 1.0, "speech_end_sec": t2, "speaker": "MINH", "text": "Khám phá"},
-                {"id": "003", "delivery_profile": "TENSION", "speech_start_sec": t2 + 1.0, "speech_end_sec": t3, "speaker": "MINH", "text": "Căng thẳng"},
-                {"id": "004", "delivery_profile": "REVEAL", "speech_start_sec": t3 + 1.0, "speech_end_sec": t4, "speaker": "MINH", "text": "Hé lộ"},
-                {"id": "005", "delivery_profile": "EMOTIONAL", "speech_start_sec": t4 + 1.0, "speech_end_sec": t5, "speaker": "MINH", "text": "Lắng đọng"},
-                {"id": "006", "delivery_profile": "ENDING", "speech_start_sec": t5 + 1.0, "speech_end_sec": total_duration, "speaker": "MINH", "text": "Kết thúc"},
-            ]
-
+        timeline_events = self.get_measured_timing(project_id)
         # 4. Gán narrative music cue theo chuẩn Audio Formula V1
         annotated_events = []
         for ev in timeline_events:
@@ -684,6 +694,10 @@ class AudioService:
         (project_audio / "segment_timing.json").write_text(
             json.dumps(timeline_events, ensure_ascii=False, indent=2), encoding="utf-8"
         )
+        audio_binding["timing_sha256"] = file_sha256(project_audio / "segment_timing.json")
+        audio_binding["mix_sha256"] = file_sha256(project_audio / "final_mix.wav")
+        audio_binding["mix_config"] = mix_config
+        (project_audio / "generation_report.json").write_text(json.dumps(audio_binding, ensure_ascii=False, indent=2), encoding="utf-8")
 
         return self.get_audio_info(project_id)
 
@@ -724,8 +738,12 @@ class AudioService:
             if not raw_segments:
                 raise ValueError("Không tìm thấy phân đoạn được yêu cầu trong Full Script hiện tại")
 
-        work_dir = self._project_audio_dir(project_id) / "tts"
+        audio_dir = self._project_audio_dir(project_id)
+        preview = bool(segment_ids)
+        run_id = uuid.uuid4().hex
+        work_dir = (audio_dir / "previews" / run_id / "tts") if preview else (audio_dir / "tts")
         work_dir.mkdir(parents=True, exist_ok=True)
+        logger.info('Khởi tạo VieNeu thật, voice %s; %s phân đoạn', voice_id, len(raw_segments))
         engine = self._get_engine()
         project_state: Dict[str, Any] = {"segments": {}}
         generated_segments = []
@@ -745,10 +763,13 @@ class AudioService:
             )
             if not ok:
                 raise RuntimeError(f"Lỗi tạo audio cho phân đoạn {segment['id']}: {message}")
+            logger.info('Đã tạo WAV phân đoạn %s (%s/%s), tốc độ %.3fx',
+                        segment['id'], index + 1, len(raw_segments), segment['speed'])
             project_state["segments"][segment["id"]] = result
             generated_segments.append(segment)
 
         (work_dir / "project_state.json").write_text(json.dumps(project_state, ensure_ascii=False, indent=2), encoding="utf-8")
+        logger.info('Ghép master và đo thời gian từng WAV')
         ok, message, wav_output, _ = build_master_audio(
             project_dir=work_dir, segments=generated_segments, project_state=project_state,
             enable_music=False, enable_room_tone=False,
@@ -756,6 +777,21 @@ class AudioService:
         )
         if not ok or not wav_output:
             raise RuntimeError(message or "Không ghép được audio master")
+        import soundfile as sf
+        source_master = Path(wav_output)
+        master_info = sf.info(source_master)
+        timing, total_frames = measure_segment_timeline(work_dir, generated_segments, project_state, master_info.samplerate)
+        if abs(total_frames - master_info.frames) > 1:
+            raise ValueError("Master không khớp timeline WAV đã đo; dừng để tránh Visual/BGM sai timing")
+        if preview:
+            return {"available": True, "preview": True, "file_path": str(source_master),
+                    "duration_sec": master_info.duration,
+                    "generation": {"segments": len(generated_segments), "full_episode": False,
+                                   "requested_segment_ids": segment_ids, "voice_id": voice_id}}
+        # Validate before replacing any previously published master or stem.
+        current = require_current_full_script(project_id, PROJECTS_DIR)
+        if current["script_content_hash"] != lineage["script_content_hash"] or current["story_content_hash"] != lineage["story_content_hash"]:
+            raise ValueError("Kịch bản thay đổi trong lúc tạo audio; output không được duyệt")
         master_path = self._project_audio_dir(project_id) / "narration.wav"
         source_master = Path(wav_output)
         if source_master.resolve() != master_path.resolve():
@@ -765,19 +801,32 @@ class AudioService:
         dry_path = self._project_audio_dir(project_id) / "narration_dry.wav"
         shutil.copy2(master_path, dry_path)
 
-        # Nếu bật tự động chèn nhạc nền, tiến hành auto-mix BGM ngay
-        if enable_music:
-            self.auto_mix_background_music(project_id, enable_ducking=True)
-
         report = {
+            "status": "COMPLETE", "full_episode": True, "origin": "VIENEU",
             "project_id": project_id, "voice_id": voice_id, "contextual_speed": contextual_speed,
             "global_speed": global_speed, "enable_music": enable_music,
             "segments": len(generated_segments), "profile_speeds": PROFILE_SPEEDS,
             "requested_segment_ids": segment_ids or [],
             "script_generation_request_id": lineage["generation_request_id"],
             "story_generation_request_id": lineage["story_generation_request_id"],
+            "script_content_hash": lineage["script_content_hash"], "story_content_hash": lineage["story_content_hash"],
+            "narration_path": str(dry_path.resolve()), "narration_sha256": file_sha256(dry_path),
         }
+        # Do not publish output if Script changed while synthesis was running.
+        current = require_current_full_script(project_id, PROJECTS_DIR)
+        if current["script_content_hash"] != report["script_content_hash"] or current["story_content_hash"] != report["story_content_hash"]:
+            raise ValueError("Kịch bản thay đổi trong lúc tạo audio; output không được duyệt")
+        timing_path = audio_dir / "segment_timing.json"
+        timing_path.write_text(json.dumps(timing, ensure_ascii=False, indent=2), encoding="utf-8")
+        report["timing_sha256"] = file_sha256(timing_path)
         (self._project_audio_dir(project_id) / "generation_report.json").write_text(
             json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
         )
+        if enable_music:
+            try:
+                config = json.loads((audio_dir / "mix_config.json").read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                config = {}
+            self.auto_mix_background_music(project_id, enable_ducking=config.get("enable_ducking", True),
+                                           target_lufs=config.get("target_lufs", -14.0), bgm_volume_db=config.get("bgm_volume_db", 0.0))
         return {**self.get_audio_info(project_id), "generation": report}

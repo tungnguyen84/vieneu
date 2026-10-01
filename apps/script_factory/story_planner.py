@@ -47,19 +47,12 @@ class StoryPlanner:
             or not bible.structured_clues
             or not bible.reveal_justifications
         ):
-            rounds = 0
-            while rounds < 3 and report.status != "PASS" and hasattr(self.provider, "repair_story_bible"):
-                rounds += 1
-                try:
-                    bible, _, _ = self.provider.repair_story_bible(bible, report.issues, model=model)
-                    report = self.story_qc.audit_story_bible(bible)
-                except Exception as e:
-                    logger.warning(f"[StoryPlanner] AI repair round {rounds} failed: {e}")
-                    break
-
-            if report.status != "PASS" or not bible.causal_chains or not bible.knowledge_ledger:
-                self.story_qc.repair_story_bible(bible, report, provider=self.provider)
-                report = self.story_qc.audit_story_bible(bible)
+            repaired = self.story_qc.repair_story_bible(bible, report, provider=self.provider)
+            # Providers may return a new object (e.g. identity repair); persist it.
+            if repaired is not bible:
+                bible.__dict__.update(repaired.__dict__)
+            report = self.story_qc.audit_story_bible(bible)
+        bible.story_qc_report = report.to_dict()
         return report
 
     def get_next_episode_id(self) -> str:
@@ -116,6 +109,8 @@ class StoryPlanner:
                 model=model,
             )
             bible.episode_id = target_ep_id
+            # Lineage belongs to the request, not a model-generated identifier.
+            bible.source_idea_id = idea.idea_id
             bible.generation_source = "MOCK" if "mock" in self.provider.provider_name.lower() else "REAL_AI"
             if idea.original_user_topic:
                 bible.original_user_topic = idea.original_user_topic

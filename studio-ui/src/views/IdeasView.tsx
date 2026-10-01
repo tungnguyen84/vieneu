@@ -35,6 +35,23 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
     fetchProviders();
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/projects/${projectId}/ideas`)
+      .then(async res => {
+        if (!res.ok) throw new Error('Không thể tải ngân hàng ý tưởng');
+        return res.json();
+      })
+      .then(data => {
+        if (!active) return;
+        setCustomIdeas(data.ideas || []);
+        setDirection(data.direction || '');
+        setSelectedIdeaId(data.selected_idea_id || '');
+      })
+      .catch(e => { if (active) setErrorMessage(e.message); });
+    return () => { active = false; };
+  }, [projectId]);
+
   const handleSwitchProvider = async (newProv: string) => {
     setSelectedProvider(newProv);
     try {
@@ -83,6 +100,7 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
     setErrorMessage('');
     try {
       const ideaPayload = {
+        ...idea,
         idea_id: idKey,
         title: idea.title,
         premise: idea.premise,
@@ -248,7 +266,7 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
                         <div className="flex flex-col items-end space-y-1">
                           <span className="text-[10px] text-[#64748B] block">Novelty Score</span>
                           <span className="font-mono-code text-sm font-bold text-[#10B981]">
-                            {idea.novelty_score} / 10
+                            {idea.novelty_score} / 100
                           </span>
                           {idea.topic_adherence_score !== undefined && idea.topic_adherence_score !== null && (
                             <span className="font-mono-code text-[10px] text-[#3B82F6] font-semibold bg-[#3B82F6]/15 border border-[#3B82F6]/30 px-1.5 py-0.5 rounded">
@@ -258,7 +276,7 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
                         </div>
                         <button
                           onClick={() => handleSelectIdea(idea)}
-                          disabled={selectingId === idea.idea_id}
+                          disabled={selectingId !== '' || idea.status === 'BLOCKED_TOPIC_DRIFT'}
                           className="mt-3 bg-[#E11D48] hover:bg-[#BE123C] disabled:opacity-50 text-white font-bold text-[11px] px-3 py-1.5 rounded flex items-center space-x-1 cursor-pointer shadow-md active:scale-95 transition-all"
                         >
                           {selectingId === idea.idea_id ? (
@@ -269,7 +287,7 @@ export const IdeasView: React.FC<Props> = ({ projectId, onNavigate, onProjectUpd
                           ) : (
                             <>
                               <CheckCircle2 size={12} />
-                              <span>CHỌN TẬP NÀY</span>
+                              <span>{idea.status === 'BLOCKED_TOPIC_DRIFT' ? 'LỆCH CHỦ ĐỀ — CẦN TẠO LẠI' : 'CHỌN TẬP NÀY'}</span>
                             </>
                           )}
                         </button>

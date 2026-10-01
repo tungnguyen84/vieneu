@@ -72,6 +72,18 @@ def find_repeated_narrative_block(
             score = len(common) / max(1, min(len(first_tokens), len(second_tokens)))
             if score < similarity_threshold or len(common) < min_common_tokens:
                 continue
+            # Shared topic vocabulary is not a replay of a sequence. Require
+            # several corresponding events in the same order; otherwise a
+            # reflective ending can be mistaken for the investigation itself.
+            matching_events = 0
+            for offset in range(window_size):
+                earlier = _content_tokens(_segment_text(segments[first_start + offset]))
+                later = _content_tokens(_segment_text(segments[second_start + offset]))
+                shared = earlier & later
+                if len(shared) >= 4 and len(shared) / max(1, min(len(earlier), len(later))) >= similarity_threshold:
+                    matching_events += 1
+            if matching_events < max(2, window_size - 1):
+                continue
             candidate = {
                 "first_start": first_start,
                 "first_end": first_start + window_size,

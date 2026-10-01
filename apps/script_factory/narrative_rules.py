@@ -10,17 +10,54 @@ from typing import Iterable, Optional
 # (rule code, what the writer must do / what the reviewer flags)
 NARRATIVE_LOGIC_RULES = [
     (
+        "CHARACTER_IDENTITY_CONTRADICTION",
+        "Tên, quan hệ gia đình, tuổi và vai trò nhân vật phải nhất quán giữa danh sách nhân vật, timeline, "
+        "manh mối và reveal. Không biến mẹ vợ thành mẹ chồng, nhân vật đã mất thành người còn sống, "
+        "hoặc người đã tốt nghiệp thành thực tập sinh nhiều năm sau mà không giải thích.",
+    ),
+    (
+        "TOPIC_TRUTH_DRIFT",
+        "Giữ sự thật trung tâm đúng chủ đề người dùng yêu cầu. Nếu đề tài là bí mật ngoại tình công sở, "
+        "không thay ngoại tình bằng hiểu lầm về anh em ruột, con riêng hoặc một bí mật không có quan hệ ngoài luồng. "
+        "Chỉ được dùng cú lật minh oan khi đề tài gốc yêu cầu nghi ngờ hoặc hiểu lầm.",
+    ),
+    (
+        "ACTION_SEQUENCE_INVERSION",
+        "Hành động phải đủ điều kiện trước khi xảy ra: cửa được mở trước khi khách bước vào; "
+        "tài liệu được tiếp cận trước khi đọc; lời mời có trước cuộc gặp. Kiểm tra cả hai câu liền nhau, "
+        "không chỉ mốc ngày tháng. Không báo lỗi cho hồi tưởng đã được dẫn rõ.",
+    ),
+    (
+        "KNOWLEDGE_STATE_REGRESSION",
+        "Theo dõi điều nhân vật đã biết sau mỗi bằng chứng. Sau khi đã đọc chứng cứ về gian lận, "
+        "không được kể nhân vật vẫn tưởng chỉ có ngoại tình nếu không có lý do phủ nhận chứng cứ. "
+        "Cú lật sau phải bổ sung sự thật mới, không xóa phát hiện trước. Trích cả đoạn phát hiện và đoạn mâu thuẫn. "
+        "Không coi khăn tay hoặc chuyển tiền đơn lẻ là bằng chứng chắc chắn của ngoại tình; nhân vật vẫn được "
+        "nghi ngờ và hỏi thêm trước khi có lời thừa nhận hoặc bằng chứng rõ ràng.",
+    ),
+    (
+        "SUMMARY_INSTEAD_OF_SCENE",
+        "Hook và các cảnh then chốt cần hành động, chi tiết và phản ứng cụ thể. Không thay cuộc đối chất "
+        "hoặc khám phá bằng tóm tắt phân tích, kết luận trừu tượng hay hàng loạt ẩn dụ sáo rỗng. "
+        "Chỉ báo lỗi khi việc tóm tắt làm mất nội dung/bằng chứng cần để hiểu cảnh, không cấm mọi câu chuyển đoạn.",
+    ),
+    (
         "POV_KNOWLEDGE_VIOLATION",
         "Câu chuyện là lá thư của nhân vật chính gửi về chương trình. Người kể chỉ biết điều nhân vật chính "
         "tận mắt thấy, tận tai nghe, đọc được trong tài liệu, hoặc được nhân vật khác TỰ NÓI RA trong đối thoại. "
-        "Suy nghĩ, động cơ, cảm xúc bên trong, sự bất cẩn hay toan tính của nhân vật khác chỉ được kể khi chính "
-        "họ thú nhận bằng lời thoại hoặc có tài liệu ghi lại.",
+        "Kế hoạch, động cơ kín hay toan tính của nhân vật khác chỉ được xác nhận khi chính "
+        "họ thú nhận bằng lời thoại hoặc có tài liệu ghi lại. Khi bằng chứng chỉ cho phép suy luận, được kể nhận định "
+        "của nhân vật chính bằng những cách như 'cô nghĩ', 'qua những tin nhắn, cô hiểu rằng'; phải gắn với hành vi "
+        "cụ thể đã được kể và không biến suy luận ấy thành sự xác nhận về một ý định bí mật chưa được tiết lộ. "
+        "Cảm xúc bộc lộ trong cuộc gặp hoặc hành động đã kể có thể được mô tả tự nhiên; không bắt mỗi câu "
+        "lặp lại 'cô nghĩ' hay 'cô cảm nhận' khi góc nhìn và nguồn quan sát đã rõ.",
     ),
     (
         "INFEASIBLE_EVIDENCE",
         "Mọi bằng chứng phải khả thi ngoài đời thực. Xét nghiệm ADN thai nhi cần mẫu máu người mẹ (có sự đồng ý); "
         "xét nghiệm cha con sau sinh cần mẫu của đứa trẻ. Không có thư mục/phân vùng 'ẩn' xuất hiện thần kỳ, "
-        "không có tài liệu tự giải thích toàn bộ âm mưu.",
+        "không có tài liệu tự giải thích toàn bộ âm mưu. "
+        "Bằng chứng phải là thứ NGƯỜI THƯỜNG có được: đồ vật trong nhà, máy/tài khoản dùng chung của gia đình, điều tận mắt thấy hoặc nghe được, lời người quen kể, ảnh trên mạng xã hội, vật để quên. KHÔNG dùng camera của khách sạn/quán/tòa nhà/công ty, lịch sử thanh toán hay sao kê của người khác, hợp đồng thuê nhà, dữ liệu do công ty/khách sạn/ngân hàng cung cấp cho người hỏi; ngoài đời họ không cung cấp, và viết 'theo quy trình' không làm nó thật hơn.",
     ),
     (
         "CONCLUSION_BEFORE_PROOF",
@@ -29,8 +66,25 @@ NARRATIVE_LOGIC_RULES = [
     ),
     (
         "UNRESOLVED_SETUP",
-        "Mọi thứ đã được gài phải được trả: nếu có kết quả xét nghiệm, phong bì, tin nhắn chưa đọc… thì nhân vật "
-        "phải đọc nó và người nghe phải biết nội dung. Không dùng một vật chứng mà chính nhân vật chính chưa xem.",
+        "Mọi thứ đã được gài, kể cả vật/chi tiết được hứa trong tiêu đề, phải được trả: nếu có kết quả xét nghiệm, phong bì, tin nhắn chưa đọc… thì nhân vật "
+        "phải đọc nó và người nghe phải biết nội dung. Không dùng một vật chứng mà chính nhân vật chính chưa xem. "
+        "Người thân đã xuất hiện (con cái, cha mẹ) phải được nhắc tới khi hoàn cảnh gia đình thay đổi (ly thân, dọn đi). "
+        "Mỗi vật chứng đã dẫn dắt nghi ngờ (kẹp tóc, áo khoác, tin nhắn…) phải được giải thích là của ai, từ đâu ra khi sự thật "
+        "lộ diện; vật chứng gài cho hướng nghi sai cũng phải được trả lời, không bị bỏ lửng.",
+    ),
+    (
+        "REVEAL_LEAKED_EARLY",
+        "Danh tính hay sự thật của cú lật chính không được ai nói ra hoặc gợi thẳng trước cảnh lật. Nhân chứng xuất hiện "
+        "trước cú lật chỉ được cung cấp chi tiết khớp với hướng nghi sai hoặc chi tiết mơ hồ; không có người quen nào nói "
+        "'tôi thấy anh ấy và <người thật> khá thân' ở giữa truyện, vì người nghe sẽ đoán ra trước. Không báo lỗi cho "
+        "manh mối nhỏ chỉ được hiểu lại SAU cú lật.",
+    ),
+    (
+        "UNMOTIVATED_DISCLOSURE",
+        "Người đang che giấu (người thứ ba, người phản bội, kẻ lừa đảo) chỉ thú nhận khi bị đặt trước bằng chứng cụ thể "
+        "không thể chối hoặc có lý do rõ ràng (muốn chấm dứt, bị lộ trước người khác). Không để họ tự khai ngay khi vừa "
+        "bị hỏi. Khi bị dọa bằng một cái tên SAI ('em biết chuyện anh với X rồi'), người che giấu sẽ chối hoặc hỏi lại, "
+        "không tự nhắc tên người thật hay chi tiết chưa ai biết; tự lộ kiểu đó là lỗi, không phải cú lật.",
     ),
     (
         "TIMELINE_ORDER_ERROR",
@@ -40,7 +94,9 @@ NARRATIVE_LOGIC_RULES = [
     (
         "REPEATED_DISCOVERY",
         "Mỗi lần lục soát, mỗi cuộc gọi, mỗi phát hiện chỉ kể một lần. Không để nhân vật mở lại cùng một vật "
-        "nhiều lần để 'tìm thêm' bằng chứng mới xuất hiện tiện lợi.",
+        "nhiều lần để 'tìm thêm' bằng chứng mới xuất hiện tiện lợi. Nhân vật được kể ngắn gọn phát hiện "
+        "đã biết cho người khác để xin xác minh; không gọi việc chia sẻ thông tin là khám phá lại. "
+        "Một cuộc gặp sau bổ sung lý do sa thải chưa biết là diễn biến mới, không phải kể lại việc bị sa thải.",
     ),
     (
         "LEGAL_OR_MEDICAL_UNREALISTIC",
@@ -70,12 +126,16 @@ NARRATIVE_LOGIC_RULES = [
         "GENERIC_PHILOSOPHICAL_HOOK",
         "Phân đoạn mở đầu (Hook) phải mở ngay bằng nhân vật cụ thể, hành động hoặc chi tiết hữu hình của lá thư gửi về. "
         "Tuyệt đối không mở bằng triết lý chung chung, châm ngôn sáo rỗng về cuộc đời, thời gian hay hôn nhân "
-        "('Trong cuộc sống...', 'Có những bí mật...', 'Đằng sau cánh cửa cuộc đời...', 'Mỗi gia đình đều có...').",
+        "('Trong cuộc sống...', 'Có những bí mật...', 'Đằng sau cánh cửa cuộc đời...', 'Mỗi gia đình đều có...'). "
+        "Không mở bằng mô tả chung về nét chữ, trang giấy của lá thư gửi chương trình nếu lá thư không phải vật chứng "
+        "trong cốt truyện. Mở ngay bằng nhân vật gặp dấu hiệu bất thường, rồi mới chào và giới thiệu.",
     ),
     (
         "OBJECT_CONTINUITY_CONTRADICTION",
         "Đạo cụ, hiện vật và bằng chứng phải nhất quán xuyên suốt câu chuyện: không đổi từ hộp các-tông thành hộp gỗ, "
-        "không để bưu thiếp vừa rơi khỏi sổ vừa nằm trong phong bì niêm phong cùng biên lai; chuyển cảnh phải liền mạch, logic.",
+        "không để bưu thiếp vừa rơi khỏi sổ vừa nằm trong phong bì niêm phong cùng biên lai; chuyển cảnh phải liền mạch, logic. "
+        "Theo dõi AI đang giữ đồ vật ở từng cảnh, và mỗi thay đổi trạng thái (đóng tài khoản, dọn ra ở riêng, trả lại đồ) "
+        "chỉ xảy ra MỘT lần.",
     ),
     (
         "QC_REPORT_TONE_LEAKAGE",
@@ -85,6 +145,22 @@ NARRATIVE_LOGIC_RULES = [
 ]
 
 LOGIC_RULE_CODES = {code for code, _ in NARRATIVE_LOGIC_RULES}
+
+# Judgement calls / subjective style critiques from LLM reviewers that are reported
+# as editor warnings. Objective plot logic rules (POV violations, timeline order inversions,
+# repeated discoveries, infeasible evidence, legal issues) are objective defects that BLOCK
+# approval and trigger repair when verified with grounded quotes.
+JUDGEMENT_RULES = {
+    "IMPLAUSIBLE_BEHAVIOR",
+    "ANALYST_NARRATION",
+    "GENERIC_PHILOSOPHICAL_HOOK",
+    "SUMMARY_INSTEAD_OF_SCENE",
+    "QC_REPORT_TONE_LEAKAGE",
+}
+
+
+def is_blocking_logic_issue(issue: dict) -> bool:
+    return str(issue.get("rule", "")) not in JUDGEMENT_RULES
 
 
 def writer_rules_block(start_index: int) -> str:

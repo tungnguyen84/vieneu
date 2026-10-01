@@ -1,0 +1,176 @@
+{
+ "source": "Sau Cánh Cửa EP01 V9.3.1 (ChatGPT chat + human edit, aired)",
+ "usage": "Few-shot voice reference only. Never reuse its characters, plot, numbers or objects.",
+ "sections": [
+  {
+   "lesson": "Hook: trích nguyên văn lá thư, MC tự nói phản ứng của mình, dẫn người nghe đoán sai, câu ngắn có nhịp",
+   "segments": [
+    {
+     "id": "001",
+     "profile": "HOOK",
+     "text": "Lá thư của Lan mở đầu bằng một câu thế này: “Nếu chồng tôi nghe được lá thư này... có lẽ em không còn gì để giấu anh nữa.”"
+    },
+    {
+     "id": "002",
+     "profile": "HOOK",
+     "text": "Ngay dòng tiếp theo, cô viết: “Bảy năm nay, tháng nào em cũng giấu anh chuyển năm triệu đồng cho một người đàn ông.”"
+    },
+    {
+     "id": "003",
+     "profile": "HOOK",
+     "text": "Nếu chỉ nghe đến đây, bạn sẽ nghĩ người đàn ông ấy là ai? Người yêu cũ? Một mối quan hệ ngoài luồng? Thú thật, khi đọc hai dòng đầu tiên, tôi cũng đã nghĩ theo hướng đó."
+    },
+    {
+     "id": "004",
+     "profile": "HOOK",
+     "text": "Năm triệu mỗi tháng. Suốt bảy năm. Và người đàn ông ấy không phải người yêu cũ của Lan."
+    },
+    {
+     "id": "005",
+     "profile": "HOOK",
+     "text": "Chào mừng bạn đến với Sau Cánh Cửa. Tôi là Minh. Lá thư hôm nay bắt đầu bằng một bí mật tiền bạc, nhưng điều nằm phía sau nó còn khó tin hơn nhiều."
+    }
+   ]
+  },
+  {
+   "lesson": "Chi tiết đời thường riêng tư làm nhân vật tin, và nhân vật tự kiểm chứng bằng hành động",
+   "segments": [
+    {
+     "id": "017",
+     "profile": "MYSTERY",
+     "text": "Nếu chỉ có một giọng nói qua điện thoại, có lẽ Lan đã nghi ngờ sớm hơn. Nhưng người đàn ông ấy biết quá nhiều."
+    },
+    {
+     "id": "018",
+     "profile": "MYSTERY",
+     "text": "Ông nhớ vết sẹo nhỏ ở đầu gối Lan do ngã xe năm lớp sáu. Nhớ con chó tên Mực từng nuôi ở nhà cũ. Thậm chí nhớ cả bài hát ông thường mở mỗi sáng chủ nhật."
+    },
+    {
+     "id": "019",
+     "profile": "MYSTERY",
+     "text": "Rồi vào sinh nhật đầu tiên sau khi liên lạc lại, Lan nhận được một bưu phẩm. Bên trong là chiếc kẹp tóc bằng gỗ cũ kỹ mà cô từng tưởng đã mất từ nhỏ."
+    },
+    {
+     "id": "020",
+     "profile": "MYSTERY",
+     "text": "Có một chi tiết khác khiến Lan càng tin. Một lần cô cố tình hỏi sai về căn nhà cũ, nói chiếc tủ gỗ ngày trước đặt cạnh cửa sổ. Người đàn ông lập tức sửa lại: không, nó nằm sát bức tường phía bếp, bên trên còn có vết cháy do lần bố làm đổ cây nến."
+    },
+    {
+     "id": "021",
+     "profile": "MYSTERY",
+     "text": "Lan nhớ vết cháy đó. Đó là chuyện rất nhỏ, đến Hùng cũng chưa từng nghe cô kể. Sau lần ấy, mọi nghi ngờ trong cô gần như biến mất."
+    }
+   ]
+  },
+  {
+   "lesson": "Dấu hiệu bất thường được kể bằng cảnh cụ thể, không bằng câu rào đón",
+   "segments": [
+    {
+     "id": "024",
+     "profile": "MYSTERY",
+     "text": "Nhưng từ đây xuất hiện điều lạ đầu tiên. Bố Lan chưa bao giờ đồng ý gặp con gái."
+    },
+    {
+     "id": "025",
+     "profile": "MYSTERY",
+     "text": "Lan hỏi địa chỉ, ông không cho. Cô muốn đưa ông đi khám, ông từ chối. Cô đề nghị chỉ cần đứng từ xa nhìn bố một lần, câu trả lời vẫn là: chưa phải lúc."
+    },
+    {
+     "id": "026",
+     "profile": "MYSTERY",
+     "text": "Có lần ông hẹn Lan ở một quán cà phê gần bến xe. Cô đến sớm gần một tiếng, ngồi chờ đến tối. Ông không xuất hiện."
+    },
+    {
+     "id": "027",
+     "profile": "MYSTERY",
+     "text": "Mười phút sau khi Lan rời quán, điện thoại nhận được tin nhắn: bố nhìn thấy con rồi, nhưng bố chưa đủ can đảm bước vào."
+    },
+    {
+     "id": "028",
+     "profile": "MYSTERY",
+     "text": "Sau cuộc hẹn hụt ở quán cà phê, Lan từng làm một việc mà cô chưa kể với ai. Cô gọi lại ngay và yêu cầu bố bật video trong vài giây. Cuộc gọi bị tắt."
+    },
+    {
+     "id": "029",
+     "profile": "MYSTERY",
+     "text": "Ít phút sau, ông nhắn rằng điện thoại quá cũ, camera hỏng và ông đang ở cùng phòng với người khác. Một lý do rất bình thường. Bình thường đến mức Lan thấy mình có lỗi vì đã nghi ngờ."
+    },
+    {
+     "id": "030",
+     "profile": "NORMAL",
+     "text": "Điều khiến Lan day dứt sau này là cô còn nhắn xin lỗi bố. Cô nói chính mình lại là người xin lỗi sau khi cố xác minh một điều hoàn toàn hợp lý."
+    }
+   ]
+  },
+  {
+   "lesson": "Reveal tách thành từng nhịp ngắn",
+   "segments": [
+    {
+     "id": "059",
+     "profile": "NORMAL",
+     "text": "Lan kể rằng khi nhìn dòng đầu tiên của tập giấy, tay cô bắt đầu run."
+    },
+    {
+     "id": "060",
+     "profile": "NORMAL",
+     "text": "Tên trên giấy đúng là tên bố cô."
+    },
+    {
+     "id": "062",
+     "profile": "NORMAL",
+     "text": "Ngày sinh cũng đúng."
+    },
+    {
+     "id": "063",
+     "profile": "NORMAL",
+     "text": "Quê quán vẫn đúng."
+    },
+    {
+     "id": "064",
+     "profile": "REVEAL",
+     "text": "Nhưng ở cuối tờ giấy có một dòng mà Lan nói cô phải đọc lại nhiều lần."
+    },
+    {
+     "id": "065",
+     "profile": "REVEAL",
+     "text": "Dòng đó chỉ có hai chữ: “Ngày mất.”"
+    },
+    {
+     "id": "066",
+     "profile": "REVEAL",
+     "text": "Bố Lan đã qua đời... mười bốn năm trước."
+    }
+   ]
+  },
+  {
+   "lesson": "Kết bằng hành động, chỉ một câu chiêm nghiệm, một câu hỏi người nghe",
+   "segments": [
+    {
+     "id": "087",
+     "profile": "ENDING",
+     "text": "Đêm hôm đó, Hùng không hỏi tổng cộng vợ đã giấu mình bao nhiêu tiền. Anh cũng không hỏi vì sao cô lại tin một giọng nói lâu đến vậy. Anh pha cho Lan một cốc nước, ngồi xuống cạnh cô và để cô tự kể lại từ cuộc gọi đầu tiên."
+    },
+    {
+     "id": "088",
+     "profile": "ENDING",
+     "text": "Lan kể gần hai tiếng. Có những đoạn Hùng chỉ nghe. Có những đoạn anh hỏi lại ngày tháng để ghi ra giấy. Đến cuối, thứ hai người có được không phải lời giải cho toàn bộ hậu quả, nhưng ít nhất bí mật đã không còn nằm giữa họ nữa."
+    },
+    {
+     "id": "089",
+     "profile": "ENDING",
+     "text": "Có những bí mật bắt đầu không phải vì chúng ta muốn phản bội ai, mà vì ta nghĩ mình có thể tự giải quyết trước khi người khác phải lo."
+    },
+    {
+     "id": "090",
+     "profile": "ENDING",
+     "text": "Nhưng càng để lâu, thứ khó nói nhất đôi khi không còn là bí mật ban đầu. Mà là câu hỏi: tại sao mình đã không nói từ sớm?"
+    },
+    {
+     "id": "091",
+     "profile": "COMMENT",
+     "text": "Còn bạn, điều khiến bạn day dứt nhất trong câu chuyện này là số tiền bị lấy đi, việc Lan giấu chồng, hay việc một ký ức về người thân có thể bị lợi dụng lâu đến như vậy?"
+    }
+   ]
+  }
+ ]
+}

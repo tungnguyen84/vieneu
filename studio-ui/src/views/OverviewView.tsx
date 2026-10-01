@@ -31,6 +31,8 @@ export const OverviewView: React.FC<Props> = ({
   onOpenNewEpisodeModal,
 }) => {
   const [hasProvider, setHasProvider] = useState<boolean>(true);
+  const hasVisual = ['NEEDS_REVIEW', 'COMPLETE', 'APPROVED'].includes(project.stage_statuses['05_visual'] || '');
+  const hasAudio = ['NEEDS_REVIEW', 'COMPLETE', 'APPROVED'].includes(project.stage_statuses['04_audio'] || '');
 
   useEffect(() => {
     fetch('/api/ai/providers')
@@ -64,7 +66,7 @@ export const OverviewView: React.FC<Props> = ({
       id: 'script',
       title: '03. Kịch bản (Script Factory)',
       value: project.stage_statuses['03_script'] === 'APPROVED' ? 'Đã duyệt' : 'Cần kiểm tra',
-      sub: `${project.scene_count || 45} phân đoạn | Fact Lock & QC`,
+      sub: 'Kiểm tra Full Script, Fact Lock & QC',
       status: project.stage_statuses['03_script'] || 'NOT_STARTED',
       icon: FileText,
       color: 'text-[#10B981]',
@@ -72,11 +74,11 @@ export const OverviewView: React.FC<Props> = ({
     {
       id: 'audio',
       title: '04. Audio Master',
-      value: `${Math.floor(project.duration_sec / 60)}:${Math.floor(
+      value: hasAudio ? `${Math.floor(project.duration_sec / 60)}:${Math.floor(
         project.duration_sec % 60
       )
         .toString()
-        .padStart(2, '0')}`,
+        .padStart(2, '0')}` : 'Chưa có Audio hiện hành',
       sub: 'Audio Formula V1 | Chuẩn hóa LUFS',
       status: project.stage_statuses['04_audio'] || 'NOT_STARTED',
       icon: Mic2,
@@ -85,8 +87,8 @@ export const OverviewView: React.FC<Props> = ({
     {
       id: 'visual',
       title: '05. Visual Storyboard',
-      value: `${project.scene_count} Scenes`,
-      sub: `${project.image_count} Ảnh tĩnh | ${project.video_count} Video Omni`,
+      value: hasVisual ? `${project.scene_count} Scenes` : 'Chưa có Visual hiện hành',
+      sub: hasVisual ? `${project.image_count} Ảnh tĩnh | ${project.video_count} Video Omni` : 'Cần Audio hiện hành để tạo cảnh',
       status: project.stage_statuses['05_visual'] || 'NOT_STARTED',
       icon: Clapperboard,
       color: 'text-[#3B82F6]',
@@ -94,7 +96,7 @@ export const OverviewView: React.FC<Props> = ({
     {
       id: 'flow',
       title: '06. Google Flow JSON',
-      value: project.stage_statuses['06_flow'] === 'APPROVED' ? 'Đã xuất' : 'Sẵn sàng',
+      value: ['APPROVED', 'COMPLETE'].includes(project.stage_statuses['06_flow'] || '') ? 'Đã xuất' : 'Chưa xuất',
       sub: 'Chuẩn SCC_FLOW_V1 (Không FlowKit)',
       status: project.stage_statuses['06_flow'] || 'NOT_STARTED',
       icon: ExternalLink,
@@ -173,13 +175,13 @@ export const OverviewView: React.FC<Props> = ({
             <div>
               <span className="text-[11px] text-[#64748B] block">Thời lượng</span>
               <span className="font-mono-code text-sm font-semibold text-[#F8FAFC]">
-                {project.duration_sec.toFixed(2)}s
+                {hasAudio ? `${project.duration_sec.toFixed(2)}s` : 'Chưa có'}
               </span>
             </div>
             <div>
               <span className="text-[11px] text-[#64748B] block">Số cảnh</span>
               <span className="font-mono-code text-sm font-semibold text-[#F8FAFC]">
-                {project.scene_count} Scenes
+                {hasVisual ? `${project.scene_count} Scenes` : 'Chưa có'}
               </span>
             </div>
             {onOpenNewEpisodeModal && (

@@ -16,12 +16,16 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from apps.script_factory.models import FullScript, IdeaItem, LockedFact, QCReport, ScriptSegment, StoryBible, apply_story_bible_patch, story_bible_repair_targets_clause
 from apps.script_factory.providers.base import ScriptAIProvider
+from apps.script_factory.json_response import parse_json_response
 from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
 
 logger = logging.getLogger("VieNeu.AnthropicProvider")
 
 
 def _parse_json_safe(text: str) -> Optional[Any]:
+    decoded = parse_json_response(text)
+    if decoded is not None:
+        return decoded
     clean = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.MULTILINE)
     clean = re.sub(r"^```\s*$", "", clean, flags=re.MULTILINE)
     clean = re.sub(r",\s*([\]}])", r"\1", clean)
@@ -212,7 +216,7 @@ Trả về JSON object có khóa "ideas": [
                 idea_obj.original_user_topic = user_topic
 
             idea_obj.generation_request_id = str(uuid.uuid4())
-            idea_obj.prompt_version = "ideas-v2.1"
+            idea_obj.prompt_version = "ideas-v2.2-topic-truth"
             idea_obj.generation_source = "REAL_AI"
             idea_obj.model_name = chosen_model_name
             idea_obj.provider_name = self.provider_name
@@ -293,7 +297,7 @@ Trả về JSON Object theo cấu trúc chuẩn có keys: episode_id, title, pro
             topic_adherence=idea.topic_adherence_score or 100.0,
             status="DRAFT",
             generation_request_id=str(uuid.uuid4()),
-            prompt_version="story-v3.0",
+            prompt_version="story-v3.2-grounded-proof",
             generation_source="REAL_AI",
             model_name=self.last_used_model or model or self.default_model,
             provider_name=self.provider_name,
@@ -320,6 +324,7 @@ Trả về JSON Object theo cấu trúc chuẩn có keys: episode_id, title, pro
             apply_story_bible_patch(story_bible, parsed)
         else:
             logger.warning(f"Story Bible repair response was not JSON; nothing applied: {raw_text[:160]!r}")
+            raise ValueError('Story Bible repair returned invalid JSON; original draft was retained')
 
         story_bible.generation_request_id = str(uuid.uuid4())
         story_bible.generation_source = "REAL_AI"
@@ -346,6 +351,8 @@ Trả về JSON Object theo cấu trúc chuẩn có keys: episode_id, title, pro
         )
 
         prompt = f"""Hãy viết kịch bản hoàn chỉnh cho tập phim: '{story_bible.title}'.
+STORY BIBLE ĐẦY ĐỦ (nguồn chuẩn cho danh tính, thời gian, nguồn bằng chứng và kết thúc):
+{json.dumps(story_bible.to_dict(), ensure_ascii=False)}
 Bí mật: {story_bible.secret}
 Reveal 1: {story_bible.reveal_1}
 Reveal 2: {story_bible.reveal_2}
@@ -381,7 +388,7 @@ Trả về JSON Object có khóa "segments": [
             total_words=total_words,
             status="DRAFT",
             generation_request_id=str(uuid.uuid4()),
-            prompt_version="script-v3.0",
+            prompt_version="script-v3.5-complete-story-context",
             generation_source="REAL_AI",
             model_name=self.last_used_model or model or self.default_model,
             provider_name=self.provider_name,

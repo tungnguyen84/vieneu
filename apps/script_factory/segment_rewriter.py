@@ -27,6 +27,13 @@ _DETERMINISTIC_ONLY_RULES = {
     "REVEAL_AUDIENCE_RESTRAINT", "ENDING_PROPORTION_VIOLATION",
 }
 
+REPETITION_RULES = {
+    "REPEATED_DISCOVERY",
+    "REPEATED_NARRATIVE_BLOCK",
+    "ADJACENT_SEGMENT_ECHO",
+    "REPEATED_SCENE_DIALOGUE",
+}
+
 _SIGNOFF_RE = re.compile(r"cảm\s+ơn\s+quý\s+vị\s+đã\s+lắng\s+nghe|xin\s+chào\s+và\s+hẹn\s+gặp\s+lại", re.IGNORECASE)
 
 SYSTEM_INSTRUCTION = (
@@ -53,10 +60,9 @@ def collect_flagged_segments(script: FullScript, qc_report: QCReport) -> Dict[st
         if seg_id in by_id and problem not in flagged.setdefault(seg_id, []):
             flagged[seg_id].append(problem)
 
-    # Medium-confidence logic findings do not block PASS, but they are cheap to
-    # fix while the segment is being rewritten anyway.
-    advisories = (getattr(qc_report, "semantic_review", None) or {}).get("advisories", [])
-    for issue in [*qc_report.evidence_issues, *qc_report.fact_conflicts, *advisories]:
+    # Only blocking findings are rewritten. Rewriting segments for advisories or
+    # style warnings churned the script and introduced fresh defects each round.
+    for issue in [*qc_report.evidence_issues, *qc_report.fact_conflicts]:
         if not isinstance(issue, dict):
             continue
         rule = str(issue.get("rule") or issue.get("type") or "")
@@ -100,33 +106,18 @@ def collect_flagged_segments(script: FullScript, qc_report: QCReport) -> Dict[st
 
 
 def _story_context(story_bible: StoryBible) -> Dict[str, Any]:
-    protagonist = story_bible.protagonist if isinstance(story_bible.protagonist, dict) else {"name": str(story_bible.protagonist)}
-    clues_summary = []
-    for c in (story_bible.clues or story_bible.structured_clues or []):
-        if isinstance(c, dict):
-            clues_summary.append(c.get("name") or c.get("detail") or str(c))
-        elif isinstance(c, str):
-            clues_summary.append(c)
-
-    return {
-        "title": story_bible.title,
-        "protagonist": protagonist.get("name"),
-        "supporting_characters": [c.get("name") for c in story_bible.supporting_characters if isinstance(c, dict)],
-        "time_period": story_bible.time_period,
-        "mystery_question": story_bible.mystery_question,
-        "secret": story_bible.secret,
-        "key_clues": clues_summary[:4],
-        "reveal_1": story_bible.reveal_1,
-        "reveal_2": story_bible.reveal_2,
-        "causal_chains": story_bible.causal_chains if isinstance(story_bible.causal_chains, list) else [],
-        "knowledge_ledger": story_bible.knowledge_ledger if isinstance(story_bible.knowledge_ledger, list) else [],
-    }
+    # Repairs need the same canonical plot as the writer. Truncating clues to
+    # four or omitting the timeline/ending makes a later evidence channel look
+    # optional, so a rewrite reintroduces exactly the inconsistency QC flagged.
+    return {k: v for k, v in story_bible.to_dict().items()
+            if k not in {'story_qc_report', 'status', 'approved_at', 'approved_by'}}
 
 
 def build_prompt(script: FullScript, story_bible: StoryBible, flagged: Dict[str, List[str]]) -> str:
     index = {s.id: i for i, s in enumerate(script.segments)}
     targets = []
-    for seg_id, problems in flagged.items():
+    for seg_id in sorted(flagged, key=index.__getitem__):
+        problems = flagged[seg_id]
         i = index[seg_id]
         targets.append({
             "id": seg_id,
@@ -139,11 +130,18 @@ def build_prompt(script: FullScript, story_bible: StoryBible, flagged: Dict[str,
     return (
         "Bối cảnh câu chuyện:\n"
         f"{json.dumps(_story_context(story_bible), ensure_ascii=False)}\n\n"
+        "Toàn bộ mạch kịch bản hiện tại (chỉ đọc để biết nhân vật đã biết gì và sự kiện đã xảy ra):\n"
+        + '\n'.join(f'[{s.id}] {s.text}' for s in script.segments) + '\n\n'
+        +
         "Các phân đoạn cần viết lại (previous_text/next_text chỉ để nối mạch, KHÔNG viết lại chúng; "
         "không lặp lại hành động đã kể ở previous_text):\n"
         f"{json.dumps(targets, ensure_ascii=False, indent=1)}\n\n"
         "Yêu cầu:\n"
-        "- Mỗi phân đoạn viết lại có độ dài tương đương bản gốc (±30%).\n"
+        "- Sửa cả nhóm theo trình tự thời gian, mỗi id giữ một diễn biến riêng. Không sao chép câu của "
+        "phân đoạn liền kề vào nhiều id. Nếu previous_text/next_text cũng có id trong nhóm yêu cầu, "
+        "đồng bộ bản sửa của cả nhóm thay vì coi bản cũ của chúng là bất biến.\n"
+        "- Thường giữ độ dài tương đương bản gốc (±30%). Riêng đoạn lặp khám phá/sự kiện/câu văn, "
+        "được rút ngắn thành câu nối mạch; không kéo dài hoặc dựng phát hiện mới chỉ để đủ số từ.\n"
         "- Phân đoạn đầu tiên của kịch bản phải mở bằng nhân vật/vật cụ thể, không mở bằng câu triết lý.\n"
         "- Không thêm lời chào kết hay lời cảm ơn khán giả.\n"
         "- Khi sửa lỗi người kể biết nội tâm nhân vật khác, hãy chuyển thành câu thoại nhân vật đó tự nói ra "
@@ -203,8 +201,23 @@ def parse_json_items_validated(raw: str, key: str) -> Tuple[List[Dict[str, Any]]
     if not isinstance(items, list):
         return [], False, f"Trường '{key}' phải là danh sách (array)"
 
-    valid_dicts = [i for i in items if isinstance(i, dict)]
-    return valid_dicts, True, None
+    if any(not isinstance(item, dict) for item in items):
+        return [], False, f"Mọi phần tử trong '{key}' phải là object; không được bỏ lỗi để coi như danh sách rỗng"
+    return items, True, None
+
+
+def clean_segment_id(raw: Any, known_ids: Any) -> str:
+    """Maps a model-written id ("[059]", "#59", "59") onto a real segment id.
+
+    Prompts list segments as "[059] text", and models echo that form back;
+    matching only the bare id silently discarded valid findings and repairs.
+    """
+    seg_id = re.sub(r"^\s*(?:segment|id)?\s*[\[#(]*\s*|\s*[\])]*\s*$", "", str(raw or ""), flags=re.IGNORECASE)
+    if seg_id in known_ids or not seg_id.isdigit():
+        return seg_id
+    width = max((len(k) for k in known_ids if str(k).isdigit()), default=len(seg_id))
+    padded = seg_id.zfill(width)
+    return padded if padded in known_ids else seg_id
 
 
 def parse_json_items(raw: str, key: str) -> List[Dict[str, Any]]:
@@ -233,7 +246,7 @@ def rewrite_flagged_segments(
 
     by_id = {s.id: s for s in script.segments}
     last_id = script.segments[-1].id
-    ids = list(flagged)
+    ids = [s.id for s in script.segments if s.id in flagged]
     total_in = total_out = 0
     for start in range(0, len(ids), MAX_SEGMENTS_PER_CALL):
         batch = {seg_id: flagged[seg_id] for seg_id in ids[start:start + MAX_SEGMENTS_PER_CALL]}
@@ -242,18 +255,31 @@ def rewrite_flagged_segments(
         total_out += out_tok
         applied = 0
         for item in parse_json_items(raw, "segments"):
-            seg_id = str(item.get("id", "")).strip()
+            seg_id = clean_segment_id(item.get("id"), batch)
             new_text = re.sub(r"\s+", " ", str(item.get("text", ""))).strip()
             if seg_id not in batch or not new_text:
                 continue
             original = by_id[seg_id].text
             if seg_id != last_id and _SIGNOFF_RE.search(new_text):
                 continue
-            if not 0.4 <= len(new_text) / max(1, len(original)) <= 2.0:
+            # A repeated discovery often needs a short transition. Requiring
+            # its old length silently rejects that repair and preserves the loop.
+            repetition = any(rule in problem for problem in batch[seg_id] for rule in REPETITION_RULES)
+            minimum_ratio = 0.1 if repetition else 0.4
+            ratio = len(new_text) / max(1, len(original))
+            if not (minimum_ratio <= ratio <= 2.0):
+                logger.warning(
+                    f"[SegmentRewriter] Bỏ qua sửa đoạn [{seg_id}]: tỷ lệ độ dài {ratio:.2f} "
+                    f"ngoài giới hạn [{minimum_ratio}, 2.0] (gốc: {len(original)}, mới: {len(new_text)})"
+                )
                 continue
             by_id[seg_id].text = new_text
             rewritten.add(seg_id)
             applied += 1
+
+        unapplied = set(batch.keys()) - rewritten
+        if unapplied:
+            logger.warning(f"[SegmentRewriter] Các đoạn chưa áp dụng sửa trong batch: {sorted(unapplied)}")
         logger.info(f"[SegmentRewriter] {script.episode_id}: rewrote {applied}/{len(batch)} flagged segments")
     return script, total_in, total_out, rewritten
 
@@ -267,7 +293,7 @@ def revise_with_ai(
     """One revision round shared by every provider: AI segment rewrite, then
     deterministic repairs that leave the freshly rewritten segments alone.
 
-    A failed AI call degrades to deterministic repair only.
+    A failed AI call preserves the draft; production never invents replacement prose.
     """
     from apps.script_factory.script_qc import apply_targeted_repairs
 
@@ -276,9 +302,11 @@ def revise_with_ai(
     rewritten: set = set()
     try:
         script, in_tok, out_tok, rewritten = rewrite_flagged_segments(script, story_bible, qc_report, call_llm)
-    except Exception as exc:
-        logger.warning(f"[SegmentRewriter] AI rewrite failed, using deterministic repair only: {exc}")
-    script = apply_targeted_repairs(script, story_bible, qc_report, preserve_segment_ids=rewritten)
+    except Exception:
+        logger.exception('[SegmentRewriter] AI rewrite failed; retaining draft without template replacements')
+        raise
+    script = apply_targeted_repairs(script, story_bible, qc_report, preserve_segment_ids=rewritten,
+                                    allow_prose_templates=False)
     script.total_words = sum(len(s.text.split()) for s in script.segments)
     script.updated_at = time.time()
     return script, in_tok, out_tok

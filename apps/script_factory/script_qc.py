@@ -23,7 +23,7 @@ logger = logging.getLogger("VieNeu.ScriptQC")
 
 SERIES_BIBLE_PATH = Path("script_factory/series_bible.json")
 STORY_FORMULA_PATH = Path("script_factory/story_formula_v1.json")
-SCRIPT_QC_VERSION = "script-qc-v4.2"
+SCRIPT_QC_VERSION = "script-qc-v5.0-tiered"
 
 
 def _vietnamese_integer_words(value: int) -> Optional[str]:
@@ -385,6 +385,89 @@ class ScriptQCEngine:
                 f"Remove the repeated event sequence beginning at segment {second_id}; continue directly to new evidence or reveal."
             )
 
+        # 4.15 LETTER VOICE: the episode is one person's letter. Narration that
+        # says another character "viết rằng"/"viết trong thư" swaps the letter's
+        # author mid-episode (a writer copied the voice sample's sender name).
+        sender = (
+            story_bible.protagonist.get("name", "") if isinstance(story_bible.protagonist, dict)
+            else str(story_bible.protagonist or "")
+        ).strip()
+        sender_tokens = {t.casefold() for t in sender.split()} if sender else set()
+        others = {
+            str(c.get("name", "")).strip()
+            for c in (story_bible.supporting_characters or []) if isinstance(c, dict) and c.get("name")
+        }
+        other_tokens = {
+            name.split()[-1] for name in others
+            if name and name.split()[-1].casefold() not in sender_tokens
+        }
+        if sender_tokens and other_tokens:
+            letter_voice = re.compile(
+                r"\b(" + "|".join(re.escape(t) for t in sorted(other_tokens)) + r")\s+"
+                r"(?:viết\s+(?:rằng|lại|trong\s+thư)|kể\s+trong\s+thư|viết:)"
+            )
+            for seg in script.segments:
+                match = letter_voice.search(seg.text)
+                if match:
+                    evidence_issues.append({
+                        "segment_id": seg.id,
+                        "excerpt": seg.text[:120],
+                        "rule": "LETTER_VOICE_MIXUP",
+                        "severity": "CRITICAL",
+                        "recommended_action": f"Lá thư do {sender} gửi. Chuyển thành lời thoại của {match.group(1)} hoặc lời kể của {sender}.",
+                        "message": f"Phân đoạn [{seg.id}] để {match.group(1)} 'viết' như thể là người gửi thư, trong khi người gửi thư là {sender}.",
+                    })
+                    logic_issues.append(f"[{seg.id}] Letter voice attributed to {match.group(1)} instead of {sender}.")
+
+        # 4.155 PROCEDURAL EVIDENCE: a hotel/bank/building handing private data to a spouse.
+        from apps.script_factory.script_craft import procedural_evidence_hits
+        for index in procedural_evidence_hits([seg.text for seg in script.segments]):
+            seg = script.segments[index]
+            evidence_issues.append({
+                "segment_id": seg.id,
+                "excerpt": seg.text[:120],
+                "rule": "INFEASIBLE_EVIDENCE",
+                "severity": "CRITICAL",
+                "recommended_action": "Thay bằng bằng chứng đời thường người thường có được (tận mắt thấy, người quen kể, đồ vật, máy dùng chung).",
+                "message": f"Phân đoạn [{seg.id}] lấy bằng chứng nhờ một tổ chức cung cấp dữ liệu riêng của người khác; ngoài đời không xảy ra.",
+            })
+
+        # 4.158 ENDING NOT DELIVERED: the confession goes straight to the closing
+        # reflection and the Story Bible resolution never airs. Advisory only: the
+        # measure is lexical, and the writer already inserts a missing resolution.
+        from apps.script_factory.script_craft import ENDING_COVERAGE_MIN, closing_block_start, ending_coverage
+        coverage = ending_coverage([seg.text for seg in script.segments], getattr(story_bible, "ending", ""))
+        if coverage is not None and coverage < ENDING_COVERAGE_MIN:
+            close_at = max(0, closing_block_start(script.segments) - 1)
+            seg = script.segments[close_at]
+            evidence_issues.append({
+                "segment_id": seg.id,
+                "excerpt": seg.text[:120],
+                "rule": "ENDING_NOT_DELIVERED",
+                "severity": "WARNING",
+                "recommended_action": "Thêm 5-7 đoạn kể phần giải quyết bằng hành động theo kết thúc trong Story Bible, trước lời chiêm nghiệm.",
+                "message": f"Sau cảnh đối chất, kịch bản chuyển ngay sang lời kết; phần kết thúc trong Story Bible gần như không được kể (độ phủ {coverage:.2f}).",
+            })
+
+        # 4.16 REPEATED SCENE: the same line of dialogue said again in a later
+        # scene means the second half retold a scene (shop visit asked twice).
+        from apps.script_factory.scene_outline import repeated_dialogue_pairs
+        by_seg = {seg.id: seg for seg in script.segments}
+        for first_id, later_id in repeated_dialogue_pairs(script.segments):
+            evidence_issues.append({
+                "segment_id": later_id,
+                "related_segment_ids": [first_id],
+                "excerpt": by_seg[later_id].text[:120],
+                "rule": "REPEATED_SCENE_DIALOGUE",
+                "severity": "CRITICAL",
+                "recommended_action": (
+                    f"Cảnh này lặp lại cuộc trò chuyện ở [{first_id}]. Viết lại thành diễn biến MỚI tiếp nối "
+                    "hoặc rút gọn thành một câu chuyển cảnh; không hỏi lại câu đã hỏi."
+                ),
+                "message": f"Phân đoạn [{later_id}] lặp lại gần nguyên văn lời thoại đã có ở [{first_id}]: \"{by_seg[first_id].text[:100]}\"",
+            })
+            repetition_issues.append(f"[{later_id}] repeats dialogue from [{first_id}].")
+
         # 4.2 ADJACENT SEGMENT ECHO
         # Chunked generation often restates the last beat of a segment as the
         # opening of the next one ("... bắt máy." -> "Đầu dây bên kia bắt máy, ...").
@@ -725,7 +808,6 @@ class ScriptQCEngine:
         malformed_patterns = [
             r"khiến\s+[^.!?]{0,45}\s+đau\s+lòng\s+vào\s+(?:trái\s+)?tim",
             r"khiến\s+[^.!?]{0,30}\s+như\s+bị\s+bàng\s+hoàng\s+sửng\s+sốt",
-            r"\b(?:em|anh|chị|cô)\.\s+(?:em|anh|chị|cô)\b",
             r"\bcòn\s+[^.!?]{1,35}\s+thì\.\s*$",
             r"^sự\s+sụp\s+đổ\s+[^.!?]{5,90}\s+khi\s+[^.!?]+\.\s*$",
         ]
@@ -751,6 +833,20 @@ class ScriptQCEngine:
 
         # Narration that grades evidence like an audit report ("Manh mối thứ ba
         # này chứng minh…") is a prompt artefact, not storytelling.
+        # Defensive narration ("chưa đủ để kết luận" in segment after segment) is
+        # what a model writes when it only knows prohibitions; flag it for the editor.
+        from apps.script_factory.script_craft import hedge_segment_ids
+        hedged = hedge_segment_ids(script.segments)
+        if len(hedged) >= 4:
+            evidence_issues.append({
+                "segment_id": hedged[0],
+                "excerpt": next(seg.text for seg in script.segments if seg.id == hedged[0])[:120],
+                "rule": "NARRATOR_HEDGING",
+                "severity": "WARNING",
+                "recommended_action": "Thay câu rào đón bằng một hành động kiểm chứng cụ thể của nhân vật.",
+                "message": f"Người kể rào đón ở {len(hedged)} đoạn ({', '.join(hedged[:6])}), làm truyện nhạt.",
+            })
+
         analyst_pattern = re.compile(
             r"(?:manh\s+mối|chi\s+tiết|bằng\s+chứng)\s+(?:thứ\s+\w+|đầu\s+tiên|cuối\s+cùng|\d+)\s+(?:này\s+)?"
             r"(?:từ\s+[^.,]{1,30}\s+)?(?:chỉ\s+)?(?:chứng\s+minh|cho\s+thấy|xác\s+nhận)"
@@ -1129,24 +1225,49 @@ class ScriptQCEngine:
                 if topic_eval.get("drift_terms"):
                     drift_msg += f" Phát hiện yếu tố ngoại lai lấn át: {', '.join(topic_eval['drift_terms'][:5])}."
 
-                evidence_issues.append({
-                    "segment_id": first_seg.id,
-                    "excerpt": first_seg.text[:100],
-                    "rule": "FINAL_SCRIPT_TOPIC_DRIFT",
-                    "severity": "CRITICAL",
-                    "recommended_action": f"Viết lại kịch bản bám sát tuyệt đối chủ đề '{orig_topic}'.",
-                    "message": drift_msg,
-                })
-                fact_conflicts.append({
-                    "fact_id": "TOPIC_DRIFT",
-                    "segment_id": first_seg.id,
-                    "type": "FINAL_SCRIPT_TOPIC_DRIFT",
-                    "expected": orig_topic,
-                    "found": f"Score {script_topic_score}/100",
-                    "description": drift_msg,
-                })
-                logic_issues.append(f"[FINAL_SCRIPT_TOPIC_DRIFT] {drift_msg}")
-                revision_requests.append(f"Regenerate/revise script to center on user topic: {orig_topic}.")
+                # Centrality only counts topic keywords. A story whose evidence and
+                # reveal are both on topic, with no foreign trope, is not drifting —
+                # it just phrases the topic differently ("quan hệ ngoài hôn nhân").
+                # That is an editor note; a hard FAIL here sent on-topic scripts into
+                # endless repair rounds that rewrote segment 001 and changed nothing.
+                on_topic_story = (
+                    topic_eval["topic_reveal_alignment"] >= 80
+                    and topic_eval["topic_evidence_coverage"] >= 80
+                    and not topic_eval.get("drift_terms")
+                )
+                if on_topic_story:
+                    evidence_issues.append({
+                        "segment_id": first_seg.id,
+                        "excerpt": first_seg.text[:100],
+                        "rule": "TOPIC_EMPHASIS_LOW",
+                        "severity": "WARNING",
+                        "recommended_action": f"Cân nhắc nhắc rõ hơn chủ đề '{orig_topic}' ở mở đầu và cao trào.",
+                        "message": (
+                            f"Cú lật và bằng chứng đúng chủ đề, nhưng lời dẫn ít gọi tên chủ đề "
+                            f"(Centrality {topic_eval['topic_centrality_score']}/100)."
+                        ),
+                    })
+                    script_topic_score = max(script_topic_score, 75.0)
+                    drift_msg = ""
+                if drift_msg:
+                    evidence_issues.append({
+                        "segment_id": first_seg.id,
+                        "excerpt": first_seg.text[:100],
+                        "rule": "FINAL_SCRIPT_TOPIC_DRIFT",
+                        "severity": "CRITICAL",
+                        "recommended_action": f"Viết lại kịch bản bám sát tuyệt đối chủ đề '{orig_topic}'.",
+                        "message": drift_msg,
+                    })
+                    fact_conflicts.append({
+                        "fact_id": "TOPIC_DRIFT",
+                        "segment_id": first_seg.id,
+                        "type": "FINAL_SCRIPT_TOPIC_DRIFT",
+                        "expected": orig_topic,
+                        "found": f"Score {script_topic_score}/100",
+                        "description": drift_msg,
+                    })
+                    logic_issues.append(f"[FINAL_SCRIPT_TOPIC_DRIFT] {drift_msg}")
+                    revision_requests.append(f"Regenerate/revise script to center on user topic: {orig_topic}.")
 
         # 20. SCRIPT PROSE & NATURAL STORYTELLING QC V3
         from apps.script_factory.story_logic_v3 import ScriptProseQCV3Engine
@@ -1206,8 +1327,49 @@ class ScriptQCEngine:
             "SEMANTIC_REVIEW_FAILED",
             "GENERIC_PHILOSOPHICAL_HOOK",
             "OBJECT_CONTINUITY_CONTRADICTION",
-            "QC_REPORT_TONE_LEAKAGE",
         }
+        hard_fail_rules = {
+            "FINAL_SCRIPT_TOPIC_DRIFT",
+            "INTERNAL_TEMPLATE_LEAKAGE",
+            "RELATIONSHIP_TIMELINE_CONTRADICTION",
+            "TIMELINE_FACT_CONTRADICTION",
+            "PREMATURE_SIGNOFF",
+            "DUPLICATE_SIGNOFF",
+            "CONTENT_AFTER_SIGNOFF",
+            "REPEATED_NARRATIVE_BLOCK",
+            "MALFORMED_VIETNAMESE_PROSE",
+            "STRUCTURED_STORY_DATA_LEAKAGE",
+            "UNSUPPORTED_PATERNITY_CLAIM",
+            "LEGAL_CLAIM_SAFETY",
+        }
+
+        # TIERED VERDICT. An LLM judge always finds something in 90 segments, so
+        # "zero findings" is unreachable and repair rounds that chase taste-level
+        # findings rewrite fragments and create new defects. Only objective defects
+        # block; judgement calls (POV nuance, ordering, style) become warnings that
+        # are shown to the user and never trigger automatic rewrites.
+        objective_rules = {
+            "INFEASIBLE_EVIDENCE", "CONCLUSION_BEFORE_PROOF", "LEGAL_OR_MEDICAL_UNREALISTIC",
+            "GARBLED_VIETNAMESE", "UNRESOLVED_SETUP", "SEMANTIC_REVIEW_PENDING",
+            "POV_KNOWLEDGE_VIOLATION", "TIMELINE_ORDER_ERROR", "REPEATED_DISCOVERY",
+            "REPEATED_SCENE_DIALOGUE", "UNRESOLVED_CORE_PROP", "PROP_LOCATION_CONTRADICTION",
+        }
+        from apps.script_factory.narrative_rules import JUDGEMENT_RULES as judgement_rules
+
+        def _blocks(issue: Dict[str, Any]) -> bool:
+            rule = issue.get("rule")
+            if rule in hard_fail_rules or rule in objective_rules:
+                return True
+            return issue.get("severity") == "CRITICAL" and rule not in judgement_rules
+
+        warnings = [dict(iss, blocking=False) for iss in evidence_issues if not _blocks(iss)]
+        evidence_issues = [iss for iss in evidence_issues if _blocks(iss)]
+        warnings += [
+            dict(adv, severity="WARNING", blocking=False)
+            for adv in (semantic_review or {}).get("advisories", [])
+            if isinstance(adv, dict)
+        ]
+
         has_critical_failure = (
             any(
                 c.get("type") in [
@@ -1233,30 +1395,15 @@ class ScriptQCEngine:
             )
             or any(iss.get("severity") == "CRITICAL" or iss.get("rule") in critical_rule_set for iss in evidence_issues)
         )
-        hard_fail_rules = {
-            "FINAL_SCRIPT_TOPIC_DRIFT",
-            "INTERNAL_TEMPLATE_LEAKAGE",
-            "RELATIONSHIP_TIMELINE_CONTRADICTION",
-            "TIMELINE_FACT_CONTRADICTION",
-            "PREMATURE_SIGNOFF",
-            "DUPLICATE_SIGNOFF",
-            "CONTENT_AFTER_SIGNOFF",
-            "REPEATED_NARRATIVE_BLOCK",
-            "MALFORMED_VIETNAMESE_PROSE",
-            "STRUCTURED_STORY_DATA_LEAKAGE",
-            "UNSUPPORTED_PATERNITY_CLAIM",
-            "LEGAL_CLAIM_SAFETY",
-        }
         has_hard_fail = any(iss.get("rule") in hard_fail_rules for iss in evidence_issues)
         has_issues = bool(fact_conflicts or logic_issues or repetition_issues or evidence_issues)
 
         if has_hard_fail:
             status = "FAIL"
-        elif has_critical_failure or len(logic_issues) > 2 or any(iss.get("severity") == "HIGH" for iss in evidence_issues):
-            status = "NEEDS_REVISION"
-        elif has_issues:
+        elif has_critical_failure or evidence_issues or fact_conflicts:
             status = "NEEDS_REVISION"
         else:
+            # Remaining findings (if any) are in ``warnings``: visible, non-blocking.
             status = "PASS"
 
         melodrama_v2_score = max(0.0, 100.0 - len(cliche_hits) * 15.0 - len(severe_v2_hits) * 20.0)
@@ -1283,6 +1430,7 @@ class ScriptQCEngine:
             repetition_issues=repetition_issues,
             revision_requests=revision_requests,
             evidence_issues=evidence_issues,
+            warnings=warnings,
             checked_at=time.time(),
             qc_version=SCRIPT_QC_VERSION,
             semantic_review=semantic_review,
@@ -1352,6 +1500,7 @@ def apply_targeted_repairs(
     story_bible: StoryBible,
     qc_report: QCReport,
     preserve_segment_ids: Optional[set] = None,
+    allow_prose_templates: bool = True,
 ) -> FullScript:
     """Applies targeted repairs to specific segments flagged by QC without regenerating the entire script.
 
@@ -1403,7 +1552,7 @@ def apply_targeted_repairs(
 
     # Repair a slow/generic hook using facts that already exist in the Story
     # Bible. This changes presentation only and never invents a new clue.
-    if "HOOK_TOO_SLOW" in issue_rules and script.segments and script.segments[0].id not in preserved:
+    if allow_prose_templates and "HOOK_TOO_SLOW" in issue_rules and script.segments and script.segments[0].id not in preserved:
         clue_source = story_bible.structured_clues or story_bible.clues or []
         first_clue = ""
         if clue_source:
@@ -1426,192 +1575,195 @@ def apply_targeted_repairs(
         script.segments[0].delivery_profile = "HOOK"
         script.segments[0].audience_address = False
 
-    # 1. Clean Story Bible Leakage & Internal Templates
-    leakage_guard = StoryBibleLeakageGuard()
-    for s in script.segments:
-        s.text = leakage_guard.clean_text_from_leakage(s.text, protagonist_name=protag)
+    # Legacy repairs remain available to offline callers. Production prose is
+    # rewritten by AI and must not mutate its approved Story Bible.
+    if allow_prose_templates:
+        # 1. Clean Story Bible Leakage & Internal Templates
+        leakage_guard = StoryBibleLeakageGuard()
+        for s in script.segments:
+            s.text = leakage_guard.clean_text_from_leakage(s.text, protagonist_name=protag)
 
-    # 2. Repair Fact & Logic Conflicts (Hook, Character, Hallucination, Causal Gap, Knowledge, Evidence, Episode ID)
-    from apps.script_factory.story_qc import StoryQCEngine
-    StoryQCEngine().repair_story_bible(story_bible)
+        # 2. Repair Fact & Logic Conflicts (Hook, Character, Hallucination, Causal Gap, Knowledge, Evidence, Episode ID)
+        from apps.script_factory.story_qc import StoryQCEngine
+        StoryQCEngine().repair_story_bible(story_bible)
 
-    for conflict in qc_report.fact_conflicts:
-        ctype = conflict.get("type")
-        sid = conflict.get("segment_id")
-        if sid in preserved:
-            continue
-        if ctype == "HOOK_FACT_CONTRADICTION" and sid in seg_map:
-            seg = seg_map[sid]
-            seg.text = (
-                f"Trong bức thư gửi về chương trình, {protag} chia sẻ về những nghi ngờ ban đầu xoay quanh "
-                f"biến cố của gia đình, đặt ra câu hỏi lớn về sự thật bị che giấu."
-            )
-        elif ctype == "CHARACTER_FACT_VIOLATION" and sid in seg_map:
-            seg = seg_map[sid]
-            for wrong_term in ["hai người con trai", "hai con trai", "2 người con trai", "cả hai cậu con trai", "hai anh em trai"]:
-                seg.text = re.sub(wrong_term, "hai chị em trong gia đình", seg.text, flags=re.IGNORECASE)
-        elif ctype == "UNGROUNDED_CHARACTER_HALLUCINATION" and sid in seg_map:
-            seg = seg_map[sid]
-            found_char = conflict.get("found", "")
-            if found_char:
-                seg.text = seg.text.replace(found_char, "người quen trong câu chuyện")
-        elif ctype == "CAUSAL_GAP" and sid in seg_map:
-            seg = seg_map[sid]
-            if seg.delivery_profile != "ENDING":
-                causal_desc = ""
-                for c in (story_bible.causal_chains or []):
-                    if isinstance(c, dict) and c.get("motivation"):
-                        causal_desc = c.get("motivation")
-                        break
-                if causal_desc:
-                    seg.text = (
-                        f"Trong bối cảnh thực tế lúc đó, {causal_desc.lower().rstrip('.')} nên việc giữ im lặng và giải quyết "
-                        f"trong âm thầm là phương án bất khả kháng duy nhất của những người trong cuộc."
-                    )
-                else:
-                    seg.text = (
-                        f"Trước những áp lực và ràng buộc thực tế tại thời điểm đó, việc giữ im lặng và giải quyết vấn đề "
-                        f"trong âm thầm là phương án bất khả kháng duy nhất để hạn chế những tổn thương không đáng có."
-                    )
-        elif ctype == "CHARACTER_KNOWLEDGE_CONTRADICTION" and sid in seg_map:
-            seg = seg_map[sid]
-            seg.text = re.sub(
-                r"(?:không\s+thể\s+sẻ\s+chia\s+cùng\s+ai(?:\s*,?\s*kể\s+cả\s+(?:với\s+)?người\s+vợ(?:\s+gối\s+chăn)?)?|kể\s+cả\s+(?:với\s+)?người\s+vợ(?:\s+gối\s+chăn)?|không\s+một\s+ai\s+(?:hay\s+)?biết|không\s+ai\s+trên\s+đời\s+biết|chỉ\s+một\s+mình\s+[^\s,]+\s+biết)",
-                "chỉ được giữ kín giữa những người trong cuộc suốt nhiều năm",
-                seg.text,
-                flags=re.IGNORECASE,
-            )
-        elif ctype == "EVIDENCE_DOES_NOT_PROVE_CLAIM" and sid in seg_map:
-            seg = seg_map[sid]
-            seg.text = (
-                f"Chi tiết vật chứng này bước đầu cho thấy mối liên hệ đặc biệt trong quá khứ, "
-                f"nhưng chưa đủ để kết luận ngay sự thật mà đặt ra câu hỏi cần tiếp tục đối chiếu hồ sơ gốc."
-            )
-
-    # 2b. Repair Spoken Internal Episode IDs & Fake Serial Breaks across all segments
-    internal_code_pat = re.compile(
-        r"\b(?:mã\s+số\s+)?(EP_?[A-Z0-9_]*\d+|IDEA_\d+|PROJ_[A-Z0-9_]+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b",
-        re.IGNORECASE,
-    )
-    spoken_ep_num_pat = re.compile(
-        r"\btập\s+(?:số\s+|phim\s+|thứ\s+)?("
-        r"\d+"
-        r"|(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|trăm|nghìn|ngàn)(?:\s+(?:một|mốt|hai|ba|bốn|tư|năm|lăm|sáu|bảy|tám|chín|mười|mươi|trăm|nghìn|ngàn|linh|lẻ|không))*"
-        r")\s*(?:của\s+(?:series\s+|chương\s+trình\s+)?)?",
-        re.IGNORECASE,
-    )
-    serial_break_pat = re.compile(
-        r"(?:hãy\s+đón\s+xem\s+phần\s+tiếp\s+theo|đón\s+xem\s+phần\s+sau|ở\s+phần\s+tiếp\s+theo|phần\s+tiếp\s+theo|ở\s+phần\s+sau|hãy\s+đón\s+xem|chúng\s+ta\s+sẽ\s+quay\s+lại\s+sau|quay\s+lại\s+sau\s+ít\s+phút)",
-        re.IGNORECASE,
-    )
-    for idx, s in enumerate(script.segments):
-        if internal_code_pat.search(s.text) or spoken_ep_num_pat.search(s.text):
-            if "chào mừng" in s.text.lower() or "sau cánh cửa" in s.text.lower():
-                s.text = "Chào mừng quý vị và các bạn đến với Sau Cánh Cửa."
-            else:
-                s.text = internal_code_pat.sub("", s.text)
-                s.text = spoken_ep_num_pat.sub("", s.text)
-                s.text = re.sub(r"\s{2,}", " ", s.text).strip()
-
-        if serial_break_pat.search(s.text):
-            if idx >= len(script.segments) - 2:
-                s.text = serial_break_pat.sub("", s.text)
-                s.text = re.sub(r"\s{2,}", " ", s.text).strip()
-            else:
-                s.text = serial_break_pat.sub("tiếp nối mạch câu chuyện", s.text)
-        if re.search(r"\btập\s+tiếp\s+theo\b", s.text, re.IGNORECASE):
-            if idx >= len(script.segments) - 2:
-                # Ending segment: standard sign-off
-                s.text = re.sub(r"(?:hẹn\s+gặp\s+lại\s+quý\s+vị\s+trong\s+)?tập\s+tiếp\s+theo(?:\s+của\s+sau\s+cánh\s+cửa)?\.?", "Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", s.text, flags=re.IGNORECASE)
-                s.text = re.sub(r"\btập\s+tiếp\s+theo\b", "", s.text, flags=re.IGNORECASE)
-            else:
-                s.text = re.sub(r"\btập\s+tiếp\s+theo\b", "diễn biến tiếp theo của câu chuyện", s.text, flags=re.IGNORECASE)
-            s.text = re.sub(r"\s{2,}", " ", s.text).strip()
-
-    # 3. Repair Melodramatic Cliches V2 -> Conversational MC Minh Phrasing (Show, Don't Label)
-    cliche_replacements = {
-        "bí mật động trời": "bí mật được giấu kín nhiều năm",
-        "sự thật động trời": "sự thật bất ngờ",
-        "như một đòn chí mạng": "khiến mọi người lặng đi",
-        "đòn chí mạng": "cú sốc lớn",
-        "sự thật kinh hoàng": "sự thật nặng nề",
-        "cuộc gặp gỡ định mệnh": "cuộc gặp gỡ năm ấy",
-        "đau đớn đến tận cùng": "xót xa nghẹn lời",
-        "vĩ đại ẩn giấu": "lặng lẽ",
-        "mê cung không lối thoát": "những câu hỏi chưa có lời giải",
-        "nấc nghẹn ngào đến xé lòng": "khóc lặng lẽ",
-        "nghẹn ngào đến xé lòng": "rưng rưng xúc động",
-        "chấn động toàn bộ": "làm xáo trộn",
-        "cuộc chiến ngầm khốc liệt": "những rạn nứt âm thầm",
-        "không tiếng súng": "lặng lẽ",
-        "đập tan mọi nghi kỵ": "tháo gỡ những hoài nghi",
-        "bóc tách sự thật": "lần mở từng mảnh ghép sự thật",
-        "sét đánh ngang tai": "bàng hoàng sửng sốt",
-        "bão táp phong ba": "những biến cố dồn dập",
-        "chết lặng trong đau đớn": "lặng người đi vì xót xa",
-        "tan nát cõi lòng": "trĩu nặng nỗi buồn",
-        "cơn địa chấn": "cú sốc lớn",
-        "vạch trần bộ mặt thật": "nhìn rõ câu chuyện phía sau",
-        "bản án lương tâm": "nỗi day dứt trong lòng",
-        "bi kịch đẫm nước mắt": "câu chuyện nhiều nỗi niềm",
-        "sự thật rỉ máu": "sự thật đau lòng",
-        "chiếc lồng kính ngột ngạt": "không gian tĩnh lặng",
-        "bóng ma vô hình": "nỗi ám ảnh vô hình",
-        "mặt nạ hoàn hảo": "vẻ ngoài bình thường",
-        "bức tường phòng thủ cuối cùng sụp đổ": "cô không còn né tránh câu hỏi",
-        "mảnh vỡ vụn": "những điều đã rạn nứt",
-        "đẩy mọi thứ xuống vực sâu": "khiến mọi chuyện trở nên tệ hơn",
-        "không gian xung quanh đặc quánh lại": "căn phòng im hẳn",
-        "như một nhát dao đâm thẳng": "khiến anh đau lòng",
-        "đứng lặng như tượng đá": "đứng lặng, chưa biết nói gì",
-        "những giọt nước mắt muộn màng": "cô bật khóc",
-        "tiếng khóc xé lòng": "tiếng khóc nghẹn lại",
-        "vết thương sâu hoắm": "tổn thương khó nguôi",
-    }
-    for s in script.segments:
-        for bad_phrase, natural_phrase in cliche_replacements.items():
-            if bad_phrase in s.text.lower():
-                s.text = re.sub(re.escape(bad_phrase), natural_phrase, s.text, flags=re.IGNORECASE)
-
-    # 4. Repair Unsafe Legal Claims -> Grounded Social/Familial Phrasing
-    legal_replacements = [
-        (r"tòa\s+án\s+tuyên\s+bố\s+vô\s+hiệu\s+ngay\s+lập\s+tức", "dấy lên nhiều tranh cãi về tính xác thực"),
-        (r"công\s+an\s+bắt\s+giữ\s+khẩn\s+cấp\s+ngay\s+tại", "cơ quan chức năng mời làm việc để xác minh tại"),
-        (r"di\s+chúc\s+miệng\s+mặc\s+nhiên\s+vô\s+giá\s+trị", "lời dặn dò lúc lâm chung khiến gia đình bối rối"),
-        (r"tước\s+quyền\s+thừa\s+kế\s+ngay\s+tức\s+khắc", "làm thay đổi hoàn toàn dự định phân chia tài sản"),
-        (r"khẳng\s+định\s+quyền\s+sở\s+hữu\s+hợp\s+pháp\s+tuyệt\s+đối", "là manh mối quan trọng để đối chiếu nguồn gốc tài sản"),
-        (r"tờ\s+giấy\s+này\s+chứng\s+minh\s+hoàn\s+toàn\s+quyền\s+sở\s+hữu", "tờ giấy này hé lộ nguồn gốc thực sự của tài sản"),
-        (r"vô\s+hiệu\s+hóa\s+hoàn\s+toàn\s+về\s+mặt\s+pháp\s+lý\s+ngay\s+tại\s+chỗ", "đặt ra dấu hỏi lớn về giá trị thực sự của văn bản"),
-    ]
-    for s in script.segments:
-        for pat, repl in legal_replacements:
-            s.text = re.sub(pat, repl, s.text, flags=re.IGNORECASE)
-
-    # 5. Repair Ending Proportion & Semantic Repetition if overlong or repetitive
-    has_ending_rep = any(iss.get("rule") == "ENDING_SEMANTIC_REPETITION" for iss in qc_report.evidence_issues)
-    if has_ending_rep and len(script.segments) >= 5:
-        tail_len = max(5, int(len(script.segments) * 0.15))
-        tail_start = max(0, len(script.segments) - tail_len)
-        moralizing_phrases = [
-            r"bài\s+học", r"thấu\s+hiểu", r"bao\s+dung", r"tha\s+thứ", r"chữa\s+lành",
-            r"mặt\s+nạ", r"đằng\s+sau\s+cánh\s+cửa", r"giá\s+trị\s+của", r"cuộc\s+sống\s+dạy\s+chúng\s+ta",
-            r"lời\s+cảnh\s+tỉnh", r"nhìn\s+lại\s+chính\s+mình", r"tình\s+thân",
-        ]
-        reflection_kept = False
-        for idx in range(tail_start, len(script.segments) - 1):
-            seg = script.segments[idx]
-            if seg.delivery_profile in ("HOOK", "REVEAL"):
+        for conflict in qc_report.fact_conflicts:
+            ctype = conflict.get("type")
+            sid = conflict.get("segment_id")
+            if sid in preserved:
                 continue
-            hits = sum(1 for p in moralizing_phrases if re.search(p, seg.text, re.IGNORECASE))
-            if hits >= 2 or (hits >= 1 and seg.delivery_profile == "COMMENT"):
-                if not reflection_kept:
-                    seg.text = story_bible.reflection_theme or "Đằng sau cánh cửa mỗi gia đình, sự thấu hiểu luôn bắt đầu từ lòng bao dung."
-                    seg.delivery_profile = "COMMENT"
-                    reflection_kept = True
+            if ctype == "HOOK_FACT_CONTRADICTION" and sid in seg_map:
+                seg = seg_map[sid]
+                seg.text = (
+                    f"Trong bức thư gửi về chương trình, {protag} chia sẻ về những nghi ngờ ban đầu xoay quanh "
+                    f"biến cố của gia đình, đặt ra câu hỏi lớn về sự thật bị che giấu."
+                )
+            elif ctype == "CHARACTER_FACT_VIOLATION" and sid in seg_map:
+                seg = seg_map[sid]
+                for wrong_term in ["hai người con trai", "hai con trai", "2 người con trai", "cả hai cậu con trai", "hai anh em trai"]:
+                    seg.text = re.sub(wrong_term, "hai chị em trong gia đình", seg.text, flags=re.IGNORECASE)
+            elif ctype == "UNGROUNDED_CHARACTER_HALLUCINATION" and sid in seg_map:
+                seg = seg_map[sid]
+                found_char = conflict.get("found", "")
+                if found_char:
+                    seg.text = seg.text.replace(found_char, "người quen trong câu chuyện")
+            elif ctype == "CAUSAL_GAP" and sid in seg_map:
+                seg = seg_map[sid]
+                if seg.delivery_profile != "ENDING":
+                    causal_desc = ""
+                    for c in (story_bible.causal_chains or []):
+                        if isinstance(c, dict) and c.get("motivation"):
+                            causal_desc = c.get("motivation")
+                            break
+                    if causal_desc:
+                        seg.text = (
+                            f"Trong bối cảnh thực tế lúc đó, {causal_desc.lower().rstrip('.')} nên việc giữ im lặng và giải quyết "
+                            f"trong âm thầm là phương án bất khả kháng duy nhất của những người trong cuộc."
+                        )
+                    else:
+                        seg.text = (
+                            f"Trước những áp lực và ràng buộc thực tế tại thời điểm đó, việc giữ im lặng và giải quyết vấn đề "
+                            f"trong âm thầm là phương án bất khả kháng duy nhất để hạn chế những tổn thương không đáng có."
+                        )
+            elif ctype == "CHARACTER_KNOWLEDGE_CONTRADICTION" and sid in seg_map:
+                seg = seg_map[sid]
+                seg.text = re.sub(
+                    r"(?:không\s+thể\s+sẻ\s+chia\s+cùng\s+ai(?:\s*,?\s*kể\s+cả\s+(?:với\s+)?người\s+vợ(?:\s+gối\s+chăn)?)?|kể\s+cả\s+(?:với\s+)?người\s+vợ(?:\s+gối\s+chăn)?|không\s+một\s+ai\s+(?:hay\s+)?biết|không\s+ai\s+trên\s+đời\s+biết|chỉ\s+một\s+mình\s+[^\s,]+\s+biết)",
+                    "chỉ được giữ kín giữa những người trong cuộc suốt nhiều năm",
+                    seg.text,
+                    flags=re.IGNORECASE,
+                )
+            elif ctype == "EVIDENCE_DOES_NOT_PROVE_CLAIM" and sid in seg_map:
+                seg = seg_map[sid]
+                seg.text = (
+                    f"Chi tiết vật chứng này bước đầu cho thấy mối liên hệ đặc biệt trong quá khứ, "
+                    f"nhưng chưa đủ để kết luận ngay sự thật mà đặt ra câu hỏi cần tiếp tục đối chiếu hồ sơ gốc."
+                )
+
+        # 2b. Repair Spoken Internal Episode IDs & Fake Serial Breaks across all segments
+        internal_code_pat = re.compile(
+            r"\b(?:mã\s+số\s+)?(EP_?[A-Z0-9_]*\d+|IDEA_\d+|PROJ_[A-Z0-9_]+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b",
+            re.IGNORECASE,
+        )
+        spoken_ep_num_pat = re.compile(
+            r"\btập\s+(?:số\s+|phim\s+|thứ\s+)?("
+            r"\d+"
+            r"|(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|trăm|nghìn|ngàn)(?:\s+(?:một|mốt|hai|ba|bốn|tư|năm|lăm|sáu|bảy|tám|chín|mười|mươi|trăm|nghìn|ngàn|linh|lẻ|không))*"
+            r")\s*(?:của\s+(?:series\s+|chương\s+trình\s+)?)?",
+            re.IGNORECASE,
+        )
+        serial_break_pat = re.compile(
+            r"(?:hãy\s+đón\s+xem\s+phần\s+tiếp\s+theo|đón\s+xem\s+phần\s+sau|ở\s+phần\s+tiếp\s+theo|phần\s+tiếp\s+theo|ở\s+phần\s+sau|hãy\s+đón\s+xem|chúng\s+ta\s+sẽ\s+quay\s+lại\s+sau|quay\s+lại\s+sau\s+ít\s+phút)",
+            re.IGNORECASE,
+        )
+        for idx, s in enumerate(script.segments):
+            if internal_code_pat.search(s.text) or spoken_ep_num_pat.search(s.text):
+                if "chào mừng" in s.text.lower() or "sau cánh cửa" in s.text.lower():
+                    s.text = "Chào mừng quý vị và các bạn đến với Sau Cánh Cửa."
                 else:
-                    seg.text = "Mọi biến cố rồi cũng dần khép lại trong sự bình yên của căn nhà nhỏ."
-                    seg.delivery_profile = "NORMAL"
-                    seg.audience_address = False
+                    s.text = internal_code_pat.sub("", s.text)
+                    s.text = spoken_ep_num_pat.sub("", s.text)
+                    s.text = re.sub(r"\s{2,}", " ", s.text).strip()
+
+            if serial_break_pat.search(s.text):
+                if idx >= len(script.segments) - 2:
+                    s.text = serial_break_pat.sub("", s.text)
+                    s.text = re.sub(r"\s{2,}", " ", s.text).strip()
+                else:
+                    s.text = serial_break_pat.sub("tiếp nối mạch câu chuyện", s.text)
+            if re.search(r"\btập\s+tiếp\s+theo\b", s.text, re.IGNORECASE):
+                if idx >= len(script.segments) - 2:
+                    # Ending segment: standard sign-off
+                    s.text = re.sub(r"(?:hẹn\s+gặp\s+lại\s+quý\s+vị\s+trong\s+)?tập\s+tiếp\s+theo(?:\s+của\s+sau\s+cánh\s+cửa)?\.?", "Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", s.text, flags=re.IGNORECASE)
+                    s.text = re.sub(r"\btập\s+tiếp\s+theo\b", "", s.text, flags=re.IGNORECASE)
+                else:
+                    s.text = re.sub(r"\btập\s+tiếp\s+theo\b", "diễn biến tiếp theo của câu chuyện", s.text, flags=re.IGNORECASE)
+                s.text = re.sub(r"\s{2,}", " ", s.text).strip()
+
+        # 3. Repair Melodramatic Cliches V2 -> Conversational MC Minh Phrasing (Show, Don't Label)
+        cliche_replacements = {
+            "bí mật động trời": "bí mật được giấu kín nhiều năm",
+            "sự thật động trời": "sự thật bất ngờ",
+            "như một đòn chí mạng": "khiến mọi người lặng đi",
+            "đòn chí mạng": "cú sốc lớn",
+            "sự thật kinh hoàng": "sự thật nặng nề",
+            "cuộc gặp gỡ định mệnh": "cuộc gặp gỡ năm ấy",
+            "đau đớn đến tận cùng": "xót xa nghẹn lời",
+            "vĩ đại ẩn giấu": "lặng lẽ",
+            "mê cung không lối thoát": "những câu hỏi chưa có lời giải",
+            "nấc nghẹn ngào đến xé lòng": "khóc lặng lẽ",
+            "nghẹn ngào đến xé lòng": "rưng rưng xúc động",
+            "chấn động toàn bộ": "làm xáo trộn",
+            "cuộc chiến ngầm khốc liệt": "những rạn nứt âm thầm",
+            "không tiếng súng": "lặng lẽ",
+            "đập tan mọi nghi kỵ": "tháo gỡ những hoài nghi",
+            "bóc tách sự thật": "lần mở từng mảnh ghép sự thật",
+            "sét đánh ngang tai": "bàng hoàng sửng sốt",
+            "bão táp phong ba": "những biến cố dồn dập",
+            "chết lặng trong đau đớn": "lặng người đi vì xót xa",
+            "tan nát cõi lòng": "trĩu nặng nỗi buồn",
+            "cơn địa chấn": "cú sốc lớn",
+            "vạch trần bộ mặt thật": "nhìn rõ câu chuyện phía sau",
+            "bản án lương tâm": "nỗi day dứt trong lòng",
+            "bi kịch đẫm nước mắt": "câu chuyện nhiều nỗi niềm",
+            "sự thật rỉ máu": "sự thật đau lòng",
+            "chiếc lồng kính ngột ngạt": "không gian tĩnh lặng",
+            "bóng ma vô hình": "nỗi ám ảnh vô hình",
+            "mặt nạ hoàn hảo": "vẻ ngoài bình thường",
+            "bức tường phòng thủ cuối cùng sụp đổ": "cô không còn né tránh câu hỏi",
+            "mảnh vỡ vụn": "những điều đã rạn nứt",
+            "đẩy mọi thứ xuống vực sâu": "khiến mọi chuyện trở nên tệ hơn",
+            "không gian xung quanh đặc quánh lại": "căn phòng im hẳn",
+            "như một nhát dao đâm thẳng": "khiến anh đau lòng",
+            "đứng lặng như tượng đá": "đứng lặng, chưa biết nói gì",
+            "những giọt nước mắt muộn màng": "cô bật khóc",
+            "tiếng khóc xé lòng": "tiếng khóc nghẹn lại",
+            "vết thương sâu hoắm": "tổn thương khó nguôi",
+        }
+        for s in script.segments:
+            for bad_phrase, natural_phrase in cliche_replacements.items():
+                if bad_phrase in s.text.lower():
+                    s.text = re.sub(re.escape(bad_phrase), natural_phrase, s.text, flags=re.IGNORECASE)
+
+        # 4. Repair Unsafe Legal Claims -> Grounded Social/Familial Phrasing
+        legal_replacements = [
+            (r"tòa\s+án\s+tuyên\s+bố\s+vô\s+hiệu\s+ngay\s+lập\s+tức", "dấy lên nhiều tranh cãi về tính xác thực"),
+            (r"công\s+an\s+bắt\s+giữ\s+khẩn\s+cấp\s+ngay\s+tại", "cơ quan chức năng mời làm việc để xác minh tại"),
+            (r"di\s+chúc\s+miệng\s+mặc\s+nhiên\s+vô\s+giá\s+trị", "lời dặn dò lúc lâm chung khiến gia đình bối rối"),
+            (r"tước\s+quyền\s+thừa\s+kế\s+ngay\s+tức\s+khắc", "làm thay đổi hoàn toàn dự định phân chia tài sản"),
+            (r"khẳng\s+định\s+quyền\s+sở\s+hữu\s+hợp\s+pháp\s+tuyệt\s+đối", "là manh mối quan trọng để đối chiếu nguồn gốc tài sản"),
+            (r"tờ\s+giấy\s+này\s+chứng\s+minh\s+hoàn\s+toàn\s+quyền\s+sở\s+hữu", "tờ giấy này hé lộ nguồn gốc thực sự của tài sản"),
+            (r"vô\s+hiệu\s+hóa\s+hoàn\s+toàn\s+về\s+mặt\s+pháp\s+lý\s+ngay\s+tại\s+chỗ", "đặt ra dấu hỏi lớn về giá trị thực sự của văn bản"),
+        ]
+        for s in script.segments:
+            for pat, repl in legal_replacements:
+                s.text = re.sub(pat, repl, s.text, flags=re.IGNORECASE)
+
+        # 5. Repair Ending Proportion & Semantic Repetition if overlong or repetitive
+        has_ending_rep = any(iss.get("rule") == "ENDING_SEMANTIC_REPETITION" for iss in qc_report.evidence_issues)
+        if has_ending_rep and len(script.segments) >= 5:
+            tail_len = max(5, int(len(script.segments) * 0.15))
+            tail_start = max(0, len(script.segments) - tail_len)
+            moralizing_phrases = [
+                r"bài\s+học", r"thấu\s+hiểu", r"bao\s+dung", r"tha\s+thứ", r"chữa\s+lành",
+                r"mặt\s+nạ", r"đằng\s+sau\s+cánh\s+cửa", r"giá\s+trị\s+của", r"cuộc\s+sống\s+dạy\s+chúng\s+ta",
+                r"lời\s+cảnh\s+tỉnh", r"nhìn\s+lại\s+chính\s+mình", r"tình\s+thân",
+            ]
+            reflection_kept = False
+            for idx in range(tail_start, len(script.segments) - 1):
+                seg = script.segments[idx]
+                if seg.delivery_profile in ("HOOK", "REVEAL"):
+                    continue
+                hits = sum(1 for p in moralizing_phrases if re.search(p, seg.text, re.IGNORECASE))
+                if hits >= 2 or (hits >= 1 and seg.delivery_profile == "COMMENT"):
+                    if not reflection_kept:
+                        seg.text = story_bible.reflection_theme or "Đằng sau cánh cửa mỗi gia đình, sự thấu hiểu luôn bắt đầu từ lòng bao dung."
+                        seg.delivery_profile = "COMMENT"
+                        reflection_kept = True
+                    else:
+                        seg.text = "Mọi biến cố rồi cũng dần khép lại trong sự bình yên của căn nhà nhỏ."
+                        seg.delivery_profile = "NORMAL"
+                        seg.audience_address = False
 
     if len(script.segments) >= 20:
         closing_indices = [
@@ -1698,6 +1850,13 @@ def apply_targeted_repairs(
                 continue
         cleaned_segments.append(s)
     script.segments = cleaned_segments
+
+    from apps.script_factory.script_craft import trim_overlong_closing
+    trimmed = trim_overlong_closing(script.segments)
+    if len(trimmed) != len(script.segments):
+        script.segments = trimmed
+        for index, segment in enumerate(script.segments, start=1):
+            segment.id = f"{index:03d}"
 
     script.total_words = sum(len(s.text.split()) for s in script.segments)
     script.updated_at = time.time()

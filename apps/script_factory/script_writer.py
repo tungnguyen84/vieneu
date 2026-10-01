@@ -89,6 +89,16 @@ class ScriptWriter:
             for s in script.segments:
                 s.text = lg.clean_text_from_leakage(s.text, protagonist_name=protag_name)
 
+            # Writers pile moral summaries and thank-yous onto the ending; keep
+            # one reflection, one audience question and the sign-off.
+            from apps.script_factory.script_craft import trim_overlong_closing
+            trimmed = trim_overlong_closing(script.segments)
+            if len(trimmed) != len(script.segments):
+                script.segments = trimmed
+                for index, segment in enumerate(script.segments, start=1):
+                    segment.id = f"{index:03d}"
+                script.total_words = sum(len(seg.text.split()) for seg in script.segments)
+
             lat = time.time() - t0
             self.cost_ctrl.record_operation(
                 operation="write_script",

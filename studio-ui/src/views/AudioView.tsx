@@ -81,6 +81,9 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
     setAudioInfo(data);
     if (data.bgm_info && typeof data.bgm_info.bgm_volume_db === 'number') {
       setBgmVolumeDb(data.bgm_info.bgm_volume_db);
+      if (typeof data.bgm_info.ducking_enabled === 'boolean') {
+        setEnableDucking(data.bgm_info.ducking_enabled);
+      }
     }
   };
 
@@ -217,7 +220,7 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
         </div>
         <button
           onClick={onApproveAudio}
-          disabled={!hasAudio || (scriptStatus && (!scriptStatus.is_current || !scriptStatus.audio_gate_allowed))}
+          disabled={!hasAudio || !audioInfo?.audio_current || (scriptStatus && (!scriptStatus.is_current || !scriptStatus.audio_gate_allowed))}
           title={
             !hasAudio
               ? 'Chưa có audio master để duyệt'
@@ -244,6 +247,12 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
         </div>
       )}
 
+      {audioInfo?.available && !audioInfo.audio_current && (
+        <div className="p-4 rounded border border-[#F59E0B]/40 bg-[#F59E0B]/10 text-xs text-[#FDE68A]">
+          <strong>AUDIO CŨ — CẦN TẠO HOẶC IMPORT LẠI</strong>
+          <p className="mt-1">{audioInfo.audio_stale_reason}</p>
+        </div>
+      )}
       {scriptStatus && (!scriptStatus.is_current || !scriptStatus.audio_gate_allowed) && (
         <div className="p-4 rounded border border-[#EF4444]/50 bg-[#EF4444]/10 text-xs text-[#FCA5A5] space-y-1.5">
           <div className="font-extrabold flex items-center space-x-1.5">
@@ -431,8 +440,8 @@ export const AudioView: React.FC<Props> = ({ projectId, onApproveAudio }) => {
                     <div className="bg-[#0B0F17] p-2.5 rounded border border-[#28354D]">
                       <div className="text-[10px] text-[#94A3B8]">Loudness Master</div>
                       <div className="text-sm font-bold text-[#F59E0B] mt-0.5">
-                        {bgmInfo.master_integrated_lufs} LUFS
-                        <span className="text-[10px] text-[#94A3B8] font-normal ml-1">({bgmInfo.master_true_peak_db} dBTP)</span>
+                        {bgmInfo.master_integrated_lufs ?? 'Chưa đo'} LUFS
+                        <span className="text-[10px] text-[#94A3B8] font-normal ml-1">({bgmInfo.master_true_peak_db ?? 'Chưa đo'} dBTP)</span>
                       </div>
                     </div>
                   </div>

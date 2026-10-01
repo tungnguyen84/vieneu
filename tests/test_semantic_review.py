@@ -3,7 +3,7 @@ import json
 from apps.script_factory.cost_control import CostController
 from apps.script_factory.models import FullScript, ScriptSegment, StoryBible
 from apps.script_factory.script_qc import ScriptQCEngine
-from apps.script_factory.semantic_review import carry_over_semantic_review, review_script_logic, script_content_hash, story_bible_content_hash
+from apps.script_factory.semantic_review import SEMANTIC_REVIEW_VERSION, carry_over_semantic_review, review_script_logic, script_content_hash, story_bible_content_hash
 
 
 def _script():
@@ -30,7 +30,7 @@ def _llm(issues):
 def test_review_keeps_only_quote_anchored_findings():
     review = review_script_logic(_script(), _bible(), _llm([
         {"rule": "INFEASIBLE_EVIDENCE", "segment_id": "002", "quote": "làm xét nghiệm ADN một mình", "problem": "thiếu mẫu mẹ", "fix": "x", "confidence": "high"},
-        {"rule": "POV_KNOWLEDGE_VIOLATION", "segment_id": "003", "quote": "Mai muốn giữ cả danh phận", "problem": "người kể biết động cơ", "fix": "y", "confidence": "medium"},
+        {"rule": "IMPLAUSIBLE_BEHAVIOR", "segment_id": "003", "quote": "Mai muốn giữ cả danh phận", "problem": "người kể đánh giá chủ quan", "fix": "y", "confidence": "medium"},
         {"rule": "POV_KNOWLEDGE_VIOLATION", "segment_id": "003", "quote": "câu này không có trong kịch bản", "problem": "bịa", "confidence": "high"},
         {"rule": "MADE_UP_RULE", "segment_id": "001", "quote": "Tuấn tìm thấy chiếc USB", "confidence": "high"},
     ]))
@@ -38,6 +38,40 @@ def test_review_keeps_only_quote_anchored_findings():
     assert review["issues"][0]["severity"] == "CRITICAL"
     assert [i["segment_id"] for i in review["advisories"]] == ["003"]
     assert review["script_hash"] == script_content_hash(_script())
+
+
+def test_review_treats_anchored_pov_violation_as_blocking_issue():
+    """POV_KNOWLEDGE_VIOLATION is an objective logic defect and must block, not be demoted to advisory."""
+    review = review_script_logic(_script(), _bible(), _llm([
+        {"rule": "POV_KNOWLEDGE_VIOLATION", "segment_id": "003", "quote": "Mai muốn giữ cả danh phận", "problem": "người kể biết động cơ bên trong", "fix": "y", "confidence": "medium"},
+    ]))
+    assert [i["rule"] for i in review["issues"]] == ["POV_KNOWLEDGE_VIOLATION"]
+    assert review["issues"][0]["severity"] == "CRITICAL"
+    assert review["advisories"] == []
+
+
+
+
+def test_review_accepts_bracketed_and_unpadded_segment_ids():
+    """Prompts number segments as "[002] ..." and models echo that form back."""
+    review = review_script_logic(_script(), _bible(), _llm([
+        {"rule": "INFEASIBLE_EVIDENCE", "segment_id": "[002]", "related_segment_ids": ["[1]", "3"],
+         "quote": "làm xét nghiệm ADN một mình", "problem": "thiếu mẫu mẹ", "fix": "x", "confidence": "high"},
+    ]))
+    assert [i["segment_id"] for i in review["issues"]] == ["002"]
+    assert review["issues"][0]["related_segment_ids"] == ["001", "003"]
+    assert review["status"] == "RUN"
+
+
+def test_clean_segment_id_forms():
+    from apps.script_factory.segment_rewriter import clean_segment_id
+
+    known = {"001": 1, "059": 2, "A1": 3}
+    assert clean_segment_id("[059]", known) == "059"
+    assert clean_segment_id(" #59 ", known) == "059"
+    assert clean_segment_id("segment 1", known) == "001"
+    assert clean_segment_id("A1", known) == "A1"
+    assert clean_segment_id("[999]", known) == "999"
 
 
 class _ReviewingProvider:
@@ -57,7 +91,7 @@ def test_run_qc_blocks_pass_on_confident_logic_issue(tmp_path):
 
 def test_carry_over_only_for_identical_text():
     script = _script()
-    previous = {"semantic_review": {"status": "RUN", "script_hash": script_content_hash(script), "issues": []}}
+    previous = {"semantic_review": {"status": "RUN", "passes": 2, "review_version": SEMANTIC_REVIEW_VERSION, "script_hash": script_content_hash(script), "issues": []}}
     assert carry_over_semantic_review(previous, script) is not None
     script.segments[0].text += " Thêm."
     assert carry_over_semantic_review(previous, script) is None
@@ -95,25 +129,25 @@ def test_gemini_review_excludes_lite_models(monkeypatch):
         provider._call_generate_content(prompt="x", model="gemini-2.5-flash", allow_lite_models=False)
 
 
-def test_story_bible_review_blocks_only_objective_defects():
+def test_story_bible_review_blocks_high_confidence_plot_defects_but_not_backstage_pov():
     from apps.script_factory.semantic_review import review_story_bible_logic
 
     bible = StoryBible(
         episode_id="EP_SB",
         title="t",
         protagonist={"name": "Tuấn"},
-        reveal_2="Mai thừa nhận mối quan hệ khi Tuấn đưa ra chiếc USB.",
+        reveal_2="Mai tự viết kế hoạch lừa chồng rồi để chiếc USB trên bàn cho Tuấn đọc.",
         ending="Tuấn nộp đơn ly hôn ngay khi vợ đang mang thai tháng thứ bảy.",
         causal_chains=[{"motivation": "Áp lực thăng tiến khiến Mai giấu chuyện."}],
     )
     findings = [
         {"rule": "POV_KNOWLEDGE_VIOLATION", "field": "causal_chains", "quote": "Áp lực thăng tiến khiến Mai giấu chuyện", "confidence": "high"},
-        {"rule": "IMPLAUSIBLE_BEHAVIOR", "field": "reveal_2", "quote": "Mai thừa nhận mối quan hệ khi", "confidence": "high"},
+        {"rule": "IMPLAUSIBLE_BEHAVIOR", "field": "reveal_2", "quote": "Mai tự viết kế hoạch lừa chồng rồi", "confidence": "high"},
         {"rule": "LEGAL_OR_MEDICAL_UNREALISTIC", "field": "ending", "quote": "nộp đơn ly hôn ngay khi vợ đang mang thai", "confidence": "high"},
     ]
     review = review_story_bible_logic(bible, _llm(findings))
-    assert [i["rule"] for i in review["issues"]] == ["LEGAL_OR_MEDICAL_UNREALISTIC"]
-    assert [i["rule"] for i in review["advisories"]] == ["IMPLAUSIBLE_BEHAVIOR"]
+    assert [i["rule"] for i in review["issues"]] == ["IMPLAUSIBLE_BEHAVIOR", "LEGAL_OR_MEDICAL_UNREALISTIC"]
+    assert review["advisories"] == []
 
 
 def test_story_bible_patch_applies_every_plot_field_but_keeps_identity():
@@ -181,3 +215,59 @@ def test_story_bible_content_hash_changes_with_characters_and_timeline():
     assert h1 != h2, "Hash must change when protagonist attributes change"
     assert h1 != h3, "Hash must change when timeline changes"
 
+
+def test_story_quoted_dialogue_is_anchored_to_text_not_json_escaping():
+    from apps.script_factory.semantic_review import review_story_bible_logic
+    bible = StoryBible(episode_id="EP_QUOTES", title="t", protagonist={"name": "Hoa"},
+                       clues=['Email viết: "Tôi sẽ xóa hồ sơ này trước khi Hoa đọc được."'])
+    quote = 'Email viết: "Tôi sẽ xóa hồ sơ này'
+    review = review_story_bible_logic(bible, _llm([{
+        "rule": "INFEASIBLE_EVIDENCE", "field": "clues", "quote": quote,
+        "problem": "Missing access channel", "fix": "Supply a grounded channel", "confidence": "high",
+    }]))
+    assert review['status'] == 'RUN'
+    assert review['dropped_unanchored'] == 0
+    assert review['issues'][0]['excerpt'] == quote
+
+
+def test_invalid_review_recovers_once_then_still_requires_two_clean_passes():
+    calls = []
+    def llm(_system, _prompt):
+        calls.append(_prompt)
+        return ('not JSON' if len(calls) == 1 else '{"issues": []}'), 5, 7
+    result = review_script_logic(_script(), _bible(), llm)
+    assert len(calls) == 3
+    assert result['status'] == 'RUN' and result['passes'] == 2
+    assert result['review_retries'] == 1
+    assert result['tokens'] == [15, 21]
+
+
+def test_invalid_reviewer_stops_after_one_retry_and_never_passes():
+    calls = []
+    def llm(*_):
+        calls.append(1)
+        return 'not JSON', 1, 1
+    result = review_script_logic(_script(), _bible(), llm)
+    assert len(calls) == 2
+    assert result['status'] == 'ERROR'
+
+
+def test_opening_hook_rule_cannot_block_a_concluding_audience_question():
+    script = _script()
+    script.segments.append(ScriptSegment(id='004', text='Quý vị có từng gặp một tình huống như thế trong cuộc sống?'))
+    findings = [{'rule': 'GENERIC_PHILOSOPHICAL_HOOK', 'segment_id': '004',
+                 'quote': 'Quý vị có từng gặp một tình huống', 'confidence': 'high'}]
+    result = review_script_logic(script, _bible(), _llm(findings))
+    assert result['status'] == 'RUN' and result['passes'] == 2
+    assert result['issues'] == []
+
+
+
+def test_objective_findings_block_even_at_medium_confidence():
+    script = _script()
+    review = review_script_logic(script, _bible(), _llm([
+        {"rule": "OBJECT_CONTINUITY_CONTRADICTION", "segment_id": "002", "quote": "làm xét nghiệm ADN một mình", "problem": "p", "fix": "f", "confidence": "medium"},
+        {"rule": "POV_KNOWLEDGE_VIOLATION", "segment_id": "003", "quote": "Mai muốn giữ cả danh phận", "problem": "p", "fix": "f", "confidence": "high"},
+    ]))
+    rules = {i["rule"]: i["severity"] for i in review["issues"]}
+    assert rules.get("OBJECT_CONTINUITY_CONTRADICTION") == "CRITICAL"

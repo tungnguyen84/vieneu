@@ -13,12 +13,15 @@ from studio.backend.services.script_service import ScriptService
 from studio.backend.services.visual_service import VisualService
 from studio.backend.services.artifact_lineage import story_content_hash, script_content_hash
 from apps.script_factory.script_qc import SCRIPT_QC_VERSION
+from apps.script_factory.semantic_review import SEMANTIC_REVIEW_VERSION, story_bible_content_hash
+from apps.script_factory.models import StoryBible
 
 
 def _add_real_lineage(project: Path, script: dict) -> dict:
     story = {
         "episode_id": project.name,
         "title": "Tập kiểm thử",
+        "protagonist": {"name": "Phương"},
         "generation_source": "REAL_AI",
         "generation_request_id": "11111111-1111-4111-8111-111111111111",
         "prompt_version": "story-test",
@@ -47,7 +50,9 @@ def _add_real_lineage(project: Path, script: dict) -> dict:
         "status": "PASS",
         "overall_status": "PASS",
         "script_content_hash": script_hash,
-        "semantic_review": {"status": "RUN", "issues": []},
+        "semantic_review": {"status": "RUN", "passes": 2, "issues": [], "script_hash": script_hash,
+                            "review_version": SEMANTIC_REVIEW_VERSION,
+                            "story_hash": story_bible_content_hash(StoryBible.from_dict(story))},
         "issues": [],
     }
     (script_dir / "qc_report.json").write_text(json.dumps(qc, ensure_ascii=False), encoding="utf-8")
@@ -93,12 +98,17 @@ def test_audio_generation_uses_segment_speeds_and_selected_voice(tmp_path, monke
         seen.append((segment["speed"], character["voice"]))
         selected = work_dir / "selected"
         selected.mkdir(parents=True, exist_ok=True)
-        (selected / f"{segment['id']}.wav").write_bytes(b"wav")
+        import soundfile as sf
+        import numpy as np
+        sf.write(selected / f"{segment['id']}.wav", np.zeros(4800, dtype=np.float32), 48000)
         return True, "ok", {"selected_file": f"selected/{segment['id']}.wav", "status": "COMPLETED"}
 
     def fake_master(**kwargs):
         output = kwargs["project_dir"] / "episode_master.wav"
-        output.write_bytes(b"master")
+        from apps.audio_director import build_dialogue_timeline
+        import soundfile as sf
+        samples, _, _ = build_dialogue_timeline(kwargs['project_dir'], kwargs['segments'], kwargs['project_state'])
+        sf.write(output, samples, 48000)
         return True, "ok", str(output), None
 
     service = AudioService()
@@ -177,11 +187,14 @@ def test_visual_plan_is_built_from_current_project(tmp_path, monkeypatch):
     (project / "script" / "full_script.json").write_text(json.dumps(script, ensure_ascii=False), encoding="utf-8")
     audio = project / "audio" / "narration.wav"
     audio.parent.mkdir(parents=True)
-    audio.write_bytes(b"audio")
+    import soundfile as sf
+    import numpy as np
+    sf.write(audio, np.zeros(120 * 48000, dtype=np.float32), 48000)
+    _bind_test_audio(project, script, audio)
     monkeypatch.setattr(visual_module, "PROJECTS_DIR", projects)
+    monkeypatch.setattr(audio_module, "PROJECTS_DIR", projects)
     monkeypatch.setattr(visual_module, "VISUAL_DIR", visual)
     monkeypatch.setattr("studio.backend.services.audio_service.AudioService.get_audio_master_path", lambda self, project_id: audio)
-    monkeypatch.setattr("soundfile.info", lambda path: type("Info", (), {"duration": 120.0})())
 
     result = VisualService().generate_visual_plan("EP903")
     plan = json.loads((visual / "EP903" / "visual_plan.json").read_text(encoding="utf-8"))
@@ -221,6 +234,8 @@ def test_auto_mix_bgm_creates_stems_and_cue_sheet(tmp_path, monkeypatch):
     })
     (script_dir / "full_script.json").write_text(json.dumps(script, ensure_ascii=False), encoding="utf-8")
 
+    _bind_test_audio(project, script, voice_file)
+
     monkeypatch.setattr(audio_module, "PROJECTS_DIR", projects)
     srv = AudioService()
 
@@ -240,4 +255,29 @@ def test_auto_mix_bgm_creates_stems_and_cue_sheet(tmp_path, monkeypatch):
     assert (audio_dir / "music_mix.wav").exists()
     assert (audio_dir / "music_cue_sheet.json").exists()
     assert (audio_dir / "narration_dry.wav").exists()
+
+
+def _bind_test_audio(project, script, path):
+    """Bind synthetic fixture audio; production synthesis is tested separately."""
+    import soundfile as sf
+    from studio.backend.services.artifact_files import file_sha256
+    from studio.backend.services.audio_service import normalize_script_segment
+    audio = project / 'audio'
+    audio.mkdir(exist_ok=True)
+    info = sf.info(path)
+    count = len(script['segments'])
+    timings = []
+    for i, segment in enumerate(script['segments']):
+        timings.append({**normalize_script_segment(segment, i), 'timing_source': 'MEASURED_WAV',
+                        'speech_start_sec': i * info.duration / count,
+                        'speech_end_sec': (i + 1) * info.duration / count})
+    timing = audio / 'segment_timing.json'
+    timing.write_text(json.dumps(timings), encoding='utf-8')
+    report = {'status': 'COMPLETE', 'full_episode': True, 'origin': 'TEST_FIXTURE',
+              'script_content_hash': script_content_hash(script), 'story_content_hash': script['source_story_content_hash'],
+              'script_generation_request_id': script['generation_request_id'],
+              'story_generation_request_id': script['source_story_generation_request_id'],
+              'narration_path': str(path.resolve()), 'narration_sha256': file_sha256(path),
+              'timing_sha256': file_sha256(timing)}
+    (audio / 'generation_report.json').write_text(json.dumps(report), encoding='utf-8')
 

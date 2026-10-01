@@ -20,6 +20,7 @@ class StageId(str, Enum):
 
 
 class StageStatus(str, Enum):
+    DRAFT = "DRAFT"
     NOT_STARTED = "NOT_STARTED"
     IN_PROGRESS = "IN_PROGRESS"
     NEEDS_REVIEW = "NEEDS_REVIEW"
@@ -175,16 +176,16 @@ class JobItem(BaseModel):
 
 
 class FinalQCReport(BaseModel):
-    overall_status: str = "PASS"  # PASS, WARNING, FAIL
+    overall_status: str = "NOT_RUN"  # PASS, WARNING, FAIL, NOT_RUN
     duration_sec: float = 0.0
     resolution: str = "1920x1080"
     fps: int = 30
     video_codec: str = "h264"
     audio_codec: str = "aac"
-    av_sync_delta_ms: float = 0.0
-    black_gap_detected: bool = False
-    missing_scenes_count: int = 0
-    static_hold_exceeded: bool = False
-    integrated_loudness_lufs: float = -16.0
-    true_peak_db: float = -1.0
+    av_sync_delta_ms: Optional[float] = None
+    black_gap_detected: Optional[bool] = None
+    missing_scenes_count: Optional[int] = None
+    static_hold_exceeded: Optional[bool] = None
+    integrated_loudness_lufs: Optional[float] = None
+    true_peak_db: Optional[float] = None
     checks_summary: List[Dict[str, Any]] = Field(default_factory=list)

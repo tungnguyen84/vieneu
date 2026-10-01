@@ -170,6 +170,12 @@ class IdeaGenerator:
                 idea.status = "AWAITING_USER_REVIEW"
             else:
                 idea.status = "PASS"
+            if topic_intent_obj:
+                topic_review = topic_intent_obj.evaluate_content_adherence(idea, stage='idea')
+                idea.topic_adherence_score = topic_review['score']
+                if topic_review['status'] != 'PASS':
+                    idea.status = 'BLOCKED_TOPIC_DRIFT'
+                    idea.logic_issues.append(topic_review['details'])
 
         # Append and persist
         all_ideas = existing + new_ideas

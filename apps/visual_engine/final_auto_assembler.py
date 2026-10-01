@@ -454,6 +454,7 @@ def build_assembly_plan(
     audio_master_path: str | Path,
     manual_overrides: Optional[Dict[str, str]] = None,
     manifest_data: Optional[Dict[str, Any]] = None,
+    scene_definitions: Optional[List[Dict[str, Any]]] = None,
 ) -> AssemblyPlan:
     """
     Constructs the authoritative assembly plan:
@@ -472,9 +473,9 @@ def build_assembly_plan(
         except Exception:
             pass
 
-    scene_defs = CANONICAL_SCENE_DEFINITIONS
+    scene_defs = scene_definitions if scene_definitions is not None else CANONICAL_SCENE_DEFINITIONS
     # If manifest contains scene items with timings, use them
-    if manifest_data and manifest_data.get("scenes"):
+    if scene_definitions is None and manifest_data and manifest_data.get("scenes"):
         manifest_scenes = manifest_data["scenes"]
         if len(manifest_scenes) == len(scene_defs):
             # Check if manifest scenes have valid float start_sec

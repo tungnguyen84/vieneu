@@ -28,12 +28,17 @@ interface Props {
 }
 
 interface ScriptArtifactStatus {
-  artifact_status: 'CURRENT' | 'STALE';
+  artifact_status: 'CURRENT' | 'STALE' | 'NEEDS_REVISION';
   status_label: string;
   is_current: boolean;
+  qc_gate_allowed?: boolean;
+  qc_gate_reasons?: string[];
   stale_reasons: string[];
   generated_by?: string;
   model_name?: string;
+  requested_model?: string;
+  actual_model?: string;
+  writer_strategy?: string;
   generation_request_id?: string;
   prompt_version?: string;
   generated_at?: number | string;
@@ -85,7 +90,6 @@ export const ScriptView: React.FC<Props> = ({
 
   // Generation state
   const [generating, setGenerating] = useState(false);
-  const [generationStep, setGenerationStep] = useState<number>(0);
   const [repairing, setRepairing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
@@ -94,16 +98,6 @@ export const ScriptView: React.FC<Props> = ({
   const [importedText, setImportedText] = useState<string>('');
   const [importing, setImporting] = useState<boolean>(false);
 
-  const generationStages = [
-    'Đang viết Hook mở màn cuốn hút...',
-    'Đang phát triển bí ẩn và thiết lập tình huống ban đầu...',
-    'Đang xây dựng manh mối và quá trình tìm kiếm sự thật...',
-    'Đang viết Reveal 1 (Bước ngoặt lớn đầu tiên tại ~60-75% thời lượng)...',
-    'Đang viết Reveal 2 (Lật mở chân tướng tại ~75-90% thời lượng)...',
-    'Đang hoàn thiện cảm xúc và đoạn kết chiêm nghiệm...',
-    'Đang kiểm tra Fact Lock & Spoiler Leakage Guard...',
-    'Đang kiểm định QC và tính toán độ dài lời dẫn...',
-  ];
 
   const activeProjectIdRef = useRef(projectId);
 
@@ -146,14 +140,7 @@ export const ScriptView: React.FC<Props> = ({
   const handleGenerateScript = async (force: boolean = false) => {
     setGenerating(true);
     setErrorMessage('');
-    setGenerationStep(0);
 
-    const interval = setInterval(() => {
-      setGenerationStep((prev) => {
-        if (prev < generationStages.length - 1) return prev + 1;
-        return prev;
-      });
-    }, 800);
 
     try {
       const res = await fetch(`/api/projects/${projectId}/script/generate`, {
@@ -161,14 +148,12 @@ export const ScriptView: React.FC<Props> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ force }),
       });
-      clearInterval(interval);
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.detail || 'Không thể tạo kịch bản');
       }
       fetchScriptData();
     } catch (e: any) {
-      clearInterval(interval);
       setErrorMessage(e.message || 'Lỗi khi tạo kịch bản Script Factory');
     } finally {
       setGenerating(false);
@@ -351,7 +336,7 @@ export const ScriptView: React.FC<Props> = ({
             </>
           )}
 
-          {qcReport && (qcStatus === 'FAIL' || qcStatus === 'WARNING' || qcStatus === 'NEEDS_REVISION') && (
+          {qcReport && (qcStatus === 'FAIL' || qcStatus === 'WARNING' || qcStatus === 'NEEDS_REVISION' || !artifactStatus?.qc_gate_allowed) && (
             <button
               onClick={handleAutoRepair}
               disabled={repairing}
@@ -365,7 +350,7 @@ export const ScriptView: React.FC<Props> = ({
           {segments.length > 0 && (
             <button
               onClick={handleApproveAndProceed}
-              disabled={!artifactStatus?.is_current}
+              disabled={!artifactStatus?.is_current || !artifactStatus.qc_gate_allowed}
               className="flex items-center space-x-1.5 text-xs font-bold px-3.5 py-1.5 rounded shadow cursor-pointer transition-colors bg-[#10B981] hover:bg-[#059669] disabled:bg-[#475569] disabled:cursor-not-allowed text-white"
             >
               <CheckCircle2 size={13} />
@@ -377,6 +362,12 @@ export const ScriptView: React.FC<Props> = ({
       </div>
 
       {/* Error notification */}
+      {artifactStatus?.is_current && !artifactStatus.qc_gate_allowed && (
+        <div className="mx-6 mt-3 p-4 rounded bg-[#F59E0B]/10 border border-[#F59E0B]/40 text-xs text-[#FDE68A]">
+          <strong>CẦN KIỂM TRA LẠI — CHƯA ĐƯỢC DUYỆT</strong>
+          <p className="mt-1">{artifactStatus.qc_gate_reasons?.join(' | ') || 'Chạy Sửa tự động để kiểm tra logic và tính tự nhiên bằng bộ QC hiện tại.'}</p>
+        </div>
+      )}
       {errorMessage && (
         <div className="mx-6 mt-3 p-3 rounded bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center space-x-2 text-xs text-[#FCA5A5]">
           <AlertCircle size={15} className="shrink-0 text-[#EF4444]" />
@@ -384,22 +375,72 @@ export const ScriptView: React.FC<Props> = ({
         </div>
       )}
 
+      {qcReport && (() => {
+        // Blocking findings must be fixed; warnings are judgement/style calls the
+        // editor may accept. Only blocking findings feed Auto-Repair.
+        const blocking: any[] = ((qcReport as any).evidence_issues || []).filter((i: any) => i && i.rule);
+        const warnings: any[] = ((qcReport as any).warnings || []).filter((i: any) => i && i.rule);
+        if (!blocking.length && !warnings.length) return null;
+        const row = (i: any, idx: number) => (
+          <li key={`${i.rule}-${i.segment_id}-${idx}`} className="leading-snug">
+            <span className="font-mono-code text-[10px] opacity-80">[{i.rule}{i.segment_id ? ` · ${i.segment_id}` : ''}]</span>{' '}
+            {i.message || i.excerpt}
+          </li>
+        );
+        return (
+          <div className="mx-6 mt-3 space-y-2">
+            {blocking.length > 0 && (
+              <details open className="rounded bg-[#EF4444]/10 border border-[#EF4444]/40 p-3 text-xs text-[#FCA5A5]">
+                <summary className="cursor-pointer font-bold">Lỗi cần sửa trước khi duyệt ({blocking.length})</summary>
+                <ul className="mt-2 space-y-1 list-disc list-inside">{blocking.map(row)}</ul>
+              </details>
+            )}
+            {warnings.length > 0 && (
+              <details className="rounded bg-[#F59E0B]/10 border border-[#F59E0B]/30 p-3 text-xs text-[#FDE68A]">
+                <summary className="cursor-pointer font-bold">
+                  Cảnh báo biên tập — không chặn duyệt ({warnings.length})
+                </summary>
+                <p className="mt-1 text-[11px] text-[#94A3B8]">
+                  Nhận định về góc nhìn, thứ tự kể, văn phong. Đọc và tự quyết định; Auto-Repair không viết lại các mục này.
+                </p>
+                <ul className="mt-2 space-y-1 list-disc list-inside">{warnings.map(row)}</ul>
+              </details>
+            )}
+          </div>
+        );
+      })()}
+
       {artifactStatus && !artifactStatus.is_current && (
-        <div className="mx-6 mt-3 p-4 rounded bg-[#EF4444]/15 border border-[#EF4444]/50 text-xs text-[#FCA5A5]">
-          <div className="font-extrabold tracking-wide">STALE — REGENERATE REQUIRED</div>
+        <div className={`mx-6 mt-3 p-4 rounded border text-xs ${
+          artifactStatus.artifact_status === 'NEEDS_REVISION'
+            ? 'bg-[#F59E0B]/15 border-[#F59E0B]/50 text-[#FDE68A]'
+            : 'bg-[#EF4444]/15 border-[#EF4444]/50 text-[#FCA5A5]'
+        }`}>
+          <div className="font-extrabold tracking-wide">
+            {artifactStatus.status_label || (
+              artifactStatus.artifact_status === 'NEEDS_REVISION'
+                ? 'QC CHƯA ĐẠT — CẦN SỬA KỊCH BẢN'
+                : 'STALE — REGENERATE REQUIRED'
+            )}
+          </div>
           <ul className="mt-2 list-disc list-inside space-y-1">
             {(artifactStatus.stale_reasons || []).map((reason) => <li key={reason}>{reason}</li>)}
           </ul>
-          <div className="mt-2 text-[#CBD5E1]">Kịch bản này không thể duyệt hoặc chuyển sang tạo Audio.</div>
+          <div className="mt-2 text-[#CBD5E1]">
+            {artifactStatus.artifact_status === 'NEEDS_REVISION'
+              ? 'Kịch bản chưa đạt chuẩn QC; bạn có thể dùng nút "Sửa tự động" hoặc chỉnh sửa phân đoạn trước khi duyệt.'
+              : 'Kịch bản này không thể duyệt hoặc chuyển sang tạo Audio.'}
+          </div>
         </div>
       )}
 
       {viewMode === 'advanced' && artifactStatus && (
-        <div className="mx-6 mt-3 grid grid-cols-2 lg:grid-cols-5 gap-2 text-[11px]">
+        <div className="mx-6 mt-3 grid grid-cols-2 lg:grid-cols-6 gap-2 text-[11px]">
           {[
             ['Generated by', artifactStatus.generated_by || '—'],
-            ['Model', artifactStatus.model_name || '—'],
-            ['Request ID', artifactStatus.generation_request_id || '—'],
+            ['Requested Model', artifactStatus.requested_model || artifactStatus.model_name || '—'],
+            ['Actual Model', artifactStatus.actual_model || artifactStatus.model_name || '—'],
+            ['Strategy', artifactStatus.writer_strategy || '—'],
             ['Prompt Version', artifactStatus.prompt_version || '—'],
             ['Generated At', formatGeneratedAt(artifactStatus.generated_at)],
           ].map(([label, value]) => (
@@ -421,7 +462,7 @@ export const ScriptView: React.FC<Props> = ({
                 Đang chấp bút kịch bản bằng Script Factory V1.3.1a...
               </h3>
               <p className="text-[11px] text-[#3B82F6] mt-0.5">
-                {generationStages[generationStep]}
+                Đang chờ AI tạo nội dung và kiểm định QC. Tiến trình thật nằm trong Nhật ký xử lý bên phải.
               </p>
               <p className="text-[10px] text-[#64748B] mt-1">
                 Thời gian thực tế phụ thuộc model và quota (thường 2–8 phút). Xem tiến trình thật trong Nhật ký xử lý ở cột bên phải.
@@ -513,11 +554,13 @@ export const ScriptView: React.FC<Props> = ({
             {/* Bottom Approval Action */}
             <div className="pt-6 border-t border-[#28354D] flex items-center justify-between">
               <span className="text-xs text-[#94A3B8]">
-                Kịch bản đã sẵn sàng chuyển sang bước Audio Formula V1 để tạo giọng đọc MC Minh.
+                {artifactStatus?.is_current && artifactStatus.qc_gate_allowed
+                  ? 'Kịch bản đã qua QC hiện tại. Duyệt để chuyển sang tạo Audio.'
+                  : 'Kịch bản cần hoàn tất tạo nội dung và vượt qua QC trước khi tạo Audio.'}
               </span>
               <button
                 onClick={handleApproveAndProceed}
-                disabled={!artifactStatus?.is_current}
+                disabled={!artifactStatus?.is_current || !artifactStatus.qc_gate_allowed}
                 className="bg-[#10B981] hover:bg-[#059669] disabled:bg-[#475569] disabled:cursor-not-allowed text-white text-xs font-bold px-5 py-2.5 rounded-lg flex items-center space-x-2 shadow cursor-pointer transition-colors"
               >
                 <CheckCircle2 size={15} />
