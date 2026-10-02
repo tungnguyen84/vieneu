@@ -989,3 +989,150 @@ def test_auto_repair_script_updates_requested_and_actual_model_metadata(tmp_path
     assert saved["generation_request_id"] != "req-script-12345"
 
 
+@pytest.mark.parametrize("case,expected_contradiction", [
+    ("no_return_then_claim_pocket_invalid_control", True),
+    ("return_to_same_pocket_valid", False),
+    ("return_to_handbag_then_claim_pocket_invalid", True),
+    ("handbag_location_valid", False),
+    ("wrong_prop_in_same_sentence", True),
+])
+def test_prop_location_container_and_action_discrimination(tmp_path, case, expected_contradiction):
+    """Codex review 8b50926 regressions:
+    1. Túi xách vs túi áo must be normalized as distinct containers.
+    2. Multi-prop actions must bind to the specific object, not other props in sentence.
+    """
+    from apps.script_factory.semantic_review import SEMANTIC_REVIEW_VERSION, script_content_hash, story_bible_content_hash
+    engine = ScriptQCEngine(episodes_root=tmp_path)
+    start = [
+        "Lan băn khoăn về chiếc kẹp tóc.",
+        "Lan lấy chiếc kẹp ra khỏi túi áo.",
+        "Lan đặt chiếc kẹp lên bàn.",
+    ]
+    test_cases = {
+        "no_return_then_claim_pocket_invalid_control": start + [
+            "Trong túi áo, ngoài chiếc kẹp, Lan tìm thấy một tờ giấy."
+        ],
+        "return_to_same_pocket_valid": start + [
+            "Lan cất chiếc kẹp trở lại vào túi áo.",
+            "Trong túi áo, ngoài chiếc kẹp, Lan tìm thấy một tờ giấy."
+        ],
+        "return_to_handbag_then_claim_pocket_invalid": start + [
+            "Lan cất chiếc kẹp vào túi xách.",
+            "Trong túi áo, ngoài chiếc kẹp, Lan tìm thấy một tờ giấy."
+        ],
+        "handbag_location_valid": start + [
+            "Lan cất chiếc kẹp vào túi xách.",
+            "Trong túi xách, ngoài chiếc kẹp, Lan tìm thấy một tờ giấy."
+        ],
+        "wrong_prop_in_same_sentence": start + [
+            "Lan đặt chiếc kẹp trên bàn rồi cất thỏi son vào túi áo.",
+            "Trong túi áo, ngoài chiếc kẹp, Lan tìm thấy một tờ giấy."
+        ],
+    }
+    texts = test_cases[case]
+    bible = StoryBible(episode_id="EP_PROP_AUDIT", title="Chiếc kẹp", protagonist={"name": "Lan"})
+    script = FullScript(
+        episode_id="EP_PROP_AUDIT",
+        title=bible.title,
+        host={"id": "MINH"},
+        segments=[
+            ScriptSegment(id=f"{i+1:03}", text=t, delivery_profile="HOOK" if i == 0 else "NORMAL")
+            for i, t in enumerate(texts)
+        ],
+    )
+    review = dict(
+        status="RUN",
+        passes=2,
+        review_version=SEMANTIC_REVIEW_VERSION,
+        script_hash=script_content_hash(script),
+        story_hash=story_bible_content_hash(bible),
+        issues=[],
+        advisories=[],
+    )
+    qc = engine.run_qc(script, bible, semantic_review=review)
+    prop_findings = [i for i in qc.evidence_issues if i.get("rule") == "PROP_LOCATION_CONTRADICTION"]
+    if expected_contradiction:
+        assert len(prop_findings) > 0, f"Expected PROP_LOCATION_CONTRADICTION for {case}, got none"
+    else:
+        assert len(prop_findings) == 0, f"Expected valid location for {case}, got {prop_findings}"
+
+
+def test_real_repair_loop_records_current_requested_model_through_real_manager(tmp_path):
+    """Codex review 8b50926 regression:
+    auto_repair_script -> _revise_keeping_best -> AutoRevisionManager must record effective requested_model,
+    fallback actual_model, and parent_generation_request_id through real manager execution.
+    """
+    import json
+    from studio.backend.services.generation_service import GenerationService
+    from studio.backend.services import generation_service as gen_module
+    from studio.backend.services.artifact_lineage import story_content_hash
+    from types import SimpleNamespace
+    from unittest.mock import patch
+
+    proj = tmp_path / "EP_REAL_REPAIR"
+    (proj / "story").mkdir(parents=True, exist_ok=True)
+    (proj / "script").mkdir(parents=True, exist_ok=True)
+    story = {
+        "episode_id": "EP_REAL_REPAIR",
+        "title": "Bí mật",
+        "generation_request_id": "story-req-111",
+        "generation_source": "REAL_AI",
+        "protagonist": {"name": "Lan"},
+    }
+    initial = FullScript(
+        episode_id="EP_REAL_REPAIR",
+        title="Bí mật",
+        host={"id": "MINH"},
+        segments=[ScriptSegment(id="001", text="Lan mở thư.", delivery_profile="HOOK")],
+        generation_request_id="script-req-222",
+        generation_source="REAL_AI",
+        requested_model="old-model",
+        actual_model="old-model",
+        model_name="old-model",
+    ).to_dict()
+    initial.update(
+        source_story_generation_request_id=story["generation_request_id"],
+        source_story_content_hash=story_content_hash(story),
+    )
+    (proj / "story" / "story_bible.json").write_text(json.dumps(story), encoding="utf-8")
+    (proj / "script" / "full_script.json").write_text(json.dumps(initial), encoding="utf-8")
+
+    class Provider:
+        provider_name = "gemini"
+        default_model = "selected-new-model"
+        last_used_model = "fallback-actual-model"
+        last_actual_model = "fallback-actual-model"
+
+        def revise_script(self, script, story_bible, qc_report, model=None):
+            self.effective_requested_model = model or self.default_model
+            script.segments[0].text += " Cô nhận ra chữ viết của Hùng."
+            script.revision_round += 1
+            return script, 10, 20
+
+    class QCStub:
+        def run_qc(self, script, story_bible, model=None):
+            return QCReport(episode_id="EP_REAL_REPAIR", status="PASS" if script.revision_round else "NEEDS_REVISION")
+
+    provider = Provider()
+    service = GenerationService.__new__(GenerationService)
+    service.cost_ctrl = SimpleNamespace(
+        check_budget_pre_flight=lambda **kw: None,
+        record_operation=lambda **kw: None,
+    )
+
+    with patch.object(gen_module, "PROJECTS_DIR", tmp_path), \
+         patch.object(service, "get_provider", return_value=provider), \
+         patch.object(gen_module, "ScriptQCEngine", return_value=QCStub()), \
+         patch.object(gen_module, "invalidate_script_approval"):
+        service.auto_repair_script("EP_REAL_REPAIR", provider_id="gemini", model_id="selected-new-model")
+
+    saved = json.loads((proj / "script" / "full_script.json").read_text(encoding="utf-8"))
+    assert provider.effective_requested_model == "selected-new-model"
+    assert saved.get("requested_model") == "selected-new-model"
+    assert saved.get("actual_model") == "fallback-actual-model"
+    assert saved.get("model_name") == "fallback-actual-model"
+    assert saved.get("parent_generation_request_id") == "script-req-222"
+    assert saved.get("generation_request_id") != "script-req-222"
+
+
+

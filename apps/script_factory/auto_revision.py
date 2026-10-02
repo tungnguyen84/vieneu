@@ -63,6 +63,13 @@ class AutoRevisionManager:
 
         self.cost_ctrl.check_budget_pre_flight(episode_id=script.episode_id)
 
+        effective_req_model = (
+            model
+            or getattr(self.provider, 'requested_model', None)
+            or getattr(self.provider, 'default_model', None)
+            or getattr(script, 'requested_model', None)
+        )
+
         t0 = time.time()
         from apps.script_factory.semantic_review import script_content_hash
         before_hash = script_content_hash(script)
@@ -71,22 +78,28 @@ class AutoRevisionManager:
                 script=script,
                 story_bible=story_bible,
                 qc_report=qc_report,
-                model=model,
+                model=effective_req_model,
             )
             if script_content_hash(revised_script) != before_hash:
+                actual_m = (
+                    getattr(self.provider, 'last_actual_model', None)
+                    or getattr(self.provider, 'last_used_model', None)
+                    or effective_req_model
+                    or getattr(revised_script, 'model_name', None)
+                )
                 revised_script.generation_request_id = str(uuid.uuid4())
-                revised_script.model_name = getattr(self.provider, 'last_used_model', None) or model or getattr(self.provider, 'default_model', None)
+                revised_script.model_name = actual_m
                 revised_script.provider_name = self.provider.provider_name
                 revised_script.prompt_version = 'script-v3.6-grounded-repair'
                 revised_script.writer_strategy = script.writer_strategy
-                revised_script.requested_model = model or getattr(self.provider, 'requested_model', None) or getattr(script, 'requested_model', None) or revised_script.model_name
-                revised_script.actual_model = getattr(self.provider, 'last_actual_model', None) or getattr(self.provider, 'last_used_model', None) or revised_script.model_name
+                revised_script.requested_model = effective_req_model
+                revised_script.actual_model = actual_m
             lat = time.time() - t0
             self.cost_ctrl.record_operation(
                 operation="revise_script",
                 episode_id=script.episode_id,
                 provider=self.provider.provider_name,
-                model=model or "default",
+                model=effective_req_model or "default",
                 status="SUCCESS",
                 latency_sec=lat,
                 input_tokens=in_tokens,
@@ -98,7 +111,7 @@ class AutoRevisionManager:
                 operation="revise_script",
                 episode_id=script.episode_id,
                 provider=self.provider.provider_name,
-                model=model or "default",
+                model=effective_req_model or "default",
                 status="FAILED",
                 latency_sec=lat,
                 input_tokens=0,

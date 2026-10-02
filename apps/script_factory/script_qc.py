@@ -125,7 +125,10 @@ class ScriptQCEngine:
             revision_requests.append(f"Remove {lv.violation_code} in segment {lv.segment_id}: {lv.matched_pattern}")
 
         # 0.1 INFORMATION RELEASE & SPOILER TIMING AUDIT (Premature reveal prevention)
-        rel_map = release_map or build_information_release_map(story_bible)
+        rel_map = release_map or build_information_release_map(
+            story_bible,
+            total_segments=len(script.segments) if script.segments else 90,
+        )
         known_setup = set()
         setup_sources = [
             getattr(story_bible, "secret", ""),
@@ -705,16 +708,32 @@ class ScriptQCEngine:
                     break
 
         # 6.8 PROP LOCATION & CONTINUITY STATE AUDIT (PROP_LOCATION_CONTRADICTION / OBJECT_CONTINUITY_CONTRADICTION)
+        def _normalize_container_name(raw_text: str) -> Optional[str]:
+            raw = raw_text.strip().lower()
+            if re.search(r"\b(?:túi\s+áo(?:\s+khoác|\s+vest)?|túi\s+quần)\b", raw):
+                return "túi áo"
+            if re.search(r"\b(?:túi\s+xách|túi\s+cầm\s+tay|balo|ba\s+lô|cặp\s+xách|cặp)\b", raw):
+                return "túi xách"
+            if re.search(r"\b(?:ví(?:\s+tiền|\s+cầm\s+tay)?|chiếc\s+ví|trong\s+ví|bóp)\b", raw):
+                return "ví"
+            if re.search(r"\b(?:cốp(?:\s+xe)?|hộc\s+xe)\b", raw):
+                return "cốp xe"
+            if re.search(r"\b(?:ngăn\s+kéo|hộc\s+bàn)\b", raw):
+                return "ngăn kéo"
+            if re.search(r"\btúi\b", raw):
+                return "túi"
+            return None
+
         container_pats = [
-            ("túi áo", re.compile(r"\b(túi\s+áo\s+khoác|túi\s+áo)\b", re.IGNORECASE)),
-            ("túi xách", re.compile(r"\b(túi\s+xách|túi\s+cầm\s+tay)\b", re.IGNORECASE)),
+            ("túi áo", re.compile(r"\b(túi\s+áo\s+khoác|túi\s+áo|túi\s+quần)\b", re.IGNORECASE)),
+            ("túi xách", re.compile(r"\b(túi\s+xách|túi\s+cầm\s+tay|balo|ba\s+lô|cặp\s+xách)\b", re.IGNORECASE)),
             ("ví", re.compile(r"\b(ví\s+tiền|chiếc\s+ví|trong\s+ví)\b", re.IGNORECASE)),
             ("cốp xe", re.compile(r"\b(cốp\s+xe|hộc\s+xe)\b", re.IGNORECASE)),
             ("ngăn kéo", re.compile(r"\b(ngăn\s+kéo|hộc\s+bàn)\b", re.IGNORECASE)),
         ]
         placed_pats = [
-            re.compile(r"\bđặt\s+(?:lại\s+)?(?:chiếc\s+|thỏi\s+|tấm\s+|bức\s+|cuốn\s+|lá\s+)?(?:\w+\s+)?(?:kẹp|son|nhẫn|thư|sổ|hóa\s+đơn|ảnh|khăn|chìa\s+khóa|ví)\s+(?:lên|xuống|vào)\s+(bàn|kệ|giường|mặt\s+bàn|tủ|hộp|ngăn\s+kéo)\b", re.IGNORECASE),
-            re.compile(r"\b(?:cất|để)\s+(?:chiếc\s+|thỏi\s+|tấm\s+|bức\s+|cuốn\s+|lá\s+)?(?:\w+\s+)?(?:kẹp|son|nhẫn|thư|sổ|hóa\s+đơn|ảnh|khăn|chìa\s+khóa|ví)\s+(?:lên|vào)\s+(bàn|kệ|hộp)\b", re.IGNORECASE),
+            re.compile(r"\bđặt\s+(?:lại\s+)?(?:chiếc\s+|thỏi\s+|tấm\s+|bức\s+|cuốn\s+|lá\s+)?(?:\w+\s+)?(?:kẹp|son|nhẫn|thư|sổ|hóa\s+đơn|ảnh|khăn|chìa\s+khóa|ví)\s+(?:lên|xuống|vào|trên)\s+(bàn|kệ|giường|mặt\s+bàn|tủ|hộp|ngăn\s+kéo)\b", re.IGNORECASE),
+            re.compile(r"\b(?:cất|để)\s+(?:chiếc\s+|thỏi\s+|tấm\s+|bức\s+|cuốn\s+|lá\s+)?(?:\w+\s+)?(?:kẹp|son|nhẫn|thư|sổ|hóa\s+đơn|ảnh|khăn|chìa\s+khóa|ví)\s+(?:lên|vào|trên)\s+(bàn|kệ|hộp)\b", re.IGNORECASE),
         ]
         return_to_container_pat = re.compile(
             r"\b(?:bỏ|cất|nhét|cho|đút|đặt)\s+"
@@ -724,70 +743,120 @@ class ScriptQCEngine:
             re.IGNORECASE,
         )
 
-        extracted_and_placed = {}
+        prop_locations = {}
         for seg in script.segments:
             seg_lower = seg.text.lower()
+            cur_idx = script.segments.index(seg)
+
             for pat in placed_pats:
-                if pat.search(seg.text):
-                    prop_m = prop_re.search(seg.text)
+                m_placed = pat.search(seg.text)
+                if m_placed:
+                    prop_m = prop_re.search(m_placed.group(0)) or prop_re.search(seg.text)
                     if prop_m:
                         p_name = _clean_prop_name(prop_m.group(1))
-                        cur_idx = script.segments.index(seg)
+                        orig_c = None
                         for c_name, c_pat in container_pats:
                             if c_pat.search(seg_lower) or any(c_pat.search(s.text.lower()) for s in script.segments[max(0, cur_idx-3):cur_idx]):
-                                extracted_and_placed[(p_name, c_name)] = (seg.id, seg.text[:100])
+                                orig_c = c_name
                                 break
+                        prop_locations[p_name] = {
+                            "current_loc": m_placed.group(1) or "bàn",
+                            "is_surface": True,
+                            "from_container": orig_c or "túi áo",
+                            "placed_id": seg.id,
+                            "placed_excerpt": seg.text[:100],
+                        }
 
-            # Return to container check - update per prop and container, never clear everything
-            ret_m = return_to_container_pat.search(seg_lower)
-            if ret_m:
+            # Return / move to container check
+            for ret_m in return_to_container_pat.finditer(seg_lower):
                 ret_obj_text = ret_m.group(1) or ""
                 ret_container_text = ret_m.group(2) or ""
-                ret_prop_m = prop_re.search(seg.text) or prop_re.search(ret_obj_text)
+                dest_c = _normalize_container_name(ret_container_text)
+                # Search prop specifically within the object or clause of this action, not the entire sentence
+                ret_prop_m = prop_re.search(ret_obj_text) or prop_re.search(ret_m.group(0))
                 ret_p_name = _clean_prop_name(ret_prop_m.group(1)) if ret_prop_m else None
 
-                to_remove = []
-                for (p_k, c_k) in extracted_and_placed.keys():
-                    prop_matches = (ret_p_name is None) or (p_k == ret_p_name)
-                    container_matches = (ret_container_text in c_k) or (c_k in ret_container_text) or ("túi" in ret_container_text and "túi" in c_k)
-                    if prop_matches and container_matches:
-                        to_remove.append((p_k, c_k))
-                for key in to_remove:
-                    extracted_and_placed.pop(key, None)
+                if not ret_p_name and ("nó" in ret_obj_text or not ret_obj_text.strip()):
+                    surface_props = [p for p, loc in prop_locations.items() if loc.get("is_surface")]
+                    if len(surface_props) == 1:
+                        ret_p_name = surface_props[0]
 
-            for (p_name, c_name), (placed_id, placed_excerpt) in list(extracted_and_placed.items()):
+                if ret_p_name and dest_c:
+                    if ret_p_name in prop_locations:
+                        prop_locations[ret_p_name]["current_loc"] = dest_c
+                        prop_locations[ret_p_name]["is_surface"] = False
+                        prop_locations[ret_p_name]["moved_id"] = seg.id
+                    else:
+                        prop_locations[ret_p_name] = {
+                            "current_loc": dest_c,
+                            "is_surface": False,
+                            "from_container": dest_c,
+                            "placed_id": seg.id,
+                            "placed_excerpt": seg.text[:100],
+                            "moved_id": seg.id,
+                        }
+
+            # Check for contradiction with subsequent segments
+            for p_name, loc in list(prop_locations.items()):
+                placed_id = loc.get("placed_id", "001")
                 if int(seg.id) <= int(placed_id):
                     continue
+                if _is_surface_observation_text(seg.text):
+                    continue
                 is_flashback = any(fb in seg_lower for fb in ["nhớ lại", "hồi tưởng", "lúc trước", "khi nãy", "hình ảnh"])
-                contradictory_mention = (
-                    f"ngoài {p_name}" in seg_lower or f"ngoài chiếc {p_name}" in seg_lower
-                ) and (c_name in seg_lower or "túi" in seg_lower)
-                still_in_container = (
-                    f"trong {c_name}" in seg_lower or f"trong túi" in seg_lower
-                ) and (
-                    f"vẫn còn {p_name}" in seg_lower or f"còn có {p_name}" in seg_lower
+                if is_flashback:
+                    continue
+
+                claimed_c = _normalize_container_name(seg_lower)
+                has_prop_mention = (
+                    f"ngoài {p_name}" in seg_lower
+                    or f"ngoài chiếc {p_name}" in seg_lower
+                    or f"ngoài thỏi {p_name}" in seg_lower
+                    or f"vẫn còn {p_name}" in seg_lower
+                    or f"còn có {p_name}" in seg_lower
+                    or (bool(claimed_c) and (f"trong {claimed_c}" in seg_lower and p_name in seg_lower))
+                    or ("trong túi" in seg_lower and p_name in seg_lower)
                 )
-                if (contradictory_mention or still_in_container) and not is_flashback:
-                    fact_conflicts.append({
-                        "fact_id": "PROP_LOCATION_CONTRADICTION",
-                        "segment_id": seg.id,
-                        "type": "PROP_LOCATION_CONTRADICTION",
-                        "expected": f"{p_name} đã lấy ra khỏi {c_name} ở [{placed_id}]",
-                        "found": f"nhắc {p_name} như vẫn còn trong {c_name}",
-                        "description": f"Phân đoạn [{seg.id}] kể {p_name} vẫn nằm trong {c_name}, trong khi ở [{placed_id}] đã được lấy ra đặt lên bàn/kệ mà không có cảnh cất lại.",
-                    })
-                    evidence_issues.append({
-                        "segment_id": seg.id,
-                        "related_segment_ids": [placed_id],
-                        "excerpt": seg.text[:120],
-                        "rule": "PROP_LOCATION_CONTRADICTION",
-                        "severity": "CRITICAL",
-                        "recommended_action": f"Sửa phân đoạn [{seg.id}] để không nhắc {p_name} như thể vẫn còn nằm trong {c_name}, vì ở [{placed_id}] {p_name} đã được lấy ra đặt lên bàn.",
-                        "message": f"Phân đoạn [{seg.id}] vi phạm vị trí đạo cụ (PROP_LOCATION_CONTRADICTION): kể {p_name} trong {c_name}, trái với [{placed_id}] nơi {p_name} đã được lấy ra.",
-                    })
-                    logic_issues.append(f"[{seg.id}] Prop location contradiction with [{placed_id}]: {p_name} in {c_name}.")
-                    revision_requests.append(f"Fix segment {seg.id} prop location contradiction with {placed_id}.")
-                    break
+
+                if has_prop_mention:
+                    is_contradiction = False
+                    reason = ""
+                    if loc.get("is_surface"):
+                        if claimed_c or "trong túi" in seg_lower or "trong ví" in seg_lower:
+                            is_contradiction = True
+                            c_display = claimed_c or "túi"
+                            reason = f"kể {p_name} trong {c_display}, trong khi ở [{placed_id}] đã được lấy ra đặt lên {loc.get('current_loc', 'bàn')}"
+                    else:
+                        cur_c = loc.get("current_loc")
+                        if claimed_c and cur_c:
+                            if claimed_c == "túi" and ("túi" in cur_c):
+                                pass
+                            elif claimed_c != cur_c:
+                                is_contradiction = True
+                                moved_from_id = loc.get("moved_id", placed_id)
+                                reason = f"kể {p_name} trong {claimed_c}, trong khi ở [{moved_from_id}] đã cất vào {cur_c}"
+
+                    if is_contradiction:
+                        fact_conflicts.append({
+                            "fact_id": "PROP_LOCATION_CONTRADICTION",
+                            "segment_id": seg.id,
+                            "type": "PROP_LOCATION_CONTRADICTION",
+                            "expected": f"{p_name} ở {loc.get('current_loc')}",
+                            "found": reason,
+                            "description": f"Phân đoạn [{seg.id}] mâu thuẫn vị trí đạo cụ (PROP_LOCATION_CONTRADICTION): {reason}.",
+                        })
+                        evidence_issues.append({
+                            "segment_id": seg.id,
+                            "related_segment_ids": [placed_id],
+                            "excerpt": seg.text[:120],
+                            "rule": "PROP_LOCATION_CONTRADICTION",
+                            "severity": "CRITICAL",
+                            "recommended_action": f"Sửa phân đoạn [{seg.id}] để không mâu thuẫn vị trí đạo cụ của {p_name}.",
+                            "message": f"Phân đoạn [{seg.id}] vi phạm vị trí đạo cụ (PROP_LOCATION_CONTRADICTION): {reason}.",
+                        })
+                        logic_issues.append(f"[{seg.id}] Prop location contradiction with [{placed_id}]: {reason}.")
+                        revision_requests.append(f"Fix segment {seg.id} prop location contradiction with {placed_id}.")
+                        break
 
         # 7. CHARACTER FACT VIOLATION AUDIT (Family structure / gender / role consistency)
         bible_text_lower = json.dumps(story_bible.to_dict(), ensure_ascii=False).lower()

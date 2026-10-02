@@ -70,7 +70,8 @@ NARRATIVE_LOGIC_RULES = [
         "phải đọc nó và người nghe phải biết nội dung. Không dùng một vật chứng mà chính nhân vật chính chưa xem. "
         "Người thân đã xuất hiện (con cái, cha mẹ) phải được nhắc tới khi hoàn cảnh gia đình thay đổi (ly thân, dọn đi). "
         "Mỗi vật chứng đã dẫn dắt nghi ngờ (kẹp tóc, áo khoác, tin nhắn…) phải được giải thích là của ai, từ đâu ra khi sự thật "
-        "lộ diện; vật chứng gài cho hướng nghi sai cũng phải được trả lời, không bị bỏ lửng.",
+        "lộ diện; vật chứng gài cho hướng nghi sai cũng phải được trả lời, không bị bỏ lửng. "
+        "CHỈ BÁO LỖI KHI CHI TIẾT BỊ BỎ QUÊN HOÀN TOÀN ĐẾN HẾT TRUYỆN; KHÔNG BÁO LỖI KHI CHI TIẾT ĐƯỢC GIẢI MÃ HOẶC ĐỐI CHIẾU Ở CẢNH REVEAL/PAYOFF PHÍA SAU.",
     ),
     (
         "REVEAL_LEAKED_EARLY",

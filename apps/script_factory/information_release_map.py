@@ -139,16 +139,22 @@ def extract_key_entities_from_text(text: str) -> List[str]:
 def build_information_release_map(
     story_bible: StoryBible,
     fact_locks: Optional[List[Dict[str, Any] | LockedFact]] = None,
+    total_segments: int = 90,
 ) -> InformationReleaseMap:
     """
     Constructs the Information Release Map enforcing:
-    - Reveal 1 facts: Earliest segment >= 61
-    - Reveal 2 facts: Earliest segment >= 76
-    - Clues / Investigation: Earliest segment 16-25
+    - Reveal 1 facts: Earliest segment >= 61 (scaled to total_segments)
+    - Reveal 2 facts: Earliest segment >= 76 (scaled to total_segments)
+    - Clues / Investigation: Earliest segment 16-25 (scaled to total_segments)
     - Setup / Premise: Earliest segment 1-15
     """
     ep_id = story_bible.episode_id
     rules: List[InformationReleaseRule] = []
+    scale = (total_segments / 90.0) if total_segments else 1.0
+    r2_seg = max(15, int(76 * scale))
+    r1_seg = max(10, int(61 * scale))
+    inv_seg = max(5, int(20 * scale))
+    clue_seg = max(3, int(16 * scale))
 
     facts: List[Dict[str, Any]] = []
     seen_ids = set()
@@ -192,28 +198,28 @@ def build_information_release_map(
 
         if "reveal_2" in field_name or "bước ngoặt 2" in desc_lower or "twist_2" in field_name or "mục đích nhân văn" in desc_lower:
             f_type = "REVEAL_2"
-            earliest = 76
-            forbidden_before = 76
+            earliest = r2_seg
+            forbidden_before = r2_seg
             sens = "CRITICAL"
         elif "reveal_1" in field_name or "bước ngoặt 1" in desc_lower or "twist_1" in field_name or "thân phận" in desc_lower:
             f_type = "REVEAL_1"
-            earliest = 61
-            forbidden_before = 61
+            earliest = r1_seg
+            forbidden_before = r1_seg
             sens = "CRITICAL"
         elif "location_of_friend" in field_name or "viện dưỡng lão" in val_lower or "địa điểm hiện tại" in desc_lower:
             f_type = "INVESTIGATION"
-            earliest = 20
-            forbidden_before = 20
+            earliest = inv_seg
+            forbidden_before = inv_seg
             sens = "MEDIUM"
         elif "property_details" in field_name or "sổ tiết kiệm" in val_lower or "mảnh đất" in val_lower:
             f_type = "CLUE"
-            earliest = 16
-            forbidden_before = 16
+            earliest = clue_seg
+            forbidden_before = clue_seg
             sens = "MEDIUM"
         elif "clue" in field_name or "investigation" in field_name:
             f_type = "CLUE"
-            earliest = 16
-            forbidden_before = 16
+            earliest = clue_seg
+            forbidden_before = clue_seg
             sens = "MEDIUM"
         elif "timeline" in field_name or "years" in field_name:
             f_type = "SETUP"

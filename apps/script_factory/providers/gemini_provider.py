@@ -1471,7 +1471,7 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
         # converging. The chain still falls back if that model becomes unusable.
         result = self._call_generate_content(
             prompt=prompt, model=model or self._sticky_review_model or None, response_json=True,
-            system_instruction=system_instruction, temperature=0.2, thinking_budget=4096, allow_lite_models=False,
+            system_instruction=system_instruction, temperature=0.2, thinking_budget=4096, allow_lite_models=True,
         )
         self._sticky_review_model = self.last_used_model
         return result

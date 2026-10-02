@@ -32,6 +32,10 @@ REVIEW_CALIBRATION = (
     "chỉ báo IMPLAUSIBLE_BEHAVIOR khi hành động trái với điều kiện cụ thể đã được đặt ra. "
     "UNRESOLVED_SETUP chỉ dành cho nút thắt/chứng cứ/đáp án đã hứa nhưng bỏ lửng; một món quà thể hiện "
     "sự thân mật đã được giải thích bởi quan hệ ngoại tình không cần thêm cảnh giải thích món quà. "
+    "TIẾN TRÌNH TRINH THÁM & MANH MỐI: Manh mối phát hiện ở phần đầu (như bức ảnh người lạ, mạng Wi-Fi bí ẩn, khuy măng sét) "
+    "được phép là bí ẩn chưa có câu trả lời ngay lúc đó; chúng sẽ được nhân vật đối chiếu, giải mã hoặc xác nhận danh tính "
+    "ở các cảnh Reveal/Payoff phía sau. TUYỆT ĐỐI KHÔNG báo UNRESOLVED_SETUP khi chi tiết đã được giải đáp ở phần sau của câu chuyện; "
+    "và KHÔNG đòi hỏi nhân vật phải biết hoặc đối chiếu danh tính ngay tại phân đoạn phát hiện ban đầu (điều đó sẽ vi phạm REVEAL_LEAKED_EARLY).\n\n"
     "Nhận định 'thao túng' sau lời đe dọa cụ thể mà nhân vật đã đọc/nghe không phải biết nội tâm bí mật. "
     "Không tự thêm giả định ngoài văn bản để tạo lỗi. Lời thừa nhận của người trong cuộc có thể xác nhận "
     "việc họ ngoại tình; nó không thay được xét nghiệm huyết thống hoặc kết luận của cơ quan pháp luật.\n\n"
@@ -200,6 +204,16 @@ def review_script_logic(
             # This rule governs the opening. A concluding audience question is
             # part of the format, not a second hook or a viewpoint violation.
             continue
+        if rule == 'UNRESOLVED_SETUP':
+            problem_text = str(item.get('problem', '')).lower()
+            if any(phrase in problem_text for phrase in [
+                "sau đó ở [", "đến phân đoạn [", "mãi đến phân đoạn", "mãi đến [",
+                "ở phân đoạn [038]", "ở phân đoạn sau", "phần reveal sau",
+                "ở đoạn sau", "ở các đoạn sau", "suy luận gián tiếp ở đoạn sau",
+                "trong phần reveal", "phần reveal", "mặc dù đoạn", "mặc dù phân đoạn"
+            ]):
+                logger.info('[SemanticReview] Skipping UNRESOLVED_SETUP on %s: payoff acknowledged in later segment (%s)', seg_id, item.get('problem'))
+                continue
         related = [
             r for r in (clean_segment_id(raw_id, by_id) for raw_id in (item.get("related_segment_ids") or []))
             if r in by_id and r != seg_id
@@ -464,7 +478,18 @@ def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass:
             if isinstance(value, list):
                 return "\n".join(field_text(v) for v in value)
             return str(value) if value is not None else ""
-        source = field_text(data.get(field_name)) if field_name in STORY_BIBLE_REVIEW_FIELDS else ""
+        root_field = field_name.split(".")[0]
+        if rule == "POV_KNOWLEDGE_VIOLATION" and (root_field in STORY_BIBLE_BACKSTAGE_FIELDS or field_name in STORY_BIBLE_BACKSTAGE_FIELDS):
+            continue
+        source = ""
+        if root_field in STORY_BIBLE_REVIEW_FIELDS:
+            source = field_text(data.get(root_field))
+        else:
+            for k in STORY_BIBLE_REVIEW_FIELDS:
+                sub = data.get(k)
+                if isinstance(sub, dict) and root_field in sub:
+                    source = field_text(sub.get(root_field))
+                    break
         if rule not in STORY_BIBLE_RULES or not source or not _quote_in_text(quote, source):
             logger.warning("[SemanticReview] Invalid Story finding: rule=%s field=%s quote=%r", rule, field_name, quote)
             dropped += 1
@@ -476,8 +501,6 @@ def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass:
             "message": f"{str(item.get('problem', '')).strip()} Cách sửa: {str(item.get('fix', '')).strip()}",
             "source": "SEMANTIC_REVIEW",
         }
-        if rule == "POV_KNOWLEDGE_VIOLATION" and field_name in STORY_BIBLE_BACKSTAGE_FIELDS:
-            continue
         confident = str(item.get("confidence", "")).lower() == "high"
         (blocking if confident and rule in STORY_BIBLE_BLOCKING_RULES else advisories).append(issue)
     result = {

@@ -52,7 +52,7 @@ def _qc_problem_score(report) -> Tuple[int, int, int]:
     return int(unavailable), critical, total
 
 
-def _revise_keeping_best(rev_manager, script, story_bible, qc_report, round_ceiling: int):
+def _revise_keeping_best(rev_manager, script, story_bible, qc_report, round_ceiling: int, model: Optional[str] = None):
     """Runs AI revision rounds up to ``round_ceiling`` and returns the best round.
 
     Revisions mutate the script in place and a later rewrite can make things
@@ -77,12 +77,24 @@ def _revise_keeping_best(rev_manager, script, story_bible, qc_report, round_ceil
         previous_qc = current_qc
         logger.info(f"Vòng sửa kịch bản {current_script.revision_round + 1}/{round_ceiling}...")
         try:
-            current_script, current_qc = rev_manager.auto_revise_and_recheck(
-                script=copy.deepcopy(current_script),
-                story_bible=story_bible,
-                qc_report=current_qc,
-                max_rounds=round_ceiling,
-            )
+            try:
+                current_script, current_qc = rev_manager.auto_revise_and_recheck(
+                    script=copy.deepcopy(current_script),
+                    story_bible=story_bible,
+                    qc_report=current_qc,
+                    max_rounds=round_ceiling,
+                    model=model,
+                )
+            except TypeError as te:
+                if "model" in str(te) or "unexpected keyword" in str(te):
+                    current_script, current_qc = rev_manager.auto_revise_and_recheck(
+                        script=copy.deepcopy(current_script),
+                        story_bible=story_bible,
+                        qc_report=current_qc,
+                        max_rounds=round_ceiling,
+                    )
+                else:
+                    raise
         except Exception:
             logger.exception('Auto-repair failed; retaining the best draft and its failing QC report')
             break
@@ -640,8 +652,10 @@ class GenerationService:
         qc_report = qc_engine.run_qc(script=script, story_bible=story_bible)
         if qc_report.status != "PASS":
             rev_manager = AutoRevisionManager(provider=provider, cost_controller=self.cost_ctrl, qc_engine=qc_engine)
+            effective_model = model_id or getattr(provider, "requested_model", None) or getattr(provider, "default_model", None)
             script, qc_report = _revise_keeping_best(
                 rev_manager, script, story_bible, qc_report, round_ceiling=MAX_REVISION_ROUNDS,
+                model=effective_model,
             )
 
         # Attach generation_source and trace to script and project metadata
@@ -756,6 +770,12 @@ class GenerationService:
 
         qc_report = qc_engine.run_qc(script=script, story_bible=story_bible)
         starting_round = script.revision_round
+        effective_req_model = (
+            model_id
+            or getattr(provider, "requested_model", None)
+            or getattr(provider, "default_model", None)
+            or original_script_data.get("requested_model")
+        )
         if qc_report.status == "PASS":
             revised_script, final_qc = script, qc_report
             revised_script.status = "QC_PASS"
@@ -764,6 +784,7 @@ class GenerationService:
             revised_script, final_qc = _revise_keeping_best(
                 rev_manager, script, story_bible, qc_report,
                 round_ceiling=starting_round + MAX_REVISION_ROUNDS,
+                model=effective_req_model,
             )
 
         # Auto-repair is allowed only inside the current Story lineage and must
@@ -782,12 +803,26 @@ class GenerationService:
             revised_data.pop("stale_reason", None)
             revised_data.pop("stale_reasons", None)
         if script_content_hash(revised_data) != script_content_hash(original_script_data):
+            effective_req = (
+                model_id
+                or getattr(revised_script, "requested_model", None)
+                or getattr(provider, "requested_model", None)
+                or getattr(provider, "default_model", None)
+                or original_script_data.get("requested_model")
+            )
+            actual_m = (
+                getattr(revised_script, "actual_model", None)
+                or getattr(provider, "last_actual_model", None)
+                or getattr(provider, "last_used_model", None)
+                or getattr(revised_script, "model_name", None)
+                or effective_req
+            )
             revised_data["parent_generation_request_id"] = original_script_data.get("generation_request_id")
             revised_data["generation_request_id"] = str(uuid.uuid4())
-            revised_data["model_name"] = getattr(revised_script, "model_name", None) or getattr(provider, "last_used_model", None) or model_id or getattr(provider, "default_model", None)
+            revised_data["model_name"] = actual_m
             revised_data["provider_name"] = getattr(provider, "provider_name", None) or getattr(revised_script, "provider_name", None)
-            revised_data["requested_model"] = getattr(revised_script, "requested_model", None) or model_id or getattr(provider, "requested_model", None) or revised_data["model_name"]
-            revised_data["actual_model"] = getattr(revised_script, "actual_model", None) or getattr(provider, "last_actual_model", None) or getattr(provider, "last_used_model", None) or revised_data["model_name"]
+            revised_data["requested_model"] = effective_req
+            revised_data["actual_model"] = actual_m
             revised_data["prompt_version"] = "script-v3.6-grounded-repair"
             revised_data["generated_at"] = time.time()
         _assert_story_snapshot(story_path, source_story_hash, story_bible.generation_request_id)
