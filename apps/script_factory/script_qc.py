@@ -571,10 +571,31 @@ class ScriptQCEngine:
             ("NOON", re.compile(r"\b(trưa\s+hôm\s+ấy|trưa\s+hôm\s+đó|buổi\s+trưa)\b", re.IGNORECASE)),
         ]
         prop_stems = [
-            "kẹp", "chiếc kẹp", "thỏi son", "son", "chìa khóa", "bức thư", "lá thư", "thư",
-            "nhẫn", "sổ", "hóa đơn", "biên lai", "vali", "điện thoại", "khăn", "ảnh", "áo khoác",
+            "chiếc kẹp", "kẹp tóc", "kẹp pha lê", "kẹp", "thỏi son", "son", "chìa khóa",
+            "bức thư", "lá thư", "thư", "nhẫn", "sổ", "hóa đơn", "biên lai", "vali",
+            "điện thoại", "khăn", "ảnh", "áo khoác",
         ]
         prop_re = re.compile(r"\b(" + "|".join(re.escape(p) for p in prop_stems) + r")\b", re.IGNORECASE)
+
+        def _clean_prop_name(raw_p: str) -> str:
+            cleaned = re.sub(r"^(?:chiếc|cái|thỏi|bức|lá|tấm|cuốn)\s+", "", raw_p.strip().lower())
+            if "kẹp" in cleaned:
+                return "kẹp"
+            if "son" in cleaned:
+                return "son"
+            if "thư" in cleaned:
+                return "thư"
+            return cleaned
+
+        def _is_surface_observation_text(text: str) -> bool:
+            t = text.lower()
+            if re.search(r"\b(?:thấy|nhìn\s+(?:thấy|lại)?|trông\s+thấy)\s+.*?\s+(?:trên|tại)\s+(?:bàn|kệ|tủ|giường|mặt\s+bàn|ghế|sàn)\b", t):
+                return True
+            if re.search(r"\bvẫn\s+(?:ở|nằm|đúng\s+nơi|y\s+nguyên|y\s+vị\s+trí)\b", t):
+                return True
+            if re.search(r"\bnhớ\s+lại\b", t):
+                return True
+            return False
 
         hook_candidates = [
             (idx, s) for idx, s in enumerate(script.segments[:6])
@@ -585,7 +606,7 @@ class ScriptQCEngine:
             hs_prop_m = prop_re.search(hs.text)
             if not hs_prop_m:
                 continue
-            matched_prop = hs_prop_m.group(1).lower()
+            matched_prop = _clean_prop_name(hs_prop_m.group(1))
             hook_tod = None
             for tod_name, tod_pat in tod_patterns:
                 m_tod = tod_pat.search(hs.text)
@@ -595,46 +616,93 @@ class ScriptQCEngine:
             if not hook_tod:
                 continue
 
-            for bs in script.segments[h_idx + 1:]:
+            prop_already_taken_out = False
+
+            for b_idx in range(h_idx + 1, len(script.segments)):
+                bs = script.segments[b_idx]
                 if bs.delivery_profile in ("HOOK", "ENDING"):
                     continue
+
                 bs_lower = bs.text.lower()
-                has_discovery_action = any(
-                    act in bs_lower for act in ["lấy ra", "tìm thấy", "phát hiện", "chạm phải", "thấy", "lấy chiếc", "mở ra"]
-                )
-                if not has_discovery_action or matched_prop not in bs_lower:
+                is_flashback = any(fb in bs_lower for fb in ["nhớ lại", "hồi tưởng", "lúc trước", "khi nãy", "trước đó"])
+                if is_flashback:
                     continue
+
+                if _is_surface_observation_text(bs.text):
+                    continue
+
+                window_segs = [bs]
+                next_seg = script.segments[b_idx + 1] if b_idx + 1 < len(script.segments) else None
+                if next_seg and next_seg.delivery_profile not in ("HOOK", "ENDING"):
+                    has_next_tod = any(tod_pat.search(next_seg.text) for _, tod_pat in tod_patterns)
+                    if not has_next_tod:
+                        window_segs.append(next_seg)
+
+                window_text = " ".join(s.text for s in window_segs)
+                win_lower = window_text.lower()
+
+                if matched_prop not in win_lower:
+                    continue
+
+                has_strong_discovery = any(act in win_lower for act in [
+                    "tìm thấy", "phát hiện", "chạm phải", "bất ngờ thấy", "tình cờ thấy",
+                    "vô tình thấy", "rơi ra từ", "lấy ra khỏi", "rút ra khỏi", "lấy ra một",
+                    "lấy ra chiếc", "lấy ra thỏi", "lấy ra bức", "lấy ra lá", "lấy ra tấm",
+                ])
+                has_container_action = (
+                    any(act in win_lower for act in ["lấy ra", "mở ra", "đưa tay vào"])
+                    and any(c in win_lower for c in ["túi", "áo", "ví", "cốp", "hộc", "ngăn kéo"])
+                )
+                has_discovery = has_strong_discovery or has_container_action
+
+                if prop_already_taken_out:
+                    continue
+
+                if not has_discovery:
+                    continue
+
                 body_tod = None
                 for tod_name, tod_pat in tod_patterns:
-                    m_tod = tod_pat.search(bs.text)
+                    m_tod = tod_pat.search(window_text)
                     if m_tod:
                         body_tod = (tod_name, m_tod.group(1))
                         break
+
+                if not body_tod and b_idx > 0:
+                    prev_s = script.segments[b_idx - 1]
+                    if prev_s.delivery_profile not in ("HOOK", "ENDING"):
+                        for tod_name, tod_pat in tod_patterns:
+                            m_tod = tod_pat.search(prev_s.text)
+                            if m_tod:
+                                body_tod = (tod_name, m_tod.group(1))
+                                break
+
+                prop_already_taken_out = True
+
                 if body_tod and body_tod[0] != hook_tod[0]:
-                    is_flashback = any(fb in bs_lower for fb in ["nhớ lại", "hồi tưởng", "lúc trước", "khi nãy", "trước đó"])
-                    if not is_flashback:
-                        fact_conflicts.append({
-                            "fact_id": "HOOK_BODY_TIMELINE_CONTRADICTION",
-                            "segment_id": hs.id,
-                            "type": "HOOK_TIMELINE_CONTRADICTION",
-                            "rule": "HOOK_TIMELINE_CONTRADICTION",
-                            "expected": body_tod[1],
-                            "found": hook_tod[1],
-                            "description": f"Hook [{hs.id}] kể phát hiện {matched_prop} vào '{hook_tod[1]}', nhưng cảnh phát hiện thực tế tại [{bs.id}] diễn ra vào '{body_tod[1]}'.",
-                        })
-                        evidence_issues.append({
-                            "segment_id": hs.id,
-                            "related_segment_ids": [bs.id],
-                            "excerpt": hs.text[:120],
-                            "rule": "HOOK_TIMELINE_CONTRADICTION",
-                            "type": "HOOK_TIMELINE_CONTRADICTION",
-                            "severity": "CRITICAL",
-                            "recommended_action": f"Đồng bộ thời gian phát hiện manh mối giữa Hook [{hs.id}] và thân truyện [{bs.id}] (sửa [{hs.id}] thành '{body_tod[1]}').",
-                            "message": f"Phân đoạn Hook [{hs.id}] mâu thuẫn thời gian với phân đoạn [{bs.id}]: Hook kể '{hook_tod[1]}' trong khi thân truyện diễn ra vào '{body_tod[1]}'.",
-                        })
-                        logic_issues.append(f"[{hs.id}] Hook timeline mismatch with [{bs.id}]: '{hook_tod[1]}' vs '{body_tod[1]}'.")
-                        revision_requests.append(f"Synchronize discovery time in Hook {hs.id} with body segment {bs.id}.")
-                        break
+                    conflict_seg = bs
+                    fact_conflicts.append({
+                        "fact_id": "HOOK_BODY_TIMELINE_CONTRADICTION",
+                        "segment_id": hs.id,
+                        "type": "HOOK_TIMELINE_CONTRADICTION",
+                        "rule": "HOOK_TIMELINE_CONTRADICTION",
+                        "expected": body_tod[1],
+                        "found": hook_tod[1],
+                        "description": f"Hook [{hs.id}] kể phát hiện {matched_prop} vào '{hook_tod[1]}', nhưng cảnh phát hiện thực tế tại [{conflict_seg.id}] diễn ra vào '{body_tod[1]}'.",
+                    })
+                    evidence_issues.append({
+                        "segment_id": hs.id,
+                        "related_segment_ids": [conflict_seg.id],
+                        "excerpt": hs.text[:120],
+                        "rule": "HOOK_TIMELINE_CONTRADICTION",
+                        "type": "HOOK_TIMELINE_CONTRADICTION",
+                        "severity": "CRITICAL",
+                        "recommended_action": f"Đồng bộ thời gian phát hiện manh mối giữa Hook [{hs.id}] và thân truyện [{conflict_seg.id}] (sửa [{hs.id}] thành '{body_tod[1]}').",
+                        "message": f"Phân đoạn Hook [{hs.id}] mâu thuẫn thời gian với phân đoạn [{conflict_seg.id}]: Hook kể '{hook_tod[1]}' trong khi thân truyện diễn ra vào '{body_tod[1]}'.",
+                    })
+                    logic_issues.append(f"[{hs.id}] Hook timeline mismatch with [{conflict_seg.id}]: '{hook_tod[1]}' vs '{body_tod[1]}'.")
+                    revision_requests.append(f"Synchronize discovery time in Hook {hs.id} with body segment {conflict_seg.id}.")
+                    break
 
         # 6.8 PROP LOCATION & CONTINUITY STATE AUDIT (PROP_LOCATION_CONTRADICTION / OBJECT_CONTINUITY_CONTRADICTION)
         container_pats = [
@@ -648,7 +716,13 @@ class ScriptQCEngine:
             re.compile(r"\bđặt\s+(?:lại\s+)?(?:chiếc\s+|thỏi\s+|tấm\s+|bức\s+|cuốn\s+|lá\s+)?(?:\w+\s+)?(?:kẹp|son|nhẫn|thư|sổ|hóa\s+đơn|ảnh|khăn|chìa\s+khóa|ví)\s+(?:lên|xuống|vào)\s+(bàn|kệ|giường|mặt\s+bàn|tủ|hộp|ngăn\s+kéo)\b", re.IGNORECASE),
             re.compile(r"\b(?:cất|để)\s+(?:chiếc\s+|thỏi\s+|tấm\s+|bức\s+|cuốn\s+|lá\s+)?(?:\w+\s+)?(?:kẹp|son|nhẫn|thư|sổ|hóa\s+đơn|ảnh|khăn|chìa\s+khóa|ví)\s+(?:lên|vào)\s+(bàn|kệ|hộp)\b", re.IGNORECASE),
         ]
-        return_to_container_pat = re.compile(r"\b(?:bỏ|cất|nhét|cho|đút)\s+(?:lại|trở\s+lại)?\s*(?:vào|vào\s+lại)\s+(?:túi|ví|cốp|ngăn\s+kéo)\b", re.IGNORECASE)
+        return_to_container_pat = re.compile(
+            r"\b(?:bỏ|cất|nhét|cho|đút|đặt)\s+"
+            r"(?:(?:chiếc|cái|thỏi|lá|tấm|bức|cuốn|món|vật|nó)?\s*([a-zA-Z0-9_\s\u00C0-\u1EF9]{0,25}?)\s*)?"
+            r"(?:trở\s+lại|lại)?\s*(?:vào|vào\s+lại)\s+"
+            r"(?:trong\s+)?(túi(?:\s+áo|\s+quần|\s+xách)?|ví|cốp(?:\s+xe)?|hộc(?:\s+bàn|\s+xe)?|ngăn\s+kéo)\b",
+            re.IGNORECASE,
+        )
 
         extracted_and_placed = {}
         for seg in script.segments:
@@ -657,15 +731,29 @@ class ScriptQCEngine:
                 if pat.search(seg.text):
                     prop_m = prop_re.search(seg.text)
                     if prop_m:
-                        p_name = prop_m.group(1).lower()
+                        p_name = _clean_prop_name(prop_m.group(1))
                         cur_idx = script.segments.index(seg)
                         for c_name, c_pat in container_pats:
                             if c_pat.search(seg_lower) or any(c_pat.search(s.text.lower()) for s in script.segments[max(0, cur_idx-3):cur_idx]):
                                 extracted_and_placed[(p_name, c_name)] = (seg.id, seg.text[:100])
                                 break
 
-            if return_to_container_pat.search(seg_lower):
-                extracted_and_placed.clear()
+            # Return to container check - update per prop and container, never clear everything
+            ret_m = return_to_container_pat.search(seg_lower)
+            if ret_m:
+                ret_obj_text = ret_m.group(1) or ""
+                ret_container_text = ret_m.group(2) or ""
+                ret_prop_m = prop_re.search(seg.text) or prop_re.search(ret_obj_text)
+                ret_p_name = _clean_prop_name(ret_prop_m.group(1)) if ret_prop_m else None
+
+                to_remove = []
+                for (p_k, c_k) in extracted_and_placed.keys():
+                    prop_matches = (ret_p_name is None) or (p_k == ret_p_name)
+                    container_matches = (ret_container_text in c_k) or (c_k in ret_container_text) or ("túi" in ret_container_text and "túi" in c_k)
+                    if prop_matches and container_matches:
+                        to_remove.append((p_k, c_k))
+                for key in to_remove:
+                    extracted_and_placed.pop(key, None)
 
             for (p_name, c_name), (placed_id, placed_excerpt) in list(extracted_and_placed.items()):
                 if int(seg.id) <= int(placed_id):
@@ -1497,12 +1585,19 @@ class ScriptQCEngine:
             "REPEATED_SCENE_DIALOGUE", "UNRESOLVED_CORE_PROP", "PROP_LOCATION_CONTRADICTION",
             "HOOK_TIMELINE_CONTRADICTION", "OBJECT_CONTINUITY_CONTRADICTION", "ACTION_SEQUENCE_INVERSION",
             "KNOWLEDGE_STATE_REGRESSION", "CHARACTER_IDENTITY_CONTRADICTION", "TOPIC_TRUTH_DRIFT",
+            "REVEAL_LEAKED_EARLY", "UNMOTIVATED_DISCLOSURE",
         }
         from apps.script_factory.narrative_rules import JUDGEMENT_RULES as judgement_rules, is_blocking_logic_issue
 
         def _blocks(issue: Dict[str, Any]) -> bool:
             rule = str(issue.get("rule") or issue.get("type") or "").strip().upper()
-            if rule in hard_fail_rules or rule in objective_rules or is_blocking_logic_issue({"rule": rule}):
+            if rule in hard_fail_rules:
+                return True
+            if rule in judgement_rules:
+                return False
+            if issue.get("severity") == "WARNING" and rule not in objective_rules:
+                return False
+            if rule in objective_rules or is_blocking_logic_issue({"rule": rule}):
                 return True
             return issue.get("severity") == "CRITICAL" and rule not in judgement_rules
 

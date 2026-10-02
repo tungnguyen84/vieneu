@@ -791,3 +791,201 @@ def test_prop_location_contradiction(qc_env):
     )
 
 
+def test_legitimate_next_morning_observation_not_blocked(qc_env):
+    """Observing an already found and placed prop on the table the next morning is not a timeline conflict."""
+    qc: ScriptQCEngine = qc_env["qc"]
+    bible = StoryBible(
+        episode_id="EP_OBSERVE_OK",
+        title="Chiếc Kẹp Pha Lê",
+        protagonist={"name": "Lan", "char_id": "LAN"},
+    )
+    segments = [
+        ScriptSegment(id="001", speaker="MINH", text="Tối hôm ấy, Lan tìm thấy chiếc kẹp tóc trong túi áo của Hùng.", delivery_profile="HOOK"),
+        ScriptSegment(id="002", speaker="MINH", text="Lan lấy chiếc kẹp ra khỏi túi áo và đặt nó lên bàn.", delivery_profile="NORMAL"),
+        ScriptSegment(id="003", speaker="MINH", text="Sáng hôm sau, Lan thấy chiếc kẹp trên bàn, vẫn đúng nơi cô đã đặt tối qua.", delivery_profile="NORMAL"),
+        ScriptSegment(id="004", speaker="MINH", text="Sự thật được sáng tỏ: Hùng thú nhận món quà bất ngờ cho mẹ.", delivery_profile="REVEAL", importance="critical"),
+        ScriptSegment(id="005", speaker="MINH", text="Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", delivery_profile="ENDING"),
+    ]
+    script = FullScript(
+        episode_id="EP_OBSERVE_OK",
+        title=bible.title,
+        host={"id": "MINH", "name": "MC Minh"},
+        segments=segments,
+    )
+    report = qc.run_qc(script, bible)
+    timeline_issues = [i for i in report.evidence_issues if i.get("rule") == "HOOK_TIMELINE_CONTRADICTION"]
+    assert len(timeline_issues) == 0, f"Expected no HOOK_TIMELINE_CONTRADICTION, got {timeline_issues}"
+
+
+def test_legitimate_explicit_return_to_pocket_not_blocked(qc_env):
+    """When a prop is explicitly returned to container, finding other items in container later is valid."""
+    qc: ScriptQCEngine = qc_env["qc"]
+    bible = StoryBible(
+        episode_id="EP_RETURN_OK",
+        title="Chiếc Kẹp Pha Lê",
+        protagonist={"name": "Lan", "char_id": "LAN"},
+    )
+    segments = [
+        ScriptSegment(id="001", speaker="MINH", text="Lan băn khoăn về chiếc kẹp tóc.", delivery_profile="HOOK"),
+        ScriptSegment(id="002", speaker="MINH", text="Lan lấy chiếc kẹp tóc ra khỏi túi áo khoác.", delivery_profile="NORMAL"),
+        ScriptSegment(id="003", speaker="MINH", text="Cô đặt chiếc kẹp lên bàn.", delivery_profile="NORMAL"),
+        ScriptSegment(id="004", speaker="MINH", text="Lan cất chiếc kẹp trở lại vào túi áo.", delivery_profile="NORMAL"),
+        ScriptSegment(id="005", speaker="MINH", text="Trong túi áo, ngoài chiếc kẹp pha lê, Lan tìm thấy một tờ giấy.", delivery_profile="MYSTERY"),
+        ScriptSegment(id="006", speaker="MINH", text="Sự thật được sáng tỏ: tờ giấy là hóa đơn mua quà.", delivery_profile="REVEAL", importance="critical"),
+        ScriptSegment(id="007", speaker="MINH", text="Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", delivery_profile="ENDING"),
+    ]
+    script = FullScript(
+        episode_id="EP_RETURN_OK",
+        title=bible.title,
+        host={"id": "MINH", "name": "MC Minh"},
+        segments=segments,
+    )
+    report = qc.run_qc(script, bible)
+    prop_issues = [i for i in report.evidence_issues if i.get("rule") == "PROP_LOCATION_CONTRADICTION"]
+    assert len(prop_issues) == 0, f"Expected no PROP_LOCATION_CONTRADICTION, got {prop_issues}"
+
+
+def test_ep2010_split_scene_discovery_timeline_contradiction(qc_env):
+    """EP2010 real pattern: Hook says 'tối hôm ấy' in laundry room, body at [014] says 'Sáng hôm sau' touched object and [015] names prop."""
+    qc: ScriptQCEngine = qc_env["qc"]
+    bible = StoryBible(
+        episode_id="EP_SPLIT_BUG",
+        title="Chiếc Kẹp Pha Lê Trong Túi Áo Khoác Của Chồng",
+        protagonist={"name": "Lan", "char_id": "LAN"},
+    )
+    segments = [
+        ScriptSegment(id="001", speaker="MINH", text="Lan nhớ cảm giác đứng trong phòng giặt đồ tối hôm ấy, chiếc kẹp nhỏ nằm giữa lòng bàn tay.", delivery_profile="HOOK"),
+        ScriptSegment(id="002", speaker="MINH", text="Mọi chuyện bắt đầu từ những nghi ngờ về cuộc hôn nhân của mình.", delivery_profile="NORMAL"),
+        ScriptSegment(id="003", speaker="MINH", text="Tối hôm đó, Nam về nhà muộn hơn thường lệ và treo áo khoác lên ghế.", delivery_profile="NORMAL"),
+        ScriptSegment(id="004", speaker="MINH", text="Sáng hôm sau, Lan lấy chiếc áo khoác ấy để giặt. Khi đưa tay vào túi áo bên phải, cô chạm phải một vật cứng nhỏ.", delivery_profile="MYSTERY"),
+        ScriptSegment(id="005", speaker="MINH", text="Lan kể trong thư rằng cô lấy ra một chiếc kẹp tóc pha lê.", delivery_profile="MYSTERY"),
+        ScriptSegment(id="006", speaker="MINH", text="Sự thật được phơi bày: Nam thú nhận toàn bộ.", delivery_profile="REVEAL", importance="critical"),
+        ScriptSegment(id="007", speaker="MINH", text="Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", delivery_profile="ENDING"),
+    ]
+    script = FullScript(
+        episode_id="EP_SPLIT_BUG",
+        title=bible.title,
+        host={"id": "MINH", "name": "MC Minh"},
+        segments=segments,
+    )
+    report = qc.run_qc(script, bible)
+    timeline_issues = [i for i in report.evidence_issues if i.get("rule") == "HOOK_TIMELINE_CONTRADICTION"]
+    assert len(timeline_issues) >= 1, "Expected HOOK_TIMELINE_CONTRADICTION for split discovery scene"
+
+
+def test_gate_handles_missing_or_error_semantic_review_safely(tmp_path):
+    """validate_full_script must never throw UnboundLocalError when semantic review is missing, NOT_RUN, or ERROR."""
+    from studio.backend.services.artifact_lineage import validate_full_script
+    import json
+
+    proj_dir = tmp_path / "EPTESTGATE"
+    proj_dir.mkdir(parents=True)
+    (proj_dir / "project.json").write_text(json.dumps({"stage_statuses": {"03_script": "DRAFT"}}), encoding="utf-8")
+    (proj_dir / "story").mkdir()
+    (proj_dir / "story" / "story_bible.json").write_text(json.dumps({
+        "title": "Bí Mật", "generation_source": "REAL_AI", "generation_request_id": "req-story-12345"
+    }), encoding="utf-8")
+    (proj_dir / "script").mkdir()
+    script_data = {
+        "title": "Bí Mật", "generation_source": "REAL_AI", "generation_request_id": "req-script-12345",
+        "source_story_generation_request_id": "req-story-12345",
+        "segments": [{"id": "001", "text": "Lan mở thư.", "delivery_profile": "NORMAL"},
+                     {"id": "002", "text": "Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.", "delivery_profile": "ENDING"}]
+    }
+    (proj_dir / "script" / "full_script.json").write_text(json.dumps(script_data), encoding="utf-8")
+
+    # 1. Missing review / NOT_RUN with warnings
+    qc_not_run = {
+        "qc_version": "script-qc-v2.8-melodrama-tiered",
+        "status": "PASS",
+        "script_content_hash": "dummy",
+        "semantic_review": {"status": "NOT_RUN", "issues": [], "advisories": []},
+        "warnings": [{"rule": "ENDING_NOT_DELIVERED", "severity": "WARNING", "blocking": False}],
+        "evidence_issues": [],
+    }
+    (proj_dir / "script" / "qc_report.json").write_text(json.dumps(qc_not_run), encoding="utf-8")
+    res_not_run = validate_full_script("EPTESTGATE", tmp_path)
+    assert res_not_run["audio_gate_allowed"] is False
+    assert "QC logic" in str(res_not_run["audio_gate_reason"])
+
+    # 2. ERROR review with critical evidence
+    qc_error = {
+        "qc_version": "script-qc-v2.8-melodrama-tiered",
+        "status": "FAIL",
+        "script_content_hash": "dummy",
+        "semantic_review": {"status": "ERROR", "error": "Quota exhausted"},
+        "evidence_issues": [{"rule": "TIMELINE_ORDER_ERROR", "severity": "CRITICAL"}],
+        "warnings": [],
+    }
+    (proj_dir / "script" / "qc_report.json").write_text(json.dumps(qc_error), encoding="utf-8")
+    res_error = validate_full_script("EPTESTGATE", tmp_path)
+    assert res_error["audio_gate_allowed"] is False
+    assert "QC logic" in str(res_error["audio_gate_reason"]) or "CRITICAL" in str(res_error["audio_gate_reason"])
+
+
+def test_auto_repair_script_updates_requested_and_actual_model_metadata(tmp_path):
+    """auto_repair_script must accurately record the new provider/model that repaired the script."""
+    from studio.backend.services.generation_service import GenerationService
+    from studio.backend.services import generation_service as gen_module
+    from types import SimpleNamespace
+    from unittest.mock import patch
+    import json
+    import copy
+
+    proj_dir = tmp_path / "EPTESTREPAIR"
+    proj_dir.mkdir(parents=True)
+    from studio.backend.services.artifact_lineage import story_content_hash
+    story_dict = {
+        "episode_id": "EPTESTREPAIR",
+        "title": "Bí mật", "generation_source": "REAL_AI", "generation_request_id": "req-story-12345",
+        "protagonist": {"name": "Lan"},
+    }
+    (proj_dir / "story").mkdir(parents=True, exist_ok=True)
+    (proj_dir / "story" / "story_bible.json").write_text(json.dumps(story_dict), encoding="utf-8")
+    (proj_dir / "script").mkdir()
+    initial_script = {
+        "episode_id": "EPTESTREPAIR",
+        "title": "Bí mật",
+        "host": {"id": "MINH", "name": "MC Minh"},
+        "generation_source": "REAL_AI",
+        "generation_request_id": "req-script-12345",
+        "source_story_generation_request_id": "req-story-12345",
+        "source_story_content_hash": story_content_hash(story_dict),
+        "provider_name": "initial-provider",
+        "model_name": "gemini-2.5-flash",
+        "requested_model": "gemini-2.5-flash",
+        "actual_model": "gemini-3.5-flash",
+        "segments": [{"id": "001", "text": "Lan băn khoăn.", "delivery_profile": "NORMAL"}],
+    }
+    (proj_dir / "script" / "full_script.json").write_text(json.dumps(initial_script), encoding="utf-8")
+    (proj_dir / "script" / "qc_report.json").write_text(json.dumps({"status": "NEEDS_REVISION"}), encoding="utf-8")
+
+    changed_script = FullScript.from_dict(copy.deepcopy(initial_script))
+    changed_script.segments[0].text = "Lan băn khoăn về người bạn đời sau khi thấy vết son."
+    changed_script.model_name = "repaired-model"
+    changed_script.actual_model = "repaired-model"
+    changed_script.requested_model = "new-requested-model"
+    changed_script.provider_name = "new-repair-provider"
+
+    service = GenerationService.__new__(GenerationService)
+    service.cost_ctrl = None
+    fake_qc = SimpleNamespace(run_qc=lambda **kw: QCReport(episode_id="EPTESTREPAIR", status="NEEDS_REVISION"))
+    new_qc = QCReport(episode_id="EPTESTREPAIR", status="PASS")
+
+    with patch.object(gen_module, "PROJECTS_DIR", tmp_path), \
+         patch.object(service, "get_provider", return_value=SimpleNamespace(provider_name="new-repair-provider")), \
+         patch.object(gen_module, "ScriptQCEngine", return_value=fake_qc), \
+         patch.object(gen_module, "AutoRevisionManager", return_value=SimpleNamespace()), \
+         patch.object(gen_module, "_revise_keeping_best", return_value=(changed_script, new_qc)), \
+         patch.object(gen_module, "invalidate_script_approval"):
+        service.auto_repair_script("EPTESTREPAIR", provider_id="new-repair-provider", model_id="new-requested-model")
+
+    saved = json.loads((proj_dir / "script" / "full_script.json").read_text(encoding="utf-8"))
+    assert saved["provider_name"] == "new-repair-provider"
+    assert saved["model_name"] == "repaired-model"
+    assert saved["requested_model"] == "new-requested-model"
+    assert saved["actual_model"] == "repaired-model"
+    assert saved["parent_generation_request_id"] == "req-script-12345"
+    assert saved["generation_request_id"] != "req-script-12345"
+
+

@@ -79,8 +79,8 @@ class AutoRevisionManager:
                 revised_script.provider_name = self.provider.provider_name
                 revised_script.prompt_version = 'script-v3.6-grounded-repair'
                 revised_script.writer_strategy = script.writer_strategy
-                revised_script.requested_model = script.requested_model
-                revised_script.actual_model = getattr(self.provider, 'last_actual_model', None) or revised_script.model_name
+                revised_script.requested_model = model or getattr(self.provider, 'requested_model', None) or getattr(script, 'requested_model', None) or revised_script.model_name
+                revised_script.actual_model = getattr(self.provider, 'last_actual_model', None) or getattr(self.provider, 'last_used_model', None) or revised_script.model_name
             lat = time.time() - t0
             self.cost_ctrl.record_operation(
                 operation="revise_script",

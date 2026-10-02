@@ -784,8 +784,10 @@ class GenerationService:
         if script_content_hash(revised_data) != script_content_hash(original_script_data):
             revised_data["parent_generation_request_id"] = original_script_data.get("generation_request_id")
             revised_data["generation_request_id"] = str(uuid.uuid4())
-            revised_data["model_name"] = revised_script.model_name
-            revised_data["provider_name"] = getattr(provider, "provider_name", None)
+            revised_data["model_name"] = getattr(revised_script, "model_name", None) or getattr(provider, "last_used_model", None) or model_id or getattr(provider, "default_model", None)
+            revised_data["provider_name"] = getattr(provider, "provider_name", None) or getattr(revised_script, "provider_name", None)
+            revised_data["requested_model"] = getattr(revised_script, "requested_model", None) or model_id or getattr(provider, "requested_model", None) or revised_data["model_name"]
+            revised_data["actual_model"] = getattr(revised_script, "actual_model", None) or getattr(provider, "last_actual_model", None) or getattr(provider, "last_used_model", None) or revised_data["model_name"]
             revised_data["prompt_version"] = "script-v3.6-grounded-repair"
             revised_data["generated_at"] = time.time()
         _assert_story_snapshot(story_path, source_story_hash, story_bible.generation_request_id)

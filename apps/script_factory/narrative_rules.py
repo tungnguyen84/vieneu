@@ -160,7 +160,13 @@ JUDGEMENT_RULES = {
 
 
 def is_blocking_logic_issue(issue: dict) -> bool:
-    return str(issue.get("rule", "")) not in JUDGEMENT_RULES
+    rule = str(issue.get("rule", "") or issue.get("type", "")).strip().upper()
+    if not rule or rule in JUDGEMENT_RULES:
+        return False
+    return rule in LOGIC_RULE_CODES or rule in {
+        "PROP_LOCATION_CONTRADICTION", "HOOK_TIMELINE_CONTRADICTION",
+        "REPEATED_SCENE_DIALOGUE", "UNRESOLVED_CORE_PROP",
+    }
 
 
 def writer_rules_block(start_index: int) -> str:

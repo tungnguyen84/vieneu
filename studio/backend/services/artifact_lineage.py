@@ -15,6 +15,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from apps.script_factory.narrative_rules import is_blocking_logic_issue
+
 
 STALE_LABEL = "STALE — REGENERATE REQUIRED"
 
@@ -229,7 +231,6 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
                 semantic_story_hash = None
             if not semantic_story_hash or sem_rev.get("story_hash") != semantic_story_hash:
                 audio_gate_reasons.append("QC logic không thuộc Story Bible hiện tại")
-            from apps.script_factory.narrative_rules import is_blocking_logic_issue
 
             all_semantic_findings = [
                 *(sem_rev.get("issues") or []),
