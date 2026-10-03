@@ -221,6 +221,7 @@ class OpenAICompatibleProvider(ScriptAIProvider):
             self.last_requested_model = chosen_model
             self.last_actual_model = actual_model
             self.last_response_id = resp_data.get("id")
+            self.last_finish_reason = resp_data.get('choices', [{}])[0].get('finish_reason')
             return content, in_tokens, out_tokens
 
         try:
@@ -728,6 +729,8 @@ Hãy sửa đổi và hoàn thiện Story Bible, đảm bảo bổ sung đầy �
 
 Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Object duy nhất, đúng tên trường của schema."""
         prompt += story_bible_repair_targets_clause(issues)
+        from apps.script_factory.story_contract import contract_block
+        prompt += contract_block(story_bible)
 
         messages = [
             {"role": "system", "content": system_instruction},
@@ -736,6 +739,16 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
 
         raw_text, in_tok, out_tok = self._call_chat_completion(messages, model=model, response_json=True)
         parsed = _parse_json_safe(raw_text)
+
+        if not isinstance(parsed, dict) or not parsed:
+            # Retry malformed JSON once before touching the Bible or lineage.
+            logger.warning('Story repair JSON invalid (finish_reason=%s); retrying once', getattr(self, 'last_finish_reason', None))
+            retry_messages = [*messages, {'role': 'user', 'content':
+                'Lượt trước không trả JSON hoàn chỉnh. Chỉ xuất MỘT object JSON nhỏ chứa các trường cần sửa; không giải thích, không lặp toàn bộ Bible, không bỏ dở object.'}]
+            raw_text, retry_in, retry_out = self._call_chat_completion(retry_messages, model=model, response_json=True)
+            in_tok += retry_in
+            out_tok += retry_out
+            parsed = _parse_json_safe(raw_text)
 
         if parsed and isinstance(parsed, dict):
             apply_story_bible_patch(story_bible, parsed)
@@ -778,6 +791,8 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
         reveal_proof_summary = json.dumps(story_bible.reveal_justifications or {}, ensure_ascii=False)
         canonical_story = json.dumps({k: v for k, v in story_bible.to_dict().items()
                                      if k not in {'story_qc_report', 'status', 'approved_at', 'approved_by'}}, ensure_ascii=False)
+        from apps.script_factory.story_contract import contract_block
+        canonical_story += contract_block(story_bible)
 
         clean_title = re.sub(r"^(?:Tập\s+)?EP_?[A-Z0-9_]*\d+\s*[-:]?\s*", "", str(story_bible.title or ""), flags=re.IGNORECASE).strip()
         protag_name = story_bible.protagonist.get("name", "Tuấn") if isinstance(story_bible.protagonist, dict) else str(story_bible.protagonist or "Tuấn")
@@ -1127,7 +1142,7 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
             total_words=total_words,
             status="DRAFT",
             generation_request_id=str(uuid.uuid4()),
-            prompt_version="script-v3.7-event-knowledge-grounded",
+            prompt_version="script-v3.9-calendar-payoff-location",
             generation_source="REAL_AI",
             model_name=chosen_model_name,
             requested_model=model or self.default_model,

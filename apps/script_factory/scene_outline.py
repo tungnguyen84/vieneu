@@ -5,7 +5,8 @@ used to receive only a summary of Part 1 and regularly "restarted" the
 investigation, retelling a visit or a phone call with new wording (EP2007 told
 the same shop visit twice). Planning every scene up front, each with its own new
 information, and telling Part 2 exactly which scenes are already written removes
-that seam. If the outline call fails the writer falls back to the old prompts.
+that seam. Production requires the outline to cover each writing obligation;
+test/import callers may explicitly retain the legacy optional outline.
 """
 from __future__ import annotations
 
@@ -27,9 +28,11 @@ SYSTEM_INSTRUCTION = (
 
 
 def _prompt(bible: StoryBible) -> str:
+    from apps.script_factory.story_contract import contract_block
     data = {k: v for k, v in bible.to_dict().items() if k not in {"story_qc_report", "status", "approved_at", "approved_by"}}
     return (
         f"STORY BIBLE:\n{json.dumps(data, ensure_ascii=False)}\n\n"
+        + contract_block(bible) +
         "Lập 14-18 cảnh theo thứ tự thời gian. Yêu cầu:\n"
         "- Mỗi cảnh: một hành động/địa điểm/cuộc trò chuyện cụ thể và đúng MỘT thông tin mới người nghe chưa biết.\n"
         "- KHÔNG có hai cảnh cùng một việc (hai lần đến cùng một nơi hỏi cùng một người, hai lần tra cùng một manh mối).\n"
@@ -38,11 +41,14 @@ def _prompt(bible: StoryBible) -> str:
         "- NGUYÊN TẮC BẰNG CHỨNG VÀ TÊN NHÂN VẬT: Mọi bằng chứng phải được TÌM THẤY hoặc ĐỌC NỘI DUNG ở cảnh trước mới được mang ra suy luận "
         "hoặc đối chất ở cảnh sau. Tên nhân vật phụ (ví dụ: nhân tình, con riêng, đồng phạm) phải được xác định danh tính cụ thể trong một cảnh trước khi gọi tên.\n"
         "- NGUYÊN TẮC SETUP & PAYOFF: Chi tiết/vật chứng mở đầu (trong trigger/hook) phải có cảnh kiểm chứng và giải quyết trọn vẹn (payoff) trước cảnh kết thúc.\n"
+        "- Mỗi cảnh ghi trạng thái trước/sau: nhân vật vừa biết gì, phải quyết định hoặc mất gì vì thông tin mới. Không lập cảnh chỉ 'cần hỏi', 'xếp giấy', 'chưa kết luận' mà không thay đổi tình thế.\n"
+        "- Gắn payoff_ids của hợp đồng vào cảnh trả lời thật sự, kèm payoff_action diễn tả đáp án cụ thể và nguồn xác nhận. Một dấu hiệu chỉ tạo nghi ngờ vẫn phải được giải thích nguồn gốc, không suy ra tội/ngoại tình từ dấu hiệu.\n"
+        "- Cú lật phải thay đổi cách hiểu manh mối cũ bằng một thông tin trong Bible chưa xác nhận trước đó. Nếu đã biết danh tính, hãy dùng sự kiện/động cơ/hậu quả mới có sẵn trong Bible; không thêm bí mật tùy tiện.\n"
         "- Cảnh 1-3: hook và giới thiệu đời sống. Cảnh 4-10: manh mối đầu tiên, giả thuyết sai và điều tra thực địa. Cảnh 11-13: Bước ngoặt 1 (lật tẩy giả thuyết sai). "
         "Cảnh 14-15: Cú lật chính (sự thật cốt lõi). Cảnh 15-16: Đối chất/thú nhận bằng lời thoại trực tiếp. Cảnh 17-18: Giải quyết bằng hành động dứt khoát và chiêm nghiệm.\n"
         "- Đánh dấu 'part': 1 cho khoảng 45% cảnh đầu (kết thúc ở cuối một cảnh trọn vẹn), 2 cho phần còn lại.\n"
         'Trả về JSON: {"scenes": [{"no": 1, "part": 1, "title": "<tên cảnh ngắn>", '
-        '"action": "<hành động cụ thể>", "new_information": "<thông tin mới duy nhất>", "segments": <3-8>}]}'
+        '"action": "<hành động cụ thể>", "new_information": "<thông tin mới duy nhất>", "consequence": "<thay đổi tình thế/quyết định>", "payoff_ids": ["<id hợp đồng được trả lời>"], "payoff_action": "<đáp án và nguồn>", "segments": <3-8>}]}'
     )
 
 
@@ -64,6 +70,9 @@ def _normalize(scenes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "title": title,
             "action": action,
             "new_information": str(scene.get("new_information", "")).strip(),
+            "consequence": str(scene.get("consequence", "")).strip(),
+            "payoff_ids": scene.get("payoff_ids", []) if isinstance(scene.get("payoff_ids", []), list) else [],
+            "payoff_action": str(scene.get("payoff_action", "")).strip(),
             "segments": segments,
         })
     # Parts must be contiguous: everything before the first Part-2 scene is Part 1.
@@ -74,7 +83,15 @@ def _normalize(scenes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return clean
 
 
-def build_scene_outline(bible: StoryBible, call_llm: LLMCall) -> Optional[List[Dict[str, Any]]]:
+def outline_fulfills_contract(bible: StoryBible, scenes) -> bool:
+    from apps.script_factory.story_contract import payoff_obligations
+    if not scenes or any(not s.get('new_information') or not s.get('consequence') for s in scenes):
+        return False
+    mapped = {key for s in scenes if s.get('payoff_action') for key in s.get('payoff_ids', [])}
+    return {o['id'] for o in payoff_obligations(bible)} <= mapped
+
+
+def build_scene_outline(bible: StoryBible, call_llm: LLMCall, require_contract: bool = False) -> Optional[List[Dict[str, Any]]]:
     """Returns the planned scenes, or None when the outline could not be produced."""
     from apps.script_factory.segment_rewriter import parse_json_items
 
@@ -84,6 +101,16 @@ def build_scene_outline(bible: StoryBible, call_llm: LLMCall) -> Optional[List[D
         logger.warning(f"[SceneOutline] Outline call failed, writing without outline: {exc}")
         return None
     scenes = _normalize(parse_json_items(raw, "scenes"))
+    if require_contract and not outline_fulfills_contract(bible, scenes):
+        logger.warning('[SceneOutline] Missing scene consequences/payoffs; retrying outline once before writing')
+        try:
+            raw, _, _ = call_llm(SYSTEM_INSTRUCTION, _prompt(bible) + '\nDàn cảnh trước thiếu hệ quả hoặc đáp án. Kiểm tra đủ TỪNG payoff id, ghi cảnh trả lời và đáp án rõ nguồn. Mỗi cảnh phải có new_information và consequence. Trả lại toàn bộ dàn cảnh JSON.')
+            scenes = _normalize(parse_json_items(raw, 'scenes'))
+        except Exception as exc:
+            logger.warning('[SceneOutline] Contract retry failed: %s', exc)
+            return None
+        if not outline_fulfills_contract(bible, scenes):
+            return None
     parts = {s["part"] for s in scenes}
     if len(scenes) < 8 or parts != {1, 2}:
         logger.warning(f"[SceneOutline] Outline unusable ({len(scenes)} scenes, parts={sorted(parts)}); writing without outline")
@@ -105,7 +132,7 @@ def outline_block(scenes: Optional[List[Dict[str, Any]]], part: int) -> str:
         else:
             tag = "để PHẦN 2 viết — KHÔNG viết bây giờ"
         lines.append(
-            f"Cảnh {s['no']} [{tag}] {s['title']}: {s['action']} | Thông tin mới: {s['new_information']} | ~{s['segments']} phân đoạn"
+            f"Cảnh {s['no']} [{tag}] {s['title']}: {s['action']} | Thông tin mới: {s['new_information']} | Hệ quả: {s.get('consequence', '')} | Trả lời {s.get('payoff_ids', [])}: {s.get('payoff_action', '')} | ~{s['segments']} phân đoạn"
         )
     if part == 1:
         lines.append("PHẦN 1 kết thúc đúng ở cuối cảnh cuối cùng được đánh dấu VIẾT TRONG PHẦN NÀY.")
@@ -121,7 +148,7 @@ def single_pass_outline_block(scenes: Optional[List[Dict[str, Any]]]) -> str:
     lines = ["", "DÀN CẢNH BẮT BUỘC CỦA CẢ TẬP (viết đúng thứ tự thời gian, mỗi cảnh xảy ra đúng MỘT lần):"]
     for s in scenes:
         lines.append(
-            f"Cảnh {s['no']}: {s['title']} — Hành động: {s['action']} | Thông tin mới: {s['new_information']} | ~{s['segments']} phân đoạn"
+            f"Cảnh {s['no']}: {s['title']} — Hành động: {s['action']} | Thông tin mới: {s['new_information']} | Hệ quả: {s.get('consequence', '')} | Trả lời {s.get('payoff_ids', [])}: {s.get('payoff_action', '')} | ~{s['segments']} phân đoạn"
         )
     lines.append("Triển khai tuần tự theo từng cảnh trên; không nhảy cóc và không kể lại cảnh đã qua.\n")
     return "\n".join(lines)
@@ -221,8 +248,17 @@ def repeated_dialogue_pairs(segments: List[Any], min_gap: int = 4, threshold: fl
             if len(shared_content) < 3:
                 continue
 
-            overlap = len(shared_content) / min(len(set_a), len(set_b))
-            if overlap < threshold:
+            # Containment made a short question about a project match any
+            # longer witness question mentioning the same project. Compare
+            # both lines' information, not only the smaller vocabulary.
+            overlap = len(shared_content) / len(set_a | set_b)
+            trigrams_a = {tuple(cwa[k:k+3]) for k in range(len(cwa)-2)}
+            trigrams_b = {tuple(cwb[k:k+3]) for k in range(len(cwb)-2)}
+            # Retain paraphrased repetition of a substantial ordered event
+            # (e.g. My / nói / kiểm / kê / muộn) even when time-question words
+            # differ. A generic shared project topic is insufficient.
+            retold_event = len(shared_content) >= 5 and bool(trigrams_a & trigrams_b)
+            if overlap < threshold and not retold_event:
                 continue
 
             # Check for at least one ordered content bigram OR a 4-gram of words containing >= 2 content words

@@ -23,7 +23,7 @@ logger = logging.getLogger("VieNeu.SemanticReview")
 
 # call_llm(system_instruction, prompt) -> (raw_text, input_tokens, output_tokens)
 LLMCall = Callable[[str, str], Tuple[str, int, int]]
-SEMANTIC_REVIEW_VERSION = "semantic-v13-knowledge-source-bound"
+SEMANTIC_REVIEW_VERSION = "semantic-v15-story-script-evidence-contract"
 
 REVIEW_CALIBRATION = (
     "NGƯỠNG BÁO LỖI: chỉ báo mâu thuẫn hoặc thiếu mắt xích làm người nghe không hiểu được sự kiện, "
@@ -109,6 +109,7 @@ def _retry_review_once(result: Dict[str, Any], retry: Callable[[], Dict[str, Any
 
 
 def build_prompt(script: FullScript, story_bible: StoryBible) -> str:
+    from apps.script_factory.story_contract import contract_block
     protagonist = story_bible.protagonist if isinstance(story_bible.protagonist, dict) else {}
     numbered = "\n".join(f"[{s.id}] {s.text}" for s in script.segments)
     skeleton = story_bible.narrative_skeleton if isinstance(story_bible.narrative_skeleton, dict) else {}
@@ -124,6 +125,7 @@ def build_prompt(script: FullScript, story_bible: StoryBible) -> str:
         "Chỉ đánh giá góc nhìn hạn chế khi kể các SỰ KIỆN trong câu chuyện. Một nhân chứng nói 'có vẻ', 'có thể' "
         "là nhận định có chủ thể, không phải khẳng định biết một kế hoạch kín.\n"
         + REVIEW_CALIBRATION
+        + contract_block(story_bible)
         +
         f"Story Bible (tài liệu hậu trường, không phải lời kể):\n{json.dumps(story_bible.to_dict(), ensure_ascii=False)}\n\n"
         f"Kịch bản (mỗi dòng là một phân đoạn có id):\n{numbered}\n\n"
@@ -137,6 +139,7 @@ def build_prompt(script: FullScript, story_bible: StoryBible) -> str:
         "5. Lập tiến trình nội bộ theo từng cảnh: nhân vật ở đâu, đã mở/đọc/gặp gì, biết điều gì từ bằng chứng nào. "
         "Đối chiếu từng câu với trạng thái trước: tìm hành động xảy ra trước điều kiện và trạng thái hiểu biết bị quay lùi. "
         "Không tự đưa suy luận của người đọc thành điều nhân vật đã biết. Nếu có lỗi giữa hai đoạn, ghi related_segment_ids và trích đoạn sai.\n"
+        "Kiểm tra cả nơi và khả năng hành động trong chính một câu: đang trên đường về chưa thể bày vật lên bàn trong nhà; phải có chuyển cảnh về đến nhà. Lời nói/thông tin là suy nghĩ, không phải đồ vật đặt lên bàn. Số liên lạc phải có nguồn trước cuộc gọi, không tự xuất hiện.\n"
         "6. Đọc như người nghe audio: các cảnh phát hiện, đối chất, kết thúc có chi tiết thật hay chỉ tóm tắt? "
         "Không chứng nhận PASS chỉ vì đủ số từ, đủ phân đoạn hoặc có hai REVEAL.\n"
         "7. Tên nhân vật và đạo cụ: tên người lạ (người thứ ba, đồng phạm, con riêng) và đạo cụ/tài liệu quan trọng (hợp đồng, sao kê, phong bì) "
@@ -265,10 +268,12 @@ def review_script_logic(
     _continuity_pass: bool = False,
     _retry_invalid: bool = False,
     _require_grounding: bool = False,
+    _validation_feedback: str = '',
 ) -> Dict[str, Any]:
     """Returns {"issues": [...blocking...], "advisories": [...], "script_hash", "tokens"}."""
     prompt = build_prompt(script, story_bible)
     if _require_grounding:
+        from apps.script_factory.story_contract import payoff_obligations
         prompt += (
             '\nBẮT BUỘC thêm audit_checks vào JSON, cùng với issues. Đây là chứng cứ đã đọc, không phải điểm số. '
             'Đủ 5 category: timeline, setup_payoff, evidence_scope, knowledge_source, vietnamese. Mỗi item có category, '
@@ -287,9 +292,19 @@ def review_script_logic(
             'Vietnamese: đọc nguyên văn để phát hiện từ gãy, sai âm và câu tóm tắt thay cảnh; không tự sửa trong quote. '
             'Nếu một kiểm tra FAIL, phải có issue có quote tương ứng, cách sửa và mã luật đã cấp. '
             'Không trả issues=[] nếu bỏ qua một kiểm tra. Không tự tưởng tượng chi tiết để cứu logic.\n'
+            'Ngoài audit_checks, thêm payoff_checks cho TỪNG id trong payoff_obligations. '
+            'Mỗi item: {id, verdict:PASS|FAIL, answer:<đáp án cụ thể và nguồn>, setup:[{segment_id,quote}], resolution:[{segment_id,quote}]}. '
+            'Trích NGUYÊN VĂN ít nhất 4 từ ở cả setup và resolution; answer ít nhất 16 ký tự. '
+            'Với reveal/ending, setup có thể là chính cảnh thực hiện. Với dấu hiệu mở đầu/clue phải trích cảnh phát hiện và cảnh trả lời sau đó. '
+            'Phải trả đúng câu hỏi, ví dụ mùi lạ thuộc về ai/đến từ đâu: cất áo hoặc chỉ xác nhận có ngoại tình không giải thích mùi. '
+            'Nếu thiếu đáp án, báo UNRESOLVED_SETUP với quote ở setup và related_segment_ids các cảnh hồi kết cần sửa. '
+            'Không trả PASS cho lời hứa trong Bible chưa xuất hiện trong kịch bản. '
+            'Trong vietnamese kiểm tra cả nhịp kể: các cảnh chỉ trì hoãn hỏi, xếp giấy, lặp suy nghĩ mà không thay đổi hành động là lưu ý biên tập; '
+            'báo lỗi khách quan nếu cùng cuộc gặp/đối thoại bị kể lại. Không yêu cầu nói giọng báo cáo QC để tỏ ra thận trọng.\n'
         )
     if _retry_invalid:
         prompt += '\nLượt trước có finding không hợp lệ. Chỉ dùng mã luật được cấp, id có trong kịch bản và trích NGUYÊN VĂN tại chính id đó. Không dùng đoạn diễn giải thay trích dẫn. Kiểm tra toàn bộ và trả JSON đúng schema.'
+        prompt += _validation_feedback
     if _continuity_pass:
         prompt += (
             "\nLƯỢT KIỂM TRA ĐỘC LẬP: không dựa vào verdict của lượt trước. Ưu tiên tìm lỗi hành động "
@@ -314,6 +329,19 @@ def review_script_logic(
         return result if _retry_invalid else _retry_review_once(result, lambda: review_script_logic(script, story_bible, call_llm, _continuity_pass, True, _require_grounding))
 
     by_id = {s.id: s for s in script.segments}
+    invalid_evidence = []
+    def anchored(evidence):
+        if not isinstance(evidence, list) or not evidence:
+            return False
+        valid = True
+        for e in evidence:
+            seg_id = clean_segment_id(e.get('segment_id'), by_id) if isinstance(e, dict) else None
+            quote = str(e.get('quote', '')) if isinstance(e, dict) else ''
+            text = by_id[seg_id].text if seg_id in by_id else ''
+            if len(quote.split()) < 4 or not _quote_in_text(quote, text):
+                valid = False
+                invalid_evidence.append({'segment_id': seg_id, 'invalid_quote': quote, 'actual_segment_text': text})
+        return valid
     blocking: List[Dict[str, Any]] = []
     advisories: List[Dict[str, Any]] = []
     dropped = 0
@@ -401,19 +429,39 @@ def review_script_logic(
             evidence = check.get('evidence')
             if not isinstance(evidence, list) or not evidence or len(str(check.get('reason', ''))) < 16:
                 continue
-            if all(isinstance(e, dict) and clean_segment_id(e.get('segment_id'), by_id) in by_id
-                   and len(str(e.get('quote', '')).split()) >= 4
-                   and _quote_in_text(str(e.get('quote', '')), by_id[clean_segment_id(e.get('segment_id'), by_id)].text)
-                   for e in evidence):
+            if anchored(evidence):
                 verified.add(check.get('category'))
         result['audit_checks'] = checks
         result['grounding_verified'] = (checks_valid and expected == verified
             and len(checks) == len(expected) and not dropped)
+        obligations = payoff_obligations(story_bible)
+        if obligations:
+            payoff_checks, valid, _ = parse_json_items_validated(raw, 'payoff_checks')
+            fulfilled = set()
+            for check in payoff_checks:
+                if (check.get('verdict') != 'PASS' or len(str(check.get('answer', ''))) < 16
+                        or not anchored(check.get('setup')) or not anchored(check.get('resolution'))):
+                    continue
+                key = check.get('id')
+                if not isinstance(key, str):
+                    continue
+                if key == 'title_trigger' or str(key).startswith('clue_'):
+                    indices = {s.id: i for i, s in enumerate(script.segments)}
+                    first = min(indices[clean_segment_id(e['segment_id'], by_id)] for e in check['setup'])
+                    last = max(indices[clean_segment_id(e['segment_id'], by_id)] for e in check['resolution'])
+                    if last <= first:
+                        continue
+                fulfilled.add(key)
+            result['payoff_checks'] = payoff_checks
+            result['grounding_verified'] &= bool(valid and len(payoff_checks) == len(obligations)
+                and fulfilled == {o['id'] for o in obligations})
         if not result['grounding_verified']:
             result['status'] = 'ERROR'
             result['error'] = 'Review chưa có chứng cứ hợp lệ cho đủ timeline, setup/payoff, bằng chứng, nguồn nhận thức và tiếng Việt.'
+    result['invalid_evidence'] = invalid_evidence
     if result['status'] == 'ERROR' and not _retry_invalid:
-        return _retry_review_once(result, lambda: review_script_logic(script, story_bible, call_llm, _continuity_pass, True, _require_grounding))
+        feedback = '\nTrích dẫn bị từ chối và PHÂN ĐOẠN THẬT để COPY (chỉ sửa báo cáo, không sửa kịch bản):\n' + json.dumps(invalid_evidence[:6], ensure_ascii=False)
+        return _retry_review_once(result, lambda: review_script_logic(script, story_bible, call_llm, _continuity_pass, True, _require_grounding, feedback))
     # The independent continuity pass runs unless pass 1 already found an
     # objective defect; editor-level findings must not skip it, or the approval
     # gate (which requires both passes) could never open.
@@ -430,6 +478,7 @@ def review_script_logic(
         if _require_grounding:
             result['grounding_verified'] = bool(result.get('grounding_verified') and second.get('grounding_verified'))
             result['audit_checks_second_pass'] = second.get('audit_checks', [])
+            result['payoff_checks_second_pass'] = second.get('payoff_checks', [])
     else:
         result["passes"] = 1
     return result
@@ -486,7 +535,7 @@ STORY_BIBLE_REVIEW_FIELDS = (
     "secret", "false_lead", "clues", "structured_clues", "reveal_1", "reveal_2",
     "causal_chains", "reveal_justifications", "knowledge_ledger", "emotional_payoff", "ending",
     "protagonist", "supporting_characters", "timeline", "facts", "critical_facts", "relationships", "premise",
-    "original_user_topic",
+    "original_user_topic", "time_period",
 )
 
 STORY_BIBLE_HASH_FIELDS = tuple(dict.fromkeys([
@@ -536,7 +585,7 @@ STORY_BIBLE_BLOCKING_RULES = {
 # a POV violation. Only report POV if a reveal/ending has no grounded revelation
 # channel (e.g. no confession, no document, no witness, no test).
 STORY_BIBLE_BACKSTAGE_FIELDS = {
-    "secret", "causal_chains", "knowledge_ledger", "reveal_justifications",
+    "secret", "causal_chains",
 }
 
 STORY_BIBLE_SYSTEM_INSTRUCTION = (
@@ -553,6 +602,7 @@ def story_bible_content_hash(bible: StoryBible) -> str:
 
 
 def build_story_bible_prompt(bible: StoryBible) -> str:
+    from apps.script_factory.story_contract import contract_block
     data = bible.to_dict()
     protagonist = bible.protagonist if isinstance(bible.protagonist, dict) else {}
     plot = {k: data.get(k) for k in STORY_BIBLE_HASH_FIELDS if data.get(k)}
@@ -565,13 +615,14 @@ def build_story_bible_prompt(bible: StoryBible) -> str:
         "Bộ luật logic cần kiểm tra (CHỈ các luật này):\n"
         + reviewer_checklist(STORY_BIBLE_RULES) + "\n\n"
         + REVIEW_CALIBRATION
+        + contract_block(bible)
         +
         "Yêu cầu nhất quán cốt lõi: Tiêu đề và Trigger phải thuộc cùng một câu chuyện logic với manh mối (clues), "
         "bước ngoặt (reveals) và hồi kết. Đạo cụ dẫn dắt nghi ngờ ở tiêu đề/trigger phải được giải thích trung thực, "
         "không được đổi sang một vật chứng khác mà bỏ lửng lời hứa ban đầu.\n\n"
-        "Lưu ý: các trường secret, causal_chains, knowledge_ledger, reveal_justifications là SỰ THẬT HẬU TRƯỜNG "
-        "cho người viết, không được đọc lên, nên KHÔNG áp dụng POV_KNOWLEDGE_VIOLATION cho chúng và không coi là kết luận sớm. "
-        "Chỉ báo POV khi một reveal/ending đưa ra điều nhân vật chính không thể biết và Story Bible không có kênh tiết lộ nào. "
+        "Lưu ý: secret và causal_chains mô tả SỰ THẬT HẬU TRƯỜNG, nên việc tác giả biết bí mật không phải lỗi POV hoặc kết luận sớm. "
+        "Nhưng reveal, ending, knowledge_ledger và reveal_justifications khẳng định NHÂN VẬT ĐÃ BIẾT điều gì thì phải có kênh tiết lộ đủ năng lực. "
+        "Báo POV khi nhân vật được gán kiến thức mà nguồn không thể cung cấp: nghe giọng/biết tên qua cuộc gọi không nhận diện được mặt trong ảnh. "
         "Đối chiếu kênh tiết lộ trong TOÀN BỘ Bible, không yêu cầu mỗi câu của tài liệu thiết kế phải lặp lại ai kể/khi nào. "
         "Phân biệt nhận định của nhân vật dựa trên hành động, tin nhắn và lời kể với việc biết bí mật nội tâm không có chứng cứ. "
         "Nhận định đạo đức như ích kỷ/thao túng không tự nó là lỗi POV nếu đã có hành vi, bằng chứng và kênh tiếp cận cụ thể; "
@@ -594,19 +645,32 @@ def valid_story_semantic_review(bible: StoryBible, review: Any) -> bool:
     return (isinstance(review, dict) and review.get('status') == 'RUN'
             and review.get('review_version') == SEMANTIC_REVIEW_VERSION and review.get('passes') == 2
             and review.get('bible_hash') == story_bible_content_hash(bible)
+            and (not review.get('grounding_required') or review.get('grounding_verified'))
             and not review.get('dropped_unanchored') and not review.get('issues'))
 
 
-def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass: bool = False) -> Dict[str, Any]:
+def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass: bool = False, _retry_invalid: bool = False, _require_grounding: bool = False, _validation_feedback: str = '') -> Dict[str, Any]:
     """Returns {"issues": [...high confidence...], "advisories": [...], "bible_hash"}."""
     prompt = build_story_bible_prompt(bible)
+    if _require_grounding:
+        prompt += ('\nBẮT BUỘC thêm audit_checks đủ 5 category: timeline, setup_payoff, evidence_scope, knowledge_source, vietnamese. '
+            'Mỗi item: {category, verdict:PASS|FAIL|NOT_APPLICABLE, reason:<giải thích cụ thể>, evidence:[{field,quote}]}. '
+            'Quote COPY NGUYÊN VĂN ít nhất 4 từ ở trường field thực tế, không đổi câu hoặc đặt tên trường sai. '
+            'Knowledge_source: đối chiếu reveal, knowledge_ledger và reveal_justifications, kiểm tra nguồn CÓ ĐỦ KHẢ NĂNG cung cấp đúng thông tin không: '
+            'cuộc gọi thoại không cho biết mặt người trong ảnh, biết tên không tự biết mặt. Cần chú thích ảnh hoặc nguồn nhận diện độc lập. '
+            'Sự thật hậu trường có thể biết toàn bộ, nhưng các trường khẳng định nhân vật đã học được điều gì phải có kênh đủ năng lực trước thời điểm đó. '
+            'Nếu nguồn không đủ thì báo POV_KNOWLEDGE_VIOLATION tại đúng trường chứa câu vô căn cứ, kể cả reveal_justifications. '
+            'Mỗi FAIL phải có issue hợp lệ. Không trả issues=[] nếu chưa đối chiếu đủ các trường.\n')
     if _second_pass:
         prompt += '\nLƯỢT KIỂM TRA ĐỘC LẬP: đối chiếu danh tính, timeline, bằng chứng và tri thức của nhân vật giữa các trường. Không dựa vào verdict lượt trước.'
+    if _retry_invalid:
+        prompt += '\nLượt trước trích dẫn không hợp lệ. COPY một chuỗi con liên tục NGUYÊN VĂN của đúng trường field, không viết lại câu, không nối các trường, không dùng diễn giải trong quote. Nếu vấn đề thật vẫn tồn tại, báo lại với quote đúng; không bỏ lỗi để trả PASS. Đọc lại cả Bible và trả JSON.'
+        prompt += _validation_feedback
     raw, in_tok, out_tok = call_llm(STORY_BIBLE_SYSTEM_INSTRUCTION, prompt)
     items, is_valid, err_msg = parse_json_items_validated(raw, "issues")
     if not is_valid:
         logger.warning(f"[SemanticReview] Story Bible review invalid JSON: {err_msg}")
-        return {
+        result = {
             "status": "ERROR",
             "review_version": SEMANTIC_REVIEW_VERSION,
             "passes": 1,
@@ -616,11 +680,21 @@ def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass:
             "advisories": [],
             "tokens": [in_tok, out_tok],
         }
+        return result if _retry_invalid else _retry_review_once(result, lambda: review_story_bible_logic(bible, call_llm, _second_pass, True, _require_grounding))
 
     data = bible.to_dict()
+    def field_text(value):
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            return '\n'.join(field_text(v) for v in value.values())
+        if isinstance(value, list):
+            return '\n'.join(field_text(v) for v in value)
+        return str(value) if value is not None else ''
     blocking: List[Dict[str, Any]] = []
     advisories: List[Dict[str, Any]] = []
     dropped = 0
+    invalid_evidence = []
     for item in items:
         rule = str(item.get("rule", "")).strip().upper()
         field_name = str(item.get("field", "")).strip()
@@ -628,14 +702,6 @@ def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass:
         # Compare with actual story text, not JSON's escaped representation:
         # a valid quotation containing dialogue quotes is not literally present
         # in json.dumps(...), which inserts backslashes around those quotes.
-        def field_text(value):
-            if isinstance(value, str):
-                return value
-            if isinstance(value, dict):
-                return "\n".join(field_text(v) for v in value.values())
-            if isinstance(value, list):
-                return "\n".join(field_text(v) for v in value)
-            return str(value) if value is not None else ""
         root_field = field_name.split(".")[0]
         if rule == "POV_KNOWLEDGE_VIOLATION" and (root_field in STORY_BIBLE_BACKSTAGE_FIELDS or field_name in STORY_BIBLE_BACKSTAGE_FIELDS):
             continue
@@ -651,6 +717,7 @@ def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass:
         if rule not in STORY_BIBLE_RULES or not source or not _quote_in_text(quote, source):
             logger.warning("[SemanticReview] Invalid Story finding: rule=%s field=%s quote=%r", rule, field_name, quote)
             dropped += 1
+            invalid_evidence.append({'field': field_name, 'invalid_quote': quote, 'actual_field_text': source})
             continue
         issue = {
             "rule": rule,
@@ -671,12 +738,42 @@ def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass:
         "issues": blocking,
         "advisories": advisories,
         "tokens": [in_tok, out_tok],
+        "grounding_required": _require_grounding,
     }
+    if _require_grounding and not blocking:
+        checks, valid, _ = parse_json_items_validated(raw, 'audit_checks')
+        expected = {'timeline', 'setup_payoff', 'evidence_scope', 'knowledge_source', 'vietnamese'}
+        verified = set()
+        for check in checks:
+            evidence = check.get('evidence')
+            if check.get('verdict') not in {'PASS', 'NOT_APPLICABLE'} or len(str(check.get('reason', ''))) < 16 or not isinstance(evidence, list) or not evidence:
+                continue
+            good = True
+            for e in evidence:
+                root = str(e.get('field', '')).split('.')[0] if isinstance(e, dict) else ''
+                quote = str(e.get('quote', '')) if isinstance(e, dict) else ''
+                source = field_text(data.get(root))
+                if root not in STORY_BIBLE_REVIEW_FIELDS or len(quote.split()) < 4 or not _quote_in_text(quote, source):
+                    good = False
+                    invalid_evidence.append({'field': root, 'invalid_quote': quote, 'actual_field_text': source})
+            if good:
+                verified.add(check.get('category'))
+        result['audit_checks'] = checks
+        result['grounding_verified'] = bool(valid and len(checks) == 5 and verified == expected and not dropped)
+        if not result['grounding_verified']:
+            result.update(status='ERROR', error='Story review thiếu chứng cứ đọc hợp lệ cho timeline, payoff, bằng chứng, nguồn nhận thức và lời kể.')
+    result['invalid_evidence'] = invalid_evidence
+    if result['status'] == 'ERROR' and not _retry_invalid:
+        feedback = '\nCác trích dẫn bị từ chối và NỘI DUNG THẬT để copy (không sửa cốt truyện):\n' + json.dumps(invalid_evidence[:4], ensure_ascii=False)
+        return _retry_review_once(result, lambda: review_story_bible_logic(bible, call_llm, _second_pass, True, _require_grounding, feedback))
     if not _second_pass and result['status'] == 'RUN' and not blocking:
-        second = review_story_bible_logic(bible, call_llm, _second_pass=True)
+        second = review_story_bible_logic(bible, call_llm, _second_pass=True, _require_grounding=_require_grounding)
         result.update(status=second['status'], error=second.get('error'), passes=2)
         result['issues'].extend(second.get('issues', []))
         result['advisories'].extend(second.get('advisories', []))
         result['dropped_unanchored'] += second.get('dropped_unanchored', 0)
         result['tokens'] = [a + b for a, b in zip(result['tokens'], second.get('tokens', [0, 0]))]
+        if _require_grounding:
+            result['grounding_verified'] = bool(result.get('grounding_verified') and second.get('grounding_verified'))
+            result['audit_checks_second_pass'] = second.get('audit_checks', [])
     return result

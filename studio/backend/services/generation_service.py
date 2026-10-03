@@ -629,19 +629,25 @@ class GenerationService:
             f"model={getattr(provider, 'default_model', 'unknown')}, source={prov_source}"
         )
         logger.info("Đang viết kịch bản (viết một lần cả tập; chỉ chia 2 phần nếu bị cắt cụt)...")
-        if not getattr(story_bible, "scene_outline", None):
+        from apps.script_factory.scene_outline import outline_fulfills_contract
+        require_contract = bool(getattr(provider, 'requires_grounded_review', False))
+        if (not getattr(story_bible, "scene_outline", None)
+                or (require_contract and not outline_fulfills_contract(story_bible, story_bible.scene_outline))):
             try:
                 from apps.script_factory.scene_outline import build_scene_outline
                 if hasattr(provider, "complete_json") and callable(provider.complete_json):
                     m_name = getattr(provider, "default_model", None)
                     story_bible.scene_outline = build_scene_outline(
                         story_bible,
-                        lambda system, prompt: provider.complete_json(system, prompt, model=m_name)
+                        lambda system, prompt: provider.complete_json(system, prompt, model=m_name),
+                        require_contract=require_contract,
                     )
                     if story_bible.scene_outline:
                         logger.info(f"Đã lập kế hoạch {len(story_bible.scene_outline)} cảnh cho kịch bản.")
             except Exception as e:
                 logger.warning(f"Could not pre-build scene outline for Story Bible: {e}")
+        if require_contract and not outline_fulfills_contract(story_bible, getattr(story_bible, 'scene_outline', None)):
+            raise ValueError('AI chưa lập được dàn cảnh trả lời đủ manh mối và hệ quả. Giữ nguyên cốt truyện, không ghi đè kịch bản hiện tại.')
 
         writer = ScriptWriter(provider=provider, cost_controller=self.cost_ctrl, episodes_root=PROJECTS_DIR)
         script = writer.generate_script_from_bible(story_bible)
@@ -825,7 +831,7 @@ class GenerationService:
             revised_data["provider_name"] = getattr(provider, "provider_name", None) or getattr(revised_script, "provider_name", None)
             revised_data["requested_model"] = effective_req
             revised_data["actual_model"] = actual_m
-            revised_data["prompt_version"] = "script-v3.7-event-knowledge-repair"
+            revised_data["prompt_version"] = "script-v3.9-calendar-payoff-location-repair"
             revised_data["generated_at"] = time.time()
         _assert_story_snapshot(story_path, source_story_hash, story_bible.generation_request_id)
         current_script_data = json.loads(script_path.read_text(encoding='utf-8'))

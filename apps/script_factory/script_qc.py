@@ -23,7 +23,7 @@ logger = logging.getLogger("VieNeu.ScriptQC")
 
 SERIES_BIBLE_PATH = Path("script_factory/series_bible.json")
 STORY_FORMULA_PATH = Path("script_factory/story_formula_v1.json")
-SCRIPT_QC_VERSION = "script-qc-v5.3-knowledge-source-bound"
+SCRIPT_QC_VERSION = "script-qc-v5.5-calendar-payoff-location"
 
 
 def _vietnamese_integer_words(value: int) -> Optional[str]:
@@ -108,6 +108,20 @@ class ScriptQCEngine:
         evidence_issues: List[Dict[str, Any]] = []
 
         all_text = " ".join(s.text for s in script.segments)
+        from apps.script_factory.event_facts import scene_location_conflicts
+        for seg_id, quote, message in scene_location_conflicts(script):
+            evidence_issues.append({'segment_id': seg_id, 'excerpt': quote,
+                'rule': 'ACTION_SEQUENCE_INVERSION', 'severity': 'CRITICAL',
+                'recommended_action': message, 'message': message})
+            logic_issues.append(f'[{seg_id}] ACTION_SEQUENCE_INVERSION: {message}')
+            revision_requests.append(message)
+        from apps.script_factory.story_contract import script_age_conflicts
+        for seg_id, quote, message in script_age_conflicts(script, story_bible):
+            evidence_issues.append({'segment_id': seg_id, 'excerpt': quote,
+                'rule': 'CHARACTER_IDENTITY_CONTRADICTION', 'severity': 'CRITICAL',
+                'recommended_action': message, 'message': message})
+            logic_issues.append(f'[{seg_id}] CHARACTER_IDENTITY_CONTRADICTION: {message}')
+            revision_requests.append(message)
 
         # 0. STORY BIBLE & INTERNAL TEMPLATE LEAKAGE AUDIT
         leakage_guard = StoryBibleLeakageGuard()

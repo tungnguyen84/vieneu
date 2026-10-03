@@ -119,7 +119,8 @@ class StoryQCEngine:
         if key not in self._bible_review_cache or self._bible_review_cache[key].get('status') == 'ERROR':
             try:
                 self._bible_review_cache[key] = review_story_bible_logic(
-                    bible, lambda system, prompt: complete_json(system, prompt)
+                    bible, lambda system, prompt: complete_json(system, prompt),
+                    _require_grounding=bool(getattr(self.provider, 'requires_grounded_review', False)),
                 )
             except Exception as exc:
                 logger.warning(f"[StoryQCEngine] Semantic Story Bible review failed: {exc}")
@@ -382,6 +383,9 @@ class StoryQCEngine:
         from apps.script_factory.event_facts import bible_timeline_conflicts
         for message in bible_timeline_conflicts(bible):
             _add_issue('EVENT_TIMELINE_CONTRADICTION', message, target='timeline')
+        from apps.script_factory.story_contract import bible_age_conflicts
+        for target, message in bible_age_conflicts(bible):
+            _add_issue('CHARACTER_IDENTITY_CONTRADICTION', message, target=target)
 
         # "Minh" is the fixed on-air host. Reusing that name for a story
         # character makes narration ambiguous ("Minh nói với Minh") and can
@@ -683,7 +687,7 @@ class StoryQCEngine:
                     ))
                     personal_admission = (
                         not objective_claim
-                        and any(marker in reveal_text for marker in ('ngoại tình', 'vụng trộm', 'phản bội'))
+                        and any(marker in reveal_text for marker in ('ngoại tình', 'vụng trộm', 'phản bội', 'quan hệ ngoài hôn nhân', 'vượt quá giới hạn đồng nghiệp'))
                         and any(marker in evidence for marker in ('lời thú nhận', 'thừa nhận', 'thú nhận'))
                         and not any(marker in evidence for marker in ('không thừa nhận', 'không thú nhận'))
                     )

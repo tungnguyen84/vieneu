@@ -90,7 +90,7 @@ class AutoRevisionManager:
                 revised_script.generation_request_id = str(uuid.uuid4())
                 revised_script.model_name = actual_m
                 revised_script.provider_name = self.provider.provider_name
-                revised_script.prompt_version = 'script-v3.7-event-knowledge-repair'
+                revised_script.prompt_version = 'script-v3.9-calendar-payoff-location-repair'
                 revised_script.writer_strategy = script.writer_strategy
                 revised_script.requested_model = effective_req_model
                 revised_script.actual_model = actual_m

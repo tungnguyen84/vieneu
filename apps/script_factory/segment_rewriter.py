@@ -114,6 +114,7 @@ def _story_context(story_bible: StoryBible) -> Dict[str, Any]:
 
 
 def build_prompt(script: FullScript, story_bible: StoryBible, flagged: Dict[str, List[str]]) -> str:
+    from apps.script_factory.story_contract import contract_block
     index = {s.id: i for i, s in enumerate(script.segments)}
     targets = []
     for seg_id in sorted(flagged, key=index.__getitem__):
@@ -130,6 +131,7 @@ def build_prompt(script: FullScript, story_bible: StoryBible, flagged: Dict[str,
     return (
         "Bối cảnh câu chuyện:\n"
         f"{json.dumps(_story_context(story_bible), ensure_ascii=False)}\n\n"
+        + contract_block(story_bible) +
         "Toàn bộ mạch kịch bản hiện tại (chỉ đọc để biết nhân vật đã biết gì và sự kiện đã xảy ra):\n"
         + '\n'.join(f'[{s.id}] {s.text}' for s in script.segments) + '\n\n'
         +

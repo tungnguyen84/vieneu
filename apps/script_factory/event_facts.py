@@ -151,3 +151,20 @@ def script_duration_conflicts(script, bible):
                 if numbers[match.group(1)] != constraint[0]:
                     issues.append((segment.id, clause, f'Ghép thận được khóa cách đây {constraint[0]} năm, đoạn này kể {numbers[match.group(1)]} năm.'))
     return issues
+
+
+def scene_location_conflicts(script):
+    """Catch an explicit in-transit action performed at an unestablished table.
+
+    Phone calls, intentions, memories, a stated stop/arrival, and vehicle tables
+    are valid. Ambiguous wider geography is left to the two semantic reviews.
+    """
+    for segment in script.segments:
+        text = normalized(segment.text)
+        if not re.match(r'trên đường (?:về nhà|về căn hộ|trở về nhà)\s*[,，]', text):
+            continue
+        if not re.search(r'\b(?:đặt|trải|bày)\b[^.!?]{0,180}\btrên bàn\b', text):
+            continue
+        if re.search(r'\b(?:nhớ|nghĩ|tưởng tượng|sẽ|định|quyết định|từng|về đến|về tới|đến nhà|tới nhà|dừng|ghé|quán|tàu|máy bay|xe khách)\b', text):
+            continue
+        yield segment.id, segment.text, 'Nhân vật đang trên đường về nhưng đã đặt/bày đồ trên bàn khi chưa đến hoặc dừng ở nơi có bàn. Kể rõ chuyển địa điểm trước hành động, hoặc giữ hành động trên đường đúng là suy nghĩ. Không đổi nguồn vật chứng.'

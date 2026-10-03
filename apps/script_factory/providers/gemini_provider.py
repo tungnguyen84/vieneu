@@ -1046,6 +1046,8 @@ HƯỚNG DẪN SỬA CHỮA CỤ THỂ THEO TỪNG LOẠI LỖI:
 
 Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Object duy nhất, đúng tên trường của schema."""
         prompt += story_bible_repair_targets_clause(issues)
+        from apps.script_factory.story_contract import contract_block
+        prompt += contract_block(story_bible)
 
         raw_text, in_tok, out_tok = self._call_generate_content(
             prompt=prompt,
@@ -1117,6 +1119,8 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
         reveal_proof_summary = json.dumps(story_bible.reveal_justifications or {}, ensure_ascii=False)
         canonical_story = json.dumps({k: v for k, v in story_bible.to_dict().items()
                                      if k not in {'story_qc_report', 'status', 'approved_at', 'approved_by'}}, ensure_ascii=False)
+        from apps.script_factory.story_contract import contract_block
+        canonical_story += contract_block(story_bible)
 
         clean_title = re.sub(r"^(?:Tập\s+)?EP_?[A-Z0-9_]*\d+\s*[-:]?\s*", "", str(story_bible.title or ""), flags=re.IGNORECASE).strip()
         protag_name = story_bible.protagonist.get("name", "Tuấn") if isinstance(story_bible.protagonist, dict) else str(story_bible.protagonist or "Tuấn")
@@ -1456,7 +1460,7 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
             total_words=total_words,
             status="DRAFT",
             generation_request_id=str(uuid.uuid4()),
-            prompt_version="script-v3.7-event-knowledge-grounded",
+            prompt_version="script-v3.9-calendar-payoff-location",
             generation_source="REAL_AI",
             model_name=chosen_model_name,
             requested_model=model or self.default_model,
