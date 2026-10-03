@@ -1,62 +1,45 @@
-import json, sys, os
+"""Read-only verification using the same validator as Studio approval/audio."""
+import argparse
+import json
 from pathlib import Path
+import sys
+import urllib.request
 
-sys.stdout.reconfigure(encoding='utf-8')
+BASE_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BASE_DIR))
+from studio.backend.services.artifact_lineage import validate_full_script
 
-EPISODES = ["EP2014", "EP2015", "EP2016"]
-BASE_DIR = Path("D:/App/VieNeuTTS")
-PROJECTS_DIR = BASE_DIR / "projects"
 
-from apps.script_factory.vietnamese_cleaner import find_garbled_vietnamese_issues
+def verify(episode_id, api_url):
+    base = BASE_DIR / 'projects' / episode_id
+    script = json.loads((base / 'script/full_script.json').read_text(encoding='utf-8'))
+    story = json.loads((base / 'story/story_bible.json').read_text(encoding='utf-8'))
+    qc = json.loads((base / 'script/qc_report.json').read_text(encoding='utf-8'))
+    disk = validate_full_script(episode_id, BASE_DIR / 'projects')
+    with urllib.request.urlopen(f'{api_url.rstrip("/")}/api/projects/{episode_id}/script/status', timeout=15) as response:
+        live = json.load(response)
+    consistent = disk.get('script_content_hash') == live.get('script_content_hash')
+    return {'episode_id':episode_id,'title':script.get('title'),
+        'generation_source':script.get('generation_source'),
+        'story_generation_request_id':story.get('generation_request_id'),
+        'script_generation_request_id':script.get('generation_request_id'),
+        'requested_model':script.get('requested_model'),'actual_model':script.get('actual_model'),
+        'segments':len(script.get('segments',[])),
+        'words':sum(len(s['text'].split()) for s in script.get('segments',[])),
+        'qc_version':qc.get('qc_version'),'semantic_review':qc.get('semantic_review'),
+        'disk_validator':disk,'live_status':live,'disk_matches_api':consistent,
+        'accepted':bool(consistent and disk.get('audio_gate_allowed') and live.get('audio_gate_allowed'))}
 
-results = []
 
-for ep_id in EPISODES:
-    ep_dir = PROJECTS_DIR / ep_id
-    script_path = ep_dir / "script" / "full_script.json"
-    story_path = ep_dir / "story" / "story_bible.json"
-    qc_path = ep_dir / "script" / "qc_report.json"
-    project_path = ep_dir / "project.json"
-
-    with open(script_path, "r", encoding="utf-8") as f:
-        script_data = json.load(f)
-    with open(story_path, "r", encoding="utf-8") as f:
-        story_data = json.load(f)
-    with open(qc_path, "r", encoding="utf-8") as f:
-        qc_data = json.load(f)
-    with open(project_path, "r", encoding="utf-8") as f:
-        project_data = json.load(f)
-
-    # Check garbled issues across segments
-    garbled_findings = []
-    for s in script_data.get("segments", []):
-        issues = find_garbled_vietnamese_issues(s.get("text", ""))
-        if issues:
-            garbled_findings.append({"seg": s["id"], "issues": issues})
-
-    stages = project_data.get("stages", {})
-    script_stage = stages.get("script", {})
-
-    ep_info = {
-        "episode_id": ep_id,
-        "title": story_data.get("working_title") or story_data.get("title"),
-        "user_topic": story_data.get("user_topic") or story_data.get("topic_intent", {}).get("original_topic"),
-        "script_stage_status": script_stage.get("status"),
-        "qc_status": qc_data.get("status"),
-        "audio_gate_allowed": script_stage.get("status") == "APPROVED" and qc_data.get("status") == "PASS",
-        "generation_source": script_data.get("generation_source"),
-        "requested_model": script_data.get("requested_model"),
-        "actual_model": script_data.get("actual_model") or script_data.get("model_name"),
-        "story_generation_request_id": story_data.get("generation_request_id"),
-        "script_generation_request_id": script_data.get("generation_request_id"),
-        "total_segments": len(script_data.get("segments", [])),
-        "total_words": script_data.get("total_words") or sum(len(s["text"].split()) for s in script_data.get("segments", [])),
-        "garbled_issues_count": len(garbled_findings),
-        "hook_text": script_data.get("segments", [])[0]["text"] if script_data.get("segments") else "",
-        "reveal_text": script_data.get("segments", [])[len(script_data.get("segments", []))//2]["text"] if script_data.get("segments") else "",
-        "climax_text": script_data.get("segments", [])[-2]["text"] if script_data.get("segments") else "",
-        "ending_text": script_data.get("segments", [])[-1]["text"] if script_data.get("segments") else "",
-    }
-    results.append(ep_info)
-
-print(json.dumps(results, ensure_ascii=False, indent=2))
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('episodes', nargs='+')
+    parser.add_argument('--api-url', default='http://127.0.0.1:8765')
+    parser.add_argument('--output', type=Path)
+    args = parser.parse_args()
+    results = [verify(ep,args.api_url) for ep in args.episodes]
+    payload = json.dumps(results,ensure_ascii=False,indent=2)
+    if args.output:
+        args.output.write_text(payload,encoding='utf-8')
+    print(payload)
+    raise SystemExit(0 if all(r['accepted'] for r in results) else 1)

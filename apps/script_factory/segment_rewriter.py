@@ -150,8 +150,12 @@ def build_prompt(script: FullScript, story_bible: StoryBible, flagged: Dict[str,
         "BẮT BUỘC phải đảm bảo tính nhất quán với toàn bộ mạch kịch bản. Nếu một đạo cụ/bằng chứng mới được thiết lập (hoặc thay thế), "
         "không để các phân đoạn sau nhắc tới như thể vẫn còn vật cũ hoặc ngược lại. Tên người lạ hoặc vật phẩm phải được giới thiệu "
         "trước khi nhân vật gọi tên.\n"
+        "- NGUỒN NHẬN THỨC: nghe tên chưa đủ để nhận ra mặt người trong ảnh; cần cảnh từng gặp hoặc chú thích ảnh xác nhận rõ tên. "
+        "Không cho nhân vật hỏi về người yêu cũ trước khi nguồn thông tin ấy được tiết lộ. Nguồn chỉ nằm trong Bible hoặc ở cảnh sau chưa cấp kiến thức cho cảnh trước.\n"
         "- SETUP & PAYOFF: Nếu phân đoạn được sửa liên quan đến một manh mối/vật phẩm gieo từ đầu truyện (setup), phải bảo đảm "
-        "có hành động mở ra, kiểm chứng hoặc kết luận rõ ràng, không để lửng lơ hoặc mâu thuẫn.\n"
+        "có đáp án cụ thể: nội dung được đọc và điều nội dung ấy xác nhận. Chỉ mở vật chứa hoặc nói 'đối chiếu sự thật' chưa trả được câu hỏi. "
+        "Không suy ra danh tính từ ảnh, dấu công cụ hay tên trong danh bạ; không dùng giấy khám sức khỏe thay hồ sơ hiến tạng. "
+        "Giữ đúng năm và thời lượng của từng sự kiện/nhân vật, phân biệt mắc bệnh với phẫu thuật, giữ hành động kết thúc trong Bible.\n"
         "- DỰNG CẢNH SỐNG ĐỘNG: Cảnh đối chất, phát hiện manh mối hoặc chia tay phải có hành động cụ thể và lời thoại trực tiếp "
         "trong ngoặc kép thay vì chỉ tóm tắt diễn biến.\n"
         'Trả về JSON: {"segments": [{"id": "<id>", "text": "<văn bản mới>"}]}'

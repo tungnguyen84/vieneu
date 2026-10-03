@@ -141,6 +141,7 @@ def _has_valid_final_closure(segments: List[Dict[str, Any]]) -> bool:
 
 class OpenAICompatibleProvider(ScriptAIProvider):
     """OpenAI / OpenAI-Compatible client for ideation, story bible, and scriptwriting."""
+    requires_grounded_review = True
 
     def __init__(
         self,
@@ -1126,7 +1127,7 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
             total_words=total_words,
             status="DRAFT",
             generation_request_id=str(uuid.uuid4()),
-            prompt_version="script-v3.6-scene-outline-grounded",
+            prompt_version="script-v3.7-event-knowledge-grounded",
             generation_source="REAL_AI",
             model_name=chosen_model_name,
             requested_model=model or self.default_model,

@@ -19,82 +19,34 @@ def audit_event_timeline(
     evidence_issues: List[Dict[str, Any]] = []
     revision_requests: List[str] = []
 
-    timeline_entries = getattr(story_bible, "timeline", []) or []
-    milestones = []
-    if timeline_entries:
-        # 1. Parse milestone events from timeline entries
-        for entry in timeline_entries:
-            years = re.findall(r"\b(?:19|20)\d{2}\b", entry)
-            if not years:
+    from apps.script_factory.event_facts import character_aliases, extract_events, script_duration_conflicts, bible_timeline_conflicts
+    aliases = character_aliases(story_bible)
+    timeline_entries = getattr(story_bible, 'timeline', []) or []
+    milestones = [event for entry in timeline_entries for event in extract_events(entry, aliases) if event['year'] is not None]
+    for segment in script.segments:
+        for event in extract_events(segment.text, aliases):
+            if event['year'] is None:
                 continue
-            entry_year = years[0]
-            entry_lower = entry.lower()
-
-            # Identify key action concepts in this timeline entry
-            event_concepts = []
-            if any(w in entry_lower for w in ["hiến thận", "hiến tạng", "hiến một phần cơ thể"]):
-                event_concepts.append(("hiến thận", ["hiến thận", "hiến tạng", "hiến một phần cơ thể"]))
-            if any(w in entry_lower for w in ["chia tay", "chấm dứt quan hệ", "ly hôn"]):
-                event_concepts.append(("chia tay", ["chia tay", "ly hôn", "chấm dứt quan hệ"]))
-            if any(w in entry_lower for w in ["kết hôn", "đám cưới", "cưới"]):
-                event_concepts.append(("kết hôn", ["kết hôn", "đám cưới", "lễ cưới"]))
-            if any(w in entry_lower for w in ["tuyển dụng", "vào làm", "nhận vào công ty"]):
-                event_concepts.append(("tuyển dụng", ["tuyển dụng", "nhận vào làm", "vào làm việc"]))
-            if any(w in entry_lower for w in ["mở di chúc"]):
-                event_concepts.append(("mở di chúc", ["mở di chúc", "mở bức di chúc"]))
-            if any(w in entry_lower for w in ["tiêu hủy di chúc", "hủy di chúc"]):
-                event_concepts.append(("tiêu hủy di chúc", ["tiêu hủy di chúc", "hủy bản di chúc"]))
-            if any(w in entry_lower for w in ["lâm bệnh nặng", "bệnh nặng", "suy thận nặng"]):
-                event_concepts.append(("lâm bệnh", ["lâm bệnh", "mắc bệnh nặng", "suy thận"]))
-
-            if event_concepts:
-                for label, keywords in event_concepts:
-                    milestones.append({
-                        "label": label,
-                        "year": entry_year,
-                        "keywords": keywords,
-                        "raw": entry,
-                    })
-
-    # Scan script segments for event-year contradictions
-    for s in script.segments:
-        s_lower = s.text.lower()
-        seg_years = re.findall(r"\b(?:19|20)\d{2}\b", s.text)
-        if not seg_years:
-            continue
-
-        for ms in milestones:
-            matched_kw = next((kw for kw in ms["keywords"] if kw in s_lower), None)
-            if not matched_kw:
+            candidates = [m for m in milestones if m['label'] == event['label']]
+            if event['actor']:
+                candidates = [m for m in candidates if m['actor'] == event['actor']]
+            elif len({m['actor'] for m in candidates}) > 1:
+                continue  # Ambiguous subject must be reviewed, never guessed.
+            expected = {m['year'] for m in candidates}
+            if not expected or event['year'] in expected:
                 continue
+            message = f"Mâu thuẫn sự kiện {event['actor'] or ''} — {event['label']}: Bible ghi {sorted(expected)}, đoạn [{segment.id}] kể {event['year']}."
+            fact_conflicts.append({'fact_id':'EVENT_TIMELINE', 'field':'event_timeline', 'expected':sorted(expected), 'found':str(event['year']), 'type':'TIMELINE_CONFLICT', 'description':message})
+            evidence_issues.append({'segment_id':segment.id,'excerpt':event['clause'],'rule':'EVENT_TIMELINE_CONTRADICTION','severity':'CRITICAL','message':message,'recommended_action':'Đối chiếu đúng nhân vật, sự kiện và năm với Story Bible; giữ nguyên dữ kiện đã khóa.'})
+            revision_requests.append(f'Correct event timeline in segment [{segment.id}]: {message}')
 
-            # The segment mentions this specific event!
-            # Check if any sentence or clause in s associates this event with a conflicting year
-            sentences = re.split(r"[.!?]\s*", s.text)
-            for sent in sentences:
-                sent_lower = sent.lower()
-                if matched_kw not in sent_lower:
-                    continue
-                sent_years = re.findall(r"\b(?:19|20)\d{2}\b", sent)
-                for sy in sent_years:
-                    if sy != ms["year"] and abs(int(sy) - int(ms["year"])) >= 1:
-                        fact_conflicts.append({
-                            "fact_id": f"TIMELINE_{ms['label']}_{ms['year']}",
-                            "field": "event_timeline",
-                            "expected": f"{ms['label']} vào năm {ms['year']}",
-                            "found": f"năm {sy} ở phân đoạn [{s.id}]",
-                            "type": "TIMELINE_CONFLICT",
-                            "description": f"Mâu thuẫn timeline sự kiện: Sự kiện '{ms['label']}' xảy ra năm {ms['year']} theo Story Bible, nhưng phân đoạn [{s.id}] kể năm {sy}."
-                        })
-                        evidence_issues.append({
-                            "segment_id": s.id,
-                            "excerpt": sent[:120],
-                            "rule": "TIMELINE_CONFLICT",
-                            "severity": "CRITICAL",
-                            "message": f"Mâu thuẫn timeline: Sự kiện '{ms['label']}' diễn ra năm {ms['year']}, kịch bản kể năm {sy}.",
-                            "recommended_action": f"Sửa lại năm diễn ra '{ms['label']}' thành {ms['year']} cho đúng Story Bible."
-                        })
-                        revision_requests.append(f"Correct timeline conflict in segment [{s.id}]: change year for '{ms['label']}' to {ms['year']}.")
+    for sid, clause, message in script_duration_conflicts(script, story_bible):
+        fact_conflicts.append({'fact_id':'EVENT_DURATION', 'type':'TIMELINE_CONFLICT', 'description':message})
+        evidence_issues.append({'segment_id':sid,'excerpt':clause,'rule':'EVENT_TIMELINE_CONTRADICTION','severity':'CRITICAL','message':message,'recommended_action':'Giữ đúng thời lượng sự kiện được khóa trong Story Bible.'})
+        revision_requests.append(f'Correct event duration in segment [{sid}]: {message}')
+    for message in bible_timeline_conflicts(story_bible):
+        fact_conflicts.append({'fact_id':'UPSTREAM_TIMELINE', 'type':'TIMELINE_CONFLICT', 'description':message})
+        revision_requests.append(f'Repair Story Bible timeline before rewriting script: {message}')
 
     # 2. Relationship lifecycle contradiction:
     # If timeline records a breakup / separation, but script says "chưa bao giờ kết thúc" / "chưa từng chia tay"
@@ -187,7 +139,7 @@ def audit_evidence_scope(
             has_donor_doc = any(doc in preceding_texts for doc in [
                 "hồ sơ hiến", "giấy xác nhận người hiến", "biên bản hiến", "chứng từ hiến",
                 "hồ sơ bệnh án ghi rõ người hiến", "dòng chữ xác nhận hiến", "chữ ký cam kết hiến",
-                "kết quả phẫu thuật hiến", "tờ giấy khám sức khỏe"
+                "kết quả phẫu thuật hiến"
             ])
             is_just_schedule = ("lịch trình" in preceding_texts or "sổ ghi chép" in preceding_texts) and not has_donor_doc
             if is_just_schedule:
@@ -202,12 +154,9 @@ def audit_evidence_scope(
                 revision_requests.append(f"Add evidence verification link in segment [{s.id}] before concluding donor identity.")
 
         # 2. Leap from family photo to absolute moral character verdict
-        if ("bức ảnh" in s_lower or "tấm ảnh" in s_lower) and any(verdict in s_lower for verdict in [
-            "chứng minh hoàn toàn không phải là kẻ vô cảm",
-            "chứng minh hoàn toàn không phải",
-            "minh chứng hoàn toàn không",
-            "chứng minh bản chất"
-        ]):
+        if ("bức ảnh" in s_lower or "tấm ảnh" in s_lower) and re.search(
+            r"(?:chứng minh|minh chứng)\b.{0,65}?(?:hoàn toàn không|bản chất)", s_lower
+        ):
             evidence_issues.append({
                 "segment_id": s.id,
                 "excerpt": s.text[:120],

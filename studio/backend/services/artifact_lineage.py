@@ -225,6 +225,10 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
                 audio_gate_reasons.append("QC logic dùng bộ luật cũ; cần kiểm tra lại tính tự nhiên và diễn tiến")
             if sem_rev.get("passes") != 2:
                 audio_gate_reasons.append("QC logic chưa hoàn thành lượt kiểm tra diễn tiến độc lập")
+            if sem_rev.get('grounding_required') and not sem_rev.get('grounding_verified'):
+                audio_gate_reasons.append('QC chưa xác thực đủ chứng cứ timeline, setup/payoff, bằng chứng, nguồn nhận thức và tiếng Việt')
+            if 'lite' in str(sem_rev.get('model', '')).lower():
+                audio_gate_reasons.append('QC được chấm bằng model Lite trái policy review; cần chạy lại QC')
             try:
                 semantic_story_hash = story_bible_content_hash(StoryBible.from_dict(story))
             except (TypeError, ValueError, KeyError):

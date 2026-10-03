@@ -379,6 +379,10 @@ class StoryQCEngine:
             if rule not in rule_codes:
                 rule_codes.append(rule)
 
+        from apps.script_factory.event_facts import bible_timeline_conflicts
+        for message in bible_timeline_conflicts(bible):
+            _add_issue('EVENT_TIMELINE_CONTRADICTION', message, target='timeline')
+
         # "Minh" is the fixed on-air host. Reusing that name for a story
         # character makes narration ambiguous ("Minh nói với Minh") and can
         # corrupt speaker/voice mapping later in the pipeline.

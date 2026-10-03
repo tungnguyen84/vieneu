@@ -1193,7 +1193,7 @@ def test_verified_payoff_in_later_segment_skips_false_unresolved_setup():
         host={'id': 'MINH'},
         segments=[
             ScriptSegment(id='001', text='Lan nhận được phong bì niêm phong từ người lạ.', delivery_profile='HOOK'),
-            ScriptSegment(id='002', text='Tại phân đoạn này Lan mở phong bì niêm phong ra và đối chiếu sự thật.'),
+            ScriptSegment(id='002', text='Lan mở phong bì niêm phong rồi đọc bức thư: mẹ cô đã giữ khoản tiền để trả viện phí cho cha.'),
             ScriptSegment(id='003', text='Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.', delivery_profile='ENDING'),
         ]
     )
@@ -1203,7 +1203,7 @@ def test_verified_payoff_in_later_segment_skips_false_unresolved_setup():
         'quote': script.segments[0].text,
         'problem': 'Chi tiết phong bì niêm phong đã được giải quyết ở phân đoạn [002]',
         'fix': 'Không cần sửa.',
-        'confidence': 'medium'
+        'confidence': 'low'
     }
     def reviewer(system, prompt):
         return json.dumps({'issues': [issue]}, ensure_ascii=False), 10, 20

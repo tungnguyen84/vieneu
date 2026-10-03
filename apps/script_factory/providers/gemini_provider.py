@@ -1456,7 +1456,7 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
             total_words=total_words,
             status="DRAFT",
             generation_request_id=str(uuid.uuid4()),
-            prompt_version="script-v3.6-scene-outline-grounded",
+            prompt_version="script-v3.7-event-knowledge-grounded",
             generation_source="REAL_AI",
             model_name=chosen_model_name,
             requested_model=model or self.default_model,
@@ -1468,6 +1468,8 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
             updated_at=time.time(),
         )
         return script, in_tok1 + in_tok2, out_tok1 + out_tok2
+
+    requires_grounded_review = True
 
     def complete_json(self, system_instruction: str, prompt: str, model: Optional[str] = None) -> Tuple[str, int, int]:
         """Single JSON completion used by QC review and segment rewriting."""

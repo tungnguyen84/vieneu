@@ -23,7 +23,7 @@ logger = logging.getLogger("VieNeu.SemanticReview")
 
 # call_llm(system_instruction, prompt) -> (raw_text, input_tokens, output_tokens)
 LLMCall = Callable[[str, str], Tuple[str, int, int]]
-SEMANTIC_REVIEW_VERSION = "semantic-v11-strict-grounded-audit"
+SEMANTIC_REVIEW_VERSION = "semantic-v13-knowledge-source-bound"
 
 REVIEW_CALIBRATION = (
     "NGƯỠNG BÁO LỖI: chỉ báo mâu thuẫn hoặc thiếu mắt xích làm người nghe không hiểu được sự kiện, "
@@ -161,6 +161,10 @@ def _has_verified_payoff(
     story_bible: Optional[StoryBible] = None,
 ) -> bool:
     """Strictly verify if an UNRESOLVED_SETUP finding is unfounded due to verified concrete payoff."""
+    # A grounded high-confidence defect cannot be erased by a lexical heuristic.
+    # Low-confidence false alarms may be calibrated against an explicit answer.
+    if item.get('confidence') != 'low':
+        return False
     problem_text = str(item.get("problem", "")).lower()
     fix_text = str(item.get("fix", "")).lower()
 
@@ -182,7 +186,7 @@ def _has_verified_payoff(
     # 2. To dismiss, the reviewer must affirmatively state that the payoff was resolved/handled
     affirmative_markers = [
         "đã được giải quyết", "đã giải quyết", "đã được làm rõ", "đã làm rõ",
-        "đã mở", "đã giải thích", "đã đối chiếu", "được giải quyết ở", "đã hé lộ"
+        "đã giải thích", "được giải quyết ở"
     ]
     if not any(aff in problem_text for aff in affirmative_markers):
         return False
@@ -237,17 +241,17 @@ def _has_verified_payoff(
         if w not in excluded_names and w not in stopwords
     ]
 
-    payoff_actions = [
-        "mở", "bóc", "đọc", "xem", "kiểm tra", "đối chiếu", "xác nhận",
-        "thú nhận", "thừa nhận", "sự thật", "giải thích", "làm rõ", "phát hiện", "tiết lộ"
-    ]
+    # Opening or finding a container does not answer the question it promises.
+    payoff_actions = ["đọc", "thú nhận", "thừa nhận", "giải thích", "làm rõ", "tiết lộ"]
 
     for sid in later_sids:
         target_text = by_id[sid].text.lower()
+        if re.search(r"\b(?:không|chưa|chẳng)\s+(?:hề\s+)?(?:đọc|giải thích|giải đáp|tiết lộ|thú nhận|làm rõ)\b", target_text):
+            continue
         prop_found = any(p in target_text for p in concrete_props) or (
             not concrete_props and sum(1 for w in meaningful_words if w in target_text) >= 2
         )
-        action_found = any(act in target_text for act in payoff_actions)
+        action_found = any(re.search(rf"(?<!\w){re.escape(act)}(?!\w)", target_text) for act in payoff_actions)
         if prop_found and action_found:
             return True
 
@@ -260,9 +264,30 @@ def review_script_logic(
     call_llm: LLMCall,
     _continuity_pass: bool = False,
     _retry_invalid: bool = False,
+    _require_grounding: bool = False,
 ) -> Dict[str, Any]:
     """Returns {"issues": [...blocking...], "advisories": [...], "script_hash", "tokens"}."""
     prompt = build_prompt(script, story_bible)
+    if _require_grounding:
+        prompt += (
+            '\nBẮT BUỘC thêm audit_checks vào JSON, cùng với issues. Đây là chứng cứ đã đọc, không phải điểm số. '
+            'Đủ 5 category: timeline, setup_payoff, evidence_scope, knowledge_source, vietnamese. Mỗi item có category, '
+            'verdict=PASS|FAIL|NOT_APPLICABLE, reason giải thích cụ thể và evidence=[{segment_id,quote}]. '
+            'Mỗi category phải trích ít nhất một câu NGUYÊN VĂN tối thiểu 4 từ trong script. '
+            'Timeline: so đúng nhân vật/sự kiện/năm, kể cả năm bằng chữ, thời gian tương đối và Bible tự mâu thuẫn. '
+            'Setup/payoff: trích cả lời hứa và đáp án cụ thể; mở vật chứa không đồng nghĩa đã đọc nội dung. '
+            'Evidence: trích nội dung bằng chứng và kết luận, không coi tên tài liệu hay dấu công cụ là chứng minh danh tính. '
+            'Knowledge_source: kiểm tra TỪNG lần nhân vật nhận ra khuôn mặt, gắn số điện thoại với tên, '
+            'hoặc hỏi về một quan hệ quá khứ chưa được tiết lộ. Nghe tên không đồng nghĩa biết mặt; '
+            'tên lưu trong danh bạ của người đang nói dối không tự xác thực danh tính. '
+            'Phải có cảnh gặp trước, chú thích ảnh, nguồn độc lập hoặc lời xác nhận có cơ sở TRƯỚC đoạn nhận ra. '
+            'Nguồn chỉ nằm trong Bible hoặc được kể ở đoạn sau không cấp kiến thức cho nhân vật ở đoạn trước. '
+            'Ví dụ hỏi về người yêu trước hôn nhân trước khi nghe thú nhận là POV_KNOWLEDGE_VIOLATION. '
+            'Trích đoạn nhận ra/hỏi và đoạn nguồn thông tin trước nó; nếu nguồn không có thì báo issue, không suy diễn nguồn. '
+            'Vietnamese: đọc nguyên văn để phát hiện từ gãy, sai âm và câu tóm tắt thay cảnh; không tự sửa trong quote. '
+            'Nếu một kiểm tra FAIL, phải có issue có quote tương ứng, cách sửa và mã luật đã cấp. '
+            'Không trả issues=[] nếu bỏ qua một kiểm tra. Không tự tưởng tượng chi tiết để cứu logic.\n'
+        )
     if _retry_invalid:
         prompt += '\nLượt trước có finding không hợp lệ. Chỉ dùng mã luật được cấp, id có trong kịch bản và trích NGUYÊN VĂN tại chính id đó. Không dùng đoạn diễn giải thay trích dẫn. Kiểm tra toàn bộ và trả JSON đúng schema.'
     if _continuity_pass:
@@ -286,7 +311,7 @@ def review_script_logic(
             "advisories": [],
             "tokens": [in_tok, out_tok],
         }
-        return result if _retry_invalid else _retry_review_once(result, lambda: review_script_logic(script, story_bible, call_llm, _continuity_pass, True))
+        return result if _retry_invalid else _retry_review_once(result, lambda: review_script_logic(script, story_bible, call_llm, _continuity_pass, True, _require_grounding))
 
     by_id = {s.id: s for s in script.segments}
     blocking: List[Dict[str, Any]] = []
@@ -364,14 +389,36 @@ def review_script_logic(
         "issues": blocking,
         "advisories": advisories,
         "tokens": [in_tok, out_tok],
+        "grounding_required": _require_grounding,
     }
+    if _require_grounding and not blocking:
+        checks, checks_valid, _ = parse_json_items_validated(raw, 'audit_checks')
+        expected = {'timeline', 'setup_payoff', 'evidence_scope', 'knowledge_source', 'vietnamese'}
+        verified = set()
+        for check in checks:
+            if not isinstance(check, dict) or check.get('verdict') not in {'PASS', 'NOT_APPLICABLE'}:
+                continue
+            evidence = check.get('evidence')
+            if not isinstance(evidence, list) or not evidence or len(str(check.get('reason', ''))) < 16:
+                continue
+            if all(isinstance(e, dict) and clean_segment_id(e.get('segment_id'), by_id) in by_id
+                   and len(str(e.get('quote', '')).split()) >= 4
+                   and _quote_in_text(str(e.get('quote', '')), by_id[clean_segment_id(e.get('segment_id'), by_id)].text)
+                   for e in evidence):
+                verified.add(check.get('category'))
+        result['audit_checks'] = checks
+        result['grounding_verified'] = (checks_valid and expected == verified
+            and len(checks) == len(expected) and not dropped)
+        if not result['grounding_verified']:
+            result['status'] = 'ERROR'
+            result['error'] = 'Review chưa có chứng cứ hợp lệ cho đủ timeline, setup/payoff, bằng chứng, nguồn nhận thức và tiếng Việt.'
     if result['status'] == 'ERROR' and not _retry_invalid:
-        return _retry_review_once(result, lambda: review_script_logic(script, story_bible, call_llm, _continuity_pass, True))
+        return _retry_review_once(result, lambda: review_script_logic(script, story_bible, call_llm, _continuity_pass, True, _require_grounding))
     # The independent continuity pass runs unless pass 1 already found an
     # objective defect; editor-level findings must not skip it, or the approval
     # gate (which requires both passes) could never open.
     if not _continuity_pass and result["status"] == "RUN" and not any(is_blocking_logic_issue(i) for i in blocking):
-        second = review_script_logic(script, story_bible, call_llm, _continuity_pass=True)
+        second = review_script_logic(script, story_bible, call_llm, _continuity_pass=True, _require_grounding=_require_grounding)
         result["status"] = second["status"]
         result["error"] = second.get("error")
         result["issues"].extend(second.get("issues", []))
@@ -380,6 +427,9 @@ def review_script_logic(
         result["tokens"] = [a + b for a, b in zip(result["tokens"], second.get("tokens", [0, 0]))]
         result["passes"] = 2
         result['review_retries'] = result.get('review_retries', 0) + second.get('review_retries', 0)
+        if _require_grounding:
+            result['grounding_verified'] = bool(result.get('grounding_verified') and second.get('grounding_verified'))
+            result['audit_checks_second_pass'] = second.get('audit_checks', [])
     else:
         result["passes"] = 1
     return result
@@ -395,6 +445,7 @@ def carry_over_semantic_review(previous_report: Dict[str, Any], script: FullScri
     if (isinstance(review, dict) and review.get("status") == "RUN"
             and review.get("review_version") == SEMANTIC_REVIEW_VERSION
             and review.get("passes") == 2
+            and (not review.get('grounding_required') or review.get('grounding_verified'))
             and (story_bible is None or review.get("story_hash") == story_bible_content_hash(story_bible))
             and review.get("script_hash") == script_content_hash(script)):
         reclassified = dict(review)
@@ -446,6 +497,10 @@ STORY_BIBLE_HASH_FIELDS = tuple(dict.fromkeys([
 # Rules about how a scene is narrated (order, repetition, wording) only exist
 # once there is a script; the Story Bible is judged on design-level logic.
 STORY_BIBLE_RULES = (
+    "EVENT_TIMELINE_CONTRADICTION",
+    "RELATIONSHIP_TIMELINE_CONTRADICTION",
+    "DOCUMENT_LIFECYCLE_CONTRADICTION",
+    "UNFOUNDED_EVIDENCE_LEAP",
     "CHARACTER_IDENTITY_CONTRADICTION",
     "TOPIC_TRUTH_DRIFT",
     "POV_KNOWLEDGE_VIOLATION",
@@ -460,6 +515,10 @@ STORY_BIBLE_RULES = (
 
 # Only these rules block Story Bible approval when flagged with high confidence.
 STORY_BIBLE_BLOCKING_RULES = {
+    "EVENT_TIMELINE_CONTRADICTION",
+    "RELATIONSHIP_TIMELINE_CONTRADICTION",
+    "DOCUMENT_LIFECYCLE_CONTRADICTION",
+    "UNFOUNDED_EVIDENCE_LEAP",
     "CHARACTER_IDENTITY_CONTRADICTION",
     "TOPIC_TRUTH_DRIFT",
     "INFEASIBLE_EVIDENCE",

@@ -23,7 +23,7 @@ logger = logging.getLogger("VieNeu.ScriptQC")
 
 SERIES_BIBLE_PATH = Path("script_factory/series_bible.json")
 STORY_FORMULA_PATH = Path("script_factory/story_formula_v1.json")
-SCRIPT_QC_VERSION = "script-qc-v5.1-deep-audit"
+SCRIPT_QC_VERSION = "script-qc-v5.3-knowledge-source-bound"
 
 
 def _vietnamese_integer_words(value: int) -> Optional[str]:
@@ -1816,6 +1816,7 @@ class ScriptQCEngine:
             review = review_script_logic(
                 script, story_bible,
                 lambda system, prompt: complete_json(system, prompt, model=model),
+                _require_grounding=bool(getattr(self.provider, 'requires_grounded_review', False)),
             )
         except Exception as exc:
             logger.warning(f"[ScriptQC] Semantic review failed for {script.episode_id}: {exc}")

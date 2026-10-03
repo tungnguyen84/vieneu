@@ -31,6 +31,18 @@ VALID_ACRONYMS = {
     "TV", "SIM", "GPS", "OK", "DNA", "AI", "UBND", "TP", "TP.", "VNĐ", "VND", "USD"
 }
 
+_STRAY_CONSONANT = re.compile(r"(?<![\w])([bcdfghjklmnpqrstvwxz])\s+(?=[a-zđáàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵ])")
+
+
+def _stray_consonants(text: str):
+    for match in _STRAY_CONSONANT.finditer(text):
+        # Whitespace is not a barrier between a quantity and its unit.
+        # Preserve SI units and identifiers; uncertain text belongs to review.
+        before = text[:match.start()].rstrip()
+        if re.search(r"\d(?:[.,]\d+)?$", before) or match.group(1) in VALID_ACRONYMS:
+            continue
+        yield match
+
 _GARBLED_PHRASES = [
     (re.compile(r"\bchợ\s+khựng\b", re.IGNORECASE), "chợt khựng"),
     (re.compile(r"\b(?:điếu\s+thuốc\s+)?tút\s+dở\b", re.IGNORECASE), lambda m: m.group(0).replace("tút dở", "hút dở").replace("Tút dở", "Hút dở")),
@@ -82,7 +94,8 @@ def clean_garbled_vietnamese(text: str) -> str:
 
     # 4. Stray lowercase single consonants (e.g. 'những bí mật r âm ỉ' -> 'những bí mật âm ỉ')
     # Must not match numbers like '10 m', or uppercase letters like 'A', or loanwords.
-    cleaned = re.sub(r"(?<![\d\w])([bcdfghjklmnpqrstvwxz])\s+([a-záàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵ])", r"\2", cleaned)
+    for match in reversed(list(_stray_consonants(cleaned))):
+        cleaned = cleaned[:match.start()] + cleaned[match.end():]
 
     # Clean double spaces
     cleaned = re.sub(r"[ ]{2,}", " ", cleaned)
@@ -111,8 +124,7 @@ def find_garbled_vietnamese_issues(text: str) -> List[Dict[str, str]]:
         })
 
     # 2. Stray single consonants
-    stray_pattern = re.compile(r"(?<![\d\w])([bcdfghjklmnpqrstvwxz])\s+([a-záàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵ])")
-    for m in stray_pattern.finditer(text):
+    for m in _stray_consonants(text):
         issues.append({
             "type": "GARBLED_VIETNAMESE",
             "matched": m.group(0),

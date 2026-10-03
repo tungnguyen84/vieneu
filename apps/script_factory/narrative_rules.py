@@ -45,6 +45,8 @@ NARRATIVE_LOGIC_RULES = [
         "POV_KNOWLEDGE_VIOLATION",
         "Câu chuyện là lá thư của nhân vật chính gửi về chương trình. Người kể chỉ biết điều nhân vật chính "
         "tận mắt thấy, tận tai nghe, đọc được trong tài liệu, hoặc được nhân vật khác TỰ NÓI RA trong đối thoại. "
+        "Nghe tên không đồng nghĩa biết khuôn mặt: nhận ra một người trong ảnh phải có cảnh từng gặp hoặc chú thích ảnh rõ tên. "
+        "Không cho nhân vật hỏi như đã biết người yêu cũ trước khi nguồn thông tin ấy được tiết lộ; Bible biết không có nghĩa nhân vật đã biết. "
         "Kế hoạch, động cơ kín hay toan tính của nhân vật khác chỉ được xác nhận khi chính "
         "họ thú nhận bằng lời thoại hoặc có tài liệu ghi lại. Khi bằng chứng chỉ cho phép suy luận, được kể nhận định "
         "của nhân vật chính bằng những cách như 'cô nghĩ', 'qua những tin nhắn, cô hiểu rằng'; phải gắn với hành vi "

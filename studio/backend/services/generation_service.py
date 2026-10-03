@@ -825,7 +825,7 @@ class GenerationService:
             revised_data["provider_name"] = getattr(provider, "provider_name", None) or getattr(revised_script, "provider_name", None)
             revised_data["requested_model"] = effective_req
             revised_data["actual_model"] = actual_m
-            revised_data["prompt_version"] = "script-v3.6-grounded-repair"
+            revised_data["prompt_version"] = "script-v3.7-event-knowledge-repair"
             revised_data["generated_at"] = time.time()
         _assert_story_snapshot(story_path, source_story_hash, story_bible.generation_request_id)
         current_script_data = json.loads(script_path.read_text(encoding='utf-8'))
