@@ -97,7 +97,11 @@ class ScriptWriter:
                 script.segments = trimmed
                 for index, segment in enumerate(script.segments, start=1):
                     segment.id = f"{index:03d}"
-                script.total_words = sum(len(seg.text.split()) for seg in script.segments)
+
+            from apps.script_factory.vietnamese_cleaner import clean_garbled_vietnamese
+            for seg in script.segments:
+                seg.text = clean_garbled_vietnamese(seg.text)
+            script.total_words = sum(len(seg.text.split()) for seg in script.segments)
 
             lat = time.time() - t0
             self.cost_ctrl.record_operation(

@@ -115,6 +115,9 @@ def parse_tagged_lines(raw: str) -> List[Dict[str, Any]]:
         elif segments and not stripped.startswith("#"):
             # A wrapped line belongs to the segment above it.
             segments[-1]["text"] = f"{segments[-1]['text']} {stripped}"
+    from apps.script_factory.vietnamese_cleaner import clean_garbled_vietnamese
+    for seg in segments:
+        seg["text"] = clean_garbled_vietnamese(seg["text"])
     return segments
 
 

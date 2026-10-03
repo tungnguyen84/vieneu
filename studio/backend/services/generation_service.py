@@ -720,7 +720,9 @@ class GenerationService:
                 pass
 
         invalidate_script_approval(project_id, PROJECTS_DIR)
-        total_words = script.total_words or sum(len(s.text.split()) for s in script.segments)
+        script.total_words = sum(len(s.text.split()) for s in script.segments)
+        total_words = script.total_words
+        script_dict["total_words"] = total_words
         return {
             "script": script_dict,
             "qc_report": qc_dict,
@@ -768,14 +770,14 @@ class GenerationService:
         qc_engine = ScriptQCEngine(provider=provider, cost_controller=self.cost_ctrl)
         rev_manager = AutoRevisionManager(provider=provider, cost_controller=self.cost_ctrl, qc_engine=qc_engine)
 
-        qc_report = qc_engine.run_qc(script=script, story_bible=story_bible)
-        starting_round = script.revision_round
         effective_req_model = (
             model_id
             or getattr(provider, "requested_model", None)
             or getattr(provider, "default_model", None)
             or original_script_data.get("requested_model")
         )
+        qc_report = qc_engine.run_qc(script=script, story_bible=story_bible, model=effective_req_model)
+        starting_round = script.revision_round
         if qc_report.status == "PASS":
             revised_script, final_qc = script, qc_report
             revised_script.status = "QC_PASS"

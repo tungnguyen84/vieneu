@@ -94,6 +94,7 @@ class AutoRevisionManager:
                 revised_script.writer_strategy = script.writer_strategy
                 revised_script.requested_model = effective_req_model
                 revised_script.actual_model = actual_m
+                revised_script.total_words = sum(len(s.text.split()) for s in revised_script.segments)
             lat = time.time() - t0
             self.cost_ctrl.record_operation(
                 operation="revise_script",

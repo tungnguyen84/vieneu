@@ -301,10 +301,26 @@ class ScriptQCEngine:
                         key_words = [w for w in re.findall(r"\b\w{3,}\b", val_lower) if w not in ["người", "những", "trong", "được", "không", "thực", "hiện"]]
                         match_count = sum(1 for kw in key_words if kw in all_text.lower())
                         found = (match_count / max(1, len(key_words))) >= 0.6
-                    if not found and ("năm" in fact.description.lower() or "year" in fact.field.lower() or "timeline" in fact.field.lower()):
+                    if not found and ("năm" in fact.description.lower() or "year" in fact.field.lower() or "timeline" in fact.field.lower() or "năm" in fact.field.lower() or "tuổi" in fact.field.lower()):
+                        from apps.script_factory.vietnamese_cleaner import year_to_vietnamese_words, num_to_vietnamese_words
                         desc_years = set(re.findall(r"\b(?:19|20)\d{2}\b", fact.description))
-                        if desc_years and len(desc_years & set(re.findall(r"\b(?:19|20)\d{2}\b", all_text))) >= min(2, len(desc_years)):
-                            found = True
+                        if desc_years:
+                            matched_years = 0
+                            for yr in desc_years:
+                                yr_variants = year_to_vietnamese_words(yr)
+                                if any(yv.lower() in all_text.lower() for yv in yr_variants):
+                                    matched_years += 1
+                            if matched_years >= min(2, len(desc_years)):
+                                found = True
+                        if not found:
+                            val_digits_match = re.search(r"\b(\d+)\b", val)
+                            if val_digits_match:
+                                num_val = int(val_digits_match.group(1))
+                                word_variants = num_to_vietnamese_words(num_val)
+                                unit_suffix = "năm" if "năm" in val_lower else ("tuổi" if "tuổi" in val_lower else "")
+                                if any(f"{wv} {unit_suffix}".strip() in all_text.lower() for wv in word_variants):
+                                    found = True
+
                     if not found:
                         fact_conflicts.append({
                             "fact_id": fact.fact_id,
@@ -314,6 +330,33 @@ class ScriptQCEngine:
                             "description": f"Fact conflict: Expected '{fact.value}' for {fact.field} missing or contradicted."
                         })
                         revision_requests.append(f"Correct relationship/fact conflict: clarify that {fact.field} is {fact.value}.")
+
+        # 1.1 EVENT-BASED TIMELINE & CONTINUITY AUDIT
+        from apps.script_factory.timeline_qc import audit_event_timeline, audit_evidence_scope
+        tl_conflicts, tl_evidence_issues, tl_requests = audit_event_timeline(script, story_bible)
+        fact_conflicts.extend(tl_conflicts)
+        evidence_issues.extend(tl_evidence_issues)
+        revision_requests.extend(tl_requests)
+
+        # 1.2 EVIDENCE SCOPE VS CONCLUSION AUDIT
+        scope_issues, scope_requests = audit_evidence_scope(script, story_bible)
+        evidence_issues.extend(scope_issues)
+        revision_requests.extend(scope_requests)
+
+        # 1.3 DETERMINISTIC VIETNAMESE LANGUAGE QUALITY (GARBLED_VIETNAMESE)
+        from apps.script_factory.vietnamese_cleaner import find_garbled_vietnamese_issues
+        for s in script.segments:
+            v_issues = find_garbled_vietnamese_issues(s.text)
+            for vi in v_issues:
+                evidence_issues.append({
+                    "segment_id": s.id,
+                    "excerpt": s.text[:80],
+                    "rule": "GARBLED_VIETNAMESE",
+                    "severity": "CRITICAL",
+                    "recommended_action": "Sửa lại từ ngữ tiếng Việt tự nhiên, không dùng số tiếng Anh trước đơn vị, không để phụ âm đơn lẻ hoặc âm tiết lặp.",
+                    "message": f"Phân đoạn [{s.id}] chứa lỗi tiếng Việt: {vi['reason']}",
+                })
+                revision_requests.append(f"Sửa lỗi tiếng Việt ở phân đoạn [{s.id}]: {vi['reason']}")
 
         # 2. MAJOR REVEAL RULE AUDIT
         # No audience address in Major Reveal block

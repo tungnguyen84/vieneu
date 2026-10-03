@@ -115,8 +115,30 @@ NARRATIVE_LOGIC_RULES = [
     ),
     (
         "GARBLED_VIETNAMESE",
-        "Không có từ sai chính tả hay thành ngữ bị viết méo (ví dụ 'đầu ối tay kề' thay cho 'đầu ấp tay gối', "
-        "'nặng nhề', 'nấp ló'); TTS sẽ đọc nguyên văn nên mỗi lỗi đều lộ ra trong audio.",
+        "Không có từ sai chính tả, từ đếm tiếng Anh trước đơn vị tiếng Việt (ví dụ 'thirty-two tuổi'), "
+        "phụ âm đơn lẻ (ví dụ 'r âm ỉ'), âm tiết bị lặp (ví dụ 'xoayay'), hoặc lỗi nghe/chính tả audio (ví dụ 'chợ khựng', 'tút dở'). "
+        "TTS sẽ đọc nguyên văn nên mọi lỗi ngữ âm đều lộ rõ trong audio.",
+    ),
+    (
+        "EVENT_TIMELINE_CONTRADICTION",
+        "Quan hệ nhân vật — sự kiện — thời điểm phải trùng khớp tuyệt đối với Story Bible timeline. "
+        "Không được kể Nam hiến thận năm 2018 khi Story Bible ghi năm 2019; không đổi năm các sự kiện then chốt.",
+    ),
+    (
+        "RELATIONSHIP_TIMELINE_CONTRADICTION",
+        "Mối quan hệ nhân vật phải nhất quán với lịch sử chia tay/tái hợp trong Story Bible timeline. "
+        "Không được khẳng định mối quan hệ 'chưa bao giờ kết thúc' khi Story Bible ghi rõ hai người đã chia tay nhiều năm trước, "
+        "trừ khi phân đoạn nêu rõ đó là lời ngụy biện/tự lừa dối của nhân vật.",
+    ),
+    (
+        "DOCUMENT_LIFECYCLE_CONTRADICTION",
+        "Thứ tự tiếp cận và tiêu hủy tài liệu (di chúc, hợp đồng) phải mạch lạc: Nếu một tài liệu đã bị tiêu hủy "
+        "ngay sau khi một người mất, các nhân vật khác không thể cùng mở bản di chúc thật đó sau tang lễ mà không làm rõ bản nào bị hủy.",
+    ),
+    (
+        "UNFOUNDED_EVIDENCE_LEAP",
+        "Kết luận phải tương xứng với nội dung bằng chứng được kể: cuốn sổ lịch trình chưa đọc biên bản hiến thì không được "
+        "khẳng định ngay danh tính người hiến; bức ảnh gia đình chỉ là manh mối gợi mở cảm xúc, không được dùng để 'chứng minh hoàn toàn' bản chất đạo đức.",
     ),
     (
         "IMPLAUSIBLE_BEHAVIOR",

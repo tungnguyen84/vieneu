@@ -159,8 +159,8 @@ def _get_api_key(explicit_key: Optional[str] = None) -> str:
 # same project shares that project's buckets. So capacity grows by falling back
 # across models and by rotating keys that belong to different projects.
 GEMINI_FLASH_CHAIN = [
-    "gemini-2.5-flash", "gemini-3.5-flash", "gemini-3-flash-preview", "gemini-flash-latest",
-    "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash",
+    "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash",
+    "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-flash-latest",
 ]
 # Lite models write passable prose but cannot be trusted as reviewers.
 GEMINI_LITE_CHAIN = [
@@ -1477,7 +1477,7 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
         # converging. The chain still falls back if that model becomes unusable.
         result = self._call_generate_content(
             prompt=prompt, model=model or self._sticky_review_model or None, response_json=True,
-            system_instruction=system_instruction, temperature=0.2, thinking_budget=4096, allow_lite_models=True,
+            system_instruction=system_instruction, temperature=0.2, thinking_budget=4096, allow_lite_models=False,
         )
         self._sticky_review_model = self.last_used_model
         return result

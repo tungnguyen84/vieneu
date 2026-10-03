@@ -1172,6 +1172,8 @@ def _build_unfinished_setup_review(problem):
     'Phong bì đã được hứa là đáp án nhưng bị bỏ quên đến hết truyện.',
     'Phong bì đã được hứa là đáp án nhưng phần reveal vẫn không mở thư và không giải thích khoản tiền.',
     'Mặc dù phân đoạn cuối kể Lan rời đi, không có cảnh mở phong bì và không trả lời khoản tiền mất tích.',
+    'Phong bì ở phân đoạn 001 bị lãng quên đến cuối truyện.',
+    'Phong bì bị lãng quên; phân đoạn 002 kết thúc câu chuyện thay vì giải đáp nguồn tiền.',
 ])
 def test_anchored_unresolved_setup_must_not_disappear(problem):
     """Deep audit P1: UNRESOLVED_SETUP must never be dropped due to keywords like 'phần reveal' when payoff is missing."""

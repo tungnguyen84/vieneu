@@ -23,7 +23,7 @@ logger = logging.getLogger("VieNeu.SemanticReview")
 
 # call_llm(system_instruction, prompt) -> (raw_text, input_tokens, output_tokens)
 LLMCall = Callable[[str, str], Tuple[str, int, int]]
-SEMANTIC_REVIEW_VERSION = "semantic-v10-deep-grounded-policy"
+SEMANTIC_REVIEW_VERSION = "semantic-v11-strict-grounded-audit"
 
 REVIEW_CALIBRATION = (
     "NGƯỠNG BÁO LỖI: chỉ báo mâu thuẫn hoặc thiếu mắt xích làm người nghe không hiểu được sự kiện, "
@@ -153,6 +153,107 @@ def build_prompt(script: FullScript, story_bible: StoryBible) -> str:
     )
 
 
+def _has_verified_payoff(
+    item: Dict[str, Any],
+    seg_id: str,
+    quote: str,
+    by_id: Dict[str, Any],
+    story_bible: Optional[StoryBible] = None,
+) -> bool:
+    """Strictly verify if an UNRESOLVED_SETUP finding is unfounded due to verified concrete payoff."""
+    problem_text = str(item.get("problem", "")).lower()
+    fix_text = str(item.get("fix", "")).lower()
+
+    # 1. Negative or unfulfilled indicators: if present, the reviewer is explicitly asserting
+    # that the setup/prop/clue was forgotten, unresolved, or missing its payoff. NEVER DROP!
+    unresolved_markers = [
+        "lãng quên", "bị quên", "bỏ quên", "bị bỏ", "không mở", "chưa mở",
+        "không giải thích", "chưa giải thích", "không làm rõ", "chưa làm rõ",
+        "không giải quyết", "chưa giải quyết", "không có", "chưa có",
+        "không trả lời", "chưa trả lời", "thay vì", "thiếu", "vẫn không", "vẫn chưa",
+        "chưa được", "không được giải đáp", "chưa giải đáp", "bỏ lửng", "chưa đọc",
+        "chưa đối chiếu", "không đối chiếu"
+    ]
+    if any(marker in problem_text for marker in unresolved_markers):
+        return False
+    if any(fix_marker in fix_text for fix_marker in ["bổ sung", "thêm cảnh", "cần mở", "cần giải thích"]):
+        return False
+
+    # 2. To dismiss, the reviewer must affirmatively state that the payoff was resolved/handled
+    affirmative_markers = [
+        "đã được giải quyết", "đã giải quyết", "đã được làm rõ", "đã làm rõ",
+        "đã mở", "đã giải thích", "đã đối chiếu", "được giải quyết ở", "đã hé lộ"
+    ]
+    if not any(aff in problem_text for aff in affirmative_markers):
+        return False
+
+    # 3. Must reference a target segment that is strictly LATER than the setup segment
+    target_sids = set()
+    for m in re.finditer(r'(?:phân đoạn|đoạn|segment)\s*\[?(\d+)\]?', problem_text):
+        target_sids.add(m.group(1).zfill(3))
+    for r_id in (item.get("related_segment_ids") or []):
+        clean_r = clean_segment_id(r_id, by_id)
+        if clean_r:
+            target_sids.add(clean_r)
+
+    later_sids = [sid for sid in target_sids if sid in by_id and int(sid) > int(seg_id)]
+    if not later_sids:
+        return False
+
+    # 4. Extract concrete prop / clue nouns from setup quote.
+    # Exclude character names, pronouns, and general stop words.
+    excluded_names = {
+        "minh", "lan", "nam", "vân", "trang", "hải", "hương", "tú", "ngọc", "hoàng",
+        "bình", "quân", "an", "hà", "linh", "phong", "nga", "đức", "khoa", "ba", "tư"
+    }
+    if story_bible:
+        if isinstance(getattr(story_bible, "protagonist", None), dict):
+            for w in re.findall(r"\w+", story_bible.protagonist.get("name", "").lower()):
+                excluded_names.add(w)
+        for sc in (getattr(story_bible, "supporting_characters", None) or []):
+            if isinstance(sc, dict):
+                for w in re.findall(r"\w+", sc.get("name", "").lower()):
+                    excluded_names.add(w)
+
+    stopwords = {
+        "tôi", "chúng", "chúng tôi", "anh", "chị", "em", "cô", "chú", "bác", "ông", "bà", "họ",
+        "người", "nhà", "cửa", "ngày", "đêm", "lúc", "khi", "sau", "trước", "bước", "đến", "đi",
+        "vào", "ra", "với", "trong", "ngoài", "được", "bị", "nhận", "cuộc", "sống", "mới",
+        "bắt", "đầu", "kết", "thúc", "câu", "chuyện", "phân", "đoạn", "ở", "tại", "là", "và",
+        "của", "cho", "về", "đã", "sẽ", "đang", "nhưng", "mà", "thì", "rồi", "này", "đó", "kia",
+        "ấy", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín", "mười", "từ"
+    }
+
+    quote_lower = quote.lower()
+    known_props = [
+        "phong bì niêm phong", "phong bì", "lá thư", "bức thư", "khoản tiền", "sổ tay",
+        "cuốn sổ", "di chúc", "bản hợp đồng", "hợp đồng", "chìa khóa", "hồ sơ bệnh án",
+        "hồ sơ", "bản ghi âm", "bức ảnh", "tấm ảnh", "giấy khám sức khỏe", "chiếc hộp",
+        "hộp gỗ", "vết sẹo", "vé tàu", "vali", "mẩu giấy", "tờ giấy"
+    ]
+    concrete_props = [p for p in known_props if p in quote_lower]
+    meaningful_words = [
+        w for w in re.findall(r"\b\w{4,}\b", quote_lower)
+        if w not in excluded_names and w not in stopwords
+    ]
+
+    payoff_actions = [
+        "mở", "bóc", "đọc", "xem", "kiểm tra", "đối chiếu", "xác nhận",
+        "thú nhận", "thừa nhận", "sự thật", "giải thích", "làm rõ", "phát hiện", "tiết lộ"
+    ]
+
+    for sid in later_sids:
+        target_text = by_id[sid].text.lower()
+        prop_found = any(p in target_text for p in concrete_props) or (
+            not concrete_props and sum(1 for w in meaningful_words if w in target_text) >= 2
+        )
+        action_found = any(act in target_text for act in payoff_actions)
+        if prop_found and action_found:
+            return True
+
+    return False
+
+
 def review_script_logic(
     script: FullScript,
     story_bible: StoryBible,
@@ -209,30 +310,9 @@ def review_script_logic(
             # part of the format, not a second hook or a viewpoint violation.
             continue
         if rule == 'UNRESOLVED_SETUP':
-            problem_text = str(item.get('problem', '')).lower()
-            # If the reviewer asserts a missing payoff, unrevealed prop, or unaddressed clue, KEEP the finding!
-            has_negation = any(neg in problem_text for neg in [
-                'không', 'chưa', 'vẫn không', 'vẫn chưa', 'bỏ quên', 'bị bỏ', 'thiếu',
-                'không mở', 'không giải thích', 'chưa giải quyết', 'chưa làm rõ',
-                'không được', 'chưa có', 'chưa đọc', 'không trả lời'
-            ])
-            if has_negation:
-                pass  # Genuine unresolved setup; do not skip!
-            else:
-                # Only skip if the reviewer explicitly asserts that it WAS resolved in a later segment,
-                # AND that later segment actually contains the key entity from quote.
-                resolved_in_later = False
-                later_match = re.search(r'(?:phân đoạn|đoạn|segment)\s*\[?(\d+)\]?', problem_text)
-                if later_match:
-                    target_sid = later_match.group(1).zfill(3)
-                    target_seg = by_id.get(target_sid)
-                    if target_seg:
-                        quote_words = [w for w in re.findall(r'\w+', quote) if len(w) >= 3]
-                        if any(w.lower() in target_seg.text.lower() for w in quote_words):
-                            resolved_in_later = True
-                if resolved_in_later:
-                    logger.info('[SemanticReview] Skipping UNRESOLVED_SETUP on %s: verified payoff in later segment (%s)', seg_id, item.get('problem'))
-                    continue
+            if _has_verified_payoff(item, seg_id, quote, by_id, story_bible):
+                logger.info('[SemanticReview] Skipping UNRESOLVED_SETUP on %s: verified payoff in later segment (%s)', seg_id, item.get('problem'))
+                continue
         related = [
             r for r in (clean_segment_id(raw_id, by_id) for raw_id in (item.get("related_segment_ids") or []))
             if r in by_id and r != seg_id

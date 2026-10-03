@@ -315,6 +315,9 @@ def revise_with_ai(
         raise
     script = apply_targeted_repairs(script, story_bible, qc_report, preserve_segment_ids=rewritten,
                                     allow_prose_templates=False)
+    from apps.script_factory.vietnamese_cleaner import clean_garbled_vietnamese
+    for s in script.segments:
+        s.text = clean_garbled_vietnamese(s.text)
     script.total_words = sum(len(s.text.split()) for s in script.segments)
     script.updated_at = time.time()
     return script, in_tok, out_tok

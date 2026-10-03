@@ -340,8 +340,8 @@ class MockScriptAIProvider(ScriptAIProvider):
         ]
         opening_hook = openers[seed]
 
-        fact_vals = [f.value for f in story_bible.critical_facts if f.value]
-        fact_phrase = ", ".join(fact_vals) if fact_vals else "100.000.000 VND và 10 năm"
+        safe_facts = [f.value for f in story_bible.critical_facts if f.value and f.field in ("timeline_years", "money_amount", "timeline", "money")]
+        fact_phrase = ", ".join(safe_facts) if safe_facts else "100.000.000 VND và 10 năm"
 
         # Act 1: HOOK (Segs 001 - 005)
         segments.append(ScriptSegment(id="001", speaker=host_id, text=f"{opening_hook} Một bí mật gia đình tưởng chừng đã vĩnh viễn bị chôn vùi nay bất ngờ lộ diện.", delivery_profile="HOOK", importance="high", speed=0.98))
@@ -350,9 +350,12 @@ class MockScriptAIProvider(ScriptAIProvider):
         segments.append(ScriptSegment(id="004", speaker=host_id, text="Chào mừng quý vị và các bạn đến với Sau Cánh Cửa.", delivery_profile="NORMAL", importance="normal", speed=1.01))
         segments.append(ScriptSegment(id="005", speaker=host_id, text=f"Tôi là {host_name}, người sẽ đồng hành và cùng quý vị lật mở từng trang nhật ký đời thực trong câu chuyện ngày hôm nay.", delivery_profile="NORMAL", importance="normal", speed=1.01))
 
+        rel_fact = next((f.value for f in story_bible.critical_facts if f.field == "relationship_nature" and f.value), "")
+
         # Act 2: SETUP & DAILY LIFE (Segs 006 - 016)
+        rel_clause = f"mối quan hệ {rel_fact}" if rel_fact else "tổ ấm nhỏ"
         setup_lines = [
-            f"Theo lời {protag} chia sẻ trong lá thư gửi về chương trình, tổ ấm nhỏ từ trước đến nay luôn được chòm xóm xung quanh quý mến bởi sự thuận hòa, êm ấm và nề nếp gia phong suốt hàng chục năm qua.",
+            f"Theo lời {protag} chia sẻ trong lá thư gửi về chương trình, {rel_clause} từ trước đến nay luôn được chòm xóm xung quanh quý mến bởi sự thuận hòa, êm ấm và nề nếp gia phong suốt hàng chục năm qua.",
             f"Mỗi thành viên trong nhà đều có một vị trí vững chãi, luôn quan tâm, đùm bọc lẫn nhau trong từng bữa cơm chiều sau những giờ lao động miệt mài.",
             f"Thế nhưng, đằng sau sự bình yên phẳng lặng ấy, dường như luôn tồn tại một khoảng lặng mà không ai dám chạm vào trong những cuộc chuyện trò sum họp.",
             f"Đó là những ánh mắt lảng tránh mỗi khi có người vô tình nhắc lại những năm tháng xưa cũ, hay những chuyến đi xa bất chợt mà không rõ nguyên cớ.",
@@ -454,8 +457,8 @@ class MockScriptAIProvider(ScriptAIProvider):
             sid = f"{idx + 59:03d}"
             segments.append(ScriptSegment(id=sid, speaker=host_id, text=text, delivery_profile="NORMAL", importance="normal", speed=1.01))
 
-        # Act 7: SECOND REVEAL & DEEPER TRUTH (Scene 39 / Segs 065 - 074)
-        segments.append(ScriptSegment(id="065", speaker=host_id, text=f"Bên dưới tập biên bản tài chính, một bệnh án cũ khác tiếp tục hé lộ nguyên nhân sâu xa thứ hai: {story_bible.reveal_2}", delivery_profile="REVEAL", importance="critical", speed=0.92))
+        # Act 7: SECOND INVESTIGATION & DEEPER CLUE (Scene 39 / Segs 065 - 074)
+        segments.append(ScriptSegment(id="065", speaker=host_id, text=f"Bên dưới tập biên bản tài chính, một bệnh án cũ khác tiếp tục hé lộ nguyên nhân sâu xa mà gia đình đã che giấu suốt nhiều năm qua.", delivery_profile="MYSTERY", importance="high", speed=0.94))
         
         reveal2_lines = [
             f"Người thân năm ấy thậm chí đã phải chủ động hoãn lại ca phẫu thuật quan trọng của chính mình vì nguồn tiền mặt lúc đó trong gia đình chỉ đủ cứu duy nhất một người.",
@@ -472,8 +475,9 @@ class MockScriptAIProvider(ScriptAIProvider):
             sid = f"{idx + 66:03d}"
             segments.append(ScriptSegment(id=sid, speaker=host_id, text=text, delivery_profile="NORMAL", importance="normal", speed=1.01))
 
-        # Act 8: EMOTIONAL PAYOFF & CONFRONTATION (Segs 075 - 084)
+        # Act 8: SECOND REVEAL & EMOTIONAL CONFRONTATION (Segs 075 - 084)
         payoff_lines = [
+            f"Và chính tại đây, sự thật gốc rễ thứ hai được phơi bày: {story_bible.reveal_2}",
             f"Cánh cửa căn nhà nhỏ mở ra khi ánh đèn vàng ấm áp trong phòng khách vừa bật sáng. Người thân trong gia đình đang ngồi cặm cụi xếp lại những tấm áo cũ bên cạnh bàn ăn quen thuộc.",
             f"Khi {protag} bước vào, đặt tập hồ sơ lên bàn và gọi một tiếng nghẹn ngào, người thân khẽ dừng tay rồi ngước nhìn bằng ánh mắt hiền từ.",
             f"Không có lời trách móc hay giận hờn, chỉ có cái nắm tay thật chặt giữa hai thế hệ sau mười năm giữ kín nỗi niềm.",
