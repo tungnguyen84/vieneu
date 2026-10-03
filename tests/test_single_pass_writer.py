@@ -200,3 +200,32 @@ def test_write_single_pass_keeps_complete_episode_slightly_under_target():
     """EP2009: a coherent 78-line, 1,879-word episode was discarded for a seamed two-part one."""
     segments, _, _ = write_single_pass(lambda system, prompt: (_episode(60), 1, 1), "sys", "prompt")
     assert segments is not None and len(segments) == 64
+
+
+def test_write_single_pass_prunes_distant_story_restart():
+    """When a model echoes draft 1 and then draft 2, or restarts the story,
+    write_single_pass detects the restart and extracts the complete draft."""
+    first_draft = [
+        '[HOOK] "Lúc 2 giờ sáng, chuông điện thoại reo dồn dập." Vân viết.',
+        '[NORMAL] Chào mừng quý vị và các bạn đến với Sau Cánh Cửa.',
+    ] + [f"[NORMAL] Chi tiết bước đi số {i} của Vân khi theo dõi sự việc." for i in range(50)] + [
+        '[REVEAL] Hóa ra người chồng đang che giấu một mối quan hệ khác.',
+        '[COMMENT] Lời chiêm nghiệm về niềm tin trong hôn nhân.',
+        '[QUESTION] Bạn sẽ làm gì khi phát hiện sự thật?',
+    ]
+    second_draft = [
+        '[HOOK] "Lúc 2 giờ sáng, chuông điện thoại reo dồn dập." Vân viết lại.',
+        '[NORMAL] Chào mừng quý vị và các bạn đến với Sau Cánh Cửa.',
+    ] + [f"[NORMAL] Chi tiết bước đi số {i} mở rộng sâu sắc hơn của Vân khi theo dõi sự việc." for i in range(55)] + [
+        '[REVEAL] Hóa ra người chồng đang che giấu một mối quan hệ khác tại công sở.',
+        '[COMMENT] Lời chiêm nghiệm về niềm tin trong hôn nhân gia đình.',
+        '[QUESTION] Bạn sẽ làm gì khi đối diện sự thật?',
+        f'[ENDING] {SIGNOFF}',
+    ]
+    combined_raw = "\n".join(first_draft + second_draft)
+    segments, _, _ = write_single_pass(lambda sys, prompt: (combined_raw, 10, 20), "sys", "prompt")
+    assert segments is not None
+    assert len(segments) == len(second_draft)
+    assert segments[-1]["delivery_profile"] == "ENDING"
+    assert sum(1 for s in segments if "Chào mừng quý vị" in s["text"]) == 1
+

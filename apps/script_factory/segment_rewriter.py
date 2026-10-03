@@ -146,6 +146,14 @@ def build_prompt(script: FullScript, story_bible: StoryBible, flagged: Dict[str,
         "- Không thêm lời chào kết hay lời cảm ơn khán giả.\n"
         "- Khi sửa lỗi người kể biết nội tâm nhân vật khác, hãy chuyển thành câu thoại nhân vật đó tự nói ra "
         "hoặc thành phỏng đoán có chủ thể ('Tuấn đoán…'); KHÔNG thêm cảnh mở lại, lục lại vật chứng đã xem.\n"
+        "- TÍNH LIÊN TỤC VÀ BẰNG CHỨNG (CONTINUITY): Khi sửa một phân đoạn liên quan đến bằng chứng, tên nhân vật hoặc đạo cụ, "
+        "BẮT BUỘC phải đảm bảo tính nhất quán với toàn bộ mạch kịch bản. Nếu một đạo cụ/bằng chứng mới được thiết lập (hoặc thay thế), "
+        "không để các phân đoạn sau nhắc tới như thể vẫn còn vật cũ hoặc ngược lại. Tên người lạ hoặc vật phẩm phải được giới thiệu "
+        "trước khi nhân vật gọi tên.\n"
+        "- SETUP & PAYOFF: Nếu phân đoạn được sửa liên quan đến một manh mối/vật phẩm gieo từ đầu truyện (setup), phải bảo đảm "
+        "có hành động mở ra, kiểm chứng hoặc kết luận rõ ràng, không để lửng lơ hoặc mâu thuẫn.\n"
+        "- DỰNG CẢNH SỐNG ĐỘNG: Cảnh đối chất, phát hiện manh mối hoặc chia tay phải có hành động cụ thể và lời thoại trực tiếp "
+        "trong ngoặc kép thay vì chỉ tóm tắt diễn biến.\n"
         'Trả về JSON: {"segments": [{"id": "<id>", "text": "<văn bản mới>"}]}'
     )
 

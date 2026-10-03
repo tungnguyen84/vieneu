@@ -1135,4 +1135,160 @@ def test_real_repair_loop_records_current_requested_model_through_real_manager(t
     assert saved.get("generation_request_id") != "script-req-222"
 
 
+def _build_unfinished_setup_review(problem):
+    import json
+    from apps.script_factory.semantic_review import review_script_logic
+    script = FullScript(
+        episode_id='UNRESOLVED',
+        title='Bức thư bị bỏ quên',
+        host={'id': 'MINH'},
+        segments=[
+            ScriptSegment(id='001', text='Lan nhận được phong bì niêm phong, bên trong hứa chứa lời giải thích về khoản tiền mất tích.', delivery_profile='HOOK'),
+            ScriptSegment(id='002', text='Lan bước ra khỏi nhà và bắt đầu cuộc sống mới.'),
+            ScriptSegment(id='003', text='Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.', delivery_profile='ENDING'),
+        ]
+    )
+    issue = {
+        'rule': 'UNRESOLVED_SETUP',
+        'segment_id': '001',
+        'quote': script.segments[0].text,
+        'problem': problem,
+        'fix': 'Bổ sung cảnh đọc thư và giải thích khoản tiền.',
+        'confidence': 'high'
+    }
+    calls = []
+    def reviewer(system, prompt):
+        calls.append(prompt)
+        return json.dumps({'issues': [issue]}, ensure_ascii=False), 10, 20
+    review = review_script_logic(
+        script,
+        StoryBible(episode_id=script.episode_id, title=script.title, protagonist={'name': 'Lan'}),
+        reviewer
+    )
+    return review, len(calls)
+
+
+@pytest.mark.parametrize('problem', [
+    'Phong bì đã được hứa là đáp án nhưng bị bỏ quên đến hết truyện.',
+    'Phong bì đã được hứa là đáp án nhưng phần reveal vẫn không mở thư và không giải thích khoản tiền.',
+    'Mặc dù phân đoạn cuối kể Lan rời đi, không có cảnh mở phong bì và không trả lời khoản tiền mất tích.',
+])
+def test_anchored_unresolved_setup_must_not_disappear(problem):
+    """Deep audit P1: UNRESOLVED_SETUP must never be dropped due to keywords like 'phần reveal' when payoff is missing."""
+    review, calls = _build_unfinished_setup_review(problem)
+    assert any(i['rule'] == 'UNRESOLVED_SETUP' for i in review['issues']), (
+        f"UNRESOLVED_SETUP was dropped for problem: {problem}"
+    )
+
+
+def test_verified_payoff_in_later_segment_skips_false_unresolved_setup():
+    """Valid control: when payoff actually exists in segment 002 and is verified, reviewer critique about delayed payoff can be skipped."""
+    import json
+    from apps.script_factory.semantic_review import review_script_logic
+    script = FullScript(
+        episode_id='RESOLVED',
+        title='Bức thư đã mở',
+        host={'id': 'MINH'},
+        segments=[
+            ScriptSegment(id='001', text='Lan nhận được phong bì niêm phong từ người lạ.', delivery_profile='HOOK'),
+            ScriptSegment(id='002', text='Tại phân đoạn này Lan mở phong bì niêm phong ra và đối chiếu sự thật.'),
+            ScriptSegment(id='003', text='Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.', delivery_profile='ENDING'),
+        ]
+    )
+    issue = {
+        'rule': 'UNRESOLVED_SETUP',
+        'segment_id': '001',
+        'quote': script.segments[0].text,
+        'problem': 'Chi tiết phong bì niêm phong đã được giải quyết ở phân đoạn [002]',
+        'fix': 'Không cần sửa.',
+        'confidence': 'medium'
+    }
+    def reviewer(system, prompt):
+        return json.dumps({'issues': [issue]}, ensure_ascii=False), 10, 20
+    review = review_script_logic(
+        script,
+        StoryBible(episode_id=script.episode_id, title=script.title, protagonist={'name': 'Lan'}),
+        reviewer
+    )
+    assert not any(i['rule'] == 'UNRESOLVED_SETUP' for i in review['issues'])
+
+
+@pytest.mark.parametrize('profile', ['NORMAL', 'REVEAL', 'CLIMAX'])
+def test_early_truth_cannot_bypass_release_map_by_label(profile):
+    """Deep audit P1: delivery_profile REVEAL or CLIMAX must not bypass SpoilerTimingGuard."""
+    from apps.script_factory.information_release_map import InformationReleaseMap, InformationReleaseRule
+    from apps.script_factory.spoiler_timing_guard import SpoilerTimingGuard
+    rule = InformationReleaseRule(
+        fact_id='TRUTH',
+        fact_type='REVEAL_2',
+        field='reveal_2',
+        description='Danh tính người giữ tiền',
+        target_value='Thu Ngân',
+        earliest_allowed_segment=76,
+        forbidden_before_segment=76,
+        key_entities=['Thu Ngân'],
+        sensitivity_level='CRITICAL'
+    )
+    guard = SpoilerTimingGuard(InformationReleaseMap(episode_id='SPOILER', total_segments=90, rules=[rule]))
+    segment = ScriptSegment(id='020', text='Hóa ra Thu Ngân chính là người đã lấy toàn bộ số tiền.', delivery_profile=profile)
+    assert guard.check_segment(segment), f'Early truth bypassed with {profile}'
+
+
+def test_core_truth_fallback_scaling_matches_short_script():
+    """Deep audit P2: InformationReleaseMap fallback scaling must scale earliest_allowed_segment and total_segments."""
+    from apps.script_factory.information_release_map import build_information_release_map
+    bible = StoryBible(episode_id='SHORT', title='Khoản tiền bị mất', protagonist={'name': 'Lan'})
+    release_map = build_information_release_map(
+        bible,
+        fact_locks=[{'fact_id': 'TRUTH', 'field': 'hidden_truth', 'description': 'bí mật cốt lõi', 'value': 'Thu Ngân'}],
+        total_segments=56
+    )
+    rule = next(r for r in release_map.rules if r.fact_id == 'TRUTH')
+    assert rule.earliest_allowed_segment <= 56, f'Unreachable reveal threshold: {rule.earliest_allowed_segment}'
+    assert release_map.total_segments == 56
+
+
+def test_script_qc_repairs_full_story_restart():
+    """Verify that ScriptQC apply_targeted_repairs handles a full story restart from the beginning,
+    pruning duplicate segments cleanly instead of leaving fragmented story pieces."""
+    from apps.script_factory.models import ScriptSegment, FullScript, StoryBible, QCReport
+    from apps.script_factory.script_qc import apply_targeted_repairs
+
+    first_half = [
+        ScriptSegment(id=f"{i+1:03d}", text=f"Lan theo dõi từng bước đi của chồng ở giai đoạn {i} nhằm làm sáng tỏ.", delivery_profile="NORMAL")
+        for i in range(50)
+    ]
+    first_half[0] = ScriptSegment(id="001", text='Lá thư bắt đầu bằng câu chuyện nghi vấn.', delivery_profile="HOOK")
+    first_half[1] = ScriptSegment(id="002", text='Chào mừng quý vị và các bạn đến với Sau Cánh Cửa.', delivery_profile="NORMAL")
+    first_half[48] = ScriptSegment(id="049", text='Lan đối chất và chồng thừa nhận toàn bộ.', delivery_profile="REVEAL")
+    first_half[49] = ScriptSegment(id="050", text='Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.', delivery_profile="ENDING")
+
+    second_half = [
+        ScriptSegment(id=f"{i+51:03d}", text=f"Lan theo dõi lại từng bước đi của chồng ở giai đoạn {i} để làm sáng tỏ.", delivery_profile="NORMAL")
+        for i in range(55)
+    ]
+    second_half[0] = ScriptSegment(id="051", text='Lá thư bắt đầu bằng câu chuyện nghi vấn.', delivery_profile="HOOK")
+    second_half[1] = ScriptSegment(id="052", text='Chào mừng quý vị và các bạn đến với Sau Cánh Cửa.', delivery_profile="NORMAL")
+    second_half[53] = ScriptSegment(id="104", text='Lan đối chất và chồng thừa nhận toàn bộ sự thật.', delivery_profile="REVEAL")
+    second_half[54] = ScriptSegment(id="105", text='Cảm ơn quý vị đã lắng nghe. Tôi là Minh. Xin chào và hẹn gặp lại.', delivery_profile="ENDING")
+
+    all_segs = first_half + second_half
+    for idx, s in enumerate(all_segs, start=1):
+        s.id = f"{idx:03d}"
+
+    bible = StoryBible(episode_id="EP_RESTART", title="Khởi động lại", protagonist={"name": "Lan"})
+    script = FullScript(episode_id=bible.episode_id, title=bible.title, host={"id": "MINH"}, segments=all_segs)
+    report = QCReport(
+        episode_id=bible.episode_id,
+        status="FAIL",
+        evidence_issues=[{"rule": "REPEATED_NARRATIVE_BLOCK", "severity": "CRITICAL"}],
+    )
+    repaired = apply_targeted_repairs(script, bible, report)
+    assert len(repaired.segments) in (50, 55)
+    assert sum(1 for s in repaired.segments if "Chào mừng quý vị" in s.text) == 1
+    assert [s.id for s in repaired.segments] == [f"{i+1:03d}" for i in range(len(repaired.segments))]
+
+
+
+
 

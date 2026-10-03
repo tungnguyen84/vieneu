@@ -23,7 +23,7 @@ logger = logging.getLogger("VieNeu.SemanticReview")
 
 # call_llm(system_instruction, prompt) -> (raw_text, input_tokens, output_tokens)
 LLMCall = Callable[[str, str], Tuple[str, int, int]]
-SEMANTIC_REVIEW_VERSION = "semantic-v9-unified-policy"
+SEMANTIC_REVIEW_VERSION = "semantic-v10-deep-grounded-policy"
 
 REVIEW_CALIBRATION = (
     "NGƯỠNG BÁO LỖI: chỉ báo mâu thuẫn hoặc thiếu mắt xích làm người nghe không hiểu được sự kiện, "
@@ -138,7 +138,11 @@ def build_prompt(script: FullScript, story_bible: StoryBible) -> str:
         "Đối chiếu từng câu với trạng thái trước: tìm hành động xảy ra trước điều kiện và trạng thái hiểu biết bị quay lùi. "
         "Không tự đưa suy luận của người đọc thành điều nhân vật đã biết. Nếu có lỗi giữa hai đoạn, ghi related_segment_ids và trích đoạn sai.\n"
         "6. Đọc như người nghe audio: các cảnh phát hiện, đối chất, kết thúc có chi tiết thật hay chỉ tóm tắt? "
-        "Không chứng nhận PASS chỉ vì đủ số từ, đủ phân đoạn hoặc có hai REVEAL.\n\n"
+        "Không chứng nhận PASS chỉ vì đủ số từ, đủ phân đoạn hoặc có hai REVEAL.\n"
+        "7. Tên nhân vật và đạo cụ: tên người lạ (người thứ ba, đồng phạm, con riêng) và đạo cụ/tài liệu quan trọng (hợp đồng, sao kê, phong bì) "
+        "phải được giới thiệu hoàn cảnh xuất hiện trước khi nhân vật chính gọi tên như điều đã biết (CONCLUSION_BEFORE_PROOF / ACTION_SEQUENCE_INVERSION).\n"
+        "8. Setup & Payoff (UNRESOLVED_SETUP): Mọi chi tiết, vật phẩm hoặc câu hỏi gieo ở mở đầu (phong bì niêm phong, chiếc máy tính bảng, lịch trình lạ...) "
+        "BẮT BUỘC phải có hành động mở ra, kiểm tra và giải thích rõ ràng trước khi kết thúc câu chuyện; chỉ báo UNRESOLVED_SETUP khi chi tiết bị bỏ quên hoặc không được giải thích.\n\n"
         "Trả về JSON:\n"
         '{"issues": [{"rule": "<mã luật ở trên>", "segment_id": "<id chứa câu sai>", '
         '"related_segment_ids": ["<id liên quan nếu có>"], '
@@ -206,14 +210,29 @@ def review_script_logic(
             continue
         if rule == 'UNRESOLVED_SETUP':
             problem_text = str(item.get('problem', '')).lower()
-            if any(phrase in problem_text for phrase in [
-                "sau đó ở [", "đến phân đoạn [", "mãi đến phân đoạn", "mãi đến [",
-                "ở phân đoạn [038]", "ở phân đoạn sau", "phần reveal sau",
-                "ở đoạn sau", "ở các đoạn sau", "suy luận gián tiếp ở đoạn sau",
-                "trong phần reveal", "phần reveal", "mặc dù đoạn", "mặc dù phân đoạn"
-            ]):
-                logger.info('[SemanticReview] Skipping UNRESOLVED_SETUP on %s: payoff acknowledged in later segment (%s)', seg_id, item.get('problem'))
-                continue
+            # If the reviewer asserts a missing payoff, unrevealed prop, or unaddressed clue, KEEP the finding!
+            has_negation = any(neg in problem_text for neg in [
+                'không', 'chưa', 'vẫn không', 'vẫn chưa', 'bỏ quên', 'bị bỏ', 'thiếu',
+                'không mở', 'không giải thích', 'chưa giải quyết', 'chưa làm rõ',
+                'không được', 'chưa có', 'chưa đọc', 'không trả lời'
+            ])
+            if has_negation:
+                pass  # Genuine unresolved setup; do not skip!
+            else:
+                # Only skip if the reviewer explicitly asserts that it WAS resolved in a later segment,
+                # AND that later segment actually contains the key entity from quote.
+                resolved_in_later = False
+                later_match = re.search(r'(?:phân đoạn|đoạn|segment)\s*\[?(\d+)\]?', problem_text)
+                if later_match:
+                    target_sid = later_match.group(1).zfill(3)
+                    target_seg = by_id.get(target_sid)
+                    if target_seg:
+                        quote_words = [w for w in re.findall(r'\w+', quote) if len(w) >= 3]
+                        if any(w.lower() in target_seg.text.lower() for w in quote_words):
+                            resolved_in_later = True
+                if resolved_in_later:
+                    logger.info('[SemanticReview] Skipping UNRESOLVED_SETUP on %s: verified payoff in later segment (%s)', seg_id, item.get('problem'))
+                    continue
         related = [
             r for r in (clean_segment_id(raw_id, by_id) for raw_id in (item.get("related_segment_ids") or []))
             if r in by_id and r != seg_id

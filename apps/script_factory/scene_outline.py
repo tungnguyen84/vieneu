@@ -35,11 +35,14 @@ def _prompt(bible: StoryBible) -> str:
         "- KHÔNG có hai cảnh cùng một việc (hai lần đến cùng một nơi hỏi cùng một người, hai lần tra cùng một manh mối).\n"
         "- Mỗi bằng chứng có được bằng cách tự nhiên đời thường (nhìn thấy, nghe được, nhận ra người quen), không qua thủ tục "
         "giấy tờ phi thực tế (người lạ được cấp hợp đồng thuê nhà, camera, sao kê của người khác).\n"
-        "- Cảnh 1-3: hook và giới thiệu. Cảnh đối chất/thú nhận ở khoảng 70-80% câu chuyện. Sau đó TỐI ĐA 2 cảnh khép lại "
-        "(một hành động cụ thể của nhân vật), không lặp lại vật đã trao/trả.\n"
+        "- NGUYÊN TẮC BẰNG CHỨNG VÀ TÊN NHÂN VẬT: Mọi bằng chứng phải được TÌM THẤY hoặc ĐỌC NỘI DUNG ở cảnh trước mới được mang ra suy luận "
+        "hoặc đối chất ở cảnh sau. Tên nhân vật phụ (ví dụ: nhân tình, con riêng, đồng phạm) phải được xác định danh tính cụ thể trong một cảnh trước khi gọi tên.\n"
+        "- NGUYÊN TẮC SETUP & PAYOFF: Chi tiết/vật chứng mở đầu (trong trigger/hook) phải có cảnh kiểm chứng và giải quyết trọn vẹn (payoff) trước cảnh kết thúc.\n"
+        "- Cảnh 1-3: hook và giới thiệu đời sống. Cảnh 4-10: manh mối đầu tiên, giả thuyết sai và điều tra thực địa. Cảnh 11-13: Bước ngoặt 1 (lật tẩy giả thuyết sai). "
+        "Cảnh 14-15: Cú lật chính (sự thật cốt lõi). Cảnh 15-16: Đối chất/thú nhận bằng lời thoại trực tiếp. Cảnh 17-18: Giải quyết bằng hành động dứt khoát và chiêm nghiệm.\n"
         "- Đánh dấu 'part': 1 cho khoảng 45% cảnh đầu (kết thúc ở cuối một cảnh trọn vẹn), 2 cho phần còn lại.\n"
         'Trả về JSON: {"scenes": [{"no": 1, "part": 1, "title": "<tên cảnh ngắn>", '
-        '"action": "<điều xảy ra>", "new_information": "<thông tin mới duy nhất>", "segments": <3-8>}]}'
+        '"action": "<hành động cụ thể>", "new_information": "<thông tin mới duy nhất>", "segments": <3-8>}]}'
     )
 
 

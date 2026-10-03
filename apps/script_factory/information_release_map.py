@@ -151,10 +151,10 @@ def build_information_release_map(
     ep_id = story_bible.episode_id
     rules: List[InformationReleaseRule] = []
     scale = (total_segments / 90.0) if total_segments else 1.0
-    r2_seg = max(15, int(76 * scale))
-    r1_seg = max(10, int(61 * scale))
-    inv_seg = max(5, int(20 * scale))
-    clue_seg = max(3, int(16 * scale))
+    r2_seg = max(15, min(total_segments - 2, int(76 * scale)))
+    r1_seg = max(10, min(r2_seg - 3, int(61 * scale)))
+    inv_seg = max(5, min(r1_seg - 3, int(20 * scale)))
+    clue_seg = max(3, min(inv_seg - 2, int(16 * scale)))
 
     facts: List[Dict[str, Any]] = []
     seen_ids = set()
@@ -239,8 +239,8 @@ def build_information_release_map(
         else:
             if "bí mật cốt lõi" in desc_lower or "sự thật" in desc_lower:
                 f_type = "REVEAL_1"
-                earliest = 61
-                forbidden_before = 61
+                earliest = r1_seg
+                forbidden_before = r1_seg
                 sens = "CRITICAL"
             else:
                 f_type = "SETUP"
@@ -248,6 +248,8 @@ def build_information_release_map(
                 forbidden_before = 1
                 sens = "LOW"
 
+        earliest = min(earliest, max(1, total_segments - 1))
+        latest_allowed = max(earliest, total_segments)
         entities = extract_key_entities_from_text(val)
         rules.append(InformationReleaseRule(
             fact_id=f_id,
@@ -256,10 +258,10 @@ def build_information_release_map(
             description=desc,
             target_value=val,
             earliest_allowed_segment=earliest,
-            latest_allowed_segment=90,
+            latest_allowed_segment=latest_allowed,
             forbidden_before_segment=forbidden_before,
             key_entities=entities,
             sensitivity_level=sens,
         ))
 
-    return InformationReleaseMap(episode_id=ep_id, total_segments=90, rules=rules)
+    return InformationReleaseMap(episode_id=ep_id, total_segments=total_segments, rules=rules)

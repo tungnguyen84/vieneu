@@ -159,8 +159,8 @@ def _get_api_key(explicit_key: Optional[str] = None) -> str:
 # same project shares that project's buckets. So capacity grows by falling back
 # across models and by rotating keys that belong to different projects.
 GEMINI_FLASH_CHAIN = [
-    "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash",
-    "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-flash-latest",
+    "gemini-2.5-flash", "gemini-3.5-flash", "gemini-3-flash-preview", "gemini-flash-latest",
+    "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash",
 ]
 # Lite models write passable prose but cannot be trusted as reviewers.
 GEMINI_LITE_CHAIN = [
@@ -686,10 +686,16 @@ Trả về một JSON Array chứa chính xác {count} objects, mỗi object có
             "7. Với cáo buộc nghiêm trọng, lời đồn và dấu hiệu mơ hồ chỉ tạo nghi ngờ. Lời thừa nhận trực tiếp có thể xác nhận hành vi ngoại tình của chính người nói; huyết thống hoặc tội phạm cần bằng chứng phù hợp. Không bịa thêm văn bản tự tố cáo chỉ để đủ vật chứng.\n"
             "8. Bối cảnh hôn nhân có thể giải thích hoàn cảnh nhưng không được đổ trách nhiệm lựa chọn nói dối/ngoại tình lên người bị phản bội.\n"
             "9. Xuất ra định dạng JSON hợp lệ.\n"
+            "10. TIẾN TRÌNH BIẾT VÀ BẰNG CHỨNG (KNOWLEDGE & EVIDENCE PROGRESSION): "
+            "Nhân vật chính chỉ biết điều gì khi tận mắt nhìn thấy, tận tai nghe, hoặc đọc được tài liệu. "
+            "Bằng chứng phải được tìm thấy hoặc đọc trước khi nhân vật rút ra kết luận. "
+            "Tên nhân vật mới (người thứ ba, đồng phạm, con riêng) và đạo cụ quan trọng (phong bì, hợp đồng, hóa đơn) "
+            "phải có hoàn cảnh xuất hiện cụ thể trước khi được nhắc đến như điều đã biết. "
+            "Mọi chi tiết mở đầu (vật phẩm, lời hứa hẹn trong trigger/hook) BẮT BUỘC phải có cảnh kiểm chứng và giải quyết trọn vẹn (payoff) trước khi kết thúc câu chuyện.\n"
             + STORY_DESIGN_PRINCIPLES + "\n"
             "Câu chuyện sẽ được kể như lá thư của nhân vật chính, nên mọi reveal phải có kênh để nhân vật chính biết được "
             "(lời thú nhận, nhân chứng, tài liệu, xét nghiệm) và kết thúc phải hợp pháp. Tuân thủ các luật logic sau:\n"
-            + writer_rules_block(10)
+            + writer_rules_block(11)
         )
 
         direction_clause = f"\nCHỈ ĐẠO ĐẶC BIỆT CHO TẬP PHIM NÀY:\n{special_direction}\n" if special_direction else ""

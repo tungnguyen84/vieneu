@@ -48,10 +48,9 @@ SUPPORTED_PROVIDERS = [
     {
         "id": "gemini",
         "name": "Google Gemini",
-        "default_model": "gemini-3.8-flash",
+        "default_model": "gemini-2.5-flash",
         "models": [
-            "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash",
-            "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-flash-latest",
+            "gemini-2.5-flash", "gemini-3.5-flash", "gemini-3-flash-preview", "gemini-flash-latest",
         ],
         "needs_key": True,
         "env_var": "GEMINI_API_KEY",
@@ -279,6 +278,8 @@ def set_default_provider(
 
     data["default_provider"] = pid
     data["default_model"] = chosen_model
+    if pid in data["providers"]:
+        data["providers"][pid]["model"] = chosen_model
     _save_raw_secrets(data)
 
     # Sync environment variable if key exists

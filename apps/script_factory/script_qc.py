@@ -23,7 +23,7 @@ logger = logging.getLogger("VieNeu.ScriptQC")
 
 SERIES_BIBLE_PATH = Path("script_factory/series_bible.json")
 STORY_FORMULA_PATH = Path("script_factory/story_formula_v1.json")
-SCRIPT_QC_VERSION = "script-qc-v5.0-tiered"
+SCRIPT_QC_VERSION = "script-qc-v5.1-deep-audit"
 
 
 def _vietnamese_integer_words(value: int) -> Optional[str]:
@@ -1846,23 +1846,40 @@ def apply_targeted_repairs(
             # would delete that work. The next QC pass re-checks it.
             repeated = None
         if repeated:
-            cut_start = int(repeated["second_start"])
-            reset_pattern = re.compile(
-                r"\b(?:những ngày|vài ngày|một thời gian|thời gian)\s+sau\s+đó\b",
-                re.IGNORECASE,
-            )
-            if cut_start > 0 and reset_pattern.search(script.segments[cut_start - 1].text):
-                cut_start -= 1
-            cut_end = int(repeated["second_end"])
-            for idx in range(cut_end, min(len(script.segments), cut_end + 9)):
-                if script.segments[idx].delivery_profile == "REVEAL":
-                    cut_end = idx
-                    break
-            if cut_end > cut_start:
-                del script.segments[cut_start:cut_end]
-                for index, segment in enumerate(script.segments, start=1):
-                    segment.id = f"{index:03d}"
-                seg_map = {s.id: s for s in script.segments}
+            # If the repeated block is a full story restart from the beginning:
+            if repeated.get("first_start", 0) <= 4 and repeated.get("second_start", 0) >= 40:
+                second_half = script.segments[repeated["second_start"]:]
+                prefix = script.segments[:repeated["second_start"]]
+                if any(s.delivery_profile == "ENDING" or "hẹn gặp lại" in s.text.lower() for s in second_half) and len(second_half) >= 45:
+                    logger.info(f"[ScriptQC] Phát hiện tập khởi động lại; giữ nửa sau hoàn chỉnh ({len(second_half)} đoạn).")
+                    script.segments = second_half
+                    repeated = None
+                elif any(s.delivery_profile == "REVEAL" for s in prefix) and len(prefix) >= 45:
+                    logger.info(f"[ScriptQC] Phát hiện tập khởi động lại; giữ nửa đầu ({len(prefix)} đoạn).")
+                    script.segments = prefix
+                    repeated = None
+                if repeated is None:
+                    for index, segment in enumerate(script.segments, start=1):
+                        segment.id = f"{index:03d}"
+                    seg_map = {s.id: s for s in script.segments}
+            if repeated:
+                cut_start = int(repeated["second_start"])
+                reset_pattern = re.compile(
+                    r"\b(?:những ngày|vài ngày|một thời gian|thời gian)\s+sau\s+đó\b",
+                    re.IGNORECASE,
+                )
+                if cut_start > 0 and reset_pattern.search(script.segments[cut_start - 1].text):
+                    cut_start -= 1
+                cut_end = int(repeated["second_end"])
+                for idx in range(cut_end, min(len(script.segments), cut_end + 9)):
+                    if script.segments[idx].delivery_profile == "REVEAL":
+                        cut_end = idx
+                        break
+                if cut_end > cut_start:
+                    del script.segments[cut_start:cut_end]
+                    for index, segment in enumerate(script.segments, start=1):
+                        segment.id = f"{index:03d}"
+                    seg_map = {s.id: s for s in script.segments}
 
     # Repair a slow/generic hook using facts that already exist in the Story
     # Bible. This changes presentation only and never invents a new clue.

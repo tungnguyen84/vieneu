@@ -60,18 +60,29 @@ STORY BIBLE ĐẦY ĐỦ (nguồn chuẩn cho nhân vật, thời gian, bằng c
 CÁCH LÀM:
 {outline_instruction}
 2. Viết liền một mạch như kể cho người nghe. Không quay lại kể lại một cảnh, cuộc gọi hay lần lục tìm đã kể.
+3. NGUYÊN TẮC GIỚI THIỆU THÔNG TIN (INFORMATION GROUNDING):
+   - Mọi tên nhân vật mới (người thứ ba, đồng phạm, con riêng) và đạo cụ/tài liệu quan trọng (hợp đồng, hóa đơn, sao kê, chìa khóa) PHẢI được giới thiệu bối cảnh phát hiện (nhìn thấy, nghe gọi tên, đọc trên biển tên/giấy tờ) TRƯỚC KHI được người kể chuyện hay nhân vật gọi tên như điều đã biết. Tuyệt đối không đột ngột gọi tên một nhân vật khi chưa có cảnh xác định danh tính.
+   - Bằng chứng phải được TÌM THẤY hoặc ĐỌC NỘI DUNG trước khi dùng để kết luận hoặc đối chất. Không nhảy cóc từ một phát hiện nhỏ sang kết luận toàn bộ sự thật mà không có bước đối soát chi tiết.
+   - Khi nhắc lại bằng chứng ở cảnh sau, phải giữ tính nhất quán về nguồn gốc và tên gọi (nếu tìm thấy "ghi chú trong cặp tài liệu" thì không đột ngột đổi thành "tập hợp đồng kinh tế" mà không có hành động xem hợp đồng).
+4. NGUYÊN TẮC SETUP & PAYOFF:
+   - Bất kỳ chi tiết, vật phẩm hay câu hỏi nào được gieo ở phần Hook/Setup (chiếc hộp, phong bì niêm phong, máy tính bảng, tờ hóa đơn...) BẮT BUỘC phải có hành động mở ra, kiểm tra và có kết quả giải thích rõ ràng (payoff) ở phần thân truyện hoặc hồi kết, tuyệt đối không được bỏ quên.
+5. DỰNG CẢNH SỐNG ĐỘNG BẰNG HÀNH ĐỘNG VÀ ĐỐI THOẠI:
+   - Các cảnh then chốt (phát hiện manh mối, đối chất, chia tay) PHẢI được viết bằng hành động cụ thể, biểu cảm và lời thoại trực tiếp đặt trong dấu ngoặc kép "...". Không tóm tắt cảnh bằng "anh kể rằng…", "anh viết rằng…", "sau một hồi đối chất thì anh thú nhận...".
+6. KỂ ĐÚNG MỘT LẦN DUY NHẤT:
+   - Kể toàn bộ câu chuyện một lần từ đầu đến cuối, kết thúc bằng dòng [ENDING] chào tạm biệt.
+   - TUYỆT ĐỐI KHÔNG bắt đầu lại câu chuyện, KHÔNG lặp lại câu chào mừng "Chào mừng quý vị và các bạn đến với Sau Cánh Cửa" ở giữa hoặc cuối, KHÔNG viết phiên bản thứ hai ở nửa sau.
 
 ĐỘ DÀI: 70-85 dòng, 2.200-2.700 từ (phù hợp thời lượng nghe 18-22 phút của podcast Sau Cánh Cửa).
-Mỗi cảnh chính (phát hiện, kiểm chứng, cú lật, đối chất) phải được DỰNG thành nhiều dòng: hành động cụ thể, lời thoại trực tiếp trong ngoặc kép, cảm giác của người gửi thư lúc đó. Không tóm tắt cảnh bằng "anh kể rằng…", "anh viết rằng…".
 
-CẤU TRÚC VÀ SỐ DÒNG:
-- Mở đầu (4 dòng): 2-3 dòng [HOOK] mở bằng câu trích lá thư; dòng tiếp theo đúng nguyên văn: "Chào mừng quý vị và các bạn đến với Sau Cánh Cửa."
-- Đời sống thường ngày (8-10 dòng): nhân vật, chi tiết riêng tư của gia đình, nhịp sinh hoạt sẽ bị phá vỡ.
+CẤU TRÚC VÀ SỐ DÒNG (ĐÚNG HỢP ĐỒNG NHỊP KỂ):
+- Mở đầu & Hook (4 dòng): 2-3 dòng [HOOK] mở bằng câu trích lá thư gắn với vật phẩm/dấu hiệu cụ thể; dòng tiếp theo đúng nguyên văn: "Chào mừng quý vị và các bạn đến với Sau Cánh Cửa."
+- Đời sống thường ngày & Vết nứt (8-10 dòng): nhân vật, chi tiết riêng tư của gia đình, nhịp sinh hoạt sẽ bị phá vỡ.
 - Dấu hiệu lạ và giả thuyết sai (10-12 dòng): dấu hiệu đầu tiên; giả thuyết sai mà người nghe cũng tin.
-- Kiểm chứng (18-22 dòng): nhân vật chủ động tìm hiểu; bằng chứng tăng dần, mỗi lần một thông tin mới.
-- Cú lật chính (8-10 dòng, ở khoảng 60-75% tập): các dòng mở nút thắt dùng [REVEAL], không hỏi người nghe trong [REVEAL].
-- Đối chất/thú nhận (10-12 dòng): có lời thoại hai phía.
-- Giải quyết bằng hành động (6-8 dòng).
+- Kiểm chứng thực địa (16-20 dòng): nhân vật chủ động tìm hiểu; bằng chứng tăng dần, mỗi lần một thông tin mới.
+- Bước ngoặt 1 (Reveal 1, khoảng 65-72% tập, ~dòng 48-56): manh mối giả bị lật tẩy, hé lộ sự thật tầng thứ nhất.
+- Cú lật chính (Reveal 2, khoảng 76-85% tập, ~dòng 58-68): bí mật cốt lõi và động cơ thật được phơi bày trọn vẹn qua bằng chứng không thể chối cãi, các dòng mở nút thắt dùng [REVEAL], không hỏi người nghe trong [REVEAL].
+- Đối chất/thú nhận (10-12 dòng, khoảng 80-88% tập): cuộc gặp trực tiếp hai phía, đối chất bằng chứng thực tế, có lời thoại trực tiếp trong ngoặc kép.
+- Giải quyết bằng hành động (6-8 dòng, khoảng 86-93% tập): hành động dứt khoát về pháp lý hoặc chia tay thanh thản, bảo vệ con cái, không đánh ghen ầm ĩ.
 - Kết (3 dòng): 1 dòng chiêm nghiệm [COMMENT], 1 câu hỏi người nghe [QUESTION], rồi dòng cuối cùng [ENDING] đúng nguyên văn: "Cảm ơn quý vị đã lắng nghe. Tôi là {host_name}. Xin chào và hẹn gặp lại."
 - Rải 3-5 dòng [QUESTION] hỏi người nghe trong cả tập (không đặt trong cảnh REVEAL).
 
@@ -115,7 +126,8 @@ def build_expand_prompt(prompt: str, draft: List[Dict[str, Any]]) -> str:
 BẢN NHÁP TRƯỚC (đúng cốt truyện nhưng QUÁ NGẮN: {len(draft)} dòng, {words} từ):
 {draft_text}
 
-YÊU CẦU: Viết lại TOÀN BỘ tập thành 70-85 dòng, 2.200-2.700 từ, cùng định dạng dòng có nhãn.
+YÊU CẦU: Viết lại TOÀN BỘ tập thành một bản hoàn chỉnh duy nhất 70-85 dòng, 2.200-2.700 từ, cùng định dạng dòng có nhãn.
+- CHỈ TRẢ VỀ DUY NHẤT BẢN MỚI ĐÃ MỞ RỘNG (từ [HOOK] mở đầu đến [ENDING] chào kết). Tuyệt đối KHÔNG in lại bản nháp cũ rồi mới viết bản mới!
 - Giữ nguyên cốt truyện, thứ tự cảnh, tên người, mốc thời gian và kết thúc của bản nháp.
 - Dài ra bằng cách DỰNG CẢNH: ở các cảnh phát hiện, kiểm chứng, cú lật và đối chất, viết hành động cụ thể, lời thoại trực tiếp và cảm giác của người gửi thư ngay lúc đó; thay các câu tóm tắt "anh kể rằng…" bằng chính cảnh ấy.
 - Không thêm sự kiện hay bằng chứng ngoài story bible; không kể lại một cảnh hai lần.
@@ -191,7 +203,7 @@ def write_single_pass(
     call_text: TextCall, system_instruction: str, prompt: str, ending: str = ""
 ) -> Tuple[Optional[List[Dict[str, Any]]], int, int]:
     """Returns (segment dicts or None to fall back, input_tokens, output_tokens)."""
-    from apps.script_factory.narrative_continuity import has_repeated_narrative_block
+    from apps.script_factory.narrative_continuity import find_repeated_narrative_block, has_repeated_narrative_block
     from apps.script_factory.providers.gemini_provider import _has_one_final_signoff, _normalize_final_signoff
 
     in_total = out_total = 0
@@ -219,6 +231,16 @@ def write_single_pass(
             in_total, out_total = in_total + in_tok, out_total + out_tok
             expanded = parse_tagged_lines(raw2)
             if _is_complete(expanded) and _word_count(expanded) > _word_count(segments):
+                # If expanded echoed both drafts, extract the second complete draft
+                rep_exp = find_repeated_narrative_block(expanded)
+                if rep_exp and rep_exp.get("first_start", 0) <= 4 and rep_exp.get("second_start", 0) >= ACCEPT_SEGMENTS:
+                    second_half = expanded[rep_exp["second_start"]:]
+                    if _is_complete(second_half) and len(second_half) >= ACCEPT_SEGMENTS:
+                        logger.info(
+                            f"[SinglePassWriter] Bản mở rộng chứa 2 phiên bản; chọn phần sau "
+                            f"({len(second_half)} đoạn, {_word_count(second_half)} từ)."
+                        )
+                        expanded = second_half
                 segments = expanded
         except Exception as exc:
             logger.warning(f"[SinglePassWriter] Lần viết dài hơn thất bại: {exc}")
@@ -232,6 +254,27 @@ def write_single_pass(
     in_total, out_total = in_total + in_tok, out_total + out_tok
     if not _has_one_final_signoff(segments):
         segments = _normalize_final_signoff(segments)
+
+    # If the episode itself contains a distant restart from the beginning, prune it
+    rep = find_repeated_narrative_block(segments)
+    if rep and rep.get("first_start", 0) <= 4 and rep.get("second_start", 0) >= ACCEPT_SEGMENTS:
+        second_half = segments[rep["second_start"]:]
+        prefix = segments[:rep["second_start"]]
+        if _is_complete(second_half) and len(second_half) >= ACCEPT_SEGMENTS and not has_repeated_narrative_block(second_half):
+            logger.warning(
+                f"[SinglePassWriter] Phát hiện khởi động lại toàn bộ tập từ đoạn {rep['second_start']}; "
+                f"chọn phần sau ({len(second_half)} đoạn)."
+            )
+            segments = second_half
+        elif len(prefix) >= ACCEPT_SEGMENTS and any(s.get("delivery_profile") == "REVEAL" for s in prefix):
+            logger.warning(
+                f"[SinglePassWriter] Phát hiện khởi động lại toàn bộ tập từ đoạn {rep['second_start']}; "
+                f"cắt bỏ phần lặp sau ({len(segments)} -> {len(prefix)} đoạn)."
+            )
+            segments = prefix
+            if not _has_one_final_signoff(segments):
+                segments = _normalize_final_signoff(segments)
+
     if has_repeated_narrative_block(segments):
         logger.warning("[SinglePassWriter] Bản viết một lần vẫn có khối kể lặp; để QC xử lý.")
     logger.info(f"[SinglePassWriter] Viết một lần: {len(segments)} đoạn, {_word_count(segments)} từ")
