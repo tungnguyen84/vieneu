@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { generateWithSource } from '../sourceApi';
+import { SourceModeBanner } from '../components/SourceModeBanner';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   BookOpen,
   ShieldCheck,
@@ -41,13 +43,17 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
   const [isApproved, setIsApproved] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [repairSuccess, setRepairSuccess] = useState<string>('');
+  const sourceProfile = !!bible?.adaptation_mode;
+  const mounted = useRef(true);
 
 
   const fetchBible = () => {
+    if (!mounted.current) return;
     setLoading(true);
     fetch(`/api/projects/${projectId}/story`)
       .then((res) => res.json())
       .then((data: StoryBibleSection) => {
+        if (!mounted.current) return;
         setBible(data);
         setLoading(false);
       })
@@ -56,6 +62,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
     fetch(`/api/projects/${projectId}`)
       .then((res) => res.json())
       .then((p) => {
+        if (!mounted.current) return;
         setProjectData(p);
         setCustomTopic(p.original_user_topic || p.selected_idea?.original_user_topic || p.topic || '');
         if (p.stage_statuses && p.stage_statuses['02_story'] === 'APPROVED') {
@@ -68,7 +75,9 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
   };
 
   useEffect(() => {
+    mounted.current = true;
     fetchBible();
+    return () => { mounted.current = false; };
   }, [projectId]);
 
   const handleGenerateStory = async () => {
@@ -79,7 +88,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
 
 
     try {
-      const res = await fetch(`/api/projects/${projectId}/story/generate`, {
+      const res = await generateWithSource(projectId, 'story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // An existing generated premise must never replace the user's topic.
@@ -106,7 +115,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
     setErrorMessage('');
     setRepairSuccess('');
     try {
-      const res = await fetch(`/api/projects/${projectId}/story/repair`, {
+      const res = await generateWithSource(projectId, 'story-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -136,6 +145,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
         const error = await response.json();
         throw new Error(error.detail || 'Story Bible chưa được duyệt');
       }
+      if (!mounted.current) return;
       setIsApproved(true);
       onApproveStory();
       if (onNavigate) {
@@ -167,6 +177,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto select-none text-[#F8FAFC]">
+      <SourceModeBanner projectId={projectId} review={(bible?.story_qc_report as any)?.semantic_review?.source_review} />
       {/* 3-Stage Definition Banner */}
       <div className="bg-[#161F36]/90 border border-[#28354D] rounded-lg p-3 text-xs flex flex-wrap items-center justify-between gap-2 shadow-sm">
         <div className="flex items-center space-x-2 font-mono-code text-[11px]">
@@ -183,7 +194,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
           </span>
         </div>
         <span className="text-[11px] text-[#94A3B8] italic">
-          *Story Bible là tài liệu thiết kế nội bộ cho AI (Fact Lock, Timeline, 2 Twist). Không phải kịch bản đọc TTS.
+          {sourceProfile ? 'Cốt truyện thiết kế theo nguồn và hướng đã chọn; đây chưa phải lời đọc TTS.' : '*Story Bible là tài liệu thiết kế nội bộ cho AI (Fact Lock, Timeline, 2 Twist). Không phải kịch bản đọc TTS.'}
         </span>
       </div>
 
@@ -207,7 +218,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
             )}
           </div>
           <p className="text-xs text-[#94A3B8] mt-0.5">
-            Cấu trúc kịch bản chuẩn Script Factory V1.3.1a (Fact Lock + Timeline + Reveal Timing)
+            {sourceProfile ? 'Sự kiện, mạch kể và kết thúc theo chế độ sử dụng nguồn.' : 'Cấu trúc kịch bản chuẩn Script Factory V1.3.1a (Fact Lock + Timeline + Reveal Timing)'}
           </p>
         </div>
 
@@ -656,7 +667,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
             <div className="col-span-2 bg-[#111827] border border-[#28354D] rounded-lg p-4">
               <h3 className="text-xs font-semibold text-[#8B5CF6] uppercase tracking-wider mb-2 flex items-center space-x-1.5">
                 <Users size={14} />
-                <span>2. Người gửi câu chuyện & Tuyến nhân vật</span>
+                <span>{sourceProfile ? '2. Nhân vật / Chủ thể & Mối quan hệ' : '2. Người gửi câu chuyện & Tuyến nhân vật'}</span>
               </h3>
               <p className="text-xs text-[#CBD5E1] leading-relaxed">
                 {bible?.characters_summary || 'Chưa có thông tin nhân vật.'}
@@ -672,7 +683,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
             <div className="bg-[#111827] border border-[#28354D] rounded-lg p-4">
               <h3 className="text-xs font-semibold text-[#F59E0B] uppercase tracking-wider mb-2 flex items-center space-x-1.5">
                 <Key size={14} />
-                <span>3. Bí ẩn trung tâm & Câu hỏi cốt lõi</span>
+                <span>{sourceProfile ? '3. Vấn đề trung tâm & Câu hỏi dẫn dắt' : '3. Bí ẩn trung tâm & Câu hỏi cốt lõi'}</span>
               </h3>
               <p className="text-xs text-[#CBD5E1] leading-relaxed">
                 {bible?.mystery_core || 'Chưa có dữ liệu.'}
@@ -694,7 +705,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
             <div className="col-span-2 bg-[#111827] border border-[#28354D] rounded-lg p-4">
               <h3 className="text-xs font-semibold text-[#EC4899] uppercase tracking-wider mb-2 flex items-center space-x-1.5">
                 <Search size={14} />
-                <span>5. Chuỗi manh mối điều tra (Clue Chain)</span>
+                <span>{sourceProfile ? '5. Chi tiết / Bằng chứng dẫn dắt' : '5. Chuỗi manh mối điều tra (Clue Chain)'}</span>
               </h3>
               <ul className="space-y-1 text-xs text-[#CBD5E1]">
                 {bible?.clues && bible.clues.length > 0 ? (
@@ -706,13 +717,14 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
                   ))
                 ) : (
                   <li className="text-[#64748B]">
-                    {'Manh mối 1: Dấu vết vật chứng bất thường -> Manh mối 2: Lời khai mâu thuẫn -> Manh mối 3: Giấy tờ chứng thực.'}
+                    {sourceProfile ? 'Cách kể này không dùng chuỗi manh mối điều tra.' : 'Manh mối 1: Dấu vết vật chứng bất thường -> Manh mối 2: Lời khai mâu thuẫn -> Manh mối 3: Giấy tờ chứng thực.'}
                   </li>
                 )}
               </ul>
             </div>
 
             {/* 6. Reveal 1 */}
+            {(!sourceProfile || bible?.reveal_1) &&
             <div className="bg-[#111827] border border-[#28354D] rounded-lg p-4">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-mono-code bg-[#F59E0B]/20 text-[#F59E0B] px-1.5 py-0.5 rounded font-bold">
@@ -726,9 +738,10 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
               <p className="text-xs text-[#CBD5E1] leading-relaxed">
                 {bible?.reveal_1 || 'Chưa có dữ liệu.'}
               </p>
-            </div>
+            </div>}
 
             {/* 7. Reveal 2 */}
+            {(!sourceProfile || bible?.reveal_2) &&
             <div className="bg-[#111827] border border-[#28354D] rounded-lg p-4">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-mono-code bg-[#E11D48]/20 text-[#E11D48] px-1.5 py-0.5 rounded font-bold">
@@ -742,7 +755,7 @@ export const StoryView: React.FC<Props> = ({ projectId, onApproveStory, onNaviga
               <p className="text-xs text-[#CBD5E1] leading-relaxed">
                 {bible?.reveal_2 || 'Chưa có dữ liệu.'}
               </p>
-            </div>
+            </div>}
 
             {/* 8. Emotional Payoff & Reflection */}
             <div className="col-span-2 bg-[#111827] border border-[#28354D] rounded-lg p-4 space-y-3">

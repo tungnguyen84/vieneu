@@ -58,6 +58,7 @@ export interface ScriptSegment {
 }
 
 export interface StoryBibleSection {
+  adaptation_mode?: string;
   premise: string;
   characters_summary: string;
   relationships: string;

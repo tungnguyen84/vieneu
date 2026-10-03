@@ -24,6 +24,12 @@ logger = logging.getLogger("VieNeu.ScriptQC")
 SERIES_BIBLE_PATH = Path("script_factory/series_bible.json")
 STORY_FORMULA_PATH = Path("script_factory/story_formula_v1.json")
 SCRIPT_QC_VERSION = "script-qc-v5.5-calendar-payoff-location"
+SOURCE_SCRIPT_QC_VERSION = "script-qc-v5.7-source-props"
+
+
+def script_qc_version(bible=None):
+    context = bible.get('adaptation_context') if isinstance(bible,dict) else getattr(bible,'adaptation_context',None)
+    return SOURCE_SCRIPT_QC_VERSION if context else SCRIPT_QC_VERSION
 
 
 def _vietnamese_integer_words(value: int) -> Optional[str]:
@@ -107,6 +113,7 @@ class ScriptQCEngine:
         revision_requests: List[str] = []
         evidence_issues: List[Dict[str, Any]] = []
 
+        adapted = bool(story_bible.adaptation_context)
         all_text = " ".join(s.text for s in script.segments)
         from apps.script_factory.event_facts import scene_location_conflicts
         for seg_id, quote, message in scene_location_conflicts(script):
@@ -180,7 +187,7 @@ class ScriptQCEngine:
                         known_setup.add(part)
 
         spoiler_guard = SpoilerTimingGuard(rel_map, known_setup_entities=known_setup)
-        spoiler_violations = spoiler_guard.audit_script(script)
+        spoiler_violations = [] if adapted else spoiler_guard.audit_script(script)
         for sv in spoiler_violations:
             evidence_issues.append({
                 "segment_id": sv.segment_id,
@@ -389,7 +396,7 @@ class ScriptQCEngine:
 
         # 3. AUDIENCE INTERACTION FREQUENCY (3–6)
         audience_segs = [s for s in script.segments if s.audience_address]
-        if len(audience_segs) < 3 or len(audience_segs) > 6:
+        if not adapted and (len(audience_segs) < 3 or len(audience_segs) > 6):
             repetition_issues.append(f"Audience interaction count is {len(audience_segs)} (Required: 3 to 6).")
             revision_requests.append("Rebalance audience interactions to be between 3 and 6 per episode.")
 
@@ -461,7 +468,7 @@ class ScriptQCEngine:
             name.split()[-1] for name in others
             if name and name.split()[-1].casefold() not in sender_tokens
         }
-        if sender_tokens and other_tokens:
+        if not adapted and sender_tokens and other_tokens:
             letter_voice = re.compile(
                 r"\b(" + "|".join(re.escape(t) for t in sorted(other_tokens)) + r")\s+"
                 r"(?:viết\s+(?:rằng|lại|trong\s+thư)|kể\s+trong\s+thư|viết:)"
@@ -565,7 +572,7 @@ class ScriptQCEngine:
         if not has_hook:
             logic_issues.append("Missing HOOK delivery profile segments in Act 1.")
             revision_requests.append("Add HOOK delivery profile segments in opening act.")
-        if not has_reveal:
+        if not adapted and not has_reveal:
             logic_issues.append("Missing REVEAL delivery profile segments in Act 6/7.")
             revision_requests.append("Ensure Major Reveal segments are explicitly marked REVEAL.")
         if not has_ending:
@@ -663,7 +670,9 @@ class ScriptQCEngine:
         ]
 
         for h_idx, hs in hook_candidates:
-            hs_prop_m = prop_re.search(hs.text)
+            from apps.script_factory.story_contract import physical_prop_mention
+            hs_prop_m = next((m for m in prop_re.finditer(hs.text)
+                             if not story_bible.adaptation_context or physical_prop_mention(m.group(1),hs.text,m.start(),m.end())),None)
             if not hs_prop_m:
                 continue
             matched_prop = _clean_prop_name(hs_prop_m.group(1))
@@ -1555,7 +1564,7 @@ class ScriptQCEngine:
         topic_intent_dict = getattr(story_bible, "topic_intent", None)
         script_topic_score = 100.0
 
-        if orig_topic:
+        if orig_topic and not adapted:
             from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
             if isinstance(topic_intent_dict, dict) and topic_intent_dict.get("original_topic"):
                 ti = TopicIntent.from_dict(topic_intent_dict)
@@ -1639,10 +1648,30 @@ class ScriptQCEngine:
                 logic_issues.append(f"[{p_iss['rule']}] {p_iss['message']}")
 
         # Compute status
+        source_qc = None
+        if adapted:
+            from apps.script_factory.adaptation import source_review
+            source_qc = source_review(self.provider, story_bible, script)
+            target_sec = story_bible.adaptation_context['brief']['target_duration_sec']
+            estimate = len(all_text.split()) / 2.7
+            if not 0.85 * target_sec <= estimate <= 1.15 * target_sec:
+                evidence_issues.append({'rule': 'SOURCE_DURATION_MISMATCH', 'severity': 'CRITICAL',
+                    'segment_id': script.segments[0].id if script.segments else '001',
+                    'excerpt': script.segments[0].text if script.segments else '',
+                    'message': f'Thời lượng ước tính {estimate:.0f}s ngoài ±15% mục tiêu {target_sec}s.',
+                    'recommended_action': 'Đổi mục tiêu phù hợp lượng nguồn hoặc phát triển nội dung được phép; không bịa/kéo dài bằng lặp.'})
+            if source_qc['status'] != 'RUN':
+                evidence_issues.append({'rule':'SEMANTIC_REVIEW_FAILED','severity':'CRITICAL',
+                    'segment_id':script.segments[0].id if script.segments else '001',
+                    'message':source_qc.get('error','Source review chưa chạy đủ.')})
+            evidence_issues.extend(source_qc.get('issues', []))
+
         # 14. SEMANTIC STORY-LOGIC REVIEW (LLM, quote-anchored)
         # ``semantic_review`` may be passed in to reuse a review of identical text.
         if semantic_review is None:
             semantic_review = self._run_semantic_review(script, story_bible, model)
+        if source_qc and semantic_review:
+            semantic_review['source_review'] = source_qc
         if (semantic_review or {}).get("status") == "ERROR":
             evidence_issues.append({
                 "segment_id": None,
@@ -1803,7 +1832,7 @@ class ScriptQCEngine:
             evidence_issues=evidence_issues,
             warnings=warnings,
             checked_at=time.time(),
-            qc_version=SCRIPT_QC_VERSION,
+            qc_version=script_qc_version(story_bible),
             semantic_review=semantic_review,
             script_content_hash=script_content_hash(script),
         )

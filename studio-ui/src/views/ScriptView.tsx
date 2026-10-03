@@ -1,3 +1,6 @@
+import { generateWithSource } from '../sourceApi';
+import type { AdaptationMode } from '../sourceApi';
+import { SourceModeBanner } from '../components/SourceModeBanner';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   FileText,
@@ -78,6 +81,7 @@ export const ScriptView: React.FC<Props> = ({
   onApproveScript,
   onNavigate,
 }) => {
+  const [sourceMode, setSourceMode] = useState<AdaptationMode | undefined>();
   const [segments, setSegments] = useState<ScriptSegment[]>([]);
   const [fullText, setFullText] = useState<string>('');
   const [artifactStatus, setArtifactStatus] = useState<ScriptArtifactStatus | null>(null);
@@ -102,6 +106,7 @@ export const ScriptView: React.FC<Props> = ({
   const activeProjectIdRef = useRef(projectId);
 
   const fetchScriptData = (clearError = true, targetProjectId = projectId) => {
+    if (activeProjectIdRef.current !== targetProjectId) return Promise.resolve();
     setLoading(true);
     if (clearError) setErrorMessage('');
     return Promise.all([
@@ -135,6 +140,7 @@ export const ScriptView: React.FC<Props> = ({
   useEffect(() => {
     activeProjectIdRef.current = projectId;
     fetchScriptData(true, projectId);
+    return () => { activeProjectIdRef.current = ''; };
   }, [projectId]);
 
   const handleGenerateScript = async (force: boolean = false) => {
@@ -143,7 +149,7 @@ export const ScriptView: React.FC<Props> = ({
 
 
     try {
-      const res = await fetch(`/api/projects/${projectId}/script/generate`, {
+      const res = await generateWithSource(projectId, 'script', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ force }),
@@ -164,7 +170,7 @@ export const ScriptView: React.FC<Props> = ({
     setRepairing(true);
     setErrorMessage('');
     try {
-      const res = await fetch(`/api/projects/${projectId}/script/repair`, {
+      const res = await generateWithSource(projectId, 'script-repair', {
         method: 'POST',
       });
       if (!res.ok) {
@@ -213,6 +219,7 @@ export const ScriptView: React.FC<Props> = ({
         const payload = await response.json();
         throw new Error(payload.detail || 'Không thể duyệt kịch bản');
       }
+      if (activeProjectIdRef.current !== projectId) return;
       setIsApproved(true);
       onApproveScript();
       if (onNavigate) {
@@ -231,21 +238,24 @@ export const ScriptView: React.FC<Props> = ({
   };
 
   const totalWords = fullText.split(/\s+/).filter(Boolean).length;
-  const estimatedMin = (totalWords / 160).toFixed(1);
+  const estimatedMin = (totalWords / (sourceMode ? 2.7 * 60 : 160)).toFixed(1);
   const qcStatus = qcReport?.overall_status || (qcReport as any)?.status;
+  const qcNeedsRefresh = qcStatus === 'PASS' &&
+    (!artifactStatus?.is_current || artifactStatus.qc_gate_allowed === false);
 
   return (
     <div className="h-full flex flex-col select-none text-[#F8FAFC]">
+      <SourceModeBanner projectId={projectId} review={(qcReport as any)?.semantic_review?.source_review} onMode={setSourceMode} />
       {/* Top Bar with Metrics */}
-      <div className="h-12 border-b border-[#28354D] bg-[#111827] px-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-4 text-xs">
-          <div className="flex items-center space-x-2">
+      <div className="min-h-12 border-b border-[#28354D] bg-[#111827] px-4 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs min-w-0">
+          <div className="flex items-center space-x-2 whitespace-nowrap">
             <FileText size={16} className="text-[#3B82F6]" />
             <span className="font-bold text-[#F8FAFC]">Kịch bản MC Minh (Sau Cánh Cửa)</span>
           </div>
 
           {segments.length > 0 && (
-            <div className="flex items-center space-x-3 text-[#94A3B8]">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[#94A3B8] whitespace-nowrap">
               <span>
                 Số từ: <strong className="text-[#F8FAFC]">{totalWords}</strong>
               </span>
@@ -258,7 +268,12 @@ export const ScriptView: React.FC<Props> = ({
                 Thời lượng: <strong className="text-[#F8FAFC]">~{estimatedMin} phút</strong>
               </span>
               <span>•</span>
-              {qcReport && qcStatus === 'PASS' ? (
+              {qcNeedsRefresh ? (
+                <span className="text-[#F59E0B] flex items-center space-x-1 font-semibold">
+                  <AlertTriangle size={13} />
+                  <span>QC cũ — cần kiểm tra lại</span>
+                </span>
+              ) : qcReport && qcStatus === 'PASS' ? (
                 <span className="text-[#10B981] flex items-center space-x-1 font-semibold">
                   <ShieldCheck size={13} />
                   <span>QC Đạt Chuẩn</span>
@@ -274,9 +289,9 @@ export const ScriptView: React.FC<Props> = ({
                   <span>QC Không đạt</span>
                 </span>
               ) : (
-                <span className="text-[#10B981] flex items-center space-x-1 font-semibold">
-                  <ShieldCheck size={13} />
-                  <span>Fact Lock Đã Khóa</span>
+                <span className="text-[#94A3B8] flex items-center space-x-1 font-semibold">
+                  <AlertTriangle size={13} />
+                  <span>Chưa có QC</span>
                 </span>
               )}
             </div>
@@ -284,7 +299,7 @@ export const ScriptView: React.FC<Props> = ({
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2 whitespace-nowrap">
           {segments.length > 0 && (
             <>
               {/* Copy Script */}
@@ -493,7 +508,7 @@ export const ScriptView: React.FC<Props> = ({
               <h3 className="text-sm font-bold text-[#F8FAFC]">Tập phim này chưa có kịch bản</h3>
               <p className="text-xs text-[#94A3B8] mt-1 leading-relaxed">
                 Tạo kịch bản hoàn chỉnh từ Story Bible đã duyệt tuân thủ các quy tắc nghiêm ngặt:
-                80–100 phân đoạn, 6 delivery profiles, bước ngoặt với tỷ lệ phát triển tự nhiên (~60-75% và ~75-90%).
+                {sourceMode ? 'giữ nguồn, hướng đã chọn và phần khóa; độ dài theo thời lượng mục tiêu. Không bắt buộc hai cú lật.' : '80–100 phân đoạn, 6 delivery profiles, bước ngoặt với tỷ lệ phát triển tự nhiên (~60-75% và ~75-90%).'}
               </p>
             </div>
 

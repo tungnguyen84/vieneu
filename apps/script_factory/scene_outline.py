@@ -29,6 +29,19 @@ SYSTEM_INSTRUCTION = (
 
 def _prompt(bible: StoryBible) -> str:
     from apps.script_factory.story_contract import contract_block
+    if bible.adaptation_context:
+        from apps.script_factory.adaptation import writer_context
+        target = bible.adaptation_context['brief']['target_duration_sec']
+        return (f'Lập dàn cảnh cho {target} giây, khoảng {round(target*2.7)} từ; không ép 80 đoạn hoặc hai reveals. '
+            'Mỗi cảnh có action, new_information, consequence; ghi payoff_ids và payoff_action trả lời hợp đồng. '
+            'Factual: cảnh là đơn vị trình bày thông tin có nguồn, không bịa hành động/thoại. '
+            'Hư cấu/own: gọi tên công việc, vật hoặc thao tác thực tế trong cảnh; không chỉ ghi "cải thiện quy trình", "hiểu nhu cầu", "giải quyết vấn đề". '
+            'Nếu fiction Bible chỉ mô tả khái quát, cụ thể hóa trong phạm vi hướng đã chọn bằng một nghiệp vụ quan sát được; không đổi các facts đã khóa. '
+            'Own chỉ thêm chi tiết trong phần được thay, giữ nguyên nguyên nhân/kết thúc/locks. '
+            'Writer viết toàn tập trong một lượt; xếp tối thiểu 8 cảnh liên tục, không cần chia part 1/2. '
+            'JSON {scenes:[{no,part,title,action,new_information,consequence,payoff_ids:[],payoff_action,segments}]}.\n'
+            + writer_context(bible.adaptation_context) + contract_block(bible)
+            + '\nStory: ' + json.dumps({k:v for k,v in bible.to_dict().items() if k != 'adaptation_context'},ensure_ascii=False))
     data = {k: v for k, v in bible.to_dict().items() if k not in {"story_qc_report", "status", "approved_at", "approved_by"}}
     return (
         f"STORY BIBLE:\n{json.dumps(data, ensure_ascii=False)}\n\n"
@@ -94,9 +107,13 @@ def outline_fulfills_contract(bible: StoryBible, scenes) -> bool:
 def build_scene_outline(bible: StoryBible, call_llm: LLMCall, require_contract: bool = False) -> Optional[List[Dict[str, Any]]]:
     """Returns the planned scenes, or None when the outline could not be produced."""
     from apps.script_factory.segment_rewriter import parse_json_items
+    system = SYSTEM_INSTRUCTION
+    if bible.adaptation_context:
+        from apps.script_factory.adaptation import SYSTEM
+        system = SYSTEM + ' Lập dàn cảnh theo thời lượng và mode trong brief; mỗi cảnh có thông tin mới, không ép 80 phân đoạn.'
 
     try:
-        raw, _, _ = call_llm(SYSTEM_INSTRUCTION, _prompt(bible))
+        raw, _, _ = call_llm(system, _prompt(bible))
     except Exception as exc:
         logger.warning(f"[SceneOutline] Outline call failed, writing without outline: {exc}")
         return None
@@ -104,7 +121,7 @@ def build_scene_outline(bible: StoryBible, call_llm: LLMCall, require_contract: 
     if require_contract and not outline_fulfills_contract(bible, scenes):
         logger.warning('[SceneOutline] Missing scene consequences/payoffs; retrying outline once before writing')
         try:
-            raw, _, _ = call_llm(SYSTEM_INSTRUCTION, _prompt(bible) + '\nDàn cảnh trước thiếu hệ quả hoặc đáp án. Kiểm tra đủ TỪNG payoff id, ghi cảnh trả lời và đáp án rõ nguồn. Mỗi cảnh phải có new_information và consequence. Trả lại toàn bộ dàn cảnh JSON.')
+            raw, _, _ = call_llm(system, _prompt(bible) + '\nDàn cảnh trước thiếu hệ quả hoặc đáp án. Kiểm tra đủ TỪNG payoff id, ghi cảnh trả lời và đáp án rõ nguồn. Mỗi cảnh phải có new_information và consequence. Trả lại toàn bộ dàn cảnh JSON.')
             scenes = _normalize(parse_json_items(raw, 'scenes'))
         except Exception as exc:
             logger.warning('[SceneOutline] Contract retry failed: %s', exc)
@@ -112,7 +129,7 @@ def build_scene_outline(bible: StoryBible, call_llm: LLMCall, require_contract: 
         if not outline_fulfills_contract(bible, scenes):
             return None
     parts = {s["part"] for s in scenes}
-    if len(scenes) < 8 or parts != {1, 2}:
+    if len(scenes) < 8 or (not bible.adaptation_context and parts != {1, 2}):
         logger.warning(f"[SceneOutline] Outline unusable ({len(scenes)} scenes, parts={sorted(parts)}); writing without outline")
         return None
     logger.info(f"[SceneOutline] Planned {len(scenes)} scenes ({sum(s['part'] == 1 for s in scenes)} in part 1)")

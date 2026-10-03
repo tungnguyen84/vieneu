@@ -405,7 +405,7 @@ class StoryQCEngine:
             char_id = str(character.get("char_id", "")).strip()
             if char_name.casefold() == "minh" or char_id.upper() == "MINH":
                 reserved_name_hits.append(f"supporting_characters[{idx}]")
-        if reserved_name_hits:
+        if reserved_name_hits and not (bible.adaptation_context and bible.adaptation_context['brief']['adaptation_mode'] == 'FACTUAL_RETELLING'):
             _add_issue(
                 "HOST_CHARACTER_NAME_COLLISION",
                 "Tên 'Minh' được dành riêng cho MC. Hãy đổi tên nhân vật trong truyện để lời dẫn và ánh xạ giọng không bị nhập nhằng.",
@@ -620,13 +620,13 @@ class StoryQCEngine:
             r1_required = ("evidence_support", "motivation_support", "timeline_support")
             r2_required = ("evidence_support", "motivation_support", "character_knowledge_support")
 
-            if not isinstance(r1_just, dict):
+            if not isinstance(r1_just, dict) and (bible.reveal_1 or not bible.adaptation_context):
                 _add_issue(
                     "UNSUPPORTED_REVEAL",
                     "Reveal 1 thiếu cấu trúc chứng minh (reveal_justifications.reveal_1).",
                     target="reveal_1",
                 )
-            else:
+            elif isinstance(r1_just, dict):
                 for req_key in r1_required:
                     val = r1_just.get(req_key)
                     if not val or str(val).strip().lower() in ("", "none", "false", "unsupported", "không có", "thiếu"):
@@ -636,13 +636,13 @@ class StoryQCEngine:
                             target=f"reveal_1.{req_key}",
                         )
 
-            if not isinstance(r2_just, dict):
+            if not isinstance(r2_just, dict) and (bible.reveal_2 or not bible.adaptation_context):
                 _add_issue(
                     "UNSUPPORTED_REVEAL",
                     "Reveal 2 thiếu cấu trúc chứng minh (reveal_justifications.reveal_2).",
                     target="reveal_2",
                 )
-            else:
+            elif isinstance(r2_just, dict):
                 for req_key in r2_required:
                     val = r2_just.get(req_key)
                     if not val or str(val).strip().lower() in ("", "none", "false", "unsupported", "không có", "thiếu"):
@@ -752,7 +752,7 @@ class StoryQCEngine:
         ).strip()
         topic_intent_dict = getattr(bible, "topic_intent", None)
 
-        if orig_topic:
+        if orig_topic and not bible.adaptation_context:
             from apps.script_factory.topic_intent import TopicIntent, extract_topic_intent
             if isinstance(topic_intent_dict, dict) and topic_intent_dict.get("original_topic"):
                 ti = TopicIntent.from_dict(topic_intent_dict)
@@ -844,7 +844,9 @@ class StoryQCEngine:
         def _find_primary_prop(text: str) -> Optional[str]:
             matches = []
             for p in prop_catalog:
-                m = re.search(r"\b" + re.escape(p) + r"\b", text, re.IGNORECASE)
+                from apps.script_factory.story_contract import physical_prop_mention
+                m = next((m for m in re.finditer(r"\b" + re.escape(p) + r"\b", text, re.IGNORECASE)
+                          if not bible.adaptation_context or physical_prop_mention(p,text,m.start(),m.end())),None)
                 if m:
                     is_container = bool(re.search(r"\b(trong|dưới|sau|ở|tại)\s+(?:túi\s+|cốp\s+|ngăn\s+|hộp\s+)?" + re.escape(p) + r"\b", text, re.IGNORECASE))
                     matches.append((1 if is_container else 0, m.start(), -len(p), p))
@@ -892,6 +894,11 @@ class StoryQCEngine:
             clues_text = " ".join(str(c) for c in (bible.clues or [])) + " " + json.dumps(bible.structured_clues or [], ensure_ascii=False)
             timeline_text = " ".join(str(t) for t in (bible.timeline or []))
             resolution_text = f"{bible.reveal_1} {bible.reveal_2} {bible.secret} {bible.ending}".lower()
+            if bible.adaptation_context:
+                # Life/factual stories may resolve their hook in a reported action
+                # inside the timeline. Full source/semantic review still verifies
+                # whether that action actually answers the promise.
+                resolution_text += ' ' + timeline_text.lower()
 
             in_clues = any(re.search(pat, clues_text, re.IGNORECASE) for pat in prop_pats)
             in_timeline = any(re.search(pat, timeline_text, re.IGNORECASE) for pat in prop_pats)
@@ -914,7 +921,23 @@ class StoryQCEngine:
 
         # 7. SEMANTIC PLOT LOGIC (LLM): reveals the narrator cannot know, illegal
         # endings, verdicts without proof. Feeds the existing AI repair rounds.
+        source_qc = None
+        if bible.adaptation_context and self.provider:
+            from apps.script_factory.adaptation import source_review, valid_source_review
+            stored_source = ((bible.story_qc_report or {}).get('semantic_review') or {}).get('source_review')
+            if (valid_source_review(bible, stored_source) and all(
+                    r.get('provider_name') == self.provider.provider_name
+                    and r.get('requested_model') == self.provider.default_model for r in stored_source['reviews'])):
+                source_qc = stored_source
+            else:
+                source_qc = source_review(self.provider, bible)
+            if source_qc['status'] != 'RUN':
+                _add_issue('SEMANTIC_REVIEW_FAILED', source_qc.get('error', 'Source review chưa đủ'), target='story_bible')
+            for issue in source_qc.get('issues', []):
+                _add_issue(issue['rule'], issue['message'], target=issue['target'])
         semantic = self._semantic_bible_review(bible)
+        if source_qc and semantic:
+            semantic['source_review'] = source_qc
         if semantic and semantic.get("status") == "ERROR":
             _add_issue(
                 rule="SEMANTIC_REVIEW_FAILED",
@@ -958,6 +981,12 @@ class StoryQCEngine:
         """
         if report is None:
             report = self.audit_story_bible(bible)
+
+        if bible.adaptation_context and (report.status == 'PASS' or not (provider or self.provider)):
+            # Source profiles must never enter legacy schema/template filling.
+            # Missing creative structure requires real AI repair, not invented facts.
+            bible.story_qc_report = report.to_dict()
+            return bible
 
         # Transport/decoder failures say nothing about the plot. Do not rewrite
         # a draft merely because its reviewer was unavailable.

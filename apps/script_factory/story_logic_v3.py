@@ -362,6 +362,11 @@ class StoryLogicV3Validator:
         issues: List[Dict[str, Any]] = []
         chains = getattr(bible, "causal_chains", [])
         if not chains:
+            context = getattr(bible, "adaptation_context", None) or {}
+            if context.get("brief", {}).get("adaptation_mode") == "FACTUAL_RETELLING":
+                # A report may document events without reporting decisions or
+                # motives. Inventing them to fill a schema would violate source QC.
+                return issues
             issues.append({
                 "rule": "CAUSAL_GAP",
                 "severity": "CRITICAL",
@@ -581,7 +586,7 @@ class ScriptProseQCV3Engine:
         issues.extend(self._check_report_like_density(segments))
 
         # 2. Hook Pacing QC (Section 17)
-        issues.extend(self._check_hook_pacing(segments))
+        issues.extend(self._check_hook_pacing(segments, story_bible))
 
         # 3. Ending Compression & Repetition (Section 20 & 21)
         issues.extend(self._check_ending_compression_and_repetition(segments))
@@ -636,7 +641,7 @@ class ScriptProseQCV3Engine:
 
         return issues
 
-    def _check_hook_pacing(self, segments: List[Any]) -> List[Dict[str, Any]]:
+    def _check_hook_pacing(self, segments: List[Any], story_bible: Any = None) -> List[Dict[str, Any]]:
         """
         Hook must create curiosity/tension in the first 0-8% without biographical droning.
         """
@@ -655,7 +660,8 @@ class ScriptProseQCV3Engine:
         bio_markers = ["sinh năm", "hiện làm nghề", "lương tháng", "thói quen hàng ngày", "sống tại địa chỉ"]
         bio_count = sum(1 for b in bio_markers if b in hook_text.lower())
 
-        if not has_tension or bio_count >= 3:
+        source_profile = bool(getattr(story_bible, 'adaptation_context', None))
+        if (not source_profile and not has_tension) or bio_count >= 3:
             issues.append({
                 "rule": "HOOK_TOO_SLOW",
                 "severity": "HIGH",

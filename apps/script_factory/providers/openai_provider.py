@@ -690,6 +690,11 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
         issues: List[Dict[str, Any]],
         model: Optional[str] = None,
     ) -> Tuple[StoryBible, int, int]:
+        if story_bible.adaptation_context:
+            from apps.script_factory.adaptation import create_bible
+            repaired = create_bible(self, story_bible.episode_id, story_bible.adaptation_context,
+                                    {'issues': issues, 'current_story': {k:v for k,v in story_bible.to_dict().items() if k != 'adaptation_context'}}, model=model)
+            return repaired, 0, 0
         """Repairs Story Bible QC issues without template injection using OpenAI-compatible LLM."""
         issues_summary = "\n".join(
             f"- [{it.get('rule', 'LOGIC')}] {it.get('message', '')} (Target: {it.get('target', 'general')})"
@@ -770,6 +775,9 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
         series_bible: Dict[str, Any],
         model: Optional[str] = None,
     ) -> Tuple[FullScript, int, int]:
+        if getattr(story_bible, 'adaptation_context', None):
+            from apps.script_factory.adaptation import write_adapted_script
+            return write_adapted_script(self, story_bible, model)
         """
         Writes a full, broadcast-grade long-form script (80-100 segments).
         Generates in two coherent parts (Acts 1-5 and Acts 6-9) to guarantee narrative density,

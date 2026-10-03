@@ -314,6 +314,32 @@ class GenerationService:
         }, ensure_ascii=False, indent=2), encoding='utf-8')
         return results
 
+    def generate_source_story(self, project_id, provider_id=None, model_id=None):
+        from apps.script_factory.adaptation import create_bible
+        from apps.script_factory.story_qc import StoryQCEngine
+        from studio.backend.services.source_service import current_context, assert_context, project_lock, write_json
+        project = PROJECTS_DIR / project_id
+        context = current_context(project)
+        provider = self.get_provider(provider_id=provider_id, model_id=model_id)
+        if not context or not getattr(provider, 'requires_grounded_review', False):
+            raise ValueError('Cần brief được chọn và provider AI thật.')
+        bible = create_bible(provider, project_id, context)
+        qc = StoryQCEngine(provider=provider)
+        report = qc.audit_story_bible(bible)
+        if report.status != 'PASS' and not all(i.get('rule') == 'SEMANTIC_REVIEW_FAILED' for i in report.issues):
+            bible = qc.repair_story_bible(bible, report)
+            report = qc.audit_story_bible(bible)
+        data = bible.to_dict()
+        data.update(premise=context['brief']['direction']['hook'], characters=[bible.protagonist, *bible.supporting_characters],
+                    fact_lock=[f.to_dict() for f in bible.critical_facts], story_qc_report=report.to_dict(), artifact_status='CURRENT')
+        with project_lock(project):
+            assert_context(project, context)
+            write_json(project / 'story' / 'story_bible.json', data)
+            write_json(project / 'story_bible.json', data)
+            mark_full_script_stale(project_id, PROJECTS_DIR, 'Cốt truyện từ nguồn đã tạo lại.')
+            invalidate_script_approval(project_id, PROJECTS_DIR)
+        return data
+
     def generate_story_bible(
         self,
         project_id: str,
@@ -333,6 +359,8 @@ class GenerationService:
             ("Đang kiểm tra tính logic và thiết lập Fact Lock...", 100),
         ]
 
+        if (PROJECTS_DIR / project_id / 'adaptation' / 'brief.json').exists():
+            return self.generate_source_story(project_id, provider_id, model_id)
         proj_dir = PROJECTS_DIR / project_id
         proj_dir.mkdir(parents=True, exist_ok=True)
         story_dir = proj_dir / "story"
@@ -527,6 +555,9 @@ class GenerationService:
             bible_data = json.load(f)
         story_bible = StoryBible.from_dict(bible_data)
 
+        from studio.backend.services.source_service import assert_context, project_lock
+        assert_context(proj_dir, story_bible.adaptation_context)
+        original_hash = story_content_hash(bible_data)
         provider = self.get_provider(provider_id=provider_id, model_id=model_id)
         from apps.script_factory.story_qc import StoryQCEngine
         from apps.script_factory.semantic_review import story_bible_content_hash
@@ -545,16 +576,19 @@ class GenerationService:
         repaired_data["story_qc_report"] = recheck_qc.to_dict()
         repaired_data["artifact_status"] = "CURRENT"
 
-        # Save to both locations
-        for target in (proj_dir / "story" / "story_bible.json", proj_dir / "story_bible.json"):
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with open(target, "w", encoding="utf-8") as f:
-                json.dump(repaired_data, f, ensure_ascii=False, indent=2)
+        with project_lock(proj_dir):
+            assert_context(proj_dir, story_bible.adaptation_context)
+            _assert_story_snapshot(story_path, original_hash, story_bible.generation_request_id)
+            # Save to both locations
+            for target in (proj_dir / "story" / "story_bible.json", proj_dir / "story_bible.json"):
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with open(target, "w", encoding="utf-8") as f:
+                    json.dump(repaired_data, f, ensure_ascii=False, indent=2)
 
-        if changed:
-            mark_full_script_stale(project_id, PROJECTS_DIR, "Story Bible was repaired; Full Script must be regenerated")
-        if changed or recheck_qc.status != 'PASS':
-            invalidate_script_approval(project_id, PROJECTS_DIR)
+            if changed:
+                mark_full_script_stale(project_id, PROJECTS_DIR, "Story Bible was repaired; Full Script must be regenerated")
+            if changed or recheck_qc.status != 'PASS':
+                invalidate_script_approval(project_id, PROJECTS_DIR)
 
         return {
             "story_bible": repaired_data,
@@ -581,6 +615,12 @@ class GenerationService:
             bible_data = json.load(f)
         story_bible = StoryBible.from_dict(bible_data)
 
+        from studio.backend.services.source_service import assert_context, project_lock
+        assert_context(proj_dir, story_bible.adaptation_context)
+        if story_bible.adaptation_context:
+            project_data = json.loads((proj_dir / 'project.json').read_text(encoding='utf-8'))
+            if project_data.get('stage_statuses', {}).get('02_story') != 'APPROVED':
+                raise ValueError('Duyệt cốt truyện từ nguồn trước khi viết kịch bản.')
         provider = self.get_provider(provider_id=provider_id, model_id=model_id)
         prov_source = "MOCK" if "mock" in provider.provider_name.lower() else "REAL_AI"
 
@@ -591,12 +631,14 @@ class GenerationService:
         logger.info("Kiểm tra logic Cốt truyện (Story Bible)...")
         bible_qc = story_qc.audit_story_bible(story_bible)
         logger.info(f"Cốt truyện: {bible_qc.status}" + (f" — {', '.join(bible_qc.rule_codes)}" if bible_qc.rule_codes else ""))
+        if story_bible.adaptation_context and bible_qc.status != 'PASS':
+            raise ValueError('QC cốt truyện từ nguồn chưa đạt hoặc chưa hiện hành. Mở Cốt truyện để kiểm tra/sửa và duyệt lại; không tự thay cốt truyện đã duyệt trong lúc viết kịch bản.')
         if (
             bible_qc.status != "PASS"
-            or not story_bible.causal_chains
+            or (not story_bible.adaptation_context and (not story_bible.causal_chains
             or not story_bible.knowledge_ledger
             or not story_bible.structured_clues
-            or not story_bible.reveal_justifications
+            or not story_bible.reveal_justifications))
         ):
             if "STORY_BIBLE_TOPIC_DRIFT" in bible_qc.rule_codes:
                 raise ValueError(
@@ -616,9 +658,12 @@ class GenerationService:
                 )
             repaired_story_data = story_bible.to_dict()
             repaired_story_data["artifact_status"] = "CURRENT"
-            for target in (story_path, proj_dir / "story_bible.json"):
-                with open(target, "w", encoding="utf-8") as f:
-                    json.dump(repaired_story_data, f, ensure_ascii=False, indent=2)
+            with project_lock(proj_dir):
+                assert_context(proj_dir, story_bible.adaptation_context)
+                _assert_story_snapshot(story_path, story_content_hash(bible_data), bible_data.get('generation_request_id'))
+                for target in (story_path, proj_dir / "story_bible.json"):
+                    with open(target, "w", encoding="utf-8") as f:
+                        json.dump(repaired_story_data, f, ensure_ascii=False, indent=2)
             bible_data = repaired_story_data
 
         source_story_hash = story_content_hash(bible_data)
@@ -664,84 +709,86 @@ class GenerationService:
                 model=effective_model,
             )
 
-        # Attach generation_source and trace to script and project metadata
-        script_dict = script.to_dict()
-        script_dict["generation_source"] = prov_source
-        script_dict["generation_request_id"] = getattr(script, "generation_request_id", None)
-        script_dict["prompt_version"] = getattr(script, "prompt_version", None)
-        script_dict["model_name"] = getattr(script, "model_name", None)
-        script_dict["provider_name"] = getattr(script, "provider_name", None)
-        script_dict["source_story_generation_request_id"] = story_bible.generation_request_id
-        _assert_story_snapshot(story_path, source_story_hash, story_bible.generation_request_id)
-        script_dict["source_story_content_hash"] = source_story_hash
-        script_dict["artifact_status"] = "CURRENT" if qc_report.status == "PASS" else "NEEDS_REVISION"
-        script_dict.pop("stale_reason", None)
-        script_dict.pop("stale_reasons", None)
-        script_dict.pop("stale_at", None)
+        with project_lock(proj_dir):
+            assert_context(proj_dir, story_bible.adaptation_context)
+            # Attach generation_source and trace to script and project metadata
+            script_dict = script.to_dict()
+            script_dict["generation_source"] = prov_source
+            script_dict["generation_request_id"] = getattr(script, "generation_request_id", None)
+            script_dict["prompt_version"] = getattr(script, "prompt_version", None)
+            script_dict["model_name"] = getattr(script, "model_name", None)
+            script_dict["provider_name"] = getattr(script, "provider_name", None)
+            script_dict["source_story_generation_request_id"] = story_bible.generation_request_id
+            _assert_story_snapshot(story_path, source_story_hash, story_bible.generation_request_id)
+            script_dict["source_story_content_hash"] = source_story_hash
+            script_dict["artifact_status"] = "CURRENT" if qc_report.status == "PASS" else "NEEDS_REVISION"
+            script_dict.pop("stale_reason", None)
+            script_dict.pop("stale_reasons", None)
+            script_dict.pop("stale_at", None)
 
-        # Save script
-        script_dir = proj_dir / "script"
-        script_dir.mkdir(parents=True, exist_ok=True)
-        script_path = script_dir / "full_script.json"
-        with open(script_path, "w", encoding="utf-8") as f:
-            json.dump(script_dict, f, ensure_ascii=False, indent=2)
+            # Save script
+            script_dir = proj_dir / "script"
+            script_dir.mkdir(parents=True, exist_ok=True)
+            script_path = script_dir / "full_script.json"
+            with open(script_path, "w", encoding="utf-8") as f:
+                json.dump(script_dict, f, ensure_ascii=False, indent=2)
 
-        qc_dict = asdict(qc_report)
-        qc_dict["generation_source"] = prov_source
-        qc_dict["generation_request_id"] = script_dict.get("generation_request_id")
-        qc_dict["source_story_generation_request_id"] = story_bible.generation_request_id
-        qc_dict["source_story_content_hash"] = script_dict["source_story_content_hash"]
-        qc_dict["artifact_status"] = "CURRENT" if qc_report.status == "PASS" else "NEEDS_REVISION"
-        qc_path = script_dir / "qc_report.json"
-        with open(qc_path, "w", encoding="utf-8") as f:
-            json.dump(qc_dict, f, ensure_ascii=False, indent=2)
+            qc_dict = asdict(qc_report)
+            qc_dict["generation_source"] = prov_source
+            qc_dict["generation_request_id"] = script_dict.get("generation_request_id")
+            qc_dict["source_story_generation_request_id"] = story_bible.generation_request_id
+            qc_dict["source_story_content_hash"] = script_dict["source_story_content_hash"]
+            qc_dict["artifact_status"] = "CURRENT" if qc_report.status == "PASS" else "NEEDS_REVISION"
+            qc_path = script_dir / "qc_report.json"
+            with open(qc_path, "w", encoding="utf-8") as f:
+                json.dump(qc_dict, f, ensure_ascii=False, indent=2)
 
-        # Save to history
-        hist_dir = script_dir / "history"
-        hist_dir.mkdir(parents=True, exist_ok=True)
-        hist_file = hist_dir / f"script_{int(time.time())}.json"
-        with open(hist_file, "w", encoding="utf-8") as f:
-            json.dump(script_dict, f, ensure_ascii=False, indent=2)
+            # Save to history
+            hist_dir = script_dir / "history"
+            hist_dir.mkdir(parents=True, exist_ok=True)
+            hist_file = hist_dir / f"script_{int(time.time())}.json"
+            with open(hist_file, "w", encoding="utf-8") as f:
+                json.dump(script_dict, f, ensure_ascii=False, indent=2)
 
-        # Update project.json with generation source and trace
-        p_json = proj_dir / "project.json"
-        if p_json.exists():
-            try:
-                with open(p_json, "r", encoding="utf-8") as f:
-                    p_curr = json.load(f)
-                p_curr["generation_source"] = prov_source
-                p_curr["generation_request_id"] = getattr(script, "generation_request_id", None)
-                p_curr["prompt_version"] = getattr(script, "prompt_version", None)
-                p_curr["model_name"] = getattr(script, "model_name", None)
-                p_curr["provider_name"] = getattr(script, "provider_name", None)
-                p_curr["story_generation_request_id"] = story_bible.generation_request_id
-                p_curr["script_generation_request_id"] = getattr(script, "generation_request_id", None)
-                p_curr["script_source_story_generation_request_id"] = story_bible.generation_request_id
-                p_curr["script_source_story_content_hash"] = script_dict["source_story_content_hash"]
-                p_curr["script_artifact_status"] = script_dict["artifact_status"]
-                p_curr["qc_status"] = qc_report.status
-                with open(p_json, "w", encoding="utf-8") as f:
-                    json.dump(p_curr, f, ensure_ascii=False, indent=2)
-            except Exception:
-                pass
+            # Update project.json with generation source and trace
+            p_json = proj_dir / "project.json"
+            if p_json.exists():
+                try:
+                    with open(p_json, "r", encoding="utf-8") as f:
+                        p_curr = json.load(f)
+                    p_curr["generation_source"] = prov_source
+                    p_curr["generation_request_id"] = getattr(script, "generation_request_id", None)
+                    p_curr["prompt_version"] = getattr(script, "prompt_version", None)
+                    p_curr["model_name"] = getattr(script, "model_name", None)
+                    p_curr["provider_name"] = getattr(script, "provider_name", None)
+                    p_curr["story_generation_request_id"] = story_bible.generation_request_id
+                    p_curr["script_generation_request_id"] = getattr(script, "generation_request_id", None)
+                    p_curr["script_source_story_generation_request_id"] = story_bible.generation_request_id
+                    p_curr["script_source_story_content_hash"] = script_dict["source_story_content_hash"]
+                    p_curr["script_artifact_status"] = script_dict["artifact_status"]
+                    p_curr["qc_status"] = qc_report.status
+                    with open(p_json, "w", encoding="utf-8") as f:
+                        json.dump(p_curr, f, ensure_ascii=False, indent=2)
+                except Exception:
+                    pass
 
-        invalidate_script_approval(project_id, PROJECTS_DIR)
-        script.total_words = sum(len(s.text.split()) for s in script.segments)
-        total_words = script.total_words
-        script_dict["total_words"] = total_words
-        return {
-            "script": script_dict,
-            "qc_report": qc_dict,
-            "generation_source": prov_source,
-            "stats": {
-                "word_count": total_words,
-                "segment_count": len(script.segments),
-                "estimated_duration_min": round(total_words / 160, 1),
-                "qc_status": qc_report.status,
-                "leakage_count": sum(1 for e in qc_report.evidence_issues if "LEAKAGE" in e.get("rule", "")),
+            invalidate_script_approval(project_id, PROJECTS_DIR)
+            script.total_words = sum(len(s.text.split()) for s in script.segments)
+            total_words = script.total_words
+            script_dict["total_words"] = total_words
+            return {
+                "script": script_dict,
+                "qc_report": qc_dict,
                 "generation_source": prov_source,
+                "stats": {
+                    "word_count": total_words,
+                    "segment_count": len(script.segments),
+                    "estimated_duration_min": round(total_words / (2.7 * 60 if story_bible.adaptation_context else 160), 1),
+                    "qc_status": qc_report.status,
+                    "leakage_count": sum(1 for e in qc_report.evidence_issues if "LEAKAGE" in e.get("rule", "")),
+                    "generation_source": prov_source,
+                }
             }
-        }
 
     def auto_repair_script(self, project_id: str, provider_id: Optional[str] = None,
                            model_id: Optional[str] = None) -> Dict[str, Any]:
@@ -760,6 +807,8 @@ class GenerationService:
         with open(story_path, "r", encoding="utf-8") as f:
             story_data = json.load(f)
             story_bible = StoryBible.from_dict(story_data)
+        from studio.backend.services.source_service import assert_context, project_lock
+        assert_context(proj_dir, story_bible.adaptation_context)
         source_story_hash = story_content_hash(story_data)
         stale_reasons = list(original_script_data.get('stale_reasons') or [])
         if original_script_data.get('stale_reason'):
@@ -833,39 +882,41 @@ class GenerationService:
             revised_data["actual_model"] = actual_m
             revised_data["prompt_version"] = "script-v3.9-calendar-payoff-location-repair"
             revised_data["generated_at"] = time.time()
-        _assert_story_snapshot(story_path, source_story_hash, story_bible.generation_request_id)
-        current_script_data = json.loads(script_path.read_text(encoding='utf-8'))
-        if script_content_hash(current_script_data) != script_content_hash(original_script_data):
-            raise ValueError("Kịch bản đã được chỉnh sửa trong lúc AI sửa; giữ bản hiện tại và chạy lại QC.")
-        with open(script_path, "w", encoding="utf-8") as f:
-            json.dump(revised_data, f, ensure_ascii=False, indent=2)
-        with open(qc_path, "w", encoding="utf-8") as f:
-            final_qc_data = asdict(final_qc)
-            final_qc_data.update({
-                "generation_source": revised_data.get("generation_source"),
-                "generation_request_id": revised_data.get("generation_request_id"),
-                "source_story_generation_request_id": revised_data.get("source_story_generation_request_id"),
-                "source_story_content_hash": revised_data.get("source_story_content_hash"),
-                "artifact_status": revised_data["artifact_status"],
-            })
-            if final_qc.status == "PASS":
-                final_qc_data.pop("stale_reason", None)
-                final_qc_data.pop("stale_reasons", None)
-            json.dump(final_qc_data, f, ensure_ascii=False, indent=2)
+        with project_lock(proj_dir):
+            assert_context(proj_dir, story_bible.adaptation_context)
+            _assert_story_snapshot(story_path, source_story_hash, story_bible.generation_request_id)
+            current_script_data = json.loads(script_path.read_text(encoding='utf-8'))
+            if script_content_hash(current_script_data) != script_content_hash(original_script_data):
+                raise ValueError("Kịch bản đã được chỉnh sửa trong lúc AI sửa; giữ bản hiện tại và chạy lại QC.")
+            with open(script_path, "w", encoding="utf-8") as f:
+                json.dump(revised_data, f, ensure_ascii=False, indent=2)
+            with open(qc_path, "w", encoding="utf-8") as f:
+                final_qc_data = asdict(final_qc)
+                final_qc_data.update({
+                    "generation_source": revised_data.get("generation_source"),
+                    "generation_request_id": revised_data.get("generation_request_id"),
+                    "source_story_generation_request_id": revised_data.get("source_story_generation_request_id"),
+                    "source_story_content_hash": revised_data.get("source_story_content_hash"),
+                    "artifact_status": revised_data["artifact_status"],
+                })
+                if final_qc.status == "PASS":
+                    final_qc_data.pop("stale_reason", None)
+                    final_qc_data.pop("stale_reasons", None)
+                json.dump(final_qc_data, f, ensure_ascii=False, indent=2)
 
-        project_path = proj_dir / "project.json"
-        if project_path.exists():
-            project_data = json.loads(project_path.read_text(encoding="utf-8"))
-            project_data["script_artifact_status"] = revised_data["artifact_status"]
-            if final_qc.status == "PASS":
-                project_data.pop("script_stale_reason", None)
-                project_data.pop("script_stale_reasons", None)
-            project_data["qc_status"] = final_qc.status
-            project_data["updated_at"] = time.time()
-            project_path.write_text(json.dumps(project_data, ensure_ascii=False, indent=2), encoding="utf-8")
+            project_path = proj_dir / "project.json"
+            if project_path.exists():
+                project_data = json.loads(project_path.read_text(encoding="utf-8"))
+                project_data["script_artifact_status"] = revised_data["artifact_status"]
+                if final_qc.status == "PASS":
+                    project_data.pop("script_stale_reason", None)
+                    project_data.pop("script_stale_reasons", None)
+                project_data["qc_status"] = final_qc.status
+                project_data["updated_at"] = time.time()
+                project_path.write_text(json.dumps(project_data, ensure_ascii=False, indent=2), encoding="utf-8")
 
-        total_words = revised_script.total_words or sum(len(s.text.split()) for s in revised_script.segments)
-        invalidate_script_approval(project_id, PROJECTS_DIR)
+            total_words = revised_script.total_words or sum(len(s.text.split()) for s in revised_script.segments)
+            invalidate_script_approval(project_id, PROJECTS_DIR)
         remaining_rules = sorted({
             str(issue.get("rule") or issue.get("type") or "UNKNOWN_QC")
             for issue in [*final_qc.evidence_issues, *final_qc.fact_conflicts]

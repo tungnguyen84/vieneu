@@ -24,6 +24,7 @@ interface Props {
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
+  { id: 'sources', label: 'Nguồn tham khảo', icon: BookOpen },
   { id: 'ideas', label: 'Ý tưởng', icon: Lightbulb },
   { id: 'story', label: 'Cốt truyện', icon: BookOpen },
   { id: 'script', label: 'Kịch bản', icon: FileText },

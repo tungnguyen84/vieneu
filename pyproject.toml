@@ -153,6 +153,10 @@ gpu = [
     "accelerate; sys_platform == 'darwin'",
     "trafilatura>=2.0.0",
 ]
+studio-sources = [
+    "trafilatura>=2.0.0",
+    "yt-dlp>=2025.10.22",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]   # finetune/tests runs in its own process (see tests/test_finetune_lora.py)

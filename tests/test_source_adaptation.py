@@ -1,0 +1,578 @@
+"""Source intake, revision races and grounded-mode contracts (no live TTS)."""
+import json
+import socket
+import threading
+import time
+from types import SimpleNamespace
+from unittest.mock import patch
+
+import pytest
+
+from apps.script_factory.source_intake import read_text, subtitle_units, public_address, youtube_url, read_youtube
+from apps.script_factory.adaptation import analyze_source, writer_context, source_review, write_adapted_script
+from apps.script_factory.models import StoryBible, FullScript, ScriptSegment
+from studio.backend.services.source_service import SourceService, current_context, assert_context, read_json
+
+TEXT = 'Lan làm việc ở một cửa hàng nhỏ. Cô kiểm tra sổ thu chi mỗi tối. Một lần cô tìm thấy khoản tiền bị ghi nhầm. Lan hỏi người quản lý và sửa lại sổ. Cuối tháng cửa hàng đối chiếu và xác nhận số tiền đúng.'
+
+
+def test_source_quotes_allow_case_unicode_but_reject_paraphrase():
+    from apps.script_factory.adaptation import _quote
+    import unicodedata
+    text='Đây là câu chuyện về một đội ngũ học cách làm việc từ mục đích chung.'
+    assert _quote(unicodedata.normalize('NFD','Đội ngũ học cách làm việc từ mục đích chung.'), text)
+    assert not _quote('Đội ngũ hiểu cách làm việc từ mục đích chung.', text)
+    assert not _quote('Đội ngũ học cách... mục đích chung.', text)
+
+
+def test_source_ref_id_correction_requires_unique_verbatim_quote_and_records_original():
+    from apps.script_factory.adaptation import canonicalize_source_refs,validate_refs
+    units=[{'unit_id':'U0001','text':'Lan sửa đúng khoản thu trong cuốn sổ.'},
+           {'unit_id':'U0002','text':'Hạnh kiểm tra lại hóa đơn.'}]
+    refs=[{'unit_id':'U0002','quote':'Lan sửa đúng khoản thu trong cuốn sổ.'}]
+    assert not validate_refs(refs,units)
+    canonicalize_source_refs(refs,units)
+    assert validate_refs(refs,units) and refs[0]['reported_unit_id']=='U0002' and refs[0]['unit_id']=='U0001'
+    absent=[{'unit_id':'U0002','quote':'Lan lấy tiền để bù vào sổ.'}]
+    canonicalize_source_refs(absent,units)
+    assert not validate_refs(absent,units) and absent[0]['unit_id']=='U0002'
+    ambiguous=[{'unit_id':'missing','quote':units[0]['text']}]
+    canonicalize_source_refs(ambiguous,units+[{'unit_id':'U0003','text':units[0]['text']}])
+    assert ambiguous[0]['unit_id']=='missing'
+
+
+def test_story_source_evidence_is_atomic_and_covers_canon():
+    from apps.script_factory.adaptation import source_artifact
+    bible=StoryBible(episode_id='EPNEW', title='Cửa hàng nhỏ', protagonist={'name':'Lan','description':'Lan làm việc ở cửa hàng.'},
+                    supporting_characters=[{'name':'Hạnh','description':'Hạnh quản lý cửa hàng.'}],
+                    timeline=['Lan kiểm tra khoản tiền ghi nhầm.'], causal_chains=[{'cause':'Sổ ghi nhầm khoản thu.'}])
+    items=source_artifact(bible)
+    assert items['supporting_characters.0.description']=='Hạnh quản lý cửa hàng.'
+    assert items['protagonist.name']=='Lan'
+    assert items['timeline.0']=='Lan kiểm tra khoản tiền ghi nhầm.'
+    assert items['causal_chains.0.cause']=='Sổ ghi nhầm khoản thu.'
+    assert 'supporting_characters' not in items
+
+
+class Provider:
+    provider_name = 'openai_compatible'
+    default_model = 'test-real-interface'
+    requires_grounded_review = True
+    def __init__(self, responses): self.responses = iter(responses); self.prompts = []
+    def complete_json(self, system, prompt, model=None):
+        self.prompts.append(prompt)
+        return json.dumps(next(self.responses), ensure_ascii=False), 10, 10
+
+
+@pytest.fixture
+def service(tmp_path):
+    (tmp_path / 'EPNEW').mkdir()
+    (tmp_path / 'EPNEW' / 'project.json').write_text(json.dumps({'project_id':'EPNEW','stage_statuses':{}}))
+    return SourceService(tmp_path, lambda **kw: None)
+
+
+def confirmed(service):
+    source = service.add('EPNEW', read_text(TEXT))
+    return service.confirm('EPNEW', source['source_id'], source['text'], 1)
+
+
+def selected(service):
+    from studio.backend.services.source_service import write_json
+    source = confirmed(service)
+    folder = service.folder('EPNEW',source['source_id'])
+    write_json(folder/'analysis.json',{'theme':'Công sở','source_hash':source['content_hash'],'source_revision':1})
+    data={'source_id':source['source_id'],'source_hash':source['content_hash'],'source_revision':1,'generation_request_id':'request1',
+          'config':{'adaptation_mode':'FICTION_FROM_THEME','target_duration_sec':300,'topic':'Công sở','locked_elements':[]},
+          'directions':[{'direction_id':'DIRECTION_1','title':'Một sự lựa chọn','hook':'Một sự lựa chọn khó'}]}
+    write_json(service.project('EPNEW')/'adaptation'/'directions.json',data)
+    service.select('EPNEW','DIRECTION_1','request1')
+    return source,current_context(service.project('EPNEW'))
+
+
+def test_legacy_artifact_cannot_bypass_selected_source(service):
+    assert_context(service.project('EPNEW'), None)
+    selected(service)
+    with pytest.raises(ValueError,match='thiếu lineage'):
+        assert_context(service.project('EPNEW'),None)
+
+
+def test_factual_review_covers_every_segment_in_each_bounded_pass(service):
+    from apps.script_factory.adaptation import valid_source_review
+    _,context=selected(service);context['brief']['adaptation_mode']='FACTUAL_RETELLING'
+    bible=StoryBible(episode_id='EPNEW',title='Tập',protagonist={'name':'Lan'},adaptation_context=context)
+    script=FullScript(episode_id='EPNEW',title='Tập',host={},segments=[ScriptSegment(id=f'{i:03}',text=TEXT) for i in range(1,12)])
+    checks=[{'item_id':s.id,'artifact_quote':'Lan làm việc ở một cửa hàng nhỏ.', 'classification':'FACT','verdict':'PASS',
+             'evidence_refs':[{'unit_id':'U0001','quote':'Lan làm việc ở một cửa hàng nhỏ.'}]} for s in script.segments]
+    modes=[{'key':k,'verdict':'PASS','reason':'Toàn bộ thông tin có nguồn trích dẫn phù hợp.',
+            'source_evidence':[{'unit_id':'U0001','quote':'Lan làm việc ở một cửa hàng nhỏ.'}],
+            'artifact_evidence':[{'item_id':'001','quote':'Lan làm việc ở một cửa hàng nhỏ.'}]} for k in ['attribution','no_invented_events','honest_ending']]
+    provider=Provider([{'checks':checks[:10]},{'checks':checks[10:]},{'mode_checks':modes}]*2)
+    review=source_review(provider,bible,script)
+    assert valid_source_review(bible,review,script)
+    assert len(provider.prompts)==6
+    first_batch = json.JSONDecoder().raw_decode(provider.prompts[0].split('\nDATA: ',1)[1])[0]
+    second_batch = json.JSONDecoder().raw_decode(provider.prompts[1].split('\nDATA: ',1)[1])[0]
+    assert set(first_batch['artifact']) == {f'{i:03}' for i in range(1,11)}
+    assert set(second_batch['artifact']) == {'011'}
+    assert TEXT in first_batch['whole_work_context']  # context remains available
+    assert all(len(r['checks'])==11 and len(r['fact_check_requests'])==2 for r in review['reviews'])
+    incomplete=source_review(Provider([{'checks':checks[:9]}]*2),bible,script)
+    assert incomplete['status']=='ERROR' and incomplete['passes']==0
+
+
+def test_indexed_story_quote_is_anchored_to_actual_list_field():
+    from apps.script_factory.semantic_review import review_story_bible_logic
+    bible=StoryBible(episode_id='EPNEW',title='Tập',protagonist={'name':'Lan'},
+                    structured_clues=[{'clue':'Lan thấy cuốn sổ cũ trên bàn.','what_it_proves':'Một khoản tiền chưa được giải thích.'}])
+    response={'issues':[{'rule':'UNRESOLVED_SETUP','field':'structured_clues[0].what_it_proves',
+                        'quote':'Một khoản tiền chưa được giải thích.', 'problem':'Chưa có cảnh giải thích khoản tiền.',
+                        'fix':'Bổ sung giải thích trong hồi kết.','confidence':'high'}]}
+    result=review_story_bible_logic(bible,lambda *args:(json.dumps(response,ensure_ascii=False),1,1))
+    assert result['status']=='RUN' and len(result['issues'])==1 and not result['dropped_unanchored']
+
+
+@pytest.mark.parametrize('field,quote,valid',[
+    ('key_scenes','Lan kiểm tra từng hóa đơn trong cuốn sổ.',True),
+    ('key_scenes','Lan bù khoản thiếu bằng tiền của mình.',False),
+    ('nonexistent_scene','Lan kiểm tra từng hóa đơn trong cuốn sổ.',False),
+])
+def test_source_story_audit_resolves_real_skeleton_alias_only(service,field,quote,valid):
+    from apps.script_factory.semantic_review import review_story_bible_logic
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Sổ cuối ca',protagonist={'name':'Lan'},
+                    narrative_skeleton={'key_scenes':[{'action':'Lan kiểm tra từng hóa đơn trong cuốn sổ.'}]},
+                    adaptation_context=context)
+    response={'issues':[],'audit_checks':[
+        {'category':category,'verdict':'PASS','reason':'Đã kiểm tra tình huống trong cảnh theo cốt truyện.',
+         'evidence':[{'field':field,'quote':quote}]}
+        for category in ('timeline','setup_payoff','evidence_scope','knowledge_source','vietnamese')]}
+    result=review_story_bible_logic(bible,lambda *args:(json.dumps(response,ensure_ascii=False),1,1),_require_grounding=True)
+    assert (result['status']=='RUN')==valid
+    if valid:
+        assert result['passes']==2 and result['grounding_verified']
+        assert result['audit_checks'][0]['evidence'][0]['field']=='narrative_skeleton.key_scenes'
+        assert result['audit_checks'][0]['evidence'][0]['reported_field']=='key_scenes'
+
+
+def test_source_metadata_records_gemini_actual_fallback():
+    from apps.script_factory.adaptation import metadata
+    provider=SimpleNamespace(provider_name='gemini',default_model='requested',last_used_model='fallback')
+    data=metadata(provider,'parent','explicit-request')
+    assert data['requested_model']=='explicit-request' and data['actual_model']=='fallback'
+    assert data['parent_generation_request_id']=='parent'
+
+
+def test_life_hook_not_required_to_contain_mystery_keywords():
+    from apps.script_factory.story_logic_v3 import ScriptProseQCV3Engine
+    segments=[ScriptSegment(id='001',text='Lan vừa khóa cửa thì thấy tiền trong ngăn kéo ít hơn con số bàn giao. Cô cầm ví rồi dừng lại.')]
+    bible=SimpleNamespace(adaptation_context={'brief':{'adaptation_mode':'IMPROVE_OWN_SCRIPT'}})
+    auditor=ScriptProseQCV3Engine()
+    assert not auditor._check_hook_pacing(segments,bible)
+    assert auditor._check_hook_pacing(segments)
+
+
+def test_source_single_pass_outline_keeps_payoffs_without_two_part_requirement(service):
+    from apps.script_factory.scene_outline import build_scene_outline
+    from apps.script_factory.story_contract import payoff_obligations
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Sổ cuối ca',protagonist={'name':'Lan'},
+                    ending='Lan sửa sổ và cùng chủ cửa hàng ký bàn giao.',adaptation_context=context)
+    scenes=[{'title':f'Cảnh {i}','action':'Lan kiểm tra sổ cuối ca.',
+             'new_information':f'Một chi tiết mới {i}.','consequence':'Lan thực hiện bước kiểm tra tiếp theo.',
+             'payoff_ids':[o['id'] for o in payoff_obligations(bible)] if i==8 else [],
+             'payoff_action':'Lan sửa sổ và cùng chủ cửa hàng ký bàn giao.' if i==8 else ''}
+            for i in range(1,9)]
+    call=lambda *args:(json.dumps({'scenes':scenes},ensure_ascii=False),1,1)
+    assert len(build_scene_outline(bible,call,require_contract=True))==8
+    scenes[-1]['payoff_ids']=[]
+    assert build_scene_outline(bible,call,require_contract=True) is None
+    scenes[-1]['payoff_ids']=[o['id'] for o in payoff_obligations(bible)]
+    bible.adaptation_context=None
+    assert build_scene_outline(bible,call) is None  # native two-call contract retained
+
+
+def test_source_prop_guard_distinguishes_idioms_but_keeps_real_object_gate(service):
+    from apps.script_factory.story_qc import StoryQCEngine
+    from apps.script_factory.story_contract import physical_prop_mention
+    for prop,text in [('khăn','khó khăn'),('ảnh','ảnh hưởng'),('thư','thư viện'),('ví','ví dụ'),('hộp','hộp thoại')]:
+        start=text.index(prop)
+        assert not physical_prop_mention(prop,text,start,start+len(prop))
+        real='Lan lấy chiếc '+prop+' trên bàn.'
+        start=real.index(prop)
+        assert physical_prop_mention(prop,real,start,start+len(prop))
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Bảng công việc',protagonist={'name':'An'},
+                    timeline=['An hỏi người sử dụng về các bước thao tác.'],ending='An hoàn thành bản thử nghiệm.',
+                    narrative_skeleton={'trigger':'An đối mặt với khó khăn khi người dùng không hiểu thao tác.'},
+                    adaptation_context=context)
+    assert 'UNRESOLVED_CORE_PROP' not in StoryQCEngine().audit_story_bible(bible).rule_codes
+    bible.narrative_skeleton['trigger']='An tìm thấy chiếc khăn tay trên bàn.'
+    assert 'UNRESOLVED_CORE_PROP' in StoryQCEngine().audit_story_bible(bible).rule_codes
+
+
+def test_private_ip_and_mixed_dns_are_rejected():
+    for addresses in [['127.0.0.1'], ['10.1.1.1'], ['::1'], ['1.1.1.1','192.168.1.1']]:
+        with patch('socket.getaddrinfo', return_value=[(socket.AF_INET, socket.SOCK_STREAM, 6,'',(ip,443)) for ip in addresses]):
+            with pytest.raises(ValueError): public_address('https://example.com/article')
+
+
+@pytest.mark.parametrize('url',['file:///x','http://localhost:8765','http://a:b@example.com','https://example.com:5000'])
+def test_unsafe_url_scheme_credentials_and_ports(url):
+    with pytest.raises(ValueError): public_address(url)
+
+
+def test_redirect_destination_rechecked_and_connection_pinned():
+    from apps.script_factory.source_intake import fetch_public
+    response=SimpleNamespace(status=302,getheader=lambda name,default=None:'http://127.0.0.1/' if name=='Location' else default)
+    connection=SimpleNamespace(sock=None,request=lambda *a,**k:None,getresponse=lambda:response,close=lambda:None)
+    def dns(host,*a,**k):
+        return [(socket.AF_INET,socket.SOCK_STREAM,6,'',('1.1.1.1' if host=='example.com' else '127.0.0.1',80))]
+    with patch('socket.getaddrinfo',side_effect=dns), patch('socket.create_connection') as connect, patch('http.client.HTTPConnection',return_value=connection):
+        with pytest.raises(ValueError): fetch_public('http://example.com/a')
+        assert connect.call_args.args[0] == ('1.1.1.1',80)
+        assert connect.call_count == 1
+
+
+def test_rolling_subtitles_dedup_only_adjacent_overlap():
+    text='WEBVTT\n\n00:00.000 --> 00:01.000\nLan mở sổ để kiểm tra\n\n00:00.800 --> 00:02.000\nđể kiểm tra số tiền\n\n00:20.000 --> 00:22.000\nLan mở sổ để kiểm tra'
+    units=subtitle_units(text)
+    assert [u['text'] for u in units] == ['Lan mở sổ để kiểm tra','số tiền','Lan mở sổ để kiểm tra']
+    assert units[-1]['start_sec']==20
+
+
+def test_youtube_single_video_only():
+    assert youtube_url('https://youtu.be/abcdefghijk?list=playlist')=='https://www.youtube.com/watch?v=abcdefghijk'
+    assert youtube_url('https://www.youtube.com/shorts/abcdefghijk')=='https://www.youtube.com/watch?v=abcdefghijk'
+    for url in ['https://youtube.com/@channel/videos','https://youtube.com/playlist?list=x']:
+        with pytest.raises(ValueError):youtube_url(url)
+
+
+def test_youtube_no_captions_does_not_generate_fake_transcript():
+    with patch('subprocess.run',return_value=SimpleNamespace(returncode=0,stdout=json.dumps({'title':'Video','duration':60}))):
+        with pytest.raises(ValueError,match='không tự nhận dạng'):read_youtube('https://youtu.be/abcdefghijk')
+
+
+def test_manual_captions_preferred_in_requested_language():
+    info={'title':'Video','subtitles':{'vi':[{'ext':'vtt','url':'https://example.com/manual'}]},
+          'automatic_captions':{'vi':[{'ext':'vtt','url':'https://example.com/auto'}]},'duration':50}
+    captions='WEBVTT\n\n00:00.000 --> 00:30.000\n'+TEXT
+    with patch('subprocess.run',return_value=SimpleNamespace(returncode=0,stdout=json.dumps(info))), patch('apps.script_factory.source_intake.fetch_public',return_value=(captions.encode(),'text/vtt','url')) as fetch:
+        data=read_youtube('https://youtu.be/abcdefghijk')
+        assert data['caption_kind']=='MANUAL'; assert fetch.call_args.args[0].endswith('/manual')
+
+
+def test_revision_preserves_original_and_invalidates_brief(service):
+    source,context=selected(service)
+    new=service.confirm('EPNEW',source['source_id'],TEXT+' Sau đó Lan về nhà.',1)
+    assert new['revision']==2
+    assert (service.folder('EPNEW',source['source_id'])/'history'/'1'/'extracted.txt').read_text(encoding='utf-8')==TEXT
+    with pytest.raises(ValueError):assert_context(service.project('EPNEW'),context)
+
+
+def test_metadata_confirmation_without_content_change_keeps_lineage(service):
+    source,context=selected(service)
+    service.confirm('EPNEW',source['source_id'],TEXT,1)
+    assert_context(service.project('EPNEW'),context)
+
+
+def test_stale_revision_and_selection_rejected(service):
+    source,context=selected(service)
+    with pytest.raises(ValueError):service.confirm('EPNEW',source['source_id'],TEXT,9)
+    with pytest.raises(ValueError):service.select('EPNEW','DIRECTION_1','wrong-request')
+    assert_context(service.project('EPNEW'),context)
+
+
+def test_tampered_source_units_do_not_pass(service):
+    from studio.backend.services.source_service import write_json
+    source,context=selected(service)
+    write_json(service.folder('EPNEW',source['source_id'])/'units.json',{'units':[{'unit_id':'U0001','text':'Changed content'}]})
+    with pytest.raises(ValueError):current_context(service.project('EPNEW'))
+
+
+def test_source_path_cannot_escape_workspace(service):
+    with pytest.raises(ValueError):service.project('../EPNEW')
+    with pytest.raises(ValueError):service.folder('EPNEW','../project.json')
+
+
+def test_concurrent_jobs_idempotent_and_restart_failed(service):
+    started,finish=threading.Event(),threading.Event()
+    def work():started.set();finish.wait(2);return {'done':True}
+    first=service.start('EPNEW','intake',{'url':'a'},work);started.wait(1)
+    second=service.start('EPNEW','intake',{'url':'a'},work)
+    assert first['job_id']==second['job_id']
+    with pytest.raises(ValueError):service.start('EPNEW','intake',{'url':'b'},work)
+    restart=SourceService(service.root,lambda **kw:None)
+    assert restart.job('EPNEW',first['job_id'])['status']=='FAILED'
+    finish.set()
+
+
+def test_job_start_failure_releases_capacity_and_thread_failure_is_retryable(service):
+    with patch('studio.backend.services.source_service.write_json',side_effect=OSError('disk unavailable')):
+        with pytest.raises(OSError):service.start('EPNEW','intake',{'url':'a'},lambda:None)
+    assert service.slots.acquire(False) and service.slots.acquire(False)
+    service.slots.release();service.slots.release()
+    with patch('threading.Thread.start',side_effect=RuntimeError('thread unavailable')):
+        with pytest.raises(RuntimeError):service.start('EPNEW','intake',{'url':'a'},lambda:None)
+    assert service.state('EPNEW')['jobs'][0]['status']=='FAILED'
+    assert service.slots.acquire(False) and service.slots.acquire(False)
+    service.slots.release();service.slots.release()
+
+
+def test_analysis_rejects_misquoted_source_then_retries(service):
+    source=confirmed(service)
+    bad={'theme':'Công sở','claims':[{'claim_id':'C1','statement':'Lan kiểm tra sổ','support_status':'SUPPORTED','evidence_refs':[{'unit_id':'U0001','quote':'Lan nhặt được chiếc ví'}]}]}
+    good=json.loads(json.dumps(bad));good['claims'][0]['evidence_refs'][0]['quote']='Lan làm việc ở một cửa hàng nhỏ.'
+    provider=Provider([bad,good]);result=analyze_source(provider,source)
+    assert result['source_hash']==source['content_hash'];assert len(provider.prompts)==2
+
+
+def test_fiction_writer_does_not_receive_original_transcript(service):
+    source,context=selected(service)
+    prompt=writer_context(context)
+    assert TEXT not in prompt;assert 'source_units' not in prompt;assert 'Công sở' in prompt
+
+
+def test_factual_writer_preserves_source_context(service):
+    source,context=selected(service);context['brief']['adaptation_mode']='FACTUAL_RETELLING'
+    assert TEXT in writer_context(context);assert 'Không bịa thoại' in writer_context(context)
+
+
+@pytest.mark.parametrize('bad_words',[400,1054])
+def test_source_writer_retries_duration_mismatch_and_keeps_real_lineage(service,bad_words):
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Sổ cuối ca',protagonist={'name':'Lan'},
+                    adaptation_context=context,generation_request_id='parent-story')
+    bad={'segments':[{'text':'từ '*bad_words,'delivery_profile':'ENDING'}]}
+    good={'segments':[{'text':'từ '*50,'delivery_profile':'NORMAL'} for _ in range(15)]
+                       +[{'text':'từ '*60,'delivery_profile':'ENDING'}]}
+    provider=Provider([bad,good])
+    script,_,_=write_adapted_script(provider,bible)
+    assert script.total_words==810 and len(provider.prompts)==2
+    assert str(bad_words) in provider.prompts[1] and '810' in provider.prompts[1]
+    assert script.parent_generation_request_id=='parent-story'
+    assert script.host['voice_id']=='020' and script.prompt_version.endswith('-writer-v3')
+
+
+def test_source_writer_fails_after_bounded_duration_retry(service):
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Sổ cuối ca',protagonist={'name':'Lan'},adaptation_context=context)
+    bad={'segments':[{'text':'từ '*1054,'delivery_profile':'ENDING'}]}
+    provider=Provider([bad,bad])
+    with pytest.raises(ValueError,match='sau một lần thử lại'):
+        write_adapted_script(provider,bible)
+    assert len(provider.prompts)==2
+
+
+def test_models_round_trip_source_context(service):
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Tập',protagonist={'name':'Lan'},adaptation_context=context)
+    assert StoryBible.from_dict(bible.to_dict()).adaptation_context==context
+    script=FullScript(episode_id='EPNEW',title='Tập',host={'name':'Minh'},adaptation_context=context)
+    assert FullScript.from_dict(script.to_dict()).adaptation_context==context
+
+
+def test_profile_qc_does_not_require_reveal_or_three_audience_questions(service):
+    from apps.script_factory.script_qc import ScriptQCEngine
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Sổ thu chi',protagonist={'name':'Lan'},ending='Lan sửa lại sổ.',adaptation_context=context)
+    script=FullScript(episode_id='EPNEW',title='Sổ thu chi',host={'name':'Minh'},segments=[ScriptSegment(id='001',text=TEXT,delivery_profile='HOOK'),ScriptSegment(id='002',text='Xin chào và hẹn gặp lại.',delivery_profile='ENDING')])
+    report=ScriptQCEngine.audit_script(script,bible)
+    assert not any('Missing REVEAL' in x for x in report.logic_issues)
+    assert not any('Audience interaction count' in x for x in report.repetition_issues)
+    assert report.status!='PASS'  # source reviewer is unavailable, do not weaken gate
+
+
+def test_source_review_incomplete_coverage_fail_closed(service):
+    _,context=selected(service);context['brief']['adaptation_mode']='FACTUAL_RETELLING'
+    bible=StoryBible(episode_id='EPNEW',title='Sổ thu chi',protagonist={'name':'Lan'},adaptation_context=context)
+    script=FullScript(episode_id='EPNEW',title='Tập',host={},segments=[ScriptSegment(id='001',text=TEXT)])
+    provider=Provider([{'checks':[],'mode_checks':[]},{'checks':[],'mode_checks':[]}])
+    result=source_review(provider,bible,script)
+    assert result['status']=='ERROR';assert result['passes']==0
+
+
+def test_source_edit_during_analysis_cannot_save_current(service):
+    source=confirmed(service)
+    analysis={'theme':'Công sở','generation_request_id':'a','source_hash':source['content_hash'],'source_revision':1}
+    def edit(*args):
+        service.confirm('EPNEW',source['source_id'],TEXT+' Lan nghỉ một ngày.',1)
+        return {'directions':[]}
+    service.providers=lambda **kw:SimpleNamespace(requires_grounded_review=True,complete_json=lambda *a:None)
+    with patch('apps.script_factory.adaptation.analyze_source',return_value=analysis),patch('apps.script_factory.adaptation.generate_directions',side_effect=edit):
+        with pytest.raises(ValueError,match='Nguồn đổi'):service.directions('EPNEW',source['source_id'],{'adaptation_mode':'FICTION_FROM_THEME','target_duration_sec':300})
+    assert not (service.project('EPNEW')/'adaptation'/'directions.json').exists()
+
+
+def test_source_script_cannot_silently_rewrite_approved_story(service):
+    from studio.backend.services.generation_service import GenerationService
+    from studio.backend.services.source_service import write_json
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Sổ cuối ca',protagonist={'name':'Lan'},adaptation_context=context)
+    story=service.project('EPNEW')/'story/story_bible.json'
+    write_json(story,bible.to_dict())
+    project=service.project('EPNEW')/'project.json'
+    meta=read_json(project);meta['stage_statuses']['02_story']='APPROVED';write_json(project,meta)
+    before=story.read_bytes()
+    manager=object.__new__(GenerationService)
+    manager.get_provider=lambda **kw:SimpleNamespace(provider_name='openai_compatible',default_model='test')
+    report=SimpleNamespace(status='FAIL',rule_codes=['UNRESOLVED_SETUP'])
+    with patch('studio.backend.services.generation_service.PROJECTS_DIR',service.root), \
+         patch('apps.script_factory.story_qc.StoryQCEngine.audit_story_bible',return_value=report), \
+         patch('apps.script_factory.story_qc.StoryQCEngine.repair_story_bible') as repair:
+        with pytest.raises(ValueError,match='không tự thay cốt truyện'):
+            manager.generate_full_script('EPNEW')
+    repair.assert_not_called()
+    assert story.read_bytes()==before and not (service.project('EPNEW')/'script/full_script.json').exists()
+
+
+def test_saved_review_cannot_be_reused_after_script_edit(service):
+    from apps.script_factory.adaptation import source_artifact, source_review_keys, valid_source_review
+    _, context = selected(service)
+    bible = StoryBible(episode_id='EPNEW', title='Sổ thu chi', protagonist={'name':'Lan'}, adaptation_context=context)
+    script = FullScript(episode_id='EPNEW', title='Tập', host={}, segments=[ScriptSegment(id='001',text=TEXT)])
+    payload = {'checks':[], 'mode_checks':[
+        {'key':key, 'verdict':'PASS','reason':'Câu chuyện khác, giữ chủ đề kiểm tra sổ sách.',
+         'source_evidence':[{'unit_id':'U0001','quote':'Lan làm việc ở một cửa hàng nhỏ.'}],
+         'artifact_evidence':[{'item_id':'001','quote':'Lan làm việc ở một cửa hàng nhỏ.'}]}
+        for key in source_review_keys(context)]}
+    review = source_review(Provider([payload,payload]), bible, script)
+    assert valid_source_review(bible, review, script)
+    assert len(source_artifact(bible, script)) == 1
+    script.segments[0].text += ' Một người khác bước vào.'
+    assert not valid_source_review(bible, review, script)
+
+
+def test_own_review_requires_each_lock_and_failed_lock_blocks(service):
+    from apps.script_factory.adaptation import source_review_keys, valid_source_review
+    _, context = selected(service)
+    context['brief'].update(adaptation_mode='IMPROVE_OWN_SCRIPT',locked_elements=['Lan sửa đúng sổ.','Cuối tháng xác nhận số tiền.'])
+    bible = StoryBible(episode_id='EPNEW',title='Tập',protagonist={'name':'Lan'},adaptation_context=context)
+    script = FullScript(episode_id='EPNEW',title='Tập',host={},segments=[ScriptSegment(id='001',text=TEXT)])
+    payload = {'checks':[], 'mode_checks':[
+        {'key':key,'verdict':'FAIL' if key=='lock_2' else 'PASS','reason':'Đối chiếu canon và nội dung đã khóa của tác phẩm.',
+         'source_evidence':[{'unit_id':'U0001','quote':'Lan làm việc ở một cửa hàng nhỏ.'}],
+         'artifact_evidence':[{'item_id':'001','quote':'Lan làm việc ở một cửa hàng nhỏ.'}]}
+        for key in source_review_keys(context)]}
+    review = source_review(Provider([payload,payload]),bible,script)
+    assert review['passes']==2 and len(review['issues'])==2
+    assert not valid_source_review(bible,review,script)
+    payload['mode_checks']=payload['mode_checks'][1:]
+    review=source_review(Provider([payload,payload]),bible,script)
+    assert review['status']=='ERROR'
+
+
+def test_source_api_intake_confirm_upload_and_validation(service):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from studio.backend.source_routes import make_source_router
+    app=FastAPI()
+    app.include_router(make_source_router(service.root,SimpleNamespace(get_provider=lambda **kw:None),None,None))
+    client=TestClient(app)
+    assert client.post('/api/projects/EPNEW/sources',json={'text':TEXT,'url':'https://example.com'}).status_code==400
+    response=client.post('/api/projects/EPNEW/sources',json={'text':TEXT})
+    assert response.status_code==200
+    sid=response.json()['source']['source_id']
+    assert client.post(f'/api/projects/EPNEW/sources/{sid}/confirm',json={'text':TEXT,'expected_revision':9}).status_code==400
+    assert client.post(f'/api/projects/EPNEW/sources/{sid}/confirm',json={'text':TEXT,'expected_revision':1}).json()['status']=='CONFIRMED'
+    assert client.post('/api/projects/EPNEW/sources/upload',files={'file':('bad.txt',b'\xff','text/plain')}).status_code==400
+    assert client.post('/api/projects/EPNEW/sources/upload',files={'file':('story.txt',TEXT.encode(),'text/plain')}).status_code==200
+    assert client.post('/api/projects/EPNEW/adaptation/generate/story',json={}).status_code==400
+
+
+def test_windows_atomic_publication_retries_reader_sharing_violation(tmp_path):
+    from pathlib import Path
+    from studio.backend.services.source_service import write_json
+    real_replace=Path.replace
+    attempts=[]
+    def busy_once(path,target):
+        attempts.append(path)
+        if len(attempts)==1: raise PermissionError('WinError 5 reader sharing')
+        return real_replace(path,target)
+    target=tmp_path/'job.json'
+    with patch.object(Path,'replace',busy_once):write_json(target,{'status':'COMPLETED'})
+    assert read_json(target)['status']=='COMPLETED' and len(attempts)==2
+
+
+def test_story_schema_retry_reports_all_bad_lists_and_preserves_metadata(service):
+    from apps.script_factory.adaptation import create_bible
+    _,context=selected(service)
+    bad={'title':'Cuốn sổ cuối ca','protagonist':{'name':'Lan'},'ending':'Lan sửa đúng sổ và về nhà.',
+         'timeline':['Lan kiểm tra sổ rồi sửa lại.'],'relationships':['Lan và Hạnh'], 'critical_facts':['Lan sửa sổ.']}
+    good={**bad,'relationships':[],'critical_facts':[], 'narrative_skeleton':{
+        'concrete_task':'Đối chiếu khoản tiền ghi nhầm trong sổ thu chi.',
+        'concrete_instance':{'person':'Lan', 'wanted_outcome':'Bàn giao khoản thu cuối ca cho Hạnh.',
+                             'first_attempt':'Lan đếm tiền trong ngăn kéo và so với hóa đơn.',
+                             'obstacle':'Sổ tổng kết ghi một hóa đơn thanh toán sai trạng thái.',
+                             'decision':'Lan báo lỗi của mình thay vì lấy tiền riêng bù.',
+                             'cost':'Lan chịu trách nhiệm về việc nhập sai.',
+                             'result':'Lan và Hạnh sửa đúng trạng thái rồi ký bàn giao.'},
+        'task_design':{'task_object':'Khoản thu ghi nhầm trong sổ cuối ca.',
+                       'observed_problem':'Bảng tổng kết không khớp số tiền trong ngăn kéo.',
+                       'stakes':'Lan sợ chủ cửa hàng mất niềm tin.',
+                       'choice_cost':'Lan chấp nhận báo lỗi do mình nhập sai.',
+                       'change_action':'Lan sửa trạng thái thanh toán rồi ký bàn giao với Hạnh.',
+                       'observable_result':'Số tiền và bảng tổng kết khớp, cả hai ký bàn giao.'},
+        'key_scenes':[{'action':'Lan đối chiếu hóa đơn với số tiền trong ngăn kéo.',
+                       'obstacle':'Một hóa đơn ghi sai trạng thái thanh toán.',
+                       'decision':'Lan báo lỗi cho chủ cửa hàng thay vì bù tiền.',
+                       'consequence':'Hạnh cùng Lan sửa đúng khoản thu trong sổ.'} for _ in range(3)]}}
+    # Untrusted model output cannot choose the mode, provenance or approval.
+    good.update(adaptation_context={'brief':{'adaptation_mode':'FACTUAL_RETELLING'}},
+                generation_source='MOCK',generation_request_id='injected-request',artifact_status='APPROVED')
+    provider=Provider([bad,good])
+    bible=create_bible(provider,'EPNEW',context)
+    assert 'relationships phải' in provider.prompts[-1] and 'critical_facts phải' in provider.prompts[-1]
+    assert bible.requested_model==provider.default_model and bible.actual_model==provider.default_model
+    assert StoryBible.from_dict(bible.to_dict()).parent_generation_request_id=='request1'
+    assert bible.adaptation_context['brief']['adaptation_mode']=='FICTION_FROM_THEME'
+    assert bible.generation_source=='REAL_AI' and bible.generation_request_id!='injected-request'
+    assert read_json(service.project('EPNEW')/'project.json')['stage_statuses']['03_script']=='STALE'
+
+
+def test_factual_outline_does_not_force_action_or_80_segments(service):
+    from apps.script_factory.story_contract import payoff_obligations
+    from apps.script_factory.scene_outline import build_scene_outline
+    _,context=selected(service);context['brief']['adaptation_mode']='FACTUAL_RETELLING'
+    bible=StoryBible(episode_id='EPNEW',title='Tập',protagonist={'name':'Lan'},ending='Nguồn chưa cho biết kết quả.',adaptation_context=context)
+    assert 'Không bịa' in payoff_obligations(bible)[0]['question']
+    prompts=[]
+    def call(system,prompt):
+        prompts.append(system)
+        return json.dumps({'scenes':[{'no':i,'part':1 if i<5 else 2,'title':str(i),'action':'Trình bày sự kiện có nguồn','new_information':'Thông tin mới có nguồn','consequence':'Cách hiểu thay đổi','payoff_ids':['ending'],'payoff_action':'Nguồn chưa cho biết kết quả'} for i in range(1,9)]}),1,1
+    assert build_scene_outline(bible,call,require_contract=True)
+    assert 'dài khoảng 80' not in prompts[0]
+
+
+@pytest.mark.parametrize('provider_class', ['openai','gemini'])
+def test_source_repair_providers_pass_actual_issues(service,provider_class):
+    from apps.script_factory.providers.openai_provider import OpenAICompatibleProvider
+    from apps.script_factory.providers.gemini_provider import GeminiScriptAIProvider
+    _,context=selected(service)
+    cls=OpenAICompatibleProvider if provider_class=='openai' else GeminiScriptAIProvider
+    provider=object.__new__(cls)
+    bible=StoryBible(episode_id='EPNEW',title='Tập',protagonist={'name':'Lan'},adaptation_context=context)
+    issues=[{'rule':'UNRESOLVED_SETUP','message':'Chi tiết chưa được giải thích.'}]
+    with patch('apps.script_factory.adaptation.create_bible',return_value=bible) as create:
+        result,_,_=provider.repair_story_bible(bible,issues)
+    assert result is bible and create.call_args.args[3]['issues']==issues
+
+
+def test_factual_story_prompt_and_prop_gate_use_source_profile(service):
+    from apps.script_factory.story_qc import StoryQCEngine
+    from apps.script_factory.semantic_review import build_story_bible_prompt
+    _,context=selected(service);context['brief']['adaptation_mode']='FACTUAL_RETELLING'
+    bible=StoryBible(episode_id='EPNEW',title='Tủ quần áo miễn phí',protagonist={'name':'Tổ hợp cộng đồng'},
+                    timeline=['Tủ quần áo miễn phí phục vụ người cần đồ.'],
+                    narrative_skeleton={'trigger':'Chiếc áo được trao cho người cần đồ.'},
+                    ending='Nguồn chưa cho biết việc mở rộng.',adaptation_context=context)
+    prompt=build_story_bible_prompt(bible)
+    assert 'Nhân vật gửi thư (góc nhìn duy nhất)' not in prompt
+    report=StoryQCEngine().audit_story_bible(bible)
+    assert 'UNRESOLVED_CORE_PROP' not in report.rule_codes
+    assert 'CAUSAL_GAP' not in report.rule_codes
+    before=bible.to_dict()
+    repaired=StoryQCEngine().repair_story_bible(bible,report)
+    for key in ('causal_chains','knowledge_ledger','structured_clues','reveal_justifications'):
+        assert repaired.to_dict()[key]==before[key]
+    bible.adaptation_context=None
+    assert 'CAUSAL_GAP' in StoryQCEngine().audit_story_bible(bible).rule_codes

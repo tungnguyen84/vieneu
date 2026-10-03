@@ -179,6 +179,7 @@ class StoryBible:
     events: List[Dict[str, Any]] = field(default_factory=list)
     reveal_proofs: List[Dict[str, Any]] = field(default_factory=list)
     story_qc_report: Optional[Dict[str, Any]] = None
+    adaptation_context: Optional[Dict[str, Any]] = None
     scene_outline: Optional[List[Dict[str, Any]]] = None
     original_user_topic: Optional[str] = None
     topic_intent: Optional[Dict[str, Any]] = None
@@ -190,6 +191,9 @@ class StoryBible:
     model_name: Optional[str] = None
     provider_name: Optional[str] = None
     generated_at: Optional[float] = None
+    requested_model: Optional[str] = None
+    actual_model: Optional[str] = None
+    parent_generation_request_id: Optional[str] = None
     approved_by: Optional[str] = None
     approved_at: Optional[float] = None
     last_modified_at: float = field(default_factory=time.time)
@@ -215,8 +219,9 @@ class StoryBible:
 # Identity and lineage stay fixed when an AI repair returns a revised Story Bible.
 _STORY_BIBLE_PROTECTED_FIELDS = {
     "episode_id", "title", "source_idea_id", "public_episode_number", "original_user_topic",
-    "topic_intent", "topic_adherence", "status", "story_qc_report", "generation_source",
+    "topic_intent", "topic_adherence", "status", "story_qc_report", "generation_source", "adaptation_context",
     "generation_request_id", "prompt_version", "model_name", "provider_name", "generated_at",
+    "requested_model", "actual_model", "parent_generation_request_id",
     "approved_by", "approved_at", "last_modified_at",
 }
 
@@ -376,6 +381,9 @@ class FullScript:
     scene_outline: Optional[List[Dict[str, Any]]] = None
     provider_name: Optional[str] = None
     created_at: float = field(default_factory=time.time)
+    adaptation_context: Optional[Dict[str, Any]] = None
+    parent_generation_request_id: Optional[str] = None
+    generated_at: Optional[float] = None
     updated_at: float = field(default_factory=time.time)
 
     def to_dict(self) -> Dict[str, Any]:

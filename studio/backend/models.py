@@ -79,6 +79,7 @@ class ScriptSegment(BaseModel):
 
 
 class StoryBibleSection(BaseModel):
+    adaptation_mode: Optional[str] = None
     premise: str = ""
     characters_summary: str = ""
     relationships: str = ""

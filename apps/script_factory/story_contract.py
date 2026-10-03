@@ -10,6 +10,16 @@ from apps.script_factory.event_facts import normalized, year_mentions
 from apps.script_factory.vietnamese_cleaner import num_to_vietnamese_words
 
 
+def physical_prop_mention(prop, text, start, end):
+    """Disambiguate common Vietnamese phrases before treating words as objects."""
+    before, after = text[:start].casefold(), text[end:].casefold()
+    if prop.casefold() == 'khăn' and re.search(r'\bkhó\s+$',before):
+        return False
+    suffixes = {'ảnh':r'^\s+hưởng\b', 'thư':r'^\s+(?:viện|ký|mục|giãn)\b',
+                'ví':r'^\s+dụ\b', 'hộp':r'^\s+thoại\b'}
+    return not re.search(suffixes.get(prop.casefold(),r'(?!)'),after)
+
+
 def age_facts(bible):
     period = normalized(bible.time_period or '')
     present = re.search(r'(?:hiện tại|bối cảnh hiện tại|thời điểm hiện tại)(?:\s+là)?\s+(?:năm\s+)?((?:19|20)\d{2})', period)
@@ -98,6 +108,7 @@ def script_age_conflicts(script, bible):
 
 def payoff_obligations(bible):
     obligations = []
+    factual = bool(bible.adaptation_context and bible.adaptation_context['brief']['adaptation_mode'] == 'FACTUAL_RETELLING')
     skeleton = bible.narrative_skeleton or {}
     for key, text in [('title_trigger', str(skeleton.get('trigger', '') or (bible.title if bible.clues else '')))]:
         if text:
@@ -112,7 +123,9 @@ def payoff_obligations(bible):
     for key in ('reveal_1', 'reveal_2', 'ending'):
         text = getattr(bible, key, '')
         if text:
-            obligations.append({'id': key, 'promise': text, 'question': 'Phải có cảnh hành động/đối thoại hiện thực hóa đúng sự kiện này, không chỉ tóm tắt hoặc hứa sẽ làm.'})
+            question = ('Trình bày sự kiện hoặc giới hạn chưa biết bằng đúng nguồn, phân biệt kế hoạch với kết quả. Không bịa hành động/đối thoại để hiện thực hóa kết thúc.' if factual else
+                        'Phải có cảnh hành động/đối thoại hiện thực hóa đúng sự kiện này, không chỉ tóm tắt hoặc hứa sẽ làm.')
+            obligations.append({'id': key, 'promise': text, 'question': question})
     return obligations
 
 

@@ -37,12 +37,14 @@ export const LiveLogPanel: React.FC<LiveLogPanelProps> = ({ projectId }) => {
   const [running, setRunning] = useState<RunningJob | null>(null);
   const [now, setNow] = useState(Date.now() / 1000);
   const cursor = useRef(0);
+  const epoch = useRef<string | undefined>(undefined);
   const scroller = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
 
   useEffect(() => {
     if (!projectId) return;
     cursor.current = 0;
+    epoch.current = undefined;
     setEntries([]);
     setRunning(null);
     let cancelled = false;
@@ -54,6 +56,11 @@ export const LiveLogPanel: React.FC<LiveLogPanelProps> = ({ projectId }) => {
         const res = await fetch(`/api/projects/${projectId}/logs?since=${cursor.current}`);
         if (res.ok && !cancelled) {
           const data = await res.json();
+          if (epoch.current && data.epoch && epoch.current !== data.epoch) {
+            cursor.current = 0;
+            setEntries([]);
+          }
+          epoch.current = data.epoch;
           const fresh: LogEntry[] = data.entries || [];
           if (fresh.length) {
             cursor.current = fresh[fresh.length - 1].seq;

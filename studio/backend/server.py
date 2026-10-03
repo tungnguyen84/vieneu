@@ -92,6 +92,8 @@ render_srv = RenderService()
 qc_srv = QCService()
 job_srv = JobService()
 gen_srv = GenerationService()
+from studio.backend.source_routes import make_source_router
+app.include_router(make_source_router(BASE_DIR / 'projects', gen_srv, pm, job_srv))
 
 
 # ---------------- AI PROVIDER CREDENTIALS ----------------

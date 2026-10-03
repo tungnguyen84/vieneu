@@ -94,6 +94,15 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
     story = _read_json(story_path) if story_path.exists() else {}
     script = _read_json(script_path) if script_path.exists() else {}
     reasons: List[str] = []
+    if (project_dir / 'adaptation' / 'brief.json').exists() or story.get('adaptation_context') or script.get('adaptation_context'):
+        from studio.backend.services.source_service import assert_context
+        try:
+            assert_context(project_dir, story.get('adaptation_context'))
+            assert_context(project_dir, script.get('adaptation_context'))
+            if not story.get('adaptation_context') or not script.get('adaptation_context'):
+                raise ValueError('Thiếu lineage nguồn ở Story hoặc Script.')
+        except (ValueError, OSError, KeyError) as exc:
+            reasons.append(str(exc))
 
     story_request_id = story.get("generation_request_id")
     script_request_id = script.get("generation_request_id")
@@ -193,15 +202,16 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
                 critical_qc_issues.append(f"[{rule_code}] {msg}")
 
     audio_gate_reasons: List[str] = []
-    from apps.script_factory.script_qc import SCRIPT_QC_VERSION
+    from apps.script_factory.script_qc import script_qc_version
+    expected_qc_version = script_qc_version(story)
 
     # 1. Require QC Report existence
     if not qc_path.exists() or not qc:
         audio_gate_reasons.append("Chưa có báo cáo QC kịch bản (cần chạy QC trước khi duyệt)")
     else:
-        if qc.get("qc_version") != SCRIPT_QC_VERSION:
+        if qc.get("qc_version") != expected_qc_version:
             audio_gate_reasons.append(
-                f"Báo cáo QC được chấm bằng bộ luật cũ ({qc.get('qc_version') or 'không rõ'}); cần chạy lại QC {SCRIPT_QC_VERSION}"
+                f"Báo cáo QC được chấm bằng bộ luật cũ ({qc.get('qc_version') or 'không rõ'}); cần chạy lại QC {expected_qc_version}"
             )
         if qc_status != "PASS":
             audio_gate_reasons.append(f"Kịch bản chưa đạt chuẩn QC (trạng thái: {qc_status or 'CHƯA_ĐẠT'})")
@@ -212,16 +222,23 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
             audio_gate_reasons.append("Nội dung kịch bản đã bị thay đổi sau lần QC cuối; cần chạy lại QC")
             reasons.append("Nội dung kịch bản đã bị thay đổi sau lần QC cuối")
 
+        if story.get('adaptation_context'):
+            src_review = (qc.get('semantic_review') or {}).get('source_review') or {}
+            from apps.script_factory.adaptation import valid_source_review
+            from apps.script_factory.models import StoryBible, FullScript
+            if not valid_source_review(StoryBible.from_dict(story), src_review, FullScript.from_dict(script)):
+                audio_gate_reasons.append('QC nguồn chưa chạy đủ hai lượt hợp lệ hoặc có lỗi chưa sửa.')
+
         # Check semantic review status
         sem_rev = qc.get("semantic_review")
-        from apps.script_factory.semantic_review import SEMANTIC_REVIEW_VERSION, story_bible_content_hash
+        from apps.script_factory.semantic_review import semantic_review_version, story_bible_content_hash
         from apps.script_factory.models import StoryBible
         if not isinstance(sem_rev, dict) or sem_rev.get("status") != "RUN":
             audio_gate_reasons.append("QC logic cốt truyện chưa có kết quả hợp lệ; cần chạy lại review")
         else:
             if sem_rev.get("script_hash") != current_script_hash:
                 audio_gate_reasons.append("QC logic không thuộc nội dung kịch bản hiện tại")
-            if sem_rev.get("review_version") != SEMANTIC_REVIEW_VERSION:
+            if sem_rev.get("review_version") != semantic_review_version(StoryBible.from_dict(story)):
                 audio_gate_reasons.append("QC logic dùng bộ luật cũ; cần kiểm tra lại tính tự nhiên và diễn tiến")
             if sem_rev.get("passes") != 2:
                 audio_gate_reasons.append("QC logic chưa hoàn thành lượt kiểm tra diễn tiến độc lập")

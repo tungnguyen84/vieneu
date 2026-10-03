@@ -1,3 +1,4 @@
+import { SourceWorkspace } from './components/SourceWorkspace';
 import React, { useEffect, useState } from 'react';
 import { ProjectMetadata, SceneItem, ScriptSegment } from './types';
 import { TopProjectBar } from './components/TopProjectBar';
@@ -28,7 +29,7 @@ import { ProjectManagerModal } from './components/ProjectManagerModal';
 export const App: React.FC = () => {
   const [projects, setProjects] = useState<ProjectMetadata[]>([]);
   const [currentProject, setCurrentProject] = useState<ProjectMetadata | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeTab, setActiveTab] = useState<string>(() => sessionStorage.getItem('studio.activeTab') || 'overview');
   const [selectedScene, setSelectedScene] = useState<SceneItem | null>(null);
   const [selectedSegment, setSelectedSegment] = useState<ScriptSegment | null>(null);
   const [advancedMode, setAdvancedMode] = useState<boolean>(false);
@@ -43,9 +44,8 @@ export const App: React.FC = () => {
       .then((data: ProjectMetadata[]) => {
         setProjects(data);
         if (data.length > 0) {
-          const target = selectedId
-            ? data.find((p) => p.project_id === selectedId) || data[0]
-            : data[0];
+          const targetId = selectedId || sessionStorage.getItem('studio.projectId');
+          const target = data.find((p) => p.project_id === targetId) || data[0];
           setCurrentProject(target);
         }
       })
@@ -55,6 +55,9 @@ export const App: React.FC = () => {
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  useEffect(() => { if (currentProject) sessionStorage.setItem('studio.projectId', currentProject.project_id); }, [currentProject?.project_id]);
+  useEffect(() => { sessionStorage.setItem('studio.activeTab', activeTab); }, [activeTab]);
 
   const handleSelectProject = (projectId: string) => {
     const proj = projects.find((p) => p.project_id === projectId);
@@ -211,8 +214,12 @@ export const App: React.FC = () => {
             />
           )}
 
+          {activeTab === 'sources' && currentProject && <SourceWorkspace key={currentProject.project_id} projectId={currentProject.project_id}
+            onNavigate={async (tab, projectId) => { fetchProjects(projectId); setActiveTab(tab); }} />}
+
           {activeTab === 'story' && currentProject && (
             <StoryView
+              key={currentProject.project_id}
               projectId={currentProject.project_id}
               onApproveStory={() => handleUpdateStage('02_story', 'APPROVED')}
               onNavigate={(tab) => setActiveTab(tab)}
@@ -221,6 +228,7 @@ export const App: React.FC = () => {
 
           {activeTab === 'script' && currentProject && (
             <ScriptView
+              key={currentProject.project_id}
               projectId={currentProject.project_id}
               onSelectSegment={(seg) => {
                 setSelectedSegment(seg);

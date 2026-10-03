@@ -115,6 +115,7 @@ def _story_context(story_bible: StoryBible) -> Dict[str, Any]:
 
 def build_prompt(script: FullScript, story_bible: StoryBible, flagged: Dict[str, List[str]]) -> str:
     from apps.script_factory.story_contract import contract_block
+    from apps.script_factory.adaptation import writer_context
     index = {s.id: i for i, s in enumerate(script.segments)}
     targets = []
     for seg_id in sorted(flagged, key=index.__getitem__):
@@ -131,7 +132,8 @@ def build_prompt(script: FullScript, story_bible: StoryBible, flagged: Dict[str,
     return (
         "Bối cảnh câu chuyện:\n"
         f"{json.dumps(_story_context(story_bible), ensure_ascii=False)}\n\n"
-        + contract_block(story_bible) +
+        + contract_block(story_bible)
+        + (writer_context(story_bible.adaptation_context) if story_bible.adaptation_context else '') +
         "Toàn bộ mạch kịch bản hiện tại (chỉ đọc để biết nhân vật đã biết gì và sự kiện đã xảy ra):\n"
         + '\n'.join(f'[{s.id}] {s.text}' for s in script.segments) + '\n\n'
         +
@@ -264,7 +266,11 @@ def rewrite_flagged_segments(
     total_in = total_out = 0
     for start in range(0, len(ids), MAX_SEGMENTS_PER_CALL):
         batch = {seg_id: flagged[seg_id] for seg_id in ids[start:start + MAX_SEGMENTS_PER_CALL]}
-        raw, in_tok, out_tok = call_llm(SYSTEM_INSTRUCTION, build_prompt(script, story_bible, batch))
+        system = SYSTEM_INSTRUCTION
+        if story_bible.adaptation_context:
+            from apps.script_factory.adaptation import SYSTEM, MODE_RULES
+            system = SYSTEM + MODE_RULES[story_bible.adaptation_context['brief']['adaptation_mode']]
+        raw, in_tok, out_tok = call_llm(system, build_prompt(script, story_bible, batch))
         total_in += in_tok
         total_out += out_tok
         applied = 0

@@ -16,7 +16,7 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
   const [targetDuration, setTargetDuration] = useState<number>(1200);
 
   // Mode: 'ideas' | 'topic' | 'script'
-  const [startMode, setStartMode] = useState<'ideas' | 'topic' | 'script'>('ideas');
+  const [startMode, setStartMode] = useState<'ideas' | 'topic' | 'script' | 'source'>('ideas');
 
   // Option A (Ideas) state
   const [direction, setDirection] = useState<string>('');
@@ -133,7 +133,7 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
       setErrorMessage('Vui lòng nhập Mã tập phim (Episode ID)');
       return;
     }
-    if (!title.trim() && startMode !== 'ideas') {
+    if (!title.trim() && startMode !== 'ideas' && startMode !== 'source') {
       setErrorMessage('Vui lòng nhập Tên tập phim');
       return;
     }
@@ -177,7 +177,7 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
       }
 
       // 2. Handle specific mode
-      let targetTab = 'story';
+      let targetTab = startMode === 'source' ? 'sources' : 'story';
       if (startMode === 'ideas' && selectedIdea) {
         const selectRes = await fetch(`/api/projects/${newId}/ideas/select`, {
           method: 'POST',
@@ -200,7 +200,7 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
           throw new Error(err.detail || 'Không thể nhập kịch bản');
         }
         targetTab = 'script';
-      } else {
+      } else if (startMode !== 'source') {
         targetTab = 'story';
       }
 
@@ -424,6 +424,11 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
                   </div>
                   <span className="text-[10px] text-[#10B981] font-semibold mt-3">Tùy chọn C</span>
                 </button>
+                <button type="button" onClick={() => setStartMode('source')}
+                  className={`p-3.5 rounded-lg border text-left cursor-pointer ${startMode === 'source' ? 'bg-blue-950 border-blue-500' : 'border-[#28354D] bg-[#0B0F17]'}`}>
+                  <div className="font-bold text-xs text-[#F8FAFC]">Tạo từ nguồn tham khảo</div>
+                  <p className="text-[11px] text-[#94A3B8] mt-2">Bài báo, YouTube hoặc văn bản → kiểm tra nguồn → ba hướng → câu chuyện mới.</p>
+                </button>
               </div>
 
               {/* Sub-form based on selection */}
@@ -534,6 +539,7 @@ export const NewEpisodeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
                   </div>
                 )}
 
+                {startMode === 'source' && <p className="text-sm text-slate-300">Sau khi tạo tập, chọn cách dùng nguồn và cách kể riêng. Nội dung nguồn sẽ được kiểm tra trước khi viết dài.</p>}
                 {startMode === 'topic' && (
                   <div className="space-y-2">
                     <label className="text-[11px] font-semibold text-[#94A3B8] block">

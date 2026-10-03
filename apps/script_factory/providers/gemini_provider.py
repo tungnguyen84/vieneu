@@ -994,6 +994,11 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
         issues: List[Dict[str, Any]],
         model: Optional[str] = None,
     ) -> Tuple[StoryBible, int, int]:
+        if story_bible.adaptation_context:
+            from apps.script_factory.adaptation import create_bible
+            repaired = create_bible(self, story_bible.episode_id, story_bible.adaptation_context,
+                                    {'issues': issues, 'current_story': {k:v for k,v in story_bible.to_dict().items() if k != 'adaptation_context'}}, model=model)
+            return repaired, 0, 0
         """
         Asks Gemini to repair Story Bible QC issues (causal gaps, knowledge contradictions, clue jumps)
         strictly preserving the authoritative user topic and character identities without injecting hardcoded templates.
@@ -1098,6 +1103,9 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
         series_bible: Dict[str, Any],
         model: Optional[str] = None,
     ) -> Tuple[FullScript, int, int]:
+        if getattr(story_bible, 'adaptation_context', None):
+            from apps.script_factory.adaptation import write_adapted_script
+            return write_adapted_script(self, story_bible, model)
         """
         Writes a full, broadcast-grade long-form script (2,500 - 3,200 words, 80-100 segments).
         Generates in two coherent parts (Acts 1-5 and Acts 6-9) to guarantee narrative density,

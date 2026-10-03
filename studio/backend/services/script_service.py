@@ -126,6 +126,7 @@ class ScriptService:
             timeline_str = str(timeline_data)
 
         return StoryBibleSection(
+            adaptation_mode=(data.get('adaptation_context') or {}).get('brief', {}).get('adaptation_mode'),
             premise=premise_val,
             characters_summary=char_summary,
             relationships=str(data.get("relationships", "")),
@@ -177,12 +178,19 @@ class ScriptService:
             return {'status': 'FAIL', 'rule_codes': ['STALE_STORY_BIBLE'],
                     'issues': [{'rule': 'STALE_STORY_BIBLE', 'severity': 'CRITICAL',
                                 'message': 'STALE — REGENERATE REQUIRED: cốt truyện không thuộc ý tưởng hiện tại.'}]}
+        if data.get('adaptation_context') or (proj_dir / 'adaptation' / 'brief.json').exists():
+            from studio.backend.services.source_service import assert_context
+            try:
+                assert_context(proj_dir, data.get('adaptation_context'))
+            except (ValueError, OSError, KeyError) as exc:
+                return {'status':'FAIL','rule_codes':['STALE_SOURCE'],
+                        'issues':[{'rule':'STALE_SOURCE','severity':'CRITICAL','message':str(exc)}]}
         # A stored PASS cannot override newer deterministic rules or edited content.
         current = self._compute_story_qc(data)
         if current.get("status") == "FAIL":
             return current
         from apps.script_factory.models import StoryBible
-        from apps.script_factory.semantic_review import valid_story_semantic_review, SEMANTIC_REVIEW_VERSION, story_bible_content_hash
+        from apps.script_factory.semantic_review import valid_story_semantic_review, semantic_review_version, story_bible_content_hash
         stored = data.get('story_qc_report') or {}
         try:
             bible = StoryBible.from_dict(data)
@@ -194,7 +202,7 @@ class ScriptService:
             return stored
         review = stored.get('semantic_review') or {}
         if (stored.get('status') == 'FAIL' and review.get('status') == 'RUN'
-                and review.get('review_version') == SEMANTIC_REVIEW_VERSION
+                and review.get('review_version') == semantic_review_version(bible)
                 and review.get('bible_hash') == story_bible_content_hash(bible)):
             return stored
         return {**current, 'status': 'FAIL', 'rule_codes': ['SEMANTIC_REVIEW_FAILED'],
@@ -335,7 +343,7 @@ class ScriptService:
         from dataclasses import asdict
 
         from apps.script_factory.models import FullScript, StoryBible
-        from apps.script_factory.script_qc import SCRIPT_QC_VERSION, ScriptQCEngine
+        from apps.script_factory.script_qc import script_qc_version, ScriptQCEngine
         from studio.backend.services.artifact_lineage import script_content_hash
 
         script_path = qc_path.parent / "full_script.json"
@@ -348,7 +356,9 @@ class ScriptService:
             except Exception:
                 pass
 
-        if report.get("qc_version") == SCRIPT_QC_VERSION and report.get("script_content_hash") == current_hash:
+        story_path = PROJECTS_DIR / project_id / "story" / "story_bible.json"
+        raw_story = json.loads(story_path.read_text(encoding='utf-8')) if story_path.exists() else {}
+        if report.get("qc_version") == script_qc_version(raw_story) and report.get("script_content_hash") == current_hash:
             return report
         story_path = PROJECTS_DIR / project_id / "story" / "story_bible.json"
         if not script_path.exists() or not story_path.exists():

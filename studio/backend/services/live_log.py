@@ -11,6 +11,7 @@ import logging
 import re
 import threading
 import time
+import uuid
 from collections import deque
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -39,6 +40,7 @@ def _redact(text: str) -> str:
 
 class _LiveLogStore:
     def __init__(self) -> None:
+        self.epoch = uuid.uuid4().hex
         self._lock = threading.Lock()
         self._seq = 0
         self._entries: Dict[str, Deque[Dict[str, Any]]] = {}
@@ -82,7 +84,7 @@ class _LiveLogStore:
                     "started": min(j["started"] for j in jobs),
                     "count": len(jobs),
                 }
-            return {"entries": entries, "last_seq": self._seq, "running": running}
+            return {"entries": entries, "last_seq": self._seq, "running": running, "epoch": self.epoch}
 
 
 store = _LiveLogStore()
