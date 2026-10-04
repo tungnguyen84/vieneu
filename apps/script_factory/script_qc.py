@@ -24,7 +24,7 @@ logger = logging.getLogger("VieNeu.ScriptQC")
 SERIES_BIBLE_PATH = Path("script_factory/series_bible.json")
 STORY_FORMULA_PATH = Path("script_factory/story_formula_v1.json")
 SCRIPT_QC_VERSION = "script-qc-v5.5-calendar-payoff-location"
-SOURCE_SCRIPT_QC_VERSION = "script-qc-v5.7-source-props"
+SOURCE_SCRIPT_QC_VERSION = "script-qc-v5.8-source-closing"
 
 
 def script_qc_version(bible=None):
@@ -115,6 +115,9 @@ class ScriptQCEngine:
 
         adapted = bool(story_bible.adaptation_context)
         all_text = " ".join(s.text for s in script.segments)
+        if adapted:
+            from apps.script_factory.adaptation import source_closing_issues
+            evidence_issues.extend(source_closing_issues(script))
         from apps.script_factory.event_facts import scene_location_conflicts
         for seg_id, quote, message in scene_location_conflicts(script):
             evidence_issues.append({'segment_id': seg_id, 'excerpt': quote,
@@ -1635,6 +1638,10 @@ class ScriptQCEngine:
         prose_v3_engine = ScriptProseQCV3Engine()
         prose_issues = prose_v3_engine.audit_script_prose(script, story_bible)
         for p_iss in prose_issues:
+            if adapted and p_iss['rule'] in {'MISSING_FINAL_SIGNOFF','DUPLICATE_SIGNOFF','PREMATURE_SIGNOFF','CONTENT_AFTER_SIGNOFF','ENDING_PROFILE_PLACEMENT'}:
+                # Source closings accept natural audience wording and carry real
+                # segment IDs above; native broadcast wording remains unchanged.
+                continue
             target_seg = script.segments[0] if script.segments else ScriptSegment(id="001")
             evidence_issues.append({
                 "segment_id": target_seg.id,
@@ -2204,7 +2211,13 @@ def apply_targeted_repairs(
         r"tôi\s+là\s+minh[^.]{0,80}hẹn\s+gặp\s+lại)",
         re.IGNORECASE,
     )
-    if script.segments:
+    if script.segments and story_bible.adaptation_context:
+        from apps.script_factory.adaptation import normalize_source_delivery_profiles
+        labels = [{'text':s.text, 'delivery_profile':s.delivery_profile} for s in script.segments]
+        normalize_source_delivery_profiles(labels)
+        for segment, label in zip(script.segments, labels):
+            segment.delivery_profile = label['delivery_profile']
+    elif script.segments:
         normalized_segments = []
         for segment in script.segments[:-1]:
             if signoff_pattern.search(segment.text):

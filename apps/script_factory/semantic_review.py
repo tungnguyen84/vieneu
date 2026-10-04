@@ -366,21 +366,48 @@ def review_script_logic(
                 valid = False
                 invalid_evidence.append({'segment_id': seg_id, 'invalid_quote': quote, 'actual_segment_text': text})
         return valid
+    def resolve_finding_id(item):
+        reported = item.get('segment_id')
+        seg_id = clean_segment_id(reported, by_id)
+        if seg_id in by_id or not story_bible.adaptation_context:
+            return seg_id
+        # Source reviewers sometimes identify a repeated closing block by a
+        # range. Resolve only WITHIN that range, with a unique exact quotation.
+        # Never search other segments or accept an ambiguous/stitched quote.
+        match = re.fullmatch(r'\[?(\d{1,3})\s*[-–]\s*(\d{1,3})\]?', str(reported).strip())
+        if not match:
+            return seg_id
+        start, end = map(int,match.groups())
+        if not 0 <= end-start <= 20:
+            return seg_id
+        ids = [clean_segment_id(str(n),by_id) for n in range(start,end+1)]
+        if any(key not in by_id for key in ids):
+            return seg_id
+        quote = str(item.get('quote',''))
+        matches = [key for key in ids if len(quote.split())>=4 and _quote_in_text(quote,by_id[key].text)]
+        if len(matches)==1:
+            item['reported_segment_id'] = reported
+            item['related_segment_ids'] = list(dict.fromkeys([*(item.get('related_segment_ids') or []),*ids]))
+            return matches[0]
+        return seg_id
     blocking: List[Dict[str, Any]] = []
     advisories: List[Dict[str, Any]] = []
     dropped = 0
     for item in items:
         rule = str(item.get("rule", "")).strip().upper()
-        seg_id = clean_segment_id(item.get("segment_id"), by_id)
+        seg_id = resolve_finding_id(item)
         quote = str(item.get("quote", "")).strip()
         segment = by_id.get(seg_id)
         if rule not in LOGIC_RULE_CODES or segment is None or len(quote.split()) < 4:
             logger.warning('[SemanticReview] Invalid Script finding: rule=%s id=%s quote=%r', rule, seg_id, quote)
             dropped += 1
+            invalid_evidence.append({'segment_id':item.get('segment_id'),'invalid_quote':quote,
+                                     'actual_segment_text':'','error':'Cần một ID thật có quote nguyên văn; không dùng khoảng ID cho quote ghép.'})
             continue
         if not _quote_in_text(quote, segment.text):
             logger.warning('[SemanticReview] Unanchored Script finding: rule=%s id=%s quote=%r', rule, seg_id, quote)
             dropped += 1
+            invalid_evidence.append({'segment_id':seg_id,'invalid_quote':quote,'actual_segment_text':segment.text})
             continue
         if rule == 'GENERIC_PHILOSOPHICAL_HOOK' and seg_id != script.segments[0].id:
             # This rule governs the opening. A concluding audience question is
@@ -411,6 +438,8 @@ def review_script_logic(
                 "message": f"Phân đoạn [{seg_id}] vi phạm {rule}: {str(item.get('problem', '')).strip()}",
                 "recommended_action": str(item.get("fix", "")).strip(),
             }
+            if item.get('reported_segment_id'):
+                issue['reported_segment_id'] = item['reported_segment_id']
             blocking.append(issue)
         else:
             issue = {
@@ -424,6 +453,8 @@ def review_script_logic(
                 "message": f"Phân đoạn [{seg_id}] lưu ý về phong cách ({rule}): {str(item.get('problem', '')).strip()}",
                 "recommended_action": str(item.get("fix", "")).strip(),
             }
+            if item.get('reported_segment_id'):
+                issue['reported_segment_id'] = item['reported_segment_id']
             advisories.append(issue)
     if dropped:
         logger.info(f"[SemanticReview] {script.episode_id}: dropped {dropped} unanchored findings")

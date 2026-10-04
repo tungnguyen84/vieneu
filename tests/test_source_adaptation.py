@@ -350,7 +350,7 @@ def test_source_writer_retries_duration_mismatch_and_keeps_real_lineage(service,
     assert script.total_words==810 and len(provider.prompts)==2
     assert str(bad_words) in provider.prompts[1] and '810' in provider.prompts[1]
     assert script.parent_generation_request_id=='parent-story'
-    assert script.host['voice_id']=='020' and script.prompt_version.endswith('-writer-v3')
+    assert script.host['voice_id']=='020' and script.prompt_version.endswith('-writer-v4')
 
 
 def test_source_writer_fails_after_bounded_duration_retry(service):
@@ -361,6 +361,170 @@ def test_source_writer_fails_after_bounded_duration_retry(service):
     with pytest.raises(ValueError,match='sau một lần thử lại'):
         write_adapted_script(provider,bible)
     assert len(provider.prompts)==2
+
+
+def test_source_writer_normalizes_reflection_labels_without_editing_text(service):
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Sổ cuối ca',protagonist={'name':'Lan'},
+                    adaptation_context=context,generation_request_id='current-story')
+    segments=[{'text':'diễn biến '*25,'delivery_profile':'normal'} for _ in range(14)]
+    segments += [{'text':'Lan ghi lại khoản thu đúng. ' * 10,'delivery_profile':' ENDING '},
+                 {'text':'Cảm ơn bạn đã theo dõi. Hẹn gặp lại trong tập sau. ' * 4,'delivery_profile':'comment'}]
+    expected=[s['text'] for s in segments]
+    provider=Provider([{'segments':segments}])
+    script,_,_=write_adapted_script(provider,bible)
+    assert [s.text for s in script.segments]==expected
+    assert [s.delivery_profile for s in script.segments][-2:]==['COMMENT','ENDING']
+    assert sum(s.delivery_profile=='ENDING' for s in script.segments)==1
+    assert len(provider.prompts)==1 and script.parent_generation_request_id=='current-story'
+
+
+@pytest.mark.parametrize('last_profile,last_text',[
+    ('NORMAL','Lan còn đang đi đến cửa hàng.'),
+    ('ENDING','Cảm ơn bạn đã theo dõi. Hẹn gặp lại trong tập sau.'),
+])
+def test_source_writer_cannot_hide_real_early_goodbye_and_reports_budget_too(service,last_profile,last_text):
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Tập',protagonist={},adaptation_context=context)
+    bad={'segments':[{'text':'Cảm ơn bạn đã theo dõi. Hẹn gặp lại trong tập sau.','delivery_profile':'ENDING'},
+                     {'text':last_text,'delivery_profile':last_profile}]}
+    provider=Provider([bad,bad])
+    with pytest.raises(ValueError,match='sau một lần thử lại'):
+        write_adapted_script(provider,bible)
+    assert 'lời chào kết thật trước cuối tập' in provider.prompts[1]
+    assert 'từ/2 đoạn' in provider.prompts[1] and '810' in provider.prompts[1]
+    assert len(provider.prompts)==2
+
+
+def test_source_writer_missing_ending_without_goodbye_is_not_relabelled(service):
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Tập',protagonist={},adaptation_context=context)
+    bad={'segments':[{'text':'từ '*810,'delivery_profile':'NORMAL'}]}
+    provider=Provider([bad,bad])
+    with pytest.raises(ValueError,match='đúng một ENDING'):
+        write_adapted_script(provider,bible)
+    assert len(provider.prompts)==2
+
+
+def test_source_repair_preserves_natural_close_and_never_inserts_broadcast_template(service):
+    from apps.script_factory.script_qc import apply_targeted_repairs
+    from apps.script_factory.adaptation import source_closing_issues
+    from apps.script_factory.models import QCReport
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Tập',protagonist={},adaptation_context=context)
+    script=FullScript(episode_id='EPNEW',title='Tập',host={},adaptation_context=context,segments=[
+        ScriptSegment(id='001',text='Lan thực sự đóng khoản học phí bằng công sức của mình.'),
+        ScriptSegment(id='002',text='Cảm ơn các bạn đã theo dõi. Hẹn gặp lại trong tập sau.',delivery_profile='ENDING')])
+    original=[s.text for s in script.segments]
+    repaired=apply_targeted_repairs(script,bible,QCReport(episode_id='EPNEW',status='NEEDS_REVISION'),allow_prose_templates=False)
+    assert [s.text for s in repaired.segments]==original and len(repaired.segments)==2
+    assert not source_closing_issues(repaired)
+    repaired.segments[-1].text='Lan đặt cuốn sổ cạnh tài liệu học nghề.'
+    apply_targeted_repairs(repaired,bible,QCReport(episode_id='EPNEW',status='NEEDS_REVISION'),allow_prose_templates=False)
+    assert len(repaired.segments)==2
+    assert 'MISSING_FINAL_SIGNOFF' in {i['rule'] for i in source_closing_issues(repaired)}
+
+
+def test_source_closing_repair_targets_real_segment_and_skips_review_failure(service):
+    from apps.script_factory.adaptation import source_closing_issues
+    from apps.script_factory.segment_rewriter import collect_flagged_segments
+    from apps.script_factory.models import QCReport
+    _,context=selected(service)
+    script=FullScript(episode_id='EPNEW',title='Tập',host={},adaptation_context=context,segments=[
+        ScriptSegment(id='001',text='Lan kiểm tra khoản thu và đóng học phí.'),
+        ScriptSegment(id='002',text='Lan cất cuốn sổ. Cảm ơn các bạn đã theo dõi, hẹn gặp lại.',delivery_profile='COMMENT'),
+        ScriptSegment(id='003',text='Cảm ơn quý vị đã lắng nghe. Xin chào và hẹn gặp lại.',delivery_profile='ENDING')])
+    issues=source_closing_issues(script)
+    assert len(issues)==1 and issues[0]['rule']=='DUPLICATE_SIGNOFF' and issues[0]['segment_id']=='002'
+    qc=QCReport(episode_id='EPNEW',status='NEEDS_REVISION',evidence_issues=issues+[
+        {'rule':'SEMANTIC_REVIEW_FAILED','segment_id':'001','severity':'CRITICAL','message':'Quote sai ở review.'}])
+    flagged=collect_flagged_segments(script,qc)
+    assert set(flagged)=={'002'}
+    script.adaptation_context=None
+    assert '002' not in collect_flagged_segments(script,qc)  # native deterministic broadcast repair retained
+
+
+def test_long_source_writer_allocates_contiguous_scenes_and_one_final_closure(service):
+    _,context=selected(service);context['brief']['target_duration_sec']=1200
+    bible=StoryBible(episode_id='EPNEW',title='Tập dài',protagonist={},adaptation_context=context,
+                    generation_request_id='same-story',scene_outline=[{'no':i,'title':f'Cảnh {i}',
+                    'action':f'Việc {i}','new_information':f'Tin {i}','consequence':f'Kết quả {i}',
+                    'segments':5} for i in range(1,9)])
+    parts=[{'segments':[{'text':f'cụm{i} '*810,'delivery_profile':'NORMAL'}]} for i in range(4)]
+    parts[-1]['segments'][0]['delivery_profile']='ENDING'
+    provider=Provider(parts)
+    script,inp,out=write_adapted_script(provider,bible)
+    assert script.total_words==3240 and script.writer_strategy=='source_scene_batches'
+    assert inp==40 and out==40 and script.parent_generation_request_id=='same-story'
+    assert len(provider.prompts)==4
+    for i,prompt in enumerate(provider.prompts):
+        group=json.loads(prompt.split('CẢNH ĐƯỢC GIAO: ')[1].split('\nPHẦN TRƯỚC')[0])
+        assert [s['no'] for s in group]==[2*i+1,2*i+2]
+        assert ('không lời chào kết' if i<3 else 'Cụm cuối giải quyết ending') in prompt
+    assert 'cụm0' in provider.prompts[-1]  # continuity context carries actual accepted prose
+    assert TEXT not in provider.prompts[-1]  # fiction writer never gets the transcript
+
+
+def test_long_source_writer_does_not_publish_or_continue_after_failed_batch(service):
+    _,context=selected(service);context['brief']['target_duration_sec']=1200
+    bible=StoryBible(episode_id='EPNEW',title='Tập dài',protagonist={},adaptation_context=context,
+                    scene_outline=[{'no':i,'title':'Cảnh','action':'Việc','new_information':'Tin','segments':5} for i in range(1,9)])
+    premature={'segments':[{'text':'Cảm ơn bạn đã theo dõi. Hẹn gặp lại trong tập sau.','delivery_profile':'ENDING'}]}
+    provider=Provider([premature,premature])
+    with pytest.raises(ValueError,match='lời chào kết thật trước cuối tập'):
+        write_adapted_script(provider,bible)
+    assert len(provider.prompts)==2
+
+
+def test_long_source_writer_requires_outline_before_any_completion(service):
+    _,context=selected(service);context['brief']['target_duration_sec']=1200
+    provider=Provider([])
+    with pytest.raises(ValueError,match='dàn cảnh'):
+        write_adapted_script(provider,StoryBible(episode_id='EPNEW',title='Tập dài',protagonist={},adaptation_context=context))
+    assert not provider.prompts
+
+
+def test_source_mode_ref_normalization_preserves_failure_and_rejects_paraphrase(service):
+    from apps.script_factory.adaptation import validate_source_mode_checks, source_review_keys
+    _,context=selected(service)
+    context['units']=[{'unit_id':'U0001','text':'Lan kiểm tra khoản tiền ghi nhầm trong sổ.'},
+                      {'unit_id':'U0002','text':'Hà cùng Lan lập kế hoạch chi tiêu.'}]
+    checks=[{'key':key,'verdict':'FAIL','reason':'Có phần nội dung lặp lại cần sửa đúng theo nguồn.',
+             'source_evidence':[{'unit_id':'U0002','quote':'Lan kiểm tra khoản tiền ghi nhầm trong sổ.'}],
+             'artifact_evidence':[{'item_id':'001','quote':'Lan kiểm tra khoản tiền ghi nhầm trong sổ.'}]}
+            for key in source_review_keys(context)]
+    validate_source_mode_checks(checks,context,{'001':context['units'][0]['text']})
+    assert all(c['verdict']=='FAIL' and c['source_evidence'][0]['reported_unit_id']=='U0002' for c in checks)
+    checks[0]['source_evidence']=[{'unit_id':'U0001','quote':'Lan tìm thấy khoản tiền bị nhập sai.'}]
+    with pytest.raises(ValueError,match='original_structure.*source_evidence') as exc:
+        validate_source_mode_checks(checks,context,{'001':context['units'][0]['text']})
+    assert 'actual_unit_text' in str(exc.value) and context['units'][0]['text'] in str(exc.value)
+
+
+def test_source_review_range_id_requires_unique_quote_inside_valid_range(service):
+    from apps.script_factory.semantic_review import review_script_logic
+    _,context=selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Tập',protagonist={},adaptation_context=context)
+    script=FullScript(episode_id='EPNEW',title='Tập',host={},segments=[
+        ScriptSegment(id='001',text='Lan mở lại cuốn sổ để kiểm tra học phí.'),
+        ScriptSegment(id='002',text='Hà gọi lại cho Lan để hỏi về việc học.'),
+        ScriptSegment(id='003',text='Lan sửa bản thiết kế và gửi lại cho khách hàng.')])
+    def result(reported,quote,bible=bible):
+        finding={'rule':'REPEATED_DISCOVERY','segment_id':reported,'quote':quote,
+                 'problem':'Cùng một việc bị kể lại ở cuối cảnh.','fix':'Viết hệ quả mới.','confidence':'high'}
+        return review_script_logic(script,bible,lambda *a:(json.dumps({'issues':[finding]}),5,7))
+    review=result('001-002',script.segments[0].text)
+    issue=review['issues'][0]
+    assert review['status']=='RUN' and issue['blocking'] and issue['segment_id']=='001'
+    assert issue['reported_segment_id']=='001-002' and issue['related_segment_ids']==['002']
+    for reported,quote in [('001-002',script.segments[2].text),('001-004',script.segments[0].text),
+                           ('001-002','Lan kiểm tra số tiền học phí trong sổ.')]:
+        invalid=result(reported,quote)
+        assert invalid['status']=='ERROR' and not invalid['issues']
+    script.segments[1].text=script.segments[0].text
+    assert result('001-002',script.segments[0].text)['status']=='ERROR'
+    native=StoryBible(episode_id='EPNEW',title='Tập',protagonist={})
+    assert result('001-002',script.segments[0].text,bible=native)['status']=='ERROR'
 
 
 def test_models_round_trip_source_context(service):

@@ -66,7 +66,12 @@ def collect_flagged_segments(script: FullScript, qc_report: QCReport) -> Dict[st
         if not isinstance(issue, dict):
             continue
         rule = str(issue.get("rule") or issue.get("type") or "")
-        if rule in _DETERMINISTIC_ONLY_RULES:
+        source_script = bool(script.adaptation_context)
+        if source_script and rule in {'SEMANTIC_REVIEW_FAILED','SEMANTIC_REVIEW_PENDING'}:
+            # Reviewer transport/quote errors require QC retry, not a prose rewrite.
+            continue
+        source_closing = source_script and rule in {'PREMATURE_SIGNOFF','DUPLICATE_SIGNOFF','CONTENT_AFTER_SIGNOFF','MISSING_FINAL_SIGNOFF'}
+        if rule in _DETERMINISTIC_ONLY_RULES and not source_closing:
             continue
         message = str(issue.get("message") or issue.get("description") or rule)
         action = str(issue.get("recommended_action") or "")
@@ -280,7 +285,11 @@ def rewrite_flagged_segments(
             if seg_id not in batch or not new_text:
                 continue
             original = by_id[seg_id].text
-            if seg_id != last_id and _SIGNOFF_RE.search(new_text):
+            signoff_pattern = _SIGNOFF_RE
+            if story_bible.adaptation_context:
+                from apps.script_factory.adaptation import _SOURCE_SIGNOFF_RE
+                signoff_pattern = _SOURCE_SIGNOFF_RE
+            if seg_id != last_id and signoff_pattern.search(new_text):
                 continue
             # A repeated discovery often needs a short transition. Requiring
             # its old length silently rejects that repair and preserves the loop.

@@ -362,3 +362,10 @@ Khi hoàn thành từng giai đoạn, bổ sung đường dẫn bằng chứng v
 
 
 - Code/tests/dist đã commit và push origin/main thành công: e2a8db3 (feat(studio): adapt sources into grounded scripts with revision gates). Commit tài liệu riêng lưu kế hoạch, báo cáo và bằng chứng metadata/UI. Không stage studio_data.db hoặc idea_bank.json.
+
+### Sửa lỗi production EP2026 — 04/10/2026
+
+- Theo [EP2026_WRITER_FIX.md](EP2026_WRITER_FIX.md). Tái hiện model `auto` dừng bình thường nhưng thiếu độ dài và gắn nhiều ENDING; feedback cũ chỉ báo ENDING. Tập dài >1800 từ chuyển sang các cụm cảnh liên tiếp có ngân sách riêng, giữ toàn bộ ngữ cảnh đã viết và kiểm tra toàn tập. Đây là điều chỉnh kỹ thuật sau nghiệm thu tập ngắn, không đổi mode/source/canon.
+- Grounding giữ fail-closed: ID khoảng chỉ resolve khi quote nguyên văn khớp duy nhất trong phạm vi, source quote không ghép units; không đổi FAIL thành PASS. Source repair không chèn câu chào mẫu và không sửa đoạn mở vì reviewer sai quote. Source QC v5.8 kiểm tra lời chào bằng nội dung/ID thật.
+- EP2026 qua UI/OpenAI-compatible thật: 4286 từ/81 đoạn, CURRENT/QC PASS, 2 native + 2 source review, chỉ 081 chào kết, leakage 0. Reload cùng request/hash. Giữ NEEDS_REVIEW để người dùng đọc/duyệt; chưa chạy TTS/render. Phần cuối còn yếu về biên tập, không chứng nhận đủ hấp dẫn đăng YouTube.
+- Focused 188 passed + 6 subtests; full 715 passed và cùng 25 lỗi baseline, không regression mới. Python-only, không rebuild dist. Backend nghiệm thu hiện chạy riêng tại 8768; app chính 8765 chưa được agent đóng/restart.

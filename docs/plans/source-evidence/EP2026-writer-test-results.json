@@ -1,0 +1,147 @@
+{
+  "code_baseline": "ed603f1f9d39c24b32013ef1aa59bf3267a6b85a",
+  "focused": {
+    "passed": 188,
+    "subtests_passed": 6
+  },
+  "full_suite": {
+    "passed": 715,
+    "failed": 15,
+    "errors": 10,
+    "skipped": 5,
+    "subtests_passed": 6,
+    "elapsed_sec": 293.13
+  },
+  "failures": [
+    [
+      "tests.test_final_auto_assembler",
+      "test_real_rendered_final_mp4_qc",
+      "failure"
+    ],
+    [
+      "tests.test_flowkit_adapter",
+      "test_flowkit_connection_status",
+      "failure"
+    ],
+    [
+      "tests.test_fused_frame",
+      "test_fused_frame_cases",
+      "failure"
+    ],
+    [
+      "tests.test_music_mixing_engine",
+      "test_consecutive_cue_merging",
+      "failure"
+    ],
+    [
+      "tests.test_music_mixing_engine",
+      "test_cue_generation_profile_mapping",
+      "failure"
+    ],
+    [
+      "tests.test_omni_flash_generation",
+      "test_omni_flash_end_to_end",
+      "failure"
+    ],
+    [
+      "tests.test_phase1_verification",
+      "test_phase1_all",
+      "failure"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_audio_formula_regression",
+      "error"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_character_ids_valid",
+      "error"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_location_ids_valid",
+      "error"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_no_one_segment_one_scene",
+      "error"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_omni_duration_resolution",
+      "error"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_queue_sync",
+      "error"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_reanalyze_does_not_delete_assets",
+      "error"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_visual_scene_grouping",
+      "error"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_visual_timeline_coverage",
+      "error"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_visual_type_explicit",
+      "error"
+    ],
+    [
+      "tests.test_phase3_character_pilot",
+      "test_pilot_metadata_loaded_from_visual_plan",
+      "failure"
+    ],
+    [
+      "tests.test_production_pilot_03_audio",
+      "test_physical_audio_files_exist[EP003]",
+      "failure"
+    ],
+    [
+      "tests.test_production_pilot_03_audio",
+      "test_physical_audio_files_exist[EP011]",
+      "failure"
+    ],
+    [
+      "tests.test_production_pilot_03_visual",
+      "test_timeline_and_audio_duration_sync[EP003-45-15-5]",
+      "failure"
+    ],
+    [
+      "tests.test_production_pilot_03_visual",
+      "test_timeline_and_audio_duration_sync[EP011-45-15-6]",
+      "failure"
+    ],
+    [
+      "tests.test_production_pilot_03_visual_v1_0a",
+      "test_timeline_and_audio_duration_sync[EP003-45-7-5]",
+      "failure"
+    ],
+    [
+      "tests.test_production_pilot_03_visual_v1_0a",
+      "test_timeline_and_audio_duration_sync[EP011-45-8-6]",
+      "failure"
+    ],
+    [
+      "tests.test_script_factory_v1_3_1a",
+      "test_zero_media_generation",
+      "failure"
+    ]
+  ],
+  "new_failures": [],
+  "removed_failures": [],
+  "full_xml": "C:\\Users\\TPT\\AppData\\Local\\Temp\\vieneu-source-closing-final-d374c7867c3e4f82b38f2781cc87580c\\full.xml",
+  "isolation": "Fresh local clone; current code/test files copied; actual repository .venv Python; pytest -q -s. Local clone origin and missing production media are baseline limitations.",
+  "frontend": "Unchanged; no rebuild required for Python-only changes."
+}

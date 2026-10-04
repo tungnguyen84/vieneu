@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-04",
+  "url": "http://127.0.0.1:8768/",
+  "project_id": "EP2026",
+  "title": "Khoản tiền cuối tháng",
+  "mode": "FICTION_FROM_THEME",
+  "word_count": 4286,
+  "segment_count": 81,
+  "estimated_duration_sec": 1587.4074074074074,
+  "target_duration_sec": 1500,
+  "generation_request_id": "0a546b3b-a656-4b95-9118-3f56905ba889",
+  "story_generation_request_id": "acbe8792-2f78-4b4b-b31c-e11542307dd7",
+  "script_content_hash": "636c419f428cd29c2ad0d9bf0e53e51ef51604aa23a10b5131995eee9572a39c",
+  "generation_source": "REAL_AI",
+  "requested_model": "auto",
+  "actual_model": "proxy auto — chưa xác định",
+  "writer_strategy": "source_scene_batches",
+  "prompt_version": "script-v3.9-calendar-payoff-location-repair",
+  "revision_round": 7,
+  "qc_version": "script-qc-v5.8-source-closing",
+  "qc_status": "PASS",
+  "critical_qc_count": 0,
+  "is_current": true,
+  "qc_gate_allowed": true,
+  "audio_gate_allowed": false,
+  "audio_gate_reason": "Kịch bản chưa được phê duyệt ở bước Script (trạng thái: NEEDS_REVIEW)",
+  "native_review_passes": 2,
+  "source_review_passes": 2,
+  "closing_issues": [],
+  "signoff_segment_ids": [
+    "081"
+  ],
+  "ending_segment_ids": [
+    "081"
+  ],
+  "leakage_count": 0,
+  "native_advisories": [],
+  "source_issues": [],
+  "manual_reading": "Full draft read; final changes read. Plot follows selected fiction brief, remaining late reflection/budget recap is still an editorial weakness. QC PASS is not a claim of exceptional storytelling or YouTube publication readiness.",
+  "tts_or_render_run": false
+}
