@@ -32,6 +32,8 @@ REPETITION_RULES = {
     "REPEATED_NARRATIVE_BLOCK",
     "ADJACENT_SEGMENT_ECHO",
     "REPEATED_SCENE_DIALOGUE",
+    "REPEATED_EVENT_NO_CHANGE",
+    "REDUNDANT_CLOSING",
 }
 
 _SIGNOFF_RE = re.compile(r"cảm\s+ơn\s+quý\s+vị\s+đã\s+lắng\s+nghe|xin\s+chào\s+và\s+hẹn\s+gặp\s+lại", re.IGNORECASE)
@@ -103,6 +105,19 @@ def collect_flagged_segments(script: FullScript, qc_report: QCReport) -> Dict[st
                     add(seg.id, problem)
             continue
         add(issue.get("segment_id"), problem)
+        if (source_script and rule == 'PAYOFF_NOT_COMPLETED'
+                and issue.get('source') == 'SEMANTIC_REVIEW' and issue.get('blocking')):
+            # The quote may anchor the start of a payoff while the missing
+            # action belongs in its continuation. Editing the setup alone
+            # repeated the result and left the next paragraph untouched.
+            anchor = clean_segment_id(issue.get('segment_id'), {s.id:s for s in script.segments})
+            positions = {s.id:i for i,s in enumerate(script.segments)}
+            if anchor in positions and positions[anchor]+1 < len(script.segments):
+                following = script.segments[positions[anchor]+1]
+                if following.delivery_profile != 'ENDING':
+                    add(following.id, '(Cảnh tiếp nối kết quả) ' + problem
+                        + ' Phối hợp hai đoạn: giữ hành động đã hoàn thành, thực hiện đúng từng chủ thể/hành động còn thiếu; '
+                          'không kể lại kết quả hai lần hoặc thay nghĩa vụ bằng lời nhận xét.')
         # Semantic findings name the other segments that must change with it
         # (e.g. the scene that sets up an infeasible test and its payoff).
         for related_id in issue.get("related_segment_ids") or []:
@@ -152,7 +167,9 @@ def build_prompt(script: FullScript, story_bible: StoryBible, flagged: Dict[str,
         "- Thường giữ độ dài tương đương bản gốc (±30%). Riêng đoạn lặp khám phá/sự kiện/câu văn, "
         "được rút ngắn thành câu nối mạch; không kéo dài hoặc dựng phát hiện mới chỉ để đủ số từ.\n"
         "- Phân đoạn đầu tiên của kịch bản phải mở bằng nhân vật/vật cụ thể, không mở bằng câu triết lý.\n"
-        "- Không thêm lời chào kết hay lời cảm ơn khán giả.\n"
+        "- Không thêm lời chào kết hay lời cảm ơn ở giữa tập. Riêng ID CUỐI CÙNG của toàn tập, "
+        "giữ một lời chào kết ngắn có thật; nếu lỗi là MISSING_FINAL_SIGNOFF thì viết lời chào tại đúng ID cuối. "
+        "Không xóa lời chào cuối khi rút đoạn lặp.\n"
         "- Khi sửa lỗi người kể biết nội tâm nhân vật khác, hãy chuyển thành câu thoại nhân vật đó tự nói ra "
         "hoặc thành phỏng đoán có chủ thể ('Tuấn đoán…'); KHÔNG thêm cảnh mở lại, lục lại vật chứng đã xem.\n"
         "- TÍNH LIÊN TỤC VÀ BẰNG CHỨNG (CONTINUITY): Khi sửa một phân đoạn liên quan đến bằng chứng, tên nhân vật hoặc đạo cụ, "
@@ -265,10 +282,22 @@ def rewrite_flagged_segments(
     if not flagged:
         return script, 0, 0, rewritten
 
+    # A repeated closing is a block, not seven independent sentences that must
+    # each survive. Collapse only a suffix located by the grounded reviewer;
+    # body/payoff and the final signoff stay byte-for-byte unchanged. A fresh
+    # whole-script QC still validates meaning, source and lineage afterwards.
+    script, close_in, close_out, collapsed = _compress_verified_closing(
+        script, story_bible, qc_report, call_llm)
+    rewritten.update(collapsed)
+    flagged = {key: value for key, value in flagged.items()
+               if key not in collapsed and any(s.id == key for s in script.segments)}
+    if not flagged:
+        return script, close_in, close_out, rewritten
+
     by_id = {s.id: s for s in script.segments}
     last_id = script.segments[-1].id
     ids = [s.id for s in script.segments if s.id in flagged]
-    total_in = total_out = 0
+    total_in, total_out = close_in, close_out
     for start in range(0, len(ids), MAX_SEGMENTS_PER_CALL):
         batch = {seg_id: flagged[seg_id] for seg_id in ids[start:start + MAX_SEGMENTS_PER_CALL]}
         system = SYSTEM_INSTRUCTION
@@ -291,6 +320,11 @@ def rewrite_flagged_segments(
                 signoff_pattern = _SOURCE_SIGNOFF_RE
             if seg_id != last_id and signoff_pattern.search(new_text):
                 continue
+            if seg_id == last_id and (signoff_pattern.search(original)
+                    or any('MISSING_FINAL_SIGNOFF' in problem for problem in batch[seg_id])):
+                if not signoff_pattern.search(new_text):
+                    logger.warning('[SegmentRewriter] Reject final rewrite without required signoff [%s].', seg_id)
+                    continue
             # A repeated discovery often needs a short transition. Requiring
             # its old length silently rejects that repair and preserves the loop.
             repetition = any(rule in problem for problem in batch[seg_id] for rule in REPETITION_RULES)
@@ -311,6 +345,81 @@ def rewrite_flagged_segments(
             logger.warning(f"[SegmentRewriter] Các đoạn chưa áp dụng sửa trong batch: {sorted(unapplied)}")
         logger.info(f"[SegmentRewriter] {script.episode_id}: rewrote {applied}/{len(batch)} flagged segments")
     return script, total_in, total_out, rewritten
+
+
+def _compress_verified_closing(script, bible, report, call_llm):
+    """Bounded AI block edit; never delete a body block or trust a style label."""
+    issues = [i for i in report.evidence_issues if isinstance(i, dict)
+              and i.get('rule') == 'REDUNDANT_CLOSING'
+              and i.get('source') == 'SEMANTIC_REVIEW' and i.get('blocking')]
+    by_id = {s.id: i for i, s in enumerate(script.segments)}
+    signoff = script.segments[-1]
+    pattern = _SIGNOFF_RE
+    if bible.adaptation_context:
+        from apps.script_factory.adaptation import _SOURCE_SIGNOFF_RE
+        pattern = _SOURCE_SIGNOFF_RE
+    if signoff.delivery_profile != 'ENDING' or not pattern.search(signoff.text):
+        return script, 0, 0, set()
+    for issue in issues:
+        last = issue.get('closing_after_segment_id')
+        if last not in by_id:
+            continue
+        start = by_id[last] + 1
+        tail = script.segments[start:-1]
+        if len(tail) < 2:
+            continue
+        body_words = sum(len(s.text.split()) for s in script.segments[:start])
+        signoff_words = len(signoff.text.split())
+        if sum(len(s.text.split()) for s in script.segments[start:]) <= .10 * (body_words + sum(len(s.text.split()) for s in script.segments[start:])):
+            continue
+        # Even after removing paragraphs, the combined closing must fit the
+        # original 8% design budget against the NEW total, not the padded draft.
+        limit = min(80, int(body_words * .08 / .92) - signoff_words)
+        if limit < 12:
+            continue  # Signoff itself needs a separate validated edit.
+        prompt = ('Gộp phần chiêm nghiệm sau sự kiện cuối thành DUY NHẤT một đoạn tự nhiên, '
+                  f'12–{limit} từ. Không lặp bài học, không kể lại hành trình, không thêm hành động/sự kiện mới, '
+                  'không lời chào, không giả thư. Giữ nghĩa cần thiết và giới hạn chưa biết của bản gốc. '
+                  'Không sửa hoặc xuất lại phần thân/cảnh kết quả/lời chào. '
+                  'JSON {reflection: "một đoạn ngắn"}.\n'
+                  + json.dumps({'story': _story_context(bible),
+                      'completed_body': [{ 'id': s.id, 'text': s.text} for s in script.segments[:start]],
+                      'closing_to_compress': [s.text for s in tail], 'unchanged_signoff': signoff.text}, ensure_ascii=False))
+        system = SYSTEM_INSTRUCTION
+        if bible.adaptation_context:
+            from apps.script_factory.adaptation import SYSTEM, MODE_RULES
+            system = SYSTEM + MODE_RULES[bible.adaptation_context['brief']['adaptation_mode']]
+        tin = tout = 0
+        for attempt in range(2):
+            raw, inp, out = call_llm(system, prompt)
+            tin += inp
+            tout += out
+            # Reuse the strict object parser; trailing model explanation is OK,
+            # missing/wrong types or oversized prose preserve the draft.
+            try:
+                text = re.sub(r'^```(?:json)?\s*|\s*```$', '', raw.strip())
+                data, _ = json.JSONDecoder().raw_decode(text[text.index('{'):])
+                reflection = data.get('reflection')
+                if not isinstance(reflection, str) or '\n' in reflection:
+                    raise ValueError('reflection cần một đoạn chuỗi văn bản.')
+                reflection = ' '.join(reflection.split())
+                if not 12 <= len(reflection.split()) <= limit or pattern.search(reflection):
+                    raise ValueError(f'Chỉ một đoạn 12–{limit} từ, không lời chào/sự kiện mới.')
+            except (ValueError, TypeError, AttributeError) as exc:
+                if attempt:
+                    logger.warning('[SegmentRewriter] Closing compression rejected: %s', exc)
+                    return script, tin, tout, set()
+                prompt += '\nBản trước chưa hợp lệ: ' + str(exc) + ' Trả lại JSON đúng ngân sách.'
+                continue
+            changed = {s.id for s in tail}
+            tail[0].text = reflection
+            tail[0].delivery_profile = 'COMMENT'
+            script.segments = script.segments[:start] + [tail[0], signoff]
+            script.total_segments = len(script.segments)
+            logger.info('[SegmentRewriter] %s: compressed %d closing paragraphs into one (%d words).',
+                        script.episode_id, len(tail), len(reflection.split()))
+            return script, tin, tout, changed
+    return script, 0, 0, set()
 
 
 def revise_with_ai(
@@ -339,6 +448,9 @@ def revise_with_ai(
     from apps.script_factory.vietnamese_cleaner import clean_garbled_vietnamese
     for s in script.segments:
         s.text = clean_garbled_vietnamese(s.text)
+    for index, s in enumerate(script.segments, 1):
+        s.id = f'{index:03d}'
+    script.total_segments = len(script.segments)
     script.total_words = sum(len(s.text.split()) for s in script.segments)
     script.updated_at = time.time()
     return script, in_tok, out_tok

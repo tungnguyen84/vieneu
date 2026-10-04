@@ -66,6 +66,43 @@ def _add_real_lineage(project: Path, script: dict) -> dict:
     return script
 
 
+@pytest.mark.parametrize('rule,location,severity,blocking,allowed', [
+    ('REDUNDANT_CLOSING', 'advisories', 'WARNING', False, True),
+    ('REDUNDANT_CLOSING', 'issues', 'WARNING', False, False),
+    ('REDUNDANT_CLOSING', 'advisories', 'CRITICAL', False, False),
+    ('REDUNDANT_CLOSING', 'advisories', 'WARNING', True, False),
+    ('INFEASIBLE_EVIDENCE', 'advisories', 'WARNING', False, False),
+])
+def test_lineage_gate_distinguishes_closing_style_advice_from_objective_failure(tmp_path, rule, location, severity, blocking, allowed):
+    from studio.backend.services.artifact_lineage import validate_full_script
+    root = tmp_path / 'projects'
+    project = root / 'EP900'
+    script = _add_real_lineage(project, {'segments': [
+        {'id': '001', 'text': 'Lan tự kiểm tra số hàng rồi bàn giao cho khách.'},
+        {'id': '002', 'text': 'Cảm ơn quý vị đã lắng nghe. Hẹn gặp lại.'}]})
+    (project / 'script/full_script.json').write_text(json.dumps(script), encoding='utf-8')
+    qc_path = project / 'script/qc_report.json'
+    qc = json.loads(qc_path.read_text(encoding='utf-8'))
+    qc['semantic_review'][location] = [{'rule': rule, 'severity': severity, 'blocking': blocking}]
+    qc_path.write_text(json.dumps(qc), encoding='utf-8')
+    status = validate_full_script('EP900', root)
+    assert status['qc_gate_allowed'] is allowed
+    assert status['audio_gate_allowed'] is allowed
+    # A permissible advisory never overrides a stale review or absent approval.
+    if allowed:
+        qc['semantic_review']['review_version'] = 'obsolete'
+        qc_path.write_text(json.dumps(qc), encoding='utf-8')
+        assert not validate_full_script('EP900', root)['qc_gate_allowed']
+        qc['semantic_review']['review_version'] = SEMANTIC_REVIEW_VERSION
+        qc_path.write_text(json.dumps(qc), encoding='utf-8')
+        meta_path = project / 'project.json'
+        meta = json.loads(meta_path.read_text(encoding='utf-8'))
+        meta['stage_statuses']['03_script'] = 'NEEDS_REVIEW'
+        meta_path.write_text(json.dumps(meta), encoding='utf-8')
+        status = validate_full_script('EP900', root)
+        assert status['qc_gate_allowed'] and not status['audio_gate_allowed']
+
+
 def test_script_api_preserves_contextual_speed(tmp_path, monkeypatch):
     projects = tmp_path / "projects"
     script_dir = projects / "EP900" / "script"

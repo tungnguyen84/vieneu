@@ -41,6 +41,27 @@ def _assert_story_snapshot(story_path: Path, expected_hash: str, request_id: str
         raise ValueError("Cốt truyện đã thay đổi trong lúc viết; không lưu Script vào lineage mới. Vui lòng tạo lại kịch bản.")
 
 
+def _persist_source_story_audit(proj_dir, story_path, story_data, story_bible, report):
+    """Both writing and repairing must expose an upstream failure in Story UI."""
+    from studio.backend.services.source_service import assert_context, project_lock, write_json
+    with project_lock(proj_dir):
+        assert_context(proj_dir, story_bible.adaptation_context)
+        _assert_story_snapshot(story_path, story_content_hash(story_data), story_data.get('generation_request_id'))
+        story_data['story_qc_report'] = report.to_dict()
+        for target in (story_path, proj_dir / 'story_bible.json'):
+            write_json(target, story_data)
+        if report.status != 'PASS':
+            project_data = json.loads((proj_dir / 'project.json').read_text(encoding='utf-8'))
+            project_data.setdefault('stage_statuses', {})['02_story'] = 'NEEDS_REVIEW'
+            write_json(proj_dir / 'project.json', project_data)
+            mark_full_script_stale(story_bible.episode_id, PROJECTS_DIR, 'Current Story QC failed; review the Story stage before writing or repairing')
+            invalidate_script_approval(story_bible.episode_id, PROJECTS_DIR)
+    if report.status != 'PASS':
+        details = '; '.join(report.logic_issues[:3]) or ', '.join(report.rule_codes)
+        raise ValueError('QC cốt truyện từ nguồn chưa đạt hoặc chưa hiện hành: ' + details
+            + '. Mở Cốt truyện để kiểm tra/sửa và duyệt lại; không tự thay cốt truyện đã duyệt trong lúc viết kịch bản.')
+
+
 def _qc_problem_score(report) -> Tuple[int, int, int]:
     """Lower is better; an unavailable reviewer cannot prove improvement."""
     issues = [i for i in [*report.evidence_issues, *report.fact_conflicts] if isinstance(i, dict)]
@@ -71,8 +92,14 @@ def _revise_keeping_best(rev_manager, script, story_bible, qc_report, round_ceil
                 for issue in issues}
     while current_qc.status != "PASS":
         if (getattr(current_qc, 'semantic_review', None) or {}).get('status') == 'ERROR':
-            logger.warning('Auto-repair paused: semantic reviewer failed; retain draft and recheck QC.')
-            break
+            from apps.script_factory.narrative_rules import is_blocking_logic_issue
+            actionable = any(i.get('source') == 'SEMANTIC_REVIEW' and i.get('blocking')
+                             and is_blocking_logic_issue(i) for i in
+                             (getattr(current_qc, 'semantic_review', None) or {}).get('issues', []))
+            if not actionable:
+                logger.warning('Auto-repair paused: semantic reviewer failed without anchored defects; retain draft and recheck QC.')
+                break
+            logger.info('Repair verified defects first; incomplete review cannot approve the draft. Full QC will run again.')
         previous_round = current_script.revision_round
         previous_qc = current_qc
         logger.info(f"Vòng sửa kịch bản {current_script.revision_round + 1}/{round_ceiling}...")
@@ -631,8 +658,8 @@ class GenerationService:
         logger.info("Kiểm tra logic Cốt truyện (Story Bible)...")
         bible_qc = story_qc.audit_story_bible(story_bible)
         logger.info(f"Cốt truyện: {bible_qc.status}" + (f" — {', '.join(bible_qc.rule_codes)}" if bible_qc.rule_codes else ""))
-        if story_bible.adaptation_context and bible_qc.status != 'PASS':
-            raise ValueError('QC cốt truyện từ nguồn chưa đạt hoặc chưa hiện hành. Mở Cốt truyện để kiểm tra/sửa và duyệt lại; không tự thay cốt truyện đã duyệt trong lúc viết kịch bản.')
+        if story_bible.adaptation_context:
+            _persist_source_story_audit(proj_dir, story_path, bible_data, story_bible, bible_qc)
         if (
             bible_qc.status != "PASS"
             or (not story_bible.adaptation_context and (not story_bible.causal_chains
@@ -822,6 +849,11 @@ class GenerationService:
             raise ValueError("Kịch bản thuộc cốt truyện cũ; cần tạo Full Script mới, không sửa tiếp bản STALE.")
 
         provider = self.get_provider(provider_id=provider_id, model_id=model_id) if (provider_id or model_id) else self.get_provider()
+        if story_bible.adaptation_context:
+            from apps.script_factory.story_qc import StoryQCEngine
+            logger.info('Kiểm tra cốt truyện hiện hành trước khi sửa kịch bản; không sửa prose để hợp thức hóa lỗi canon.')
+            bible_qc = StoryQCEngine(provider=provider).audit_story_bible(story_bible)
+            _persist_source_story_audit(proj_dir, story_path, story_data, story_bible, bible_qc)
         qc_engine = ScriptQCEngine(provider=provider, cost_controller=self.cost_ctrl)
         rev_manager = AutoRevisionManager(provider=provider, cost_controller=self.cost_ctrl, qc_engine=qc_engine)
 
@@ -832,6 +864,15 @@ class GenerationService:
             or original_script_data.get("requested_model")
         )
         qc_report = qc_engine.run_qc(script=script, story_bible=story_bible, model=effective_req_model)
+        if qc_path.exists():
+            from apps.script_factory.models import QCReport
+            from apps.script_factory.semantic_review import retain_unresolved_findings
+            previous_data = json.loads(qc_path.read_text(encoding='utf-8'))
+            if isinstance(previous_data.get('semantic_review'), dict):
+                previous_data.setdefault('episode_id', project_id)
+                previous_data.setdefault('status', 'NEEDS_REVISION')
+                previous_qc = QCReport.from_dict(previous_data)
+                qc_report = retain_unresolved_findings(script, previous_qc, script, qc_report, story_bible)
         starting_round = script.revision_round
         if qc_report.status == "PASS":
             revised_script, final_qc = script, qc_report
@@ -880,7 +921,7 @@ class GenerationService:
             revised_data["provider_name"] = getattr(provider, "provider_name", None) or getattr(revised_script, "provider_name", None)
             revised_data["requested_model"] = effective_req
             revised_data["actual_model"] = actual_m
-            revised_data["prompt_version"] = "script-v3.9-calendar-payoff-location-repair"
+            revised_data["prompt_version"] = revised_script.prompt_version
             revised_data["generated_at"] = time.time()
         with project_lock(proj_dir):
             assert_context(proj_dir, story_bible.adaptation_context)

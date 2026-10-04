@@ -39,8 +39,12 @@ def build_prompt(
     scenes: Optional[List[Dict[str, Any]]] = None,
 ) -> str:
     from apps.script_factory.scene_outline import single_pass_outline_block
+    from apps.script_factory.narrative_design import DESIGN_INSTRUCTION, scene_word_budgets
     outline_text = single_pass_outline_block(scenes) if scenes else ""
-    if outline_text:
+    outline_text += '\n' + DESIGN_INSTRUCTION
+    if scenes:
+        outline_text += '\nNgân sách mục tiêu theo cảnh: ' + str(scene_word_budgets(scenes, 2450)) + ' từ. Không kéo dài phần kết để đạt tổng từ.\n'
+    if scenes:
         outline_instruction = (
             "1. Viết tuần tự theo đúng DÀN CẢNH BẮT BUỘC ở trên: mỗi cảnh chỉ xảy ra MỘT lần, "
             "chuyển tải đúng thông tin mới được giao, không lặp lại cảnh cũ."

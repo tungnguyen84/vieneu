@@ -24,7 +24,7 @@ logger = logging.getLogger("VieNeu.ScriptQC")
 SERIES_BIBLE_PATH = Path("script_factory/series_bible.json")
 STORY_FORMULA_PATH = Path("script_factory/story_formula_v1.json")
 SCRIPT_QC_VERSION = "script-qc-v5.5-calendar-payoff-location"
-SOURCE_SCRIPT_QC_VERSION = "script-qc-v5.8-source-closing"
+SOURCE_SCRIPT_QC_VERSION = "script-qc-v5.9-source-metadata-facts"
 
 
 def script_qc_version(bible=None):
@@ -231,6 +231,19 @@ class ScriptQCEngine:
                 # Check for direct value presence or contradictory numbers
                 val = fact.value.strip()
                 val_lower = val.lower()
+                if fact.field.strip().lower() == 'adaptation_mode':
+                    # This is a source contract field, not something the MC
+                    # must pronounce. Requiring the enum in prose generated
+                    # false conflicts and encouraged internal-token leakage.
+                    script_mode = ((script.adaptation_context or {}).get('brief') or {}).get('adaptation_mode')
+                    story_mode = ((story_bible.adaptation_context or {}).get('brief') or {}).get('adaptation_mode')
+                    if (val not in {'FICTION_FROM_THEME','FACTUAL_RETELLING','IMPROVE_OWN_SCRIPT'}
+                            or script_mode != val or story_mode != val):
+                        fact_conflicts.append({'fact_id':fact.fact_id, 'field':fact.field,
+                            'expected':val, 'found':script_mode, 'story_mode':story_mode, 'type':'FACT_CONFLICT',
+                            'description':'Chế độ sử dụng nguồn không khớp fact đã khóa; kiểm tra metadata/lineage, không chèn mã chế độ vào lời đọc.'})
+                        revision_requests.append('Khôi phục đúng chế độ nguồn/lineage đã chọn; không sửa lời đọc để chứa adaptation_mode.')
+                    continue
 
                 # If checking years / numbers, make sure no conflicting numbers appear in same context
                 if val.isdigit():

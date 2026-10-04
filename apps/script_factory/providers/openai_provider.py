@@ -1150,7 +1150,7 @@ Chỉ xuất các trường đã sửa/bổ sung dưới dạng một JSON Objec
             total_words=total_words,
             status="DRAFT",
             generation_request_id=str(uuid.uuid4()),
-            prompt_version="script-v3.9-calendar-payoff-location",
+            prompt_version="script-v4.0-scene-purpose",
             generation_source="REAL_AI",
             model_name=chosen_model_name,
             requested_model=model or self.default_model,

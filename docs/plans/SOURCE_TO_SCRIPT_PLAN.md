@@ -369,3 +369,18 @@ Khi hoàn thành từng giai đoạn, bổ sung đường dẫn bằng chứng v
 - Grounding giữ fail-closed: ID khoảng chỉ resolve khi quote nguyên văn khớp duy nhất trong phạm vi, source quote không ghép units; không đổi FAIL thành PASS. Source repair không chèn câu chào mẫu và không sửa đoạn mở vì reviewer sai quote. Source QC v5.8 kiểm tra lời chào bằng nội dung/ID thật.
 - EP2026 qua UI/OpenAI-compatible thật: 4286 từ/81 đoạn, CURRENT/QC PASS, 2 native + 2 source review, chỉ 081 chào kết, leakage 0. Reload cùng request/hash. Giữ NEEDS_REVIEW để người dùng đọc/duyệt; chưa chạy TTS/render. Phần cuối còn yếu về biên tập, không chứng nhận đủ hấp dẫn đăng YouTube.
 - Focused 188 passed + 6 subtests; full 715 passed và cùng 25 lỗi baseline, không regression mới. Python-only, không rebuild dist. Backend nghiệm thu hiện chạy riêng tại 8768; app chính 8765 chưa được agent đóng/restart.
+
+### P6 — Thiết kế cảnh, nhịp kể và payoff thực hiện — 04/10/2026
+
+- [x] Phân bổ số từ theo vai trò cảnh, giới hạn chiêm nghiệm/lời chào; không giới hạn cảnh thực hiện kết quả.
+- [x] Planner ghi thay đổi tình thế và câu hỏi người nghe; writer nối lựa chọn với hệ quả, không chia đều ngân sách cho các cụm gọi AI.
+- [x] QC đọc nội dung toàn tập, phân biệt chuẩn bị với hoàn thành và kiểm tra phần kết bất kể delivery_profile; review/repair vẫn giới hạn số lượt.
+- [x] Regression: lời hứa trả học phí từ thu nhập mới khác việc dành tiền hoặc trả học phí trước đó; không bịa kết quả chuyện thật.
+- [x] Chạy nghiệm thu EP2027/2028/2029/2030 mới bằng OpenAI-compatible qua Studio, đọc toàn văn, ghi cả lần thất bại và sửa; không sửa tay artifact cũ. Đã thực hiện kiểm tra, chưa đồng nghĩa mọi bản sẵn sàng đăng.
+- [x] Focused/full tests cô lập, so baseline 25 lỗi, báo cáo và commit code/test/docs; giữ nguyên Audio Formula V1/Flow/assembler.
+
+Audit đầu vào: EP2026 đạt QC nhưng kết lặp, lời hứa “đóng học phí tiếp theo” chỉ được kể thành “dành tiền”. P6 sửa generator/QC, không sửa nội dung EP2026 và không chứng nhận Audio/render.
+
+Báo cáo chi tiết: [NARRATIVE_DESIGN_ACCEPTANCE.md](NARRATIVE_DESIGN_ACCEPTANCE.md). Bản kiểm thử hiện tại dùng 8772, giữ app chính 8765. Các tập thử đều là hư cấu từ brief tự viết; không dùng chúng để chứng nhận mọi nguồn báo/YouTube hoặc mọi chế độ. Đọc tập dài phát hiện lỗi dù QC ban đầu PASS; chỉ tick nghiệm thu sẵn sàng xuất bản sau khi cả lỗi khách quan và nhịp kể đã được kiểm tra lại.
+
+Kết quả P6 cuối (05/10/2026): 384 focused + 6 subtests passed; full 818 passed, 15 failed, 10 errors, 5 skipped, 6 subtests, cùng đúng 25 lỗi baseline và không lỗi mới. EP2028/2029/2030 qua QC hiện hành và reload giữ request/hash; EP2027 vẫn chưa đạt, lần cuối bị giới hạn ngân sách có sẵn. EP2030 dùng writer v14 tạo 3.894 từ/81 đoạn mới, không sửa tay. Đọc toàn văn vẫn thấy nhịp giữa tập dài chậm; chưa chứng nhận tự động mọi tập đủ cuốn hút để đăng. Cổng 8772 dùng code mới, app chính 8765 giữ nguyên phiên đang chạy. Chi tiết và bằng chứng nằm trong báo cáo P6.

@@ -1,0 +1,241 @@
+{
+  "before_reload": {
+    "generation_request_id": "2ced7783-70ab-4a06-81b6-a2fd2ef1a75e",
+    "script_content_hash": "567af53c45ed1d046f7ec04a347abbbd45c1b48edb092cd5ca846badd04d1b19",
+    "is_current": false,
+    "qc_status": "NEEDS_REVISION",
+    "qc_gate_allowed": false,
+    "audio_gate_allowed": false,
+    "script_stage_status": "NEEDS_REVIEW",
+    "artifact_status": "NEEDS_REVISION"
+  },
+  "project_id": "EP2027",
+  "story_title": "Chiếc chìa khóa căn phòng nhỏ",
+  "story_generation_request_id": "2c08831b-6a3d-41ec-bd60-038f17b12138",
+  "script_generation_request_id": "2ced7783-70ab-4a06-81b6-a2fd2ef1a75e",
+  "parent_generation_request_id": "2c08831b-6a3d-41ec-bd60-038f17b12138",
+  "provider": "openai_compatible",
+  "requested_model": "auto",
+  "actual_model": "proxy auto — chưa xác định",
+  "prompt_version": "source-adaptation-v1-writer-v12-pooled-closing",
+  "writer_strategy": "source_scene_batches",
+  "generated_at": 1791129118.8011868,
+  "words": 3832,
+  "segments": 80,
+  "leakage_count": 0,
+  "qc_status": "NEEDS_REVISION",
+  "semantic": {
+    "review_version": "semantic-v29-continuity-and-unresolved-findings",
+    "status": "RUN",
+    "passes": 1,
+    "grounding_verified": null,
+    "pacing_checks": null,
+    "pacing_checks_second_pass": null,
+    "payoff_checks": null,
+    "payoff_checks_second_pass": null
+  },
+  "source_review": {
+    "version": "source-review-v2-theme-and-distinctive-events",
+    "status": "RUN",
+    "passes": 2,
+    "issues": []
+  },
+  "remaining_issues": [
+    {
+      "segment_id": "073",
+      "related_segment_ids": [],
+      "excerpt": "Trước khi ký hợp đồng, tôi kiểm tra lại số tiền đã chuẩn bị, đọc lại các điều khoản và đặt bút ký tên Lan vào phần người thuê.",
+      "rule": "PAYOFF_NOT_COMPLETED",
+      "severity": "CRITICAL",
+      "blocking": true,
+      "source": "SEMANTIC_REVIEW",
+      "message": "Phân đoạn [073] vi phạm PAYOFF_NOT_COMPLETED: Cảnh kết có thực hiện việc ký hợp đồng thuê nhà, nhưng kịch bản chưa xác nhận rõ nguồn tiền ký hợp đồng là khoản tiền kiếm được từ công việc sửa điện. Chỉ có chuẩn bị tiền và ký tên, chưa nối trực tiếp nguồn lực với thu nhập nghề sửa điện như yêu cầu ending.",
+      "recommended_action": "Thêm chi tiết hành động cho thấy khoản tiền dùng để ký hợp đồng đến từ thu nhập tích lũy qua công việc sửa điện của Lan."
+    }
+  ],
+  "advisory_issues": [],
+  "trial_jobs": [
+    {
+      "job_id": "ac5f58efc95841568b81c4fa04314afa",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "FAILED",
+      "started_at": 1791131121.419961,
+      "completed_at": 1791131121.730753,
+      "error_message": "BUDGET_BLOCKED: Episode EP2027 budget $2.00 reached (Current: $2.00)."
+    },
+    {
+      "job_id": "970a77db013d4f3c8d2f316f52be9b58",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791130698.271562,
+      "completed_at": 1791130758.2062838,
+      "error_message": null
+    },
+    {
+      "job_id": "c9a4c81aa3a84c939e8c6da9810c10c7",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791129970.3421223,
+      "completed_at": 1791130058.3602738,
+      "error_message": null
+    },
+    {
+      "job_id": "86d12c55f80c46ba9f7d3637f2d4fbfe",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791129560.2780776,
+      "completed_at": 1791129733.2449548,
+      "error_message": null
+    },
+    {
+      "job_id": "e5fa55b974034e409f5569fa62eecf37",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791129003.6645405,
+      "completed_at": 1791129173.6616542,
+      "error_message": null
+    },
+    {
+      "job_id": "f810ab50a783453c9187d582043f1690",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "FAILED",
+      "started_at": 1791128622.2885592,
+      "completed_at": 1791128779.6378014,
+      "error_message": "AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Cảnh 14 là SIGNOFF: 52 từ vượt ngân sách 35; rút nhận xét, giữ sự kiện kết quả."
+    },
+    {
+      "job_id": "71eaf971bd6541ea8345b06afc0009fa",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791114117.847762,
+      "completed_at": 1791114186.730786,
+      "error_message": null
+    },
+    {
+      "job_id": "7de63d5fb21145d5a5df01c266f79b89",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791113664.6671183,
+      "completed_at": 1791113994.4051087,
+      "error_message": null
+    },
+    {
+      "job_id": "d6fadd495f3f4e14aea9b3377d6651cd",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791112818.1153429,
+      "completed_at": 1791113350.030625,
+      "error_message": null
+    },
+    {
+      "job_id": "dc34e37875e04dff9a55a768f04a3155",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "FAILED",
+      "started_at": 1791112304.4405363,
+      "completed_at": 1791112435.6630054,
+      "error_message": "AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Cảnh 9 là REFLECTION: chỉ một đoạn; không chia bài học thành nhiều đoạn."
+    },
+    {
+      "job_id": "2ff13146f59d4b14a42267e5627a63f7",
+      "job_type": "SOURCE_Kiểm tra / sửa cốt truyện",
+      "status": "COMPLETED",
+      "started_at": 1791112045.9521737,
+      "completed_at": 1791112092.3114307,
+      "error_message": null
+    },
+    {
+      "job_id": "70c90a2b88da41d69f529141f6974064",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "FAILED",
+      "started_at": 1791111582.8812869,
+      "completed_at": 1791111631.3372738,
+      "error_message": "QC cốt truyện từ nguồn chưa đạt hoặc chưa hiện hành: [SEMANTIC_REVIEW_FAILED] AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Mode check original_dialogue: source_evidence cần unit_id và quote nguyên văn thật. [] COPY từ đúng unit, không diễn giải/ghép câu; giữ verdict theo nội dung thực.. Mở Cốt truyện để kiểm tra/sửa và duyệt lại; không tự thay cốt truyện đã duyệt trong lúc viết kịch bản."
+    },
+    {
+      "job_id": "b70953d0c42740a9b12a53ec8f96fbdc",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791110691.5449128,
+      "completed_at": 1791110880.7972603,
+      "error_message": null
+    },
+    {
+      "job_id": "89642978feb941e7959254e0f135c5ab",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791110475.7610357,
+      "completed_at": 1791110533.6670678,
+      "error_message": null
+    },
+    {
+      "job_id": "b5f48f27d90041fbad859b37f2446cf9",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791110055.4755268,
+      "completed_at": 1791110106.414534,
+      "error_message": null
+    },
+    {
+      "job_id": "c3f1df5936ae425c9883f2a8a2a7b120",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791109653.3053758,
+      "completed_at": 1791109935.9999652,
+      "error_message": null
+    },
+    {
+      "job_id": "0cd735c473f94bba9020ad091c13f286",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791109037.3982482,
+      "completed_at": 1791109295.0643466,
+      "error_message": null
+    },
+    {
+      "job_id": "f3dbde015db84bcc96111ed1a60678b5",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "FAILED",
+      "started_at": 1791108462.2257557,
+      "completed_at": 1791108599.8981194,
+      "error_message": "AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Cảnh 8 là SIGNOFF: 185 từ vượt ngân sách 64; rút nhận xét, giữ sự kiện kết quả."
+    },
+    {
+      "job_id": "3da381372a1444909e6074b6fa7118d9",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791086302.8413484,
+      "completed_at": 1791086674.9789243,
+      "error_message": null
+    },
+    {
+      "job_id": "ed83ff5a74d7453690bf6d248b2a00b0",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791085518.7752118,
+      "completed_at": 1791085748.674145,
+      "error_message": null
+    }
+  ],
+  "after_reload": {
+    "generation_request_id": "2ced7783-70ab-4a06-81b6-a2fd2ef1a75e",
+    "script_content_hash": "567af53c45ed1d046f7ec04a347abbbd45c1b48edb092cd5ca846badd04d1b19",
+    "is_current": false,
+    "qc_status": "NEEDS_REVISION",
+    "qc_gate_allowed": false,
+    "audio_gate_allowed": false,
+    "script_stage_status": "NEEDS_REVIEW",
+    "artifact_status": "NEEDS_REVISION"
+  },
+  "reload_preserved_request_and_hash": true,
+  "manual_assessment": {
+    "result": "NOT_ACCEPTED",
+    "full_prose_read": true,
+    "observations": [
+      "072 uses a new key/move before signing and key handover at 073/074.",
+      "066 switches to third-person design-state narration inside a first-person story.",
+      "Fan repair lacks a named diagnostic/component and repeated reflections remain."
+    ],
+    "limit": "Last recheck was BUDGET_BLOCKED at the existing $2.00 per-episode limit. No limit was changed."
+  },
+  "story_semantic_version": "semantic-v26-location-continuity"
+}

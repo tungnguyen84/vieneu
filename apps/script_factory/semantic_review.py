@@ -23,8 +23,8 @@ logger = logging.getLogger("VieNeu.SemanticReview")
 
 # call_llm(system_instruction, prompt) -> (raw_text, input_tokens, output_tokens)
 LLMCall = Callable[[str, str], Tuple[str, int, int]]
-SEMANTIC_REVIEW_VERSION = "semantic-v15-story-script-evidence-contract"
-SOURCE_SEMANTIC_REVIEW_VERSION = "semantic-v18-source-task-pacing"
+SEMANTIC_REVIEW_VERSION = "semantic-v22-closing-block-repair"
+SOURCE_SEMANTIC_REVIEW_VERSION = "semantic-v31-causal-decision-ownership"
 
 
 def semantic_review_version(bible=None):
@@ -119,6 +119,11 @@ def build_prompt(script: FullScript, story_bible: StoryBible) -> str:
         from apps.script_factory.adaptation import writer_context
         return ("Kiểm tra toàn văn kịch bản theo góc nhìn/cách kể trong brief, không ép lá thư, điều tra hoặc hai reveal. "
             "Kiểm tra timeline, tuổi/năm, địa điểm, trạng thái đạo cụ/kiến thức, lặp cảnh, hook/payoff, nhịp kể và tiếng Việt. "
+            "Theo dõi địa điểm hiện tại của người/vật xuyên suốt cả tập và các ranh giới cụm viết. "
+            "Ví dụ vật được mang từ nhà khách về cửa hàng, khách đến cửa hàng nhận vật rồi đi; "
+            "không thể kể ngay 'trước khi rời nhà khách' nếu không có lần đến nhà mới. "
+            "Một câu chuyển cảnh bình thường được phép lược hành trình; lỗi là hai địa điểm mâu thuẫn trong CÙNG lần gặp/bàn giao. "
+            "Nếu có mâu thuẫn, báo OBJECT_CONTINUITY_CONTRADICTION ở đoạn sai, comparison_evidence trích đoạn trước xác lập nơi/người giữ. "
             "Factual không bịa cảnh/thoại/nội tâm/động cơ; giữ attribution, không buộc biến lời kể thành chứng minh độc lập. "
             "Factual có thể dẫn tên nguồn/ngày ở phần mở rồi kể tự nhiên; không đòi nhắc 'theo nguồn' ở mỗi câu. "
             "Nếu nhiều đoạn chỉ tóm lại thao tác/thông tin vừa kể, không có dữ kiện mới, trích cặp đoạn và báo REPEATED_DISCOVERY; phân biệt hook/hồi đáp ngắn với diễn biến bị kể lại. "
@@ -283,6 +288,49 @@ def _has_verified_payoff(
     return False
 
 
+def build_source_continuity_prompt(script: FullScript, bible: StoryBible) -> str:
+    """Give the independent pass a distinct task instead of the same long audit.
+
+    First-pass/source reviews still inspect the complete source contract. This
+    pass checks actual narration against chronological prerequisites and canon;
+    approval still requires the same evidence/payoff/pacing schema below.
+    """
+    brief = bible.adaptation_context['brief']
+    from apps.script_factory.story_contract import contract_block
+    from apps.script_factory.narrative_design import DECISION_OWNERSHIP_INSTRUCTION
+    canon = {k:v for k,v in bible.to_dict().items() if k in
+             {'title','protagonist','supporting_characters','timeline','ending','critical_facts','narrative_skeleton'}}
+    return ('KIỂM TRA TRÌNH TỰ ĐỘC LẬP, đọc như người nghe, không chứng nhận từ nhãn cảnh: '
+        'lập trạng thái nội bộ trước/sau TỪNG đoạn: người/vật ở đâu, ai giữ, đã thực hiện việc gì, điều kiện nào chưa xảy ra. '
+        'Ưu tiên hành động dùng kết quả TRƯỚC lúc tạo ra kết quả: nhận chìa khóa mới trước cảnh ký/được giao, '
+        'chuyển đồ vào nơi chưa được bàn giao, nhận tiền trước khi hoàn thành việc. '
+        'Hồi tưởng/hook đã dẫn rõ được phép; câu chuyển cảnh có thể lược hành trình bình thường. '
+        'Hai địa điểm mâu thuẫn trong CÙNG lần gặp/bàn giao là OBJECT_CONTINUITY_CONTRADICTION; '
+        'đảo điều kiện/hành động là ACTION_SEQUENCE_INVERSION. Trích đoạn sai và comparison_evidence=[{segment_id,quote}] '
+        'ở đoạn xác lập điều kiện/trạng thái trước hoặc sau; không suy diễn một lần bàn giao không được kể để cứu lỗi. '
+        'audit_checks.timeline phải trích CẶP thao tác phụ thuộc ở phần thân/hồi kết (nhận/dùng/giao, ký/chuyển vào), '
+        'không chỉ trích mở đầu và cuối truyện rồi nói trình tự đúng. Kiểm tra đoạn ngay trước cảnh ký/nhận/giao. '
+        'So góc nhìn đã chọn: lời dẫn MC tách rõ được phép, nhưng người đang tự kể không đột nhiên đọc trạng thái thiết kế '
+        'về bản thân như một bản báo cáo ở giữa cảnh. Báo lưu ý QC_REPORT_TONE_LEAKAGE có quote nếu xảy ra. '
+        'Đối chiếu trở ngại và cách giải quyết trong task_design với cảnh thực hiện, không coi một câu nói "đã hiểu" là thao tác hoàn thành. '
+        'Kiểm tra các cảnh có thực sự đổi tình thế, phần sau kết quả không chỉ kể lại cùng bài học. '
+        + DECISION_OWNERSHIP_INSTRUCTION +
+        'Trong audit_checks.evidence_scope đối chiếu ai quyết định và ai chịu hậu quả, trích cả quyết định và cách quy trách nhiệm. '
+        'Nếu hai khẳng định mâu thuẫn, báo UNFOUNDED_EVIDENCE_LEAP với comparison_evidence đúng đoạn; '
+        'không chỉ trích việc đếm hàng tồn rồi chứng nhận nhân quả. '
+        'Đối chiếu các lần đồng ý/thử lại trong thân bài; lặp cùng sự đồng ý mà không có điều kiện mới là REPEATED_EVENT_NO_CHANGE. '
+        'Chỉ dùng mã luật đã cấp và trích nguyên văn; FAIL phải có issue tương ứng, không sửa nội dung trong báo cáo. '
+        '\nMode/góc nhìn/locks: ' + json.dumps({k:brief.get(k) for k in
+            ('adaptation_mode','direction','locked_elements','allowed_changes')},ensure_ascii=False)
+        + '\nCanon: ' + json.dumps(canon,ensure_ascii=False)
+        + contract_block(bible)
+        + '\nLuật: ' + reviewer_checklist(LOGIC_RULE_CODES)
+        + '\nKịch bản: ' + '\n'.join(f'[{s.id}] {s.text}' for s in script.segments)
+        + '\nJSON {"issues":[{"rule":"mã luật","segment_id":"id thật","quote":"nguyên văn",'
+          '"comparison_evidence":[{"segment_id":"id khác","quote":"nguyên văn"}],'
+          '"problem":"vấn đề","fix":"cách sửa giữ canon","confidence":"high"}]}.')
+
+
 def review_script_logic(
     script: FullScript,
     story_bible: StoryBible,
@@ -293,9 +341,12 @@ def review_script_logic(
     _validation_feedback: str = '',
 ) -> Dict[str, Any]:
     """Returns {"issues": [...blocking...], "advisories": [...], "script_hash", "tokens"}."""
-    prompt = build_prompt(script, story_bible)
+    prompt = (build_source_continuity_prompt(script, story_bible)
+              if _continuity_pass and story_bible.adaptation_context else build_prompt(script, story_bible))
     if _require_grounding:
         from apps.script_factory.story_contract import payoff_obligations
+        from apps.script_factory.narrative_design import ending_event_catalog
+        ending_catalog = ending_event_catalog(story_bible.ending or '')
         prompt += (
             '\nBẮT BUỘC thêm audit_checks vào JSON, cùng với issues. Đây là chứng cứ đã đọc, không phải điểm số. '
             'Đủ 5 category: timeline, setup_payoff, evidence_scope, knowledge_source, vietnamese. Mỗi item có category, '
@@ -318,12 +369,52 @@ def review_script_logic(
             'Mỗi item: {id, verdict:PASS|FAIL, answer:<đáp án cụ thể và nguồn>, setup:[{segment_id,quote}], resolution:[{segment_id,quote}]}. '
             'Trích NGUYÊN VĂN ít nhất 4 từ ở cả setup và resolution; answer ít nhất 16 ký tự. '
             'Với reveal/ending, setup có thể là chính cảnh thực hiện. Với dấu hiệu mở đầu/clue phải trích cảnh phát hiện và cảnh trả lời sau đó. '
+            'Với truyện theo nguồn, đáp án có thể ở câu SAU ngay trong cùng phân đoạn; trích hai câu khác nhau theo đúng thứ tự, không lặp một quote làm cả setup/resolution. '
             'Phải trả đúng câu hỏi, ví dụ mùi lạ thuộc về ai/đến từ đâu: cất áo hoặc chỉ xác nhận có ngoại tình không giải thích mùi. '
             'Nếu thiếu đáp án, báo UNRESOLVED_SETUP với quote ở setup và related_segment_ids các cảnh hồi kết cần sửa. '
             'Không trả PASS cho lời hứa trong Bible chưa xuất hiện trong kịch bản. '
+            'Riêng id ending thêm event_checks=[{required_action, actual_action, state:COMPLETED|PLANNED|PARTIAL|UNKNOWN, '
+            'matches_required_event:boolean, reason, evidence:[{segment_id,quote}]}]. '
+            'Tách TỪNG hành động của ending; required_action phải là một trích dẫn NGUYÊN VĂN liên tục tối thiểu 4 từ từ ending trong Bible. '
+            'COPY required_action như chuỗi con: không thêm dấu chấm để biến một vế có dấu phẩy thành câu mới. '
+            'Mỗi item đối chiếu đúng chủ thể, đối tượng, lần thực hiện và nguồn lực. '
+            'Dành tiền/chuẩn bị/sẽ trả học phí là PLANNED, không phải đã đóng học phí. '
+            'Đóng học phí lần đầu bằng tiền hỗ trợ không trả lời việc đóng học phí tiếp theo bằng thu nhập tự kiếm. '
+            'Không diễn giải mạnh hơn quote. Nếu Bible hứa kết quả nhưng script chỉ chuẩn bị, báo PAYOFF_NOT_COMPLETED '
+            'với quote và các đoạn cần sửa. Nếu nguồn/Bible chỉ có kế hoạch hoặc chưa biết, giữ đúng trạng thái ấy, không đòi bịa kết quả. '
             'Trong vietnamese kiểm tra cả nhịp kể: các cảnh chỉ trì hoãn hỏi, xếp giấy, lặp suy nghĩ mà không thay đổi hành động là lưu ý biên tập; '
             'báo lỗi khách quan nếu cùng cuộc gặp/đối thoại bị kể lại. Không yêu cầu nói giọng báo cáo QC để tỏ ra thận trọng.\n'
         )
+        prompt += ('\nENDING ACTION CATALOG (ID đã gắn với yêu cầu Bible, không phải bằng chứng script): '
+                   + json.dumps(ending_catalog, ensure_ascii=False)
+                   + '\nTrong ending.event_checks, trả một item cho TỪNG required_action_id trong catalog, '
+                   'cùng actual_action, state, matches_required_event, reason và evidence. '
+                   'Không cần tự viết required_action; hệ thống gắn nguyên văn từ ID. '
+                   'Từng hành động phải có bằng chứng riêng phù hợp; bỏ một ID không được PASS.\n')
+        if len(script.segments) >= 20:
+            prompt += (
+                '\nThêm pacing_checks gồm đúng 2 item category=progression và closing; verdict PASS|FAIL, reason, evidence=[{segment_id,quote}]. '
+                'Mỗi item trích ít nhất hai ID khác nhau, đọc NỘI DUNG không dựa delivery_profile. '
+                'Progression: tìm cảnh kể lại sự kiện hoặc nhiều đoạn cùng kết luận không thêm lựa chọn/thông tin/hệ quả. '
+                'Nếu lặp, báo REPEATED_EVENT_NO_CHANGE trích hai đoạn, related_segment_ids các đoạn lặp cần rút. '
+                'Issue lặp phải thêm comparison_evidence=[{segment_id,quote}] trích nguyên văn đoạn trước để so sánh; '
+                'quote chính chỉ thuộc một ID, không ghép hai đoạn hoặc báo khoảng ID cho quote nhiều đoạn. '
+                'Một chuỗi từ ba đoạn chỉ diễn giải cùng niềm tin/tình thế đã biết mà không thêm sự kiện/lựa chọn/hệ quả '
+                'cũng là tiến trình bị đứng, kể cả câu chữ khác; chỉ rõ các ID và trích hai điểm để so sánh. '
+                'Closing thêm last_new_event_segment_id là ID sự kiện/thông tin/hệ quả mới CUỐI CÙNG (không phải lời khuyên, '
+                'bài học, câu tóm lại thói quen đã kể, hay lời chào). Evidence phải trích chính sự kiện đó và một đoạn sau nó. '
+                'Phần sau sự kiện này chỉ chiêm nghiệm/chào, tối đa 10% số từ; nếu vượt báo REDUNDANT_CLOSING. '
+                'Không đánh dấu đoạn kết là sự kiện mới chỉ vì chứa tên nhân vật hoặc một hành động đã kể lại. '
+                'Cảnh thực hiện kết quả mới vẫn là diễn biến và KHÔNG bị giới hạn như chiêm nghiệm.\n'
+                'SCHEMA pacing_checks (điền ID/quote thật, không bỏ trường kể cả verdict FAIL): '
+                '[{"category":"progression","verdict":"PASS|FAIL","reason":"...",'
+                '"evidence":[{"segment_id":"ID thật","quote":"nguyên văn 4+ từ"},{"segment_id":"ID khác","quote":"nguyên văn 4+ từ"}]},'
+                '{"category":"closing","verdict":"PASS|FAIL","last_new_event_segment_id":"ID thật",'
+                '"reason":"...","evidence":[{"segment_id":"ID sự kiện mới cuối","quote":"nguyên văn 4+ từ"},'
+                '{"segment_id":"ID sau đó","quote":"nguyên văn 4+ từ"}]}]. '
+                'Không coi việc đã học nghề [đầu] và đã sửa xong nhưng chưa nhận tiền [sau] là cùng một trạng thái: '
+                'kiểm tra diễn biến mới giữa hai đoạn trước khi báo lặp.\n'
+            )
     if story_bible.adaptation_context and _require_grounding:
         prompt += '\nMẫu quote có thật theo ID (chỉ hướng dẫn COPY, không chứng nhận PASS): ' + json.dumps({s.id:' '.join(s.text.split()[:10]) for s in script.segments},ensure_ascii=False)
     if _retry_invalid:
@@ -409,6 +500,33 @@ def review_script_logic(
             dropped += 1
             invalid_evidence.append({'segment_id':seg_id,'invalid_quote':quote,'actual_segment_text':segment.text})
             continue
+        needs_continuity_pair = (rule == 'OBJECT_CONTINUITY_CONTRADICTION'
+                                 and story_bible.adaptation_context and _require_grounding)
+        if rule == 'REPEATED_EVENT_NO_CHANGE' or needs_continuity_pair:
+            comparison = item.get('comparison_evidence')
+            if not anchored(comparison) or not any(clean_segment_id(e['segment_id'], by_id) != seg_id for e in comparison):
+                dropped += 1
+                invalid_evidence.append({'segment_id': seg_id, 'invalid_quote': quote, 'actual_segment_text': segment.text,
+                    'error': f'{rule} cần comparison_evidence có ID khác và quote nguyên văn để so sánh.'})
+                continue
+            item['related_segment_ids'] = list(dict.fromkeys([*(item.get('related_segment_ids') or []),
+                *(clean_segment_id(e['segment_id'], by_id) for e in comparison)]))
+        if rule == 'REDUNDANT_CLOSING':
+            pacing, valid, _ = parse_json_items_validated(raw, 'pacing_checks')
+            closing = next((c for c in pacing if isinstance(c, dict) and c.get('category') == 'closing'), {})
+            last = clean_segment_id(closing.get('last_new_event_segment_id'), by_id)
+            if not valid or last not in by_id or not anchored(closing.get('evidence')):
+                dropped += 1
+                invalid_evidence.append({'segment_id': seg_id, 'invalid_quote': quote, 'actual_segment_text': segment.text,
+                    'error': 'REDUNDANT_CLOSING cần pacing_checks.closing với sự kiện mới cuối và evidence có quote.'})
+                continue
+            index = next(i for i, s in enumerate(script.segments) if s.id == last)
+            if sum(len(s.text.split()) for s in script.segments[index+1:]) <= .1 * sum(len(s.text.split()) for s in script.segments):
+                # A single permitted reflection is not an objectively overlong ending.
+                continue
+            item['related_segment_ids'] = list(dict.fromkeys([*(item.get('related_segment_ids') or []),
+                *(s.id for s in script.segments[index+1:-1])]))
+            item['closing_after_segment_id'] = last
         if rule == 'GENERIC_PHILOSOPHICAL_HOOK' and seg_id != script.segments[0].id:
             # This rule governs the opening. A concluding audience question is
             # part of the format, not a second hook or a viewpoint violation.
@@ -440,6 +558,10 @@ def review_script_logic(
             }
             if item.get('reported_segment_id'):
                 issue['reported_segment_id'] = item['reported_segment_id']
+            if item.get('closing_after_segment_id'):
+                issue['closing_after_segment_id'] = item['closing_after_segment_id']
+            if item.get('comparison_evidence') and anchored(item['comparison_evidence']):
+                issue['comparison_evidence'] = item['comparison_evidence']
             blocking.append(issue)
         else:
             issue = {
@@ -500,33 +622,146 @@ def review_script_logic(
                 key = check.get('id')
                 if not isinstance(key, str):
                     continue
+                if key == 'ending':
+                    events = check.get('event_checks')
+                    if not isinstance(events, list) or not events:
+                        continue
+                    promise = next(o['promise'] for o in obligations if o['id'] == key)
+                    catalog = ending_event_catalog(promise)
+                    for event in events:
+                        if isinstance(event, dict) and event.get('required_action_id') in catalog:
+                            event['required_action'] = catalog[event['required_action_id']]
+                    for event in events:
+                        action = str(event.get('required_action', '')) if isinstance(event, dict) else ''
+                        if len(action.split()) < 4 or not _quote_in_text(action, promise):
+                            invalid_evidence.append({'category':'ending_event', 'invalid_required_action':action,
+                                'actual_story_ending':promise,
+                                'error':'COPY required_action nguyên văn 4+ từ từ ending; không viết lại hoặc thêm dấu chấm vào vế kết thúc bằng dấu phẩy.'})
+                    if any(not isinstance(e, dict) or len(str(e.get('required_action', '')).split()) < 4
+                           or not _quote_in_text(str(e.get('required_action', '')), promise) or not e.get('actual_action')
+                           or len(str(e.get('reason', ''))) < 16 or e.get('matches_required_event') is not True
+                           or e.get('state') not in {'COMPLETED', 'PLANNED', 'PARTIAL', 'UNKNOWN'}
+                           or not anchored(e.get('evidence')) for e in events):
+                        continue
+                    covered = {action_id for action_id, clause in catalog.items()
+                               if any(e.get('required_action_id') == action_id or
+                                      _quote_in_text(clause, str(e.get('required_action', ''))) for e in events)}
+                    if covered != set(catalog):
+                        invalid_evidence.append({'category':'ending_event_coverage',
+                            'missing_required_action_ids':sorted(set(catalog)-covered), 'ending_action_catalog':catalog,
+                            'error':'Trả đủ từng required_action_id với bằng chứng của chính hành động đó; không chỉ review một phần ending.'})
+                        continue
+                    from apps.script_factory.narrative_design import event_state_matches
+                    incomplete = [e for e in events if not event_state_matches(e['required_action'], e['state'])]
+                    if incomplete:
+                        ref = incomplete[0]['evidence'][0]
+                        blocking.append({'segment_id': clean_segment_id(ref['segment_id'], by_id),
+                            'related_segment_ids': list(dict.fromkeys(clean_segment_id(r['segment_id'], by_id) for r in check['resolution'])),
+                            'excerpt': ref['quote'][:160], 'rule': 'PAYOFF_NOT_COMPLETED', 'severity': 'CRITICAL',
+                            'blocking': True, 'source': 'SEMANTIC_REVIEW',
+                            'message': 'Trạng thái hành động cuối không khớp Bible: ' + incomplete[0]['reason'],
+                            'recommended_action': 'Sửa cảnh kết quả đúng ending; không biến dự định thành việc đã làm hoặc bịa kết quả chưa biết.'})
+                        continue
+                    # A judge can falsely call earmarking money a completed payment.
+                    # Verify this narrow, observable distinction in its actual quotes.
+                    from apps.script_factory.narrative_design import payment_payoff_missing
+                    gap = payment_payoff_missing(promise, events)
+                    if gap:
+                        e = check['resolution'][0]
+                        blocking.append({'segment_id': clean_segment_id(e['segment_id'], by_id),
+                            'related_segment_ids': list(dict.fromkeys(clean_segment_id(r['segment_id'], by_id) for r in check['resolution'])),
+                            'excerpt': e['quote'][:160], 'rule': 'PAYOFF_NOT_COMPLETED', 'severity': 'CRITICAL',
+                            'blocking': True, 'source': 'SEMANTIC_REVIEW', 'message': gap,
+                            'recommended_action': 'Thực hiện đúng sự kiện ending của Bible bằng cảnh có kết quả, không chỉ dành tiền hoặc kể lại lần trước.'})
+                        continue
                 if key == 'title_trigger' or str(key).startswith('clue_'):
                     indices = {s.id: i for i, s in enumerate(script.segments)}
                     first = min(indices[clean_segment_id(e['segment_id'], by_id)] for e in check['setup'])
                     last = max(indices[clean_segment_id(e['segment_id'], by_id)] for e in check['resolution'])
-                    if last <= first:
+                    same_segment_answer = False
+                    if story_bible.adaptation_context and last == first:
+                        text = _normalize(script.segments[first].text)
+                        starts = [text.find(_normalize(e['quote'])) + len(_normalize(e['quote']))
+                                  for e in check['setup'] if indices[clean_segment_id(e['segment_id'], by_id)] == first]
+                        ends = [text.find(_normalize(e['quote'])) for e in check['resolution']
+                                if indices[clean_segment_id(e['segment_id'], by_id)] == last]
+                        same_segment_answer = bool(starts and ends and min(ends) >= max(starts))
+                    if last < first or (last == first and not same_segment_answer):
+                        invalid_evidence.append({'category':'payoff_order','payoff_id':key,
+                            'error':'Cần quote trả lời SAU quote setup. Nếu đáp án ở cùng đoạn, trích câu sau riêng; không quote lại câu phát hiện.'})
                         continue
                 fulfilled.add(key)
             result['payoff_checks'] = payoff_checks
             result['grounding_verified'] &= bool(valid and len(payoff_checks) == len(obligations)
                 and fulfilled == {o['id'] for o in obligations})
-        if not result['grounding_verified']:
+        if len(script.segments) >= 20:
+            pacing, valid, _ = parse_json_items_validated(raw, 'pacing_checks')
+            verified_pacing = set()
+            for check in pacing:
+                evidence = check.get('evidence')
+                category = check.get('category')
+                allowed_verdicts = {'PASS', 'FAIL'} if category == 'closing' else {'PASS'}
+                if (check.get('verdict') not in allowed_verdicts or len(str(check.get('reason', ''))) < 16
+                        or not anchored(evidence) or len({clean_segment_id(e['segment_id'], by_id) for e in evidence}) < 2):
+                    invalid_evidence.append({'category':'pacing', 'check':check,
+                        'error':'Cần evidence từ hai ID khác nhau. Nếu FAIL vì lặp, issue cần comparison_evidence riêng; nếu FAIL closing, vẫn cần last_new_event_segment_id và quote tại ID đó.'})
+                    continue
+                if category == 'closing':
+                    last = clean_segment_id(check.get('last_new_event_segment_id'), by_id)
+                    if last not in by_id or last not in {clean_segment_id(e['segment_id'], by_id) for e in evidence}:
+                        invalid_evidence.append({'category':'closing','check':check,
+                            'error':'Thiếu/sai last_new_event_segment_id. Điền ID sự kiện mới cuối và quote của chính ID đó; không bỏ trường khi FAIL.'})
+                        continue
+                    index = next(i for i, s in enumerate(script.segments) if s.id == last)
+                    tail = script.segments[index+1:]
+                    total_words = sum(len(s.text.split()) for s in script.segments)
+                    tail_words = sum(len(s.text.split()) for s in tail)
+                    check['trailing_word_fraction'] = tail_words / max(total_words, 1)
+                    if tail_words > total_words * .10:
+                        target = tail[0]
+                        blocking.append({'segment_id': target.id, 'related_segment_ids': [s.id for s in tail[:-1]],
+                            'closing_after_segment_id': last,
+                            'excerpt': target.text[:160], 'rule': 'REDUNDANT_CLOSING', 'severity': 'CRITICAL',
+                            'blocking': True, 'source': 'SEMANTIC_REVIEW',
+                            'message': f'Sau sự kiện mới cuối [{last}], phần tóm/chiêm nghiệm có {tail_words}/{total_words} từ, vượt 10%.',
+                            'recommended_action': 'Rút các đoạn lặp thành một chiêm nghiệm ngắn và một lời chào; giữ sự kiện kết quả và facts.'})
+                        continue
+                    if check.get('verdict') == 'FAIL':
+                        # This gate is the measurable 10% rule. A judge saying
+                        # "too long" cannot override the grounded word count.
+                        advisories.append({'segment_id':tail[0].id if tail else last,
+                            'related_segment_ids':[s.id for s in tail[:-1]],
+                            'excerpt':(tail[0].text if tail else by_id[last].text)[:160],
+                            'rule':'REDUNDANT_CLOSING','severity':'WARNING','blocking':False,'source':'SEMANTIC_REVIEW',
+                            'message':f'Gợi ý biên tập phần kết ({tail_words}/{total_words} từ, trong giới hạn 10%): ' + check['reason'],
+                            'recommended_action':'Đọc/rút chiêm nghiệm nếu cần; không bỏ cảnh thực hiện kết quả.'})
+                verified_pacing.add(category)
+            result['pacing_checks'] = pacing
+            result['grounding_verified'] &= bool(valid and len(pacing) == 2 and verified_pacing == {'progression', 'closing'})
+        if blocking:
+            result['status'] = 'RUN'
+            result['grounding_verified'] = False
+        elif not result['grounding_verified']:
             result['status'] = 'ERROR'
             result['error'] = 'Review chưa có chứng cứ hợp lệ cho đủ timeline, setup/payoff, bằng chứng, nguồn nhận thức và tiếng Việt.'
     result['invalid_evidence'] = invalid_evidence
     if result['status'] == 'ERROR' and not _retry_invalid:
         feedback = '\nTrích dẫn bị từ chối và PHÂN ĐOẠN THẬT để COPY (chỉ sửa báo cáo, không sửa kịch bản):\n' + json.dumps(invalid_evidence[:6], ensure_ascii=False)
-        feedback += '\nKiểm tra audit/payoff chưa hợp lệ: ' + json.dumps({k:result.get(k) for k in ('audit_checks','payoff_checks')},ensure_ascii=False)
+        feedback += '\nKiểm tra audit/payoff/pacing chưa hợp lệ: ' + json.dumps({k:result.get(k) for k in ('audit_checks','payoff_checks','pacing_checks')},ensure_ascii=False)
         feedback += '\nNếu audit/payoff FAIL vì lỗi thật, BẮT BUỘC trả issue có mã luật và quote tương ứng. Không bỏ lỗi để trả PASS.'
         return _retry_review_once(result, lambda: review_script_logic(script, story_bible, call_llm, _continuity_pass, True, _require_grounding, feedback))
-    # The independent continuity pass runs unless pass 1 already found an
-    # objective defect; editor-level findings must not skip it, or the approval
-    # gate (which requires both passes) could never open.
-    if not _continuity_pass and result["status"] == "RUN" and not any(is_blocking_logic_issue(i) for i in blocking):
+    # Grounded source reviews always inspect continuity independently. A payoff
+    # finding in pass 1 must not hide a separate chronology defect from repair.
+    # Legacy ungrounded reviews retain their early-stop behavior.
+    if (not _continuity_pass and result["status"] == "RUN"
+            and (not any(is_blocking_logic_issue(i) for i in blocking)
+                 or (story_bible.adaptation_context and _require_grounding))):
         second = review_script_logic(script, story_bible, call_llm, _continuity_pass=True, _require_grounding=_require_grounding)
         result["status"] = second["status"]
         result["error"] = second.get("error")
-        result["issues"].extend(second.get("issues", []))
+        seen = {(i.get('rule'), i.get('segment_id'), i.get('excerpt')) for i in result['issues']}
+        result["issues"].extend(i for i in second.get("issues", [])
+                               if (i.get('rule'), i.get('segment_id'), i.get('excerpt')) not in seen)
         result["advisories"].extend(second.get("advisories", []))
         result["dropped_unanchored"] += second.get("dropped_unanchored", 0)
         result['invalid_evidence'].extend(second.get('invalid_evidence', []))
@@ -537,9 +772,57 @@ def review_script_logic(
             result['grounding_verified'] = bool(result.get('grounding_verified') and second.get('grounding_verified'))
             result['audit_checks_second_pass'] = second.get('audit_checks', [])
             result['payoff_checks_second_pass'] = second.get('payoff_checks', [])
+            result['pacing_checks_second_pass'] = second.get('pacing_checks', [])
     else:
         result["passes"] = 1
     return result
+
+
+def retain_unresolved_findings(previous_script, previous_report, candidate, report, bible):
+    """A random later PASS cannot erase an anchored defect in unchanged prose.
+
+    Only retain objective semantic findings from the same script/story hashes.
+    Editing an anchor or its adjacent context releases it for a fresh review.
+    This does not carry failed/incomplete reviews or subjective preferences.
+    """
+    import copy
+    prior = previous_report.semantic_review or {}
+    if (prior.get('script_hash') != script_content_hash(previous_script)
+            or prior.get('story_hash') != story_bible_content_hash(bible)):
+        return report
+    old = {s.id: s.text for s in previous_script.segments}
+    new = {s.id: s.text for s in candidate.segments}
+    ordered = [s.id for s in previous_script.segments]
+    carried = []
+    existing = {(i.get('rule'), i.get('segment_id')) for i in report.evidence_issues}
+    for issue in prior.get('issues', []):
+        key = (issue.get('rule'), issue.get('segment_id'))
+        sid = issue.get('segment_id')
+        quote = issue.get('excerpt', '')
+        if (key in existing or not is_blocking_logic_issue(issue)
+                or sid not in old or len(quote.split()) < 4 or not _quote_in_text(quote, old[sid])):
+            continue
+        anchors = {sid, *(issue.get('related_segment_ids') or [])}
+        if not anchors.issubset(old):
+            continue
+        neighborhood = set(anchors)
+        for anchor in anchors:
+            index = ordered.index(anchor)
+            neighborhood.update(ordered[max(0, index-1):index+2])
+        if any(new.get(anchor) != old[anchor] for anchor in neighborhood):
+            continue
+        kept = copy.deepcopy(issue)
+        kept['retained_unresolved'] = True
+        report.evidence_issues.append(kept)
+        report.revision_requests.append(kept.get('recommended_action') or kept.get('message', 'Sửa lỗi có chứng cứ.'))
+        carried.append(kept)
+    if carried:
+        report.status = 'NEEDS_REVISION'
+        review = dict(report.semantic_review or {})
+        review['issues'] = [*(review.get('issues') or []), *carried]
+        review['retained_unresolved_count'] = len(carried)
+        report.semantic_review = review
+    return report
 
 
 def carry_over_semantic_review(previous_report: Dict[str, Any], script: FullScript, story_bible: Optional[StoryBible] = None) -> Optional[Dict[str, Any]]:
@@ -664,6 +947,7 @@ def build_story_bible_prompt(bible: StoryBible) -> str:
     data = bible.to_dict()
     if bible.adaptation_context:
         from apps.script_factory.adaptation import writer_context
+        from apps.script_factory.narrative_design import DECISION_OWNERSHIP_INSTRUCTION
         data = {**data, 'adaptation_policy': writer_context(bible.adaptation_context)}
     protagonist = bible.protagonist if isinstance(bible.protagonist, dict) else {}
     plot = {k: data.get(k) for k in STORY_BIBLE_HASH_FIELDS if data.get(k)}
@@ -678,6 +962,11 @@ def build_story_bible_prompt(bible: StoryBible) -> str:
                 'Hư cấu/nâng cấp: concrete_task và key_scenes cần vấn đề/đối tượng/thao tác cụ thể, lựa chọn có cái giá và kết quả quan sát được. '
                 'Nếu chỉ có các câu chung chung như hiểu nhu cầu, cải thiện quy trình, tìm lại ý nghĩa mà không có việc làm rõ vấn đề/thay đổi cụ thể thì báo UNRESOLVED_SETUP tại trigger/timeline/ending chưa được trả lời. '
                 'Chỉ báo mâu thuẫn cụ thể có quote; không tự thêm giả định ngoài tác phẩm.\n'
+                + DECISION_OWNERSHIP_INSTRUCTION
+                + 'Ở audit_checks.evidence_scope, đối chiếu quyết định và trách nhiệm giữa timeline, causal_chains và task_design, '
+                  'trích nguyên văn hai phía. Không coi các trường lặp cùng một giả định là bằng chứng giả định đúng. '
+                  'Nếu quy trách nhiệm mâu thuẫn với thỏa thuận đã kể thì báo UNFOUNDED_EVIDENCE_LEAP; '
+                  'không hợp thức hóa lỗi bằng cách tự tưởng tượng một thỏa thuận ký gửi không có trong Bible. '
                 + reviewer_checklist(STORY_BIBLE_RULES) + contract_block(bible) + data['adaptation_policy']
                 + '\nStory Bible (trích nguyên văn đúng field dưới đây):\n' + json.dumps(source_plot, ensure_ascii=False, indent=1)
                 + '\nJSON {issues:[{rule,field,quote:<COPY 5–30 từ nguyên văn field>,problem,fix,confidence:high|medium}]}.')
@@ -751,7 +1040,10 @@ def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass:
             values = bible.to_dict()
             prompt += ('\nBẢNG QUOTE: chỉ trích từ field có trong bảng sau. Không trích analysis, source_units hoặc adaptation_policy làm chứng cứ Story. '
                        'Không nối name + description hoặc thêm dấu hai chấm. Copy chuỗi con liên tục trong value.\n'
-                       + json.dumps({k:quote_text(values.get(k)) for k in STORY_BIBLE_REVIEW_FIELDS if k!='adaptation_context' and values.get(k)},ensure_ascii=False))
+                       + json.dumps({k:quote_text(values.get(k)) for k in STORY_BIBLE_REVIEW_FIELDS
+                                     if k!='adaptation_context' and len(quote_text(values.get(k)).split()) >= 4},ensure_ascii=False)
+                       + '\nKhông dùng trường ngắn dưới 4 từ (ví dụ time_period="Đương đại") làm quote. '
+                         'Trích câu đầy đủ từ timeline/ending/cảnh để kiểm tra cùng category; không thêm từ vào quote ngắn.')
             def quote_example(value):
                 if isinstance(value,dict):
                     return next((q for v in value.values() if (q:=quote_example(v))), '')
@@ -863,6 +1155,22 @@ def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass:
                     e['reported_field'] = e['field']
                     e['field'] = 'narrative_skeleton.' + e['field']
                     source = field_text(skeleton[root])
+                    # A real skeleton alias can name the wrong sibling while
+                    # quoting an exact scene clause. Resolve only a unique
+                    # literal leaf; no paraphrase or invented field is rescued.
+                    literal_quote = str(e.get('quote', ''))
+                    if len(literal_quote.split()) >= 4 and not _quote_in_text(literal_quote, source):
+                        def matching_leaves(value, path):
+                            if isinstance(value, dict):
+                                return [match for key, child in value.items()
+                                        for match in matching_leaves(child, path + '.' + key)]
+                            if isinstance(value, list):
+                                return [match for index, child in enumerate(value)
+                                        for match in matching_leaves(child, path + f'[{index}]')]
+                            return [(path, str(value))] if isinstance(value, str) and _quote_in_text(literal_quote, value) else []
+                        matches = matching_leaves(skeleton, 'narrative_skeleton')
+                        if len(matches) == 1:
+                            e['field'], source = matches[0]
                     root = 'narrative_skeleton'
                 else:
                     source = field_text(data.get(root)) if root!='adaptation_context' else ''
@@ -879,6 +1187,7 @@ def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass:
     result['invalid_evidence'] = invalid_evidence
     if result['status'] == 'ERROR' and not _retry_invalid:
         feedback = '\nCác trích dẫn bị từ chối và NỘI DUNG THẬT để copy (không sửa cốt truyện):\n' + json.dumps(invalid_evidence[:4], ensure_ascii=False)
+        feedback += '\nQuote phải có ÍT NHẤT 4 từ. Nếu trường thực tế chỉ có 1–3 từ, BỎ reference đó và trích một câu đủ dài từ trường khác để chứng minh cùng kiểm tra; không tiếp tục copy quote ngắn, không bịa hoặc sửa artifact.'
         feedback += '\nCác audit_checks chưa hợp lệ: ' + json.dumps(result.get('audit_checks',[]),ensure_ascii=False)
         return _retry_review_once(result, lambda: review_story_bible_logic(bible, call_llm, _second_pass, True, _require_grounding, feedback))
     if not _second_pass and result['status'] == 'RUN' and not blocking:

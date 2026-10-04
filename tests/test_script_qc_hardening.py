@@ -38,6 +38,25 @@ def _base_valid_segments() -> list[ScriptSegment]:
     ]
 
 
+@pytest.mark.parametrize('mode', ['FICTION_FROM_THEME','FACTUAL_RETELLING','IMPROVE_OWN_SCRIPT'])
+@pytest.mark.parametrize('case', ['matching','wrong','missing','spoken_enum_only'])
+def test_locked_source_mode_checks_metadata_without_requiring_internal_spoken_token(qc_env,mode,case):
+    context={'brief':{'adaptation_mode':mode,'target_duration_sec':300},'brief_hash':'test','analysis':{},'units':[]}
+    bible=StoryBible('EP_MODE','Tập',{'name':'Lan'},adaptation_context=context,
+        critical_facts=[LockedFact('MODE','adaptation_mode',mode,'Chế độ nguồn đã chọn.')])
+    script_context=context if case=='matching' else (None if case in ('missing','spoken_enum_only') else
+        {**context,'brief':{**context['brief'],'adaptation_mode':'FACTUAL_RETELLING' if mode!='FACTUAL_RETELLING' else 'FICTION_FROM_THEME'}})
+    text='Đây là câu chuyện hư cấu. Lan đặt sổ thu chi lên bàn.'
+    if case=='spoken_enum_only': text+=' '+mode
+    script=FullScript('EP_MODE','Tập',{},adaptation_context=script_context,segments=[
+        ScriptSegment('001',text=text),ScriptSegment('002',text='Cảm ơn quý vị đã lắng nghe. Hẹn gặp lại.',delivery_profile='ENDING')])
+    report=qc_env['qc'].run_qc(script,bible)
+    conflicts=[c for c in report.fact_conflicts if c.get('fact_id')=='MODE']
+    assert bool(conflicts) is (case!='matching')
+    if conflicts: assert 'metadata/lineage' in conflicts[0]['description']
+    if case=='matching': assert mode not in ' '.join(s.text for s in script.segments)
+
+
 def test_qc_rejects_mid_script_signoff_and_continued_story(qc_env):
     qc: ScriptQCEngine = qc_env["qc"]
     bible = StoryBible(

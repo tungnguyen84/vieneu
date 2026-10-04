@@ -160,7 +160,9 @@ NARRATIVE_LOGIC_RULES = [
         "Đạo cụ, hiện vật và bằng chứng phải nhất quán xuyên suốt câu chuyện: không đổi từ hộp các-tông thành hộp gỗ, "
         "không để bưu thiếp vừa rơi khỏi sổ vừa nằm trong phong bì niêm phong cùng biên lai; chuyển cảnh phải liền mạch, logic. "
         "Theo dõi AI đang giữ đồ vật ở từng cảnh, và mỗi thay đổi trạng thái (đóng tài khoản, dọn ra ở riêng, trả lại đồ) "
-        "chỉ xảy ra MỘT lần.",
+        "chỉ xảy ra MỘT lần. Theo dõi cả địa điểm của người/vật: khách đến cửa hàng nhận đồ, "
+        "không thể kết cùng lần gặp bằng 'rời nhà khách'. Chuyển cảnh sang lần gặp khác được phép khi đã dẫn rõ. "
+        "Lỗi đối chiếu hai cảnh cần trích cả đoạn xác lập nơi/người giữ trước và đoạn mâu thuẫn sau.",
     ),
     (
         "QC_REPORT_TONE_LEAKAGE",
@@ -169,6 +171,11 @@ NARRATIVE_LOGIC_RULES = [
     ),
 ]
 
+NARRATIVE_LOGIC_RULES.extend([
+    ('PAYOFF_NOT_COMPLETED', 'Một hành động đã hoàn thành trong Bible phải thực sự xảy ra trong script, đúng chủ thể, đối tượng, lần thực hiện và nguồn lực. Kế hoạch/dành tiền/chuẩn bị không phải kết quả; không dùng lần thực hiện trước đó để trả lời kết quả mới. Factual không bịa kết quả chưa có nguồn.'),
+    ('REPEATED_EVENT_NO_CHANGE', 'Không kể hai lần cùng một sự kiện như thể mới xảy ra, hoặc kéo dài bằng những đoạn nói lại cùng thông tin mà không đổi tình thế. Callback ngắn có chức năng mới được phép. Phải trích cả hai đoạn và chỉ rõ điều gì lặp.'),
+    ('REDUNDANT_CLOSING', 'Sau sự kiện mới cuối cùng, chiêm nghiệm/lời chào không vượt 10% số từ toàn tập, bất kể nhãn NORMAL/COMMENT/ENDING. Không coi hành động kết quả thật là chiêm nghiệm; factual có thể kết bằng giới hạn chưa biết đúng nguồn. Trích sự kiện cuối và các đoạn tóm lại sau đó.'),
+])
 LOGIC_RULE_CODES = {code for code, _ in NARRATIVE_LOGIC_RULES}
 
 # Judgement calls / subjective style critiques from LLM reviewers that are reported

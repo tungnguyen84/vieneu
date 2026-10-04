@@ -1,0 +1,144 @@
+{
+  "baseline_commit": "48542c755d30e6f1c0ef70f71ee3099fca963c68",
+  "isolated_checkout": "C:\\Users\\TPT\\AppData\\Local\\Temp\\vieneu-narrative-closing-block-30049fde26c040a6977ddd544e546b90",
+  "focused": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "390",
+      "time": "41.410",
+      "timestamp": "2026-10-05T00:15:59.059675+07:00",
+      "hostname": "AIO7"
+    }
+  ],
+  "full": [
+    {
+      "name": "pytest",
+      "errors": "10",
+      "failures": "15",
+      "skipped": "5",
+      "tests": "854",
+      "time": "149.743",
+      "timestamp": "2026-10-05T00:16:42.214891+07:00",
+      "hostname": "AIO7"
+    }
+  ],
+  "baseline_full": [
+    {
+      "name": "pytest",
+      "errors": "10",
+      "failures": "15",
+      "skipped": "5",
+      "tests": "751",
+      "time": "292.639",
+      "timestamp": "2026-10-04T09:21:16.851272+07:00",
+      "hostname": "AIO7"
+    }
+  ],
+  "new_failures": [],
+  "resolved_failures": [],
+  "unchanged_failures": [
+    [
+      "tests.test_final_auto_assembler",
+      "test_real_rendered_final_mp4_qc"
+    ],
+    [
+      "tests.test_flowkit_adapter",
+      "test_flowkit_connection_status"
+    ],
+    [
+      "tests.test_fused_frame",
+      "test_fused_frame_cases"
+    ],
+    [
+      "tests.test_music_mixing_engine",
+      "test_consecutive_cue_merging"
+    ],
+    [
+      "tests.test_music_mixing_engine",
+      "test_cue_generation_profile_mapping"
+    ],
+    [
+      "tests.test_omni_flash_generation",
+      "test_omni_flash_end_to_end"
+    ],
+    [
+      "tests.test_phase1_verification",
+      "test_phase1_all"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_audio_formula_regression"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_character_ids_valid"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_location_ids_valid"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_no_one_segment_one_scene"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_omni_duration_resolution"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_queue_sync"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_reanalyze_does_not_delete_assets"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_visual_scene_grouping"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_visual_timeline_coverage"
+    ],
+    [
+      "tests.test_phase2_character_library",
+      "test_visual_type_explicit"
+    ],
+    [
+      "tests.test_phase3_character_pilot",
+      "test_pilot_metadata_loaded_from_visual_plan"
+    ],
+    [
+      "tests.test_production_pilot_03_audio",
+      "test_physical_audio_files_exist[EP003]"
+    ],
+    [
+      "tests.test_production_pilot_03_audio",
+      "test_physical_audio_files_exist[EP011]"
+    ],
+    [
+      "tests.test_production_pilot_03_visual",
+      "test_timeline_and_audio_duration_sync[EP003-45-15-5]"
+    ],
+    [
+      "tests.test_production_pilot_03_visual",
+      "test_timeline_and_audio_duration_sync[EP011-45-15-6]"
+    ],
+    [
+      "tests.test_production_pilot_03_visual_v1_0a",
+      "test_timeline_and_audio_duration_sync[EP003-45-7-5]"
+    ],
+    [
+      "tests.test_production_pilot_03_visual_v1_0a",
+      "test_timeline_and_audio_duration_sync[EP011-45-8-6]"
+    ],
+    [
+      "tests.test_script_factory_v1_3_1a",
+      "test_zero_media_generation"
+    ]
+  ]
+}

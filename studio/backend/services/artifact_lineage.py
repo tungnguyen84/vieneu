@@ -255,8 +255,14 @@ def validate_full_script(project_id: str, projects_dir: Path) -> Dict[str, Any]:
 
             all_semantic_findings = [
                 *(sem_rev.get("issues") or []),
-                *(sem_rev.get("advisories") or []),
+                *(i for i in (sem_rev.get("advisories") or [])
+                  if not (isinstance(i, dict) and i.get('rule') == 'REDUNDANT_CLOSING'
+                          and i.get('severity') == 'WARNING' and i.get('blocking') is False)),
             ]
+            # Grounded pacing keeps an under-limit style suggestion as a
+            # warning. Do not promote that specific advisory back to CRITICAL
+            # solely because the same code also names the >10% hard failure.
+            # Issues, critical findings and all other objective rules still block.
             if any(is_blocking_logic_issue(i) for i in all_semantic_findings if isinstance(i, dict)):
                 audio_gate_reasons.append("QC logic còn lỗi khách quan cần sửa (bằng chứng, pháp lý, chính tả...)")
 

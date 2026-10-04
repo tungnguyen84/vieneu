@@ -7,12 +7,12 @@ import uuid
 import unicodedata
 import logging
 import re
-import math
 
 from apps.script_factory.models import FullScript, StoryBible, ScriptSegment
 from apps.script_factory.source_intake import text_hash
 
 VERSION = 'source-adaptation-v1'
+SOURCE_REVIEW_VERSION = 'source-review-v2-theme-and-distinctive-events'
 logger = logging.getLogger('VieNeu.SourceWriter')
 _SOURCE_SIGNOFF_RE = re.compile(
     r'cảm\s+ơn\s+(?:bạn|các\s+bạn|quý\s+vị)[^.]{0,100}(?:theo\s+dõi|lắng\s+nghe)'
@@ -29,6 +29,12 @@ def normalize_source_delivery_profiles(segments, final=True):
     for index, segment in enumerate(segments):
         original = segment.get('delivery_profile', 'NORMAL')
         profile = str(original).strip().upper()
+        # Scene roles and voice-delivery profiles are different enums. Accept
+        # only known equivalent role labels; arbitrary unknown labels still
+        # fail validation. Spoken signoff/content checks remain independent.
+        profile = {'SETUP':'NORMAL', 'DEVELOPMENT':'NORMAL', 'ESCALATION':'NORMAL',
+                   'DECISION':'NORMAL', 'PAYOFF':'NORMAL', 'REFLECTION':'COMMENT',
+                   'SIGNOFF':'ENDING'}.get(profile, profile)
         if (not final or index < len(segments) - 1) and profile == 'ENDING' and not _SOURCE_SIGNOFF_RE.search(segment['text']):
             profile = 'COMMENT'
         elif final and index == len(segments) - 1 and _SOURCE_SIGNOFF_RE.search(segment['text']):
@@ -36,6 +42,43 @@ def normalize_source_delivery_profiles(segments, final=True):
         segment['delivery_profile'] = profile
         if original != profile:
             logger.info('Chuẩn hóa nhãn đọc đoạn %03d: %s → %s; giữ nguyên văn bản.', index + 1, original, profile)
+
+
+def normalize_source_closing_segments(segments, scenes):
+    """Coalesce a short closing split by the JSON writer; never shorten prose.
+
+    Only adjacent items from the same planned closing are eligible. The sum
+    must already fit its word ceiling, profiles must be known and no earlier
+    item may contain a spoken signoff. Overlong/repeated goodbyes still fail.
+    """
+    closing = {s['no']: s for s in scenes if s.get('role') in {'REFLECTION', 'SIGNOFF'}}
+    def number(item):
+        value = item.get('scene_no')
+        return int(value) if isinstance(value, str) and re.fullmatch(r'[0-9]+', value) else value
+    closing_words = sum(len(s['text'].split()) for s in segments
+                        if type(number(s)) is int and number(s) in closing)
+    fits_closing_pool = closing_words <= max(25, sum(s['word_budget'] for s in closing.values()) * 1.15)
+    output, index = [], 0
+    while index < len(segments):
+        scene_no = number(segments[index])
+        end = index + 1
+        while end < len(segments) and number(segments[end]) == scene_no:
+            end += 1
+        items = segments[index:end]
+        scene = closing.get(scene_no) if type(scene_no) is int else None
+        if (scene and len(items) > 1
+                and all(isinstance(s.get('text'), str) and s.get('delivery_profile') in
+                        {'HOOK', 'NORMAL', 'COMMENT', 'REVEAL', 'ENDING'} for s in items)
+                and not any(_SOURCE_SIGNOFF_RE.search(s['text']) for s in items[:-1])
+                and fits_closing_pool):
+            output.append({**items[-1], 'scene_no': scene_no,
+                'text': ' '.join(s['text'].strip() for s in items),
+                'audience_address': any(s.get('audience_address') for s in items)})
+            logger.info('Gộp %d item JSON cùng cảnh khép lại %s; giữ nguyên toàn bộ lời đọc.', len(items), scene_no)
+        else:
+            output.extend(items)
+        index = end
+    segments[:] = output
 
 
 def source_closing_issues(script):
@@ -185,6 +228,7 @@ def generate_directions(provider, source, analysis, config):
 
 def writer_context(context):
     """Fiction writer receives theme/brief, not the original full transcript."""
+    from apps.script_factory.narrative_design import DECISION_OWNERSHIP_INSTRUCTION
     brief = context['brief']
     payload = {'brief': brief, 'brief_hash': context['brief_hash'], 'calendar': None}
     if brief['adaptation_mode'] == 'FICTION_FROM_THEME':
@@ -192,7 +236,8 @@ def writer_context(context):
     else:
         payload['analysis'] = context['analysis']
         payload['source_units'] = context['units']
-    return MODE_RULES[brief['adaptation_mode']] + '\n' + json.dumps(payload, ensure_ascii=False)
+    return (MODE_RULES[brief['adaptation_mode']] + DECISION_OWNERSHIP_INSTRUCTION
+            + '\n' + json.dumps(payload, ensure_ascii=False))
 
 
 def create_bible(provider, project_id, context, problems=None, model=None):
@@ -213,9 +258,23 @@ def create_bible(provider, project_id, context, problems=None, model=None):
         for fact in data.get('critical_facts',[]):
             if any(not isinstance(fact.get(k),str) or not fact[k] for k in ('fact_id','field','value')):
                 raise ValueError('critical_facts cần fact_id,field,value dạng chuỗi.')
-        for clue in data.get('structured_clues',[]):
-            if any(not isinstance(clue.get(k),str) or not clue[k] for k in ('clue','what_it_proves','what_it_does_NOT_prove','next_question')):
-                raise ValueError('structured_clues cần clue,what_it_proves,what_it_does_NOT_prove,next_question. Nếu không có điều tra/manh mối thì để [] thay vì tạo item giả.')
+        for index, clue in enumerate(data.get('structured_clues',[])):
+            # Some providers lower-case the mixed-case schema key. Canonicalize
+            # that exact field alias without changing any evidence or prose.
+            alias = 'what_it_does_not_prove'
+            canonical = 'what_it_does_NOT_prove'
+            if alias in clue:
+                if canonical in clue and clue[canonical] != clue[alias]:
+                    raise ValueError(f'structured_clues[{index}] có hai giá trị giới hạn chứng cứ mâu thuẫn.')
+                clue[canonical] = clue.pop(alias)
+            required = ('clue','what_it_proves',canonical,'next_question')
+            missing = [k for k in required if not isinstance(clue.get(k),str) or (k != 'next_question' and not clue[k].strip())]
+            if missing:
+                raise ValueError(f'structured_clues[{index}] thiếu/sai {missing}; item thật: '
+                    + json.dumps(clue,ensure_ascii=False)[:1600]
+                    + '. Cần clue,what_it_proves,what_it_does_NOT_prove,next_question dạng chuỗi; '
+                      'next_question có thể rỗng nếu chi tiết đã được giải thích. '
+                      'Nếu không có điều tra/manh mối thì để [] thay vì tạo item giả.')
         for name in ('narrative_skeleton','reveal_justifications'):
             if name in data and not isinstance(data[name],dict):
                 raise ValueError(f'{name} phải là object.')
@@ -286,7 +345,8 @@ def create_bible(provider, project_id, context, problems=None, model=None):
         prompt += '\nSửa Story hiện tại, giữ các sự kiện/locks; lỗi đã được QC trích dẫn: ' + json.dumps(problems, ensure_ascii=False)
     data, _ = completion(provider, prompt, validate, model)
     bible = StoryBible.from_dict({**data, 'episode_id': project_id, 'source_idea_id': context['brief']['selected_direction_id'],
-                                 'adaptation_context': context, **metadata(provider, context['brief']['directions_request_id'], model)})
+                                 'adaptation_context': context, **metadata(provider, context['brief']['directions_request_id'], model),
+                                 'prompt_version': VERSION + '-story-v2-causal-decisions'})
     bible.original_user_topic = context['brief'].get('topic') or context['analysis']['theme']
     return bible
 
@@ -298,6 +358,7 @@ def write_adapted_script(provider, bible, model=None):
     budget = round(target * 2.7)
     paragraph_count = max(3, round(budget / 50))
     from apps.script_factory.scene_outline import single_pass_outline_block
+    from apps.script_factory.narrative_design import DESIGN_INSTRUCTION, scene_batches, scene_word_budgets, validate_scene_assignment
     from apps.script_factory.story_contract import contract_block
     # JSON segments share the same ScriptWriter/QC/Audio pipeline, not an import.
     prompt = ('Viết TOÀN BỘ kịch bản MC Minh cho Sau Cánh Cửa, tiếng Việt tự nhiên, một mạch trọn tập. '
@@ -310,7 +371,14 @@ def write_adapted_script(provider, bible, model=None):
               'MC kể theo góc nhìn đã chọn, factual không giả thư và không bịa thoại; đoạn phân tích không thành fact. '
               'Factual: dẫn tên bài/ấn phẩm và thời điểm một lần ở phần mở, sau đó kể mạch sự kiện có nguồn bằng lời tự nhiên. '
               'Không chèn "nguồn mô tả", "theo nguồn", "được nguồn ghi nhận" vào từng đoạn. Chỉ nhắc attribution riêng khi đổi sang lời kể/ý kiến của nhân vật hoặc nêu giới hạn chưa biết. '
-              'Mỗi đoạn thêm dữ kiện, hành động, góc nhìn hoặc hệ quả mới. Sau một thao tác đã kể, không viết thêm một đoạn chỉ tóm lại thao tác ấy và gọi là "rất đời thường". '
+              'Mỗi đoạn thêm dữ kiện, hành động, lựa chọn hoặc hệ quả mới. Góc nhìn/cảm xúc diễn giải lại tình thế cũ KHÔNG tính là tiến triển. '
+              'Ở cảnh then chốt: đặt nhân vật trước một việc chưa giải quyết, cho họ thử/nói/lựa chọn, rồi cho thấy kết quả; dựng cảnh trước, để người nghe tự hiểu ý nghĩa. '
+              'Không kết mỗi cảnh/cụm bằng bài học, không viết các đoạn "không chỉ... mà...", "tôi hiểu rằng", "điều quan trọng là" để bù số từ. '
+              'Giữ tối đa hai đoạn thuần chiêm nghiệm trong toàn tập, tập trung sau kết quả cuối; cảm xúc trong thân truyện thể hiện qua phản ứng ngay trong cảnh, không thành đoạn diễn thuyết riêng. '
+              'Fiction: thoại ngắn có mục đích khác nhau ở cảnh đặt điều kiện, cảnh từ chối, cảnh nhận lỗi và cảnh bàn giao; không để người kể giải thích hộ toàn bộ xung đột. '
+              'Nội dung công việc/chi tiết lỗi cần cụ thể đủ để nghe hiểu vì sao lần thử đầu thất bại và lần sau làm được, không chỉ gọi chung "linh kiện", "giải pháp", "quy trình". '
+              'Own/factual chỉ cụ thể hóa trong giới hạn nguồn/canon; không bịa thao tác hoặc thoại bị cấm. '
+              'Sau một thao tác đã kể, không viết thêm một đoạn chỉ tóm lại thao tác ấy và gọi là "rất đời thường". '
               'Chọn và kết nối các chi tiết có ích trong nguồn để đủ thời lượng; không tăng số từ bằng cách kể lại cùng thông tin. '
               'Không thêm chủ đề nhạy cảm/kịch tính ngoài brief. Không ép REVEAL khi không có. '
               'Mỗi lời hứa hook/chi tiết quan trọng có câu trả lời thật hoặc giới hạn chưa biết theo nguồn. '
@@ -320,11 +388,13 @@ def write_adapted_script(provider, bible, model=None):
               'Cho nghe cuộc trao đổi ngắn tự nhiên ở cảnh phát hiện trở ngại và cảnh lựa chọn khó, bằng lời nhân vật trực tiếp; không tóm rằng họ giải thích/trao đổi rồi chuyển sang bài học. '
               'Own chỉ thêm/sửa thoại trong allowed_changes. Không dùng thoại nhân vật để diễn thuyết triết lý, không viết cả tập như báo cáo dự án. '
               '0–3 tương tác khán giả tự nhiên, không bắt buộc ba câu hỏi. '
-              'JSON {segments:[{text,delivery_profile:HOOK|NORMAL|COMMENT|REVEAL|ENDING,audience_address:boolean}]}. '
+              'JSON {segments:[{scene_no:<số nguyên cảnh trong dàn cảnh>,text,delivery_profile:HOOK|NORMAL|COMMENT|REVEAL|ENDING,audience_address:boolean}]}. '
               'Không xuất ID/JSON/nhãn kỹ thuật trong text.\n' + writer_context(context)
               + '\nStory Bible đã chọn:\n' + json.dumps({k:v for k,v in bible.to_dict().items() if k not in ('adaptation_context','story_qc_report')}, ensure_ascii=False)
-              + contract_block(bible) + single_pass_outline_block(bible.scene_outline))
-    def validate(data, planned_budget=budget, final=True):
+              + contract_block(bible) + DESIGN_INSTRUCTION + single_pass_outline_block(bible.scene_outline)
+              + '\nNGÂN SÁCH TỪ THEO CẢNH (mục tiêu, không phải câu chữ cần chép): '
+              + json.dumps(scene_word_budgets(bible.scene_outline, budget), ensure_ascii=False))
+    def validate(data, planned_budget=budget, final=True, closing_only=False):
         segs = data.get('segments')
         if not isinstance(segs, list) or not segs or any(not isinstance(s, dict) or not isinstance(s.get('text'), str) or not s['text'].strip() for s in segs):
             raise ValueError('Cần toàn tập segments không rỗng.')
@@ -332,15 +402,21 @@ def write_adapted_script(provider, bible, model=None):
         errors = []
         unknown = [i for i,s in enumerate(segs,1) if s['delivery_profile'] not in ('HOOK','NORMAL','COMMENT','REVEAL','ENDING')]
         if unknown:
-            errors.append(f'delivery_profile không hợp lệ ở đoạn {unknown}; dùng HOOK/NORMAL/COMMENT/REVEAL/ENDING.')
+            values = [(i,segs[i-1]['delivery_profile']) for i in unknown]
+            errors.append(f'delivery_profile không hợp lệ ở đoạn {values}; dùng HOOK/NORMAL/COMMENT/REVEAL/ENDING, không dùng role của cảnh.')
         if final and (segs[-1].get('delivery_profile') != 'ENDING' or sum(s.get('delivery_profile') == 'ENDING' for s in segs) != 1):
             errors.append('Cần đúng một ENDING ở đoạn cuối. Các đoạn đang gắn ENDING: '
                           + str([i for i,s in enumerate(segs,1) if s['delivery_profile']=='ENDING']) + '.')
+        if final and not _SOURCE_SIGNOFF_RE.search(segs[-1]['text']):
+            errors.append('Đoạn cuối thiếu lời chào kết có thật trong text; nhãn ENDING không đủ. '
+                          'Viết một lời chào ngắn tới khán giả ở cuối item cuối trong ngân sách đã giao; không chèn ở đoạn khác.')
         early_signoffs = [i for i,s in enumerate(segs[:-1] if final else segs,1) if _SOURCE_SIGNOFF_RE.search(s['text'])]
         if early_signoffs:
             errors.append(f'Có lời chào kết thật trước cuối tập ở đoạn {early_signoffs}; sửa nội dung, không chỉ đổi nhãn.')
         words=sum(len(s['text'].split()) for s in segs)
-        if not 0.85*planned_budget <= words <= 1.15*planned_budget:
+        # The closing allowance is a ceiling, not a quota to pad with lessons.
+        # The final whole-script duration check still enforces the lower bound.
+        if words > 1.15*planned_budget or (not closing_only and words < 0.85*planned_budget):
             action = (f'RÚT {words-planned_budget} từ từ bản trước, gộp đoạn giải thích/nhận xét, giữ sự kiện trọng yếu.'
                       if words > planned_budget else f'BỔ SUNG {planned_budget-words} từ bằng diễn biến/chi tiết được phép, không lặp ý.')
             errors.append(f'Bản trả về có {words} từ/{len(segs)} đoạn; cần {round(0.85*planned_budget)}–{round(1.15*planned_budget)} từ cho phạm vi lượt này. '
@@ -348,8 +424,37 @@ def write_adapted_script(provider, bible, model=None):
         if errors:
             raise ValueError(' '.join(errors))
     strategy = 'source_single_pass'
-    if budget <= 1800:
-        data, tokens = completion(provider, prompt, validate, model)
+    def closing_contract(group):
+        closing = [s for s in group if s.get('role') in {'REFLECTION', 'SIGNOFF'}]
+        if not closing:
+            return ''
+        return ('\nHỢP ĐỒNG RIÊNG CHO PHẦN KHÉP LẠI, ưu tiên hơn số đoạn/kích thước đoạn toàn tập: '
+            f'phần khép lại trả đúng {len(closing)} item segments, đúng MỘT item cho MỖI cảnh khép lại được giao. '
+            'Một item được dài hơn 65 từ nếu ngân sách cảnh cần; không tách thành nhiều item. '
+            'Không thêm cảnh SIGNOFF nếu dàn cảnh chỉ có REFLECTION: gộp một lời chào ngắn vào cuối '
+            'item cuối cùng và gắn delivery_profile=ENDING, đây là ngoại lệ cho quy tắc REFLECTION dùng COMMENT. '
+            'Nếu có SIGNOFF riêng thì REFLECTION dùng COMMENT. Mỗi text là một đoạn văn liên tục, không xuống dòng; '
+            'không tóm lại hành trình hoặc diễn lại payoff. JSON cần có scene_no, text, delivery_profile cho từng item; '
+            'REFLECTION và SIGNOFF chia sẻ ngân sách khép lại chung, có thể chuyển phần từ chưa dùng giữa hai cảnh này; '
+            'giữ tổng từ trong ngân sách được giao, không lấy ngân sách phần thân cho chiêm nghiệm.')
+    if budget <= 1000:
+        scenes = bible.scene_outline or []
+        scoped = bool(scenes and any(s.get('role') for s in scenes))
+        if scoped:
+            scenes = [{**s, 'word_budget': size} for s, size in zip(scenes, scene_word_budgets(scenes, budget))]
+            prompt += ('\nMỗi segment JSON có scene_no đúng cảnh được giao. Viết đủ cảnh theo thứ tự, '
+                       'mỗi REFLECTION/SIGNOFF đúng MỘT đoạn nằm trong ngân sách riêng; '
+                       'ghi chú trạng thái không phải câu để đọc. CẢNH VÀ NGÂN SÁCH: ' + json.dumps(scenes,ensure_ascii=False))
+            prompt += closing_contract(scenes)
+        def validate_whole(result):
+            if (scoped and isinstance(result.get('segments'), list)
+                    and all(isinstance(s, dict) and isinstance(s.get('text'), str) for s in result['segments'])):
+                normalize_source_delivery_profiles(result['segments'])
+                normalize_source_closing_segments(result['segments'], scenes)
+            validate(result)
+            if scoped:
+                validate_scene_assignment(result['segments'], scenes)
+        data, tokens = completion(provider, prompt, validate_whole, model)
     else:
         # Real compatible models can stop normally with a 1,000-word summary of
         # a 4,000-word assignment. Bound each call by contiguous outlined scenes,
@@ -357,26 +462,62 @@ def write_adapted_script(provider, bible, model=None):
         scenes = bible.scene_outline
         if not isinstance(scenes,list) or len(scenes) < 2:
             raise ValueError('Kịch bản dài cần dàn cảnh đã được kiểm tra trước khi viết theo từng cụm cảnh.')
-        count = min(len(scenes), math.ceil(budget / 1000))
+        batches = scene_batches(scenes, budget)
+        count = len(batches)
         all_segments, tokens = [], [0,0]
         strategy = 'source_scene_batches'
-        for index in range(count):
-            group = scenes[index*len(scenes)//count:(index+1)*len(scenes)//count]
-            local_budget = budget//count + (1 if index < budget%count else 0)
+        for index, (group, local_budget) in enumerate(batches):
             final = index == count-1
             logger.info('Viết cụm cảnh %d/%d: cảnh %s, mục tiêu %d từ; chỉ chào kết ở cụm cuối.',
                         index+1,count,[s['no'] for s in group],local_budget)
-            batch_prompt = (prompt + '\nCHẾ ĐỘ VIẾT TẬP DÀI THEO CỤM CẢNH: các yêu cầu toàn tập ở trên là ngữ cảnh. '
+            # Whole-episode commands made adjacent batches perform the same
+            # repair/handover. Give this call only the active scene actions.
+            scoped = any(s.get('role') for s in group)
+            canon = {k:v for k,v in bible.to_dict().items() if k in
+                     ('title','protagonist','supporting_characters','relationships','critical_facts','concrete_instance','time_period')}
+            # The concrete task is nested in narrative_skeleton, not a root
+            # Bible field. Preserve it when narrowing long-call context without
+            # exposing every future scene as an execution command.
+            skeleton = bible.narrative_skeleton or {}
+            canon['narrative_task'] = {k:skeleton[k] for k in
+                ('concrete_task','task_design','concrete_instance') if k in skeleton}
+            batch_base = (prompt.split('\nStory Bible đã chọn:', 1)[0]
+                          + '\nCANON để giữ đúng nhân vật/facts, không phải lệnh diễn tất cả sự kiện: '
+                          + json.dumps(canon,ensure_ascii=False) + DESIGN_INSTRUCTION) if scoped else prompt
+            batch_prompt = (batch_base + '\nCHẾ ĐỘ VIẾT TẬP DÀI THEO CỤM CẢNH: các yêu cầu toàn tập ở trên là ngữ cảnh. '
                 f'LƯỢT NÀY CHỈ viết cụm {index+1}/{count}, mục tiêu RIÊNG {local_budget} từ ±15%, khoảng {round(local_budget/50)} đoạn. '
                 'Viết đầy đủ cảnh được giao bằng hành động, thoại được phép, lựa chọn và hệ quả; không tóm tắt cả tập hoặc kéo dài bằng nhận xét lặp. '
                 'Không kể lại cảnh đã viết, không viết trước cảnh ở cụm sau. Không xuất lại phần trước trong segments. '
                 + ('Chỉ cụm đầu có HOOK/giới thiệu ngắn. ' if index==0 else 'Không mở lại chương trình, không HOOK hay giới thiệu lại nhân vật. ')
-                + ('Cụm cuối giải quyết ending của Bible rồi chào khán giả đúng một lần ở đoạn ENDING cuối. '
+                + ('Đây chỉ là đoạn khép lại: sự kiện kết quả đã viết ở cụm trước, không diễn lại hoặc tóm cả hành trình; '
+                   'chiêm nghiệm ngắn rồi chào khán giả đúng một lần ở đoạn ENDING cuối. '
+                   if final and scoped and all(s.get('role') in {'REFLECTION','SIGNOFF'} for s in group)
+                   else 'Cụm cuối giải quyết cảnh được giao rồi chào khán giả đúng một lần ở đoạn ENDING cuối. '
                    if final else 'Cụm này CHƯA hết tập: không lời chào kết, không ENDING, không nói hẹn gặp lại. ')
                 + '\nCẢNH ĐƯỢC GIAO: ' + json.dumps(group,ensure_ascii=False)
+                + ('\nMỗi segment JSON phải có scene_no là số cảnh được giao. Viết cảnh đó tới state_after rồi DỪNG; '
+                   'state_before/state_after và consequence là ghi chú thiết kế, KHÔNG COPY thành lời đọc. '
+                   'Thể hiện tình thế bằng việc nhân vật làm, câu họ nói, kết quả họ nhìn thấy; không chốt lại tình thế ở mỗi ranh giới cảnh. '
+                   'Giữ liên tục vật/người qua PHẦN TRƯỚC: vật vừa được giao cho ai thì vẫn ở người đó, '
+                   'chỉ chuyển chỗ/người giữ sau một hành động bàn giao được kể. Không mang vật đi nếu chưa nhận lại. '
+                   'Dùng narrative_task để giữ cơ chế trở ngại và quyết định cụ thể; đây là canon, không là lệnh diễn toàn bộ task trong lượt này. '
+                   'consequence hướng tới cảnh sau không phải lệnh thực hiện cảnh sau. Không chốt bài học ở cuối mỗi cụm. '
+                   + ('Trạng thái cần ĐỂ NGUYÊN cho lượt sau: ' + json.dumps(batches[index+1][0][0].get('state_before'),ensure_ascii=False)
+                      if not final else '') if scoped else '')
                 + '\nPHẦN TRƯỚC CHỈ ĐỌC ĐỂ NỐI MẠCH: ' + json.dumps(all_segments,ensure_ascii=False))
+            if scoped and all(s.get('role') in {'REFLECTION', 'SIGNOFF'} for s in group):
+                # Global paragraph-size/count commands conflict with a 100-word
+                # single reflection. Give the closing its own explicit schema.
+                batch_prompt += closing_contract(group)
             def validate_batch(result):
-                validate(result,planned_budget=local_budget,final=final)
+                closing_only = scoped and all(s.get('role') in {'REFLECTION', 'SIGNOFF'} for s in group)
+                if (closing_only and isinstance(result.get('segments'), list)
+                        and all(isinstance(s, dict) and isinstance(s.get('text'), str) for s in result['segments'])):
+                    normalize_source_delivery_profiles(result['segments'], final=final)
+                    normalize_source_closing_segments(result['segments'], group)
+                validate(result,planned_budget=local_budget,final=final,closing_only=closing_only)
+                if scoped:
+                    validate_scene_assignment(result['segments'], group)
                 if index and any(s['delivery_profile']=='HOOK' for s in result['segments']):
                     raise ValueError('Không HOOK/mở lại chương trình ở cụm sau; chỉ viết các cảnh được giao.')
             part, used = completion(provider,batch_prompt,validate_batch,model)
@@ -392,7 +533,7 @@ def write_adapted_script(provider, bible, model=None):
                         segments=segments, total_segments=len(segments), total_words=sum(len(s.text.split()) for s in segments),
                         generation_source='REAL_AI', generation_request_id=m['generation_request_id'],
                         provider_name=provider.provider_name, requested_model=m['requested_model'], actual_model=m['actual_model'],
-                        model_name=m['actual_model'], prompt_version=VERSION + '-writer-v4', writer_strategy=strategy,
+                        model_name=m['actual_model'], prompt_version=VERSION + '-writer-v14-causal-decisions', writer_strategy=strategy,
                         scene_outline=bible.scene_outline, adaptation_context=context,
                         parent_generation_request_id=m['parent_generation_request_id'], generated_at=m['generated_at'])
     return script, *tokens
@@ -441,7 +582,11 @@ def validate_source_mode_checks(mc, context, artifact):
                        for ref in refs if isinstance(ref,dict) and not _quote(ref.get('quote'),by_id.get(ref.get('unit_id'),''))] if isinstance(refs,list) else []
             raise ValueError(f"Mode check {c.get('key')}: source_evidence cần unit_id và quote nguyên văn thật. "
                              + json.dumps(invalid[:2],ensure_ascii=False)
-                             + ' COPY từ đúng unit, không diễn giải/ghép câu; giữ verdict theo nội dung thực.')
+                             + ' COPY từ đúng unit, không diễn giải/ghép câu; giữ verdict theo nội dung thực. '
+                             + 'PASS vì nguồn không có thoại vẫn cần trích ngữ cảnh nguồn đã đọc, không bịa thoại. '
+                             + 'Ví dụ cách COPY (không chứng nhận PASS): '
+                             + json.dumps([{'unit_id':u['unit_id'],'quote':' '.join(u['text'].split()[:10])}
+                                           for u in context['units'][:3]],ensure_ascii=False))
         evidence = c.get('artifact_evidence')
         if not isinstance(evidence,list) or not evidence:
             raise ValueError(f"Mode check {c.get('key')} cần artifact_evidence gồm item_id,quote.")
@@ -491,11 +636,17 @@ def source_review(provider, bible, script=None):
         'Giới hạn như "nguồn chưa cho biết kết quả lâu dài" có thể là COMMENTARY nếu đúng phạm vi bài, không đòi nguồn viết câu phủ định đó. '
         'Nếu item chứa nhiều facts phải kiểm tra tất cả, không quote một fact đúng để bỏ qua phần bịa. '
         'Fiction: so cả chuỗi cảnh, đạo cụ, thoại, cú lật; đổi tên/đổi câu cùng plot không đạt. '
+        'Chung chủ đề hoặc mô típ (bị bỏ quên, khó khăn, trao đổi, sửa sai, kết nối lại) không đủ để kết luận sao chép chuỗi cảnh. '
+        'Phân biệt một TÁC PHẨM kể các sự kiện cụ thể với một ĐỀ BÀI yêu cầu sáng tác: đáp ứng mong muốn/xung đột trừu tượng của đề bài không phải sao chép tác phẩm. '
+        'Nếu báo FAIL original_structure/original_dialogue, chỉ rõ cặp chi tiết/sự kiện/thoại ĐẶC TRƯNG trong nguồn và tác phẩm qua hai quote thật; '
+        'không dùng việc bám chủ đề hoặc bám hướng người dùng đã chọn làm lý do FAIL. Vẫn chặn chuỗi sự kiện cụ thể hoặc thoại đặc trưng chỉ bị đổi tên/câu chữ. '
         'Own: đối chiếu TỪNG phần khóa, ending và canon; không bỏ qua locks nếu khó diễn đạt. '
         'Mỗi source quote COPY một chuỗi liên tục 4–12 từ nằm trọn trong text của MỘT source_unit. '
         'Nguồn transcript có thể có timestamps hoặc câu bị ngắt giữa các units: không tự bỏ/chèn từ bên trong quote, '
         'không ghép phần cuối unit này với đầu unit khác. Nếu cần hai units, trả hai refs riêng. '
         'Chọn trích dẫn có nghĩa phục vụ kiểm tra; reason mới là nơi diễn giải, quote không phải câu tóm tắt. '
+        'Mọi mode_check kể cả PASS original_dialogue khi nguồn không có thoại đều cần source_evidence: '
+        'trích ngữ cảnh nguồn đã kiểm tra và giải thích sự khác biệt/không có thoại trong reason; không để []. '
         'JSON {checks:[{item_id,artifact_quote,classification:FACT|ATTRIBUTED|COMMENTARY,verdict:PASS|FAIL,reason,evidence_refs:[{unit_id,quote}]}], '
         'mode_checks:[{key,verdict:PASS|FAIL,reason,artifact_evidence:[{item_id,quote}],source_evidence:[{unit_id,quote}]}]}. '
         'Factual: checks đủ đúng từng artifact ID. ID ngắn chứa tên/mốc dưới 4 từ thì quote toàn bộ value. '
@@ -517,7 +668,7 @@ def source_review(provider, bible, script=None):
     base += '\nVí dụ quote hợp lệ cho từng ID (chỉ minh họa cách COPY, không chứng nhận PASS): ' + json.dumps({k:' '.join(v.split()[:10]) for k,v in artifact.items()},ensure_ascii=False)
     def validate(data):
         validate_source_review_payload(data, context, artifact)
-    result = {'status':'RUN','version':VERSION,'passes':0,'artifact_hash':artifact_hash,'brief_hash':context['brief_hash'],'reviews':[],'issues':[]}
+    result = {'status':'RUN','version':SOURCE_REVIEW_VERSION,'passes':0,'artifact_hash':artifact_hash,'brief_hash':context['brief_hash'],'reviews':[],'issues':[]}
     if not provider or not callable(getattr(provider,'complete_json',None)):
         return {**result,'status':'ERROR','error':'Source review cần provider thật.'}
     try:
@@ -553,7 +704,8 @@ def source_review(provider, bible, script=None):
                 validate(data)
             else:
                 data, _ = completion(provider, pass_prompt, validate)
-            result['reviews'].append({**data, **metadata(provider, getattr(script or bible, 'generation_request_id', None))})
+            result['reviews'].append({**data, **metadata(provider, getattr(script or bible, 'generation_request_id', None)),
+                                      'prompt_version': SOURCE_REVIEW_VERSION})
             result['passes'] += 1
             for c in [*data.get('checks',[]), *data['mode_checks']]:
                 if c['verdict'] == 'FAIL':
@@ -574,7 +726,7 @@ def valid_source_review(bible, review, script=None):
         return False
     artifact = source_artifact(bible, script)
     if (review.get('status') != 'RUN' or review.get('passes') != 2
-            or review.get('version') != VERSION or review.get('issues')
+            or review.get('version') != SOURCE_REVIEW_VERSION or review.get('issues')
             or review.get('brief_hash') != bible.adaptation_context.get('brief_hash')
             or review.get('artifact_hash') != text_hash(json.dumps(artifact, sort_keys=True, ensure_ascii=False))
             or not isinstance(review.get('reviews'), list) or len(review['reviews']) != 2):

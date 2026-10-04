@@ -1,0 +1,440 @@
+{
+  "before_reload": {
+    "generation_request_id": "18845fa3-788d-4453-b966-406e068a5182",
+    "script_content_hash": "8acf2c6a1d8c9704fbe65abfe112f14a73623deb78f39a24aa4642f5c6ba7990",
+    "is_current": true,
+    "qc_status": "PASS",
+    "qc_gate_allowed": true,
+    "audio_gate_allowed": false,
+    "script_stage_status": "NEEDS_REVIEW",
+    "artifact_status": "CURRENT"
+  },
+  "project_id": "EP2029",
+  "story_title": "Chiếc Hộp Cơm Trên Bàn Ăn",
+  "story_generation_request_id": "46ca714c-b57e-4301-814f-95d4b68ec019",
+  "script_generation_request_id": "18845fa3-788d-4453-b966-406e068a5182",
+  "parent_generation_request_id": "5be4b3a5-f3a3-4e68-af39-0fbb83f4b88c",
+  "provider": "openai_compatible",
+  "requested_model": "auto",
+  "actual_model": "proxy auto — chưa xác định",
+  "prompt_version": "source-adaptation-v1-writer-v13-payoff-continuation-repair",
+  "writer_strategy": "source_single_pass",
+  "generated_at": 1791132127.9532747,
+  "words": 835,
+  "segments": 15,
+  "leakage_count": 0,
+  "qc_status": "PASS",
+  "semantic": {
+    "review_version": "semantic-v31-causal-decision-ownership",
+    "status": "RUN",
+    "passes": 2,
+    "grounding_verified": true,
+    "pacing_checks": null,
+    "pacing_checks_second_pass": [],
+    "payoff_checks": [
+      {
+        "id": "title_trigger",
+        "verdict": "PASS",
+        "answer": "Vy phát hiện hộp cơm bị rò nước khi chuẩn bị mẫu món ăn cho video dự án trường học; chi tiết này tạo ra trở ngại cụ thể buộc cô phải lựa chọn.",
+        "setup": [
+          {
+            "segment_id": "001",
+            "quote": "Nước sốt đã tràn ra ngoài. Cô lau sạch mặt bàn, khóa lại nắp hộp."
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "011",
+            "quote": "Hai cha con mở chiếc hộp cơm, kiểm tra phần khóa nắp và nhận ra vật chứa này không còn phù hợp."
+          }
+        ]
+      },
+      {
+        "id": "clue_1",
+        "verdict": "PASS",
+        "answer": "Chiếc hộp cơm cũ được Khải giữ lại vì từng dùng để chuẩn bị bữa sáng cho Vy những năm đầu đi học; điều này thể hiện sự quan tâm trước đây nhưng không giải quyết nhu cầu hiện tại của Vy.",
+        "setup": [
+          {
+            "segment_id": "005",
+            "quote": "Vy nhìn chiếc hộp cơm cũ rồi chợt nhớ lời Khải từng kể về nó."
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "005",
+            "quote": "Ông giữ lại chiếc hộp vì những năm đầu Vy đi học, ông thường dùng nó để chuẩn bị bữa sáng cho con."
+          }
+        ]
+      },
+      {
+        "id": "clue_2",
+        "verdict": "PASS",
+        "answer": "Bản kế hoạch đặt cạnh hộp cơm lỗi cho thấy Vy đang gặp trở ngại của dự án và đã cố tự xử lý trước khi tìm hỗ trợ.",
+        "setup": [
+          {
+            "segment_id": "002",
+            "quote": "Cô đặt hộp cơm cạnh bản kế hoạch, nhìn thời hạn nộp bài và không gọi cho Khải."
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "010",
+            "quote": "Vy ban đầu chỉ nói về chiếc hộp cơm, nhưng rồi kể cả áp lực khi phải tự hoàn thành dự án."
+          }
+        ]
+      },
+      {
+        "id": "clue_3",
+        "verdict": "PASS",
+        "answer": "Khải ngồi lại nghe Vy trình bày, tạo ra thay đổi trong cách giao tiếp giữa hai cha con chứ không phải phát hiện bí mật quá khứ.",
+        "setup": [
+          {
+            "segment_id": "008",
+            "quote": "Khải kéo ghế ngồi cạnh bàn ăn, nhìn phần chuẩn bị dang dở của Vy."
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "010",
+            "quote": "Khải nghe hết trước khi chạm vào chiếc hộp. Ông nói: “Cha tưởng sửa được đồ là giúp con đủ rồi.”"
+          }
+        ]
+      },
+      {
+        "id": "ending",
+        "verdict": "PASS",
+        "answer": "Vy và Khải thực hiện bữa cơm cuối tuần với hộp cơm đã sửa và chia sẻ chuyện vui, chuyện khó trong tuần.",
+        "setup": [
+          {
+            "segment_id": "015",
+            "quote": "Từ đó, Vy và Khải giữ một bữa cơm cuối tuần để ngồi lại với nhau."
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "014",
+            "quote": "Hai cha con lần lượt chia sẻ một chuyện vui và một chuyện khó trong tuần, để bữa cơm tiếp tục bằng những câu chuyện thật."
+          }
+        ],
+        "event_checks": [
+          {
+            "required_action": "Vy và Khải ngồi ăn bữa cơm cuối tuần tại bàn ăn gia đình. Họ dùng chiếc hộp cơm đã sửa khóa nắp để đựng món ăn nhỏ",
+            "actual_action": "Vy và Khải ngồi trong bữa cơm cuối tuần, dùng chiếc hộp cơm đã sửa khóa nắp để đựng một món nhỏ.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Đúng chủ thể, đối tượng, thời điểm sau dự án và hành động sử dụng hộp cơm đã sửa.",
+            "evidence": [
+              {
+                "segment_id": "013",
+                "quote": "Khải sửa lại phần khóa nắp chiếc hộp cơm cũ rồi đặt nó lên bàn trong bữa cơm cuối tuần."
+              }
+            ]
+          },
+          {
+            "required_action": "rồi lần lượt kể một việc vui và một việc khó trong tuần.",
+            "actual_action": "Hai cha con lần lượt chia sẻ một chuyện vui và một chuyện khó trong tuần.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Hành động chia sẻ được thể hiện trực tiếp bằng cảnh đối thoại, không chỉ tóm tắt kết quả.",
+            "evidence": [
+              {
+                "segment_id": "014",
+                "quote": "Hai cha con lần lượt chia sẻ một chuyện vui và một chuyện khó trong tuần, để bữa cơm tiếp tục bằng những câu chuyện thật."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "payoff_checks_second_pass": [
+      {
+        "id": "title_trigger",
+        "verdict": "PASS",
+        "answer": "Chiếc hộp cơm bị rò nước là trở ngại của dự án video và sau đó được sửa khóa nắp để tiếp tục có ý nghĩa trong bữa cơm gia đình.",
+        "setup": [
+          {
+            "segment_id": "001",
+            "quote": "Vy mở chiếc hộp cơm cũ trên bàn ăn để kiểm tra"
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "013",
+            "quote": "Khải sửa lại phần khóa nắp chiếc hộp cơm cũ"
+          }
+        ]
+      },
+      {
+        "id": "clue_1",
+        "verdict": "PASS",
+        "answer": "Nguồn của manh mối là lời Khải từng kể về chiếc hộp cơm, cho thấy sự quan tâm trước đây nhưng không khẳng định ông hiểu nhu cầu hiện tại của Vy.",
+        "setup": [
+          {
+            "segment_id": "005",
+            "quote": "Vy nhìn chiếc hộp cơm cũ rồi chợt nhớ lời Khải từng kể về nó"
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "005",
+            "quote": "ông giữ lại chiếc hộp vì những năm đầu Vy đi học"
+          }
+        ]
+      },
+      {
+        "id": "clue_2",
+        "verdict": "PASS",
+        "answer": "Bản kế hoạch đặt cạnh hộp lỗi cho thấy Vy đang gặp trở ngại và đã cố tự xử lý trước khi nhờ cha hỗ trợ.",
+        "setup": [
+          {
+            "segment_id": "002",
+            "quote": "Cô đặt hộp cơm cạnh bản kế hoạch, nhìn thời hạn nộp bài"
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "010",
+            "quote": "Vy ban đầu chỉ nói về chiếc hộp cơm, nhưng rồi kể cả áp lực"
+          }
+        ]
+      },
+      {
+        "id": "clue_3",
+        "verdict": "PASS",
+        "answer": "Khải ngồi lại và lắng nghe Vy thay vì chỉ sửa đồ, thể hiện thay đổi trong cách giao tiếp của hai cha con.",
+        "setup": [
+          {
+            "segment_id": "008",
+            "quote": "Khải kéo ghế ngồi cạnh bàn ăn, nhìn phần chuẩn bị dang dở"
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "010",
+            "quote": "Khải nghe hết trước khi chạm vào chiếc hộp"
+          }
+        ]
+      },
+      {
+        "id": "ending",
+        "verdict": "PASS",
+        "answer": "Kết thúc được hiện thực hóa bằng bữa cơm cuối tuần, hộp cơm đã sửa khóa nắp và việc hai cha con chia sẻ chuyện vui, chuyện khó.",
+        "setup": [
+          {
+            "segment_id": "013",
+            "quote": "Sau dự án, Khải sửa lại phần khóa nắp chiếc hộp cơm cũ"
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "014",
+            "quote": "Hai cha con lần lượt chia sẻ một chuyện vui và một chuyện khó"
+          }
+        ],
+        "event_checks": [
+          {
+            "required_action": "Vy và Khải ngồi ăn bữa cơm cuối tuần tại bàn ăn gia đình. Họ dùng chiếc hộp cơm đã sửa khóa nắp để đựng món ăn nhỏ",
+            "actual_action": "Vy và Khải ngồi trong bữa cơm cuối tuần và sử dụng chiếc hộp cơm đã sửa khóa nắp để đựng món nhỏ.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Chủ thể, địa điểm, vật dụng và hành động đều trùng với yêu cầu kết thúc.",
+            "evidence": [
+              {
+                "segment_id": "013",
+                "quote": "Vy dùng chiếc hộp ấy để đựng một món nhỏ"
+              }
+            ]
+          },
+          {
+            "required_action": "rồi lần lượt kể một việc vui và một việc khó trong tuần.",
+            "actual_action": "Hai cha con lần lượt kể một chuyện vui và một chuyện khó trong tuần.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Hành động chia sẻ cụ thể được diễn ra trong cảnh cuối, không chỉ là kế hoạch.",
+            "evidence": [
+              {
+                "segment_id": "014",
+                "quote": "Hai cha con lần lượt chia sẻ một chuyện vui và một chuyện khó"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "source_review": {
+    "version": "source-review-v2-theme-and-distinctive-events",
+    "status": "RUN",
+    "passes": 2,
+    "issues": []
+  },
+  "remaining_issues": [],
+  "advisory_issues": [],
+  "trial_jobs": [
+    {
+      "job_id": "601c79ef3a864843b549790832abf14d",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791133613.3543599,
+      "completed_at": 1791133687.7037585,
+      "error_message": null
+    },
+    {
+      "job_id": "c943bc1b91014b45902e1bd70837e03e",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791131970.6037366,
+      "completed_at": 1791132128.2510428,
+      "error_message": null
+    },
+    {
+      "job_id": "630fdc7effa0487a8d19308315fc4409",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791131323.1570494,
+      "completed_at": 1791131546.9570458,
+      "error_message": null
+    },
+    {
+      "job_id": "5e561c501dca4c2b932bb38cef477806",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791130849.8959963,
+      "completed_at": 1791130977.045618,
+      "error_message": null
+    },
+    {
+      "job_id": "253494dcb9b842b2b16aa6edbb6c975b",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791130334.063489,
+      "completed_at": 1791130406.348129,
+      "error_message": null
+    },
+    {
+      "job_id": "f319923125ad4e25b74d78687b9b8752",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791129585.9322956,
+      "completed_at": 1791129643.878983,
+      "error_message": null
+    },
+    {
+      "job_id": "23945e41f40e45eab6b8f1f2eaabf7a3",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791128569.2139602,
+      "completed_at": 1791128705.150239,
+      "error_message": null
+    },
+    {
+      "job_id": "0eb8b1cbe06f4acfa2d8c4bc1afd51ff",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "FAILED",
+      "started_at": 1791114852.1161857,
+      "completed_at": 1791114904.7049248,
+      "error_message": "AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Cảnh 8 là SIGNOFF: chỉ một đoạn; không chia bài học thành nhiều đoạn."
+    },
+    {
+      "job_id": "d1185aa661b14c5cbb6555f254f917fc",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "FAILED",
+      "started_at": 1791114383.6970403,
+      "completed_at": 1791114432.700633,
+      "error_message": "AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Cảnh 8 là REFLECTION: 62 từ vượt ngân sách 25; rút nhận xét, giữ sự kiện kết quả."
+    },
+    {
+      "job_id": "46a83495ce9545c19522fc52abd962fd",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "FAILED",
+      "started_at": 1791114109.9758294,
+      "completed_at": 1791114154.9093106,
+      "error_message": "AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Cảnh 8 là REFLECTION: chỉ một đoạn; không chia bài học thành nhiều đoạn."
+    },
+    {
+      "job_id": "85831b4f1d874ca99bac9fec5cfcfae4",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "FAILED",
+      "started_at": 1791113708.0531223,
+      "completed_at": 1791113835.7608552,
+      "error_message": "AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: delivery_profile không hợp lệ ở đoạn [13, 14]; dùng HOOK/NORMAL/COMMENT/REVEAL/ENDING."
+    },
+    {
+      "job_id": "abf12f83c4a84aa7a6c61b262e6c39b5",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791112240.8588426,
+      "completed_at": 1791112331.0610456,
+      "error_message": null
+    },
+    {
+      "job_id": "ed9e48d8378445338c00e8fbbdfc4665",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791110503.1212473,
+      "completed_at": 1791110577.518075,
+      "error_message": null
+    },
+    {
+      "job_id": "0b8325cf7e284b4eace27dfcc703be8b",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791109653.8845422,
+      "completed_at": 1791109722.4777355,
+      "error_message": null
+    },
+    {
+      "job_id": "645bbf0027b040c9a51d2e35f71b0089",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791109028.2959173,
+      "completed_at": 1791109166.0018952,
+      "error_message": null
+    },
+    {
+      "job_id": "f89ba53fa3a740c1a29a01220668d28f",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791108455.948448,
+      "completed_at": 1791108574.1661968,
+      "error_message": null
+    },
+    {
+      "job_id": "db028a9b3de440178b05ae2b7a2ac649",
+      "job_type": "SOURCE_Tạo cốt truyện",
+      "status": "COMPLETED",
+      "started_at": 1791086261.6712193,
+      "completed_at": 1791086521.3223777,
+      "error_message": null
+    },
+    {
+      "job_id": "84b7c98bff9d4fe4926910c7fce7108e",
+      "job_type": "SOURCE_Phân tích và đề xuất ba hướng",
+      "status": "COMPLETED",
+      "started_at": 1791085588.5489755,
+      "completed_at": 1791085611.644106,
+      "error_message": null
+    }
+  ],
+  "after_reload": {
+    "generation_request_id": "18845fa3-788d-4453-b966-406e068a5182",
+    "script_content_hash": "8acf2c6a1d8c9704fbe65abfe112f14a73623deb78f39a24aa4642f5c6ba7990",
+    "is_current": true,
+    "qc_status": "PASS",
+    "qc_gate_allowed": true,
+    "audio_gate_allowed": false,
+    "script_stage_status": "NEEDS_REVIEW",
+    "artifact_status": "CURRENT"
+  },
+  "reload_preserved_request_and_hash": true,
+  "manual_assessment": {
+    "result": "OBJECTIVE_QC_PASS_WITH_EDITORIAL_LIMITS",
+    "full_prose_read": true,
+    "observations": [
+      "Repaired food box is actually used; father and child both share at the ending rather than leaving the father silent.",
+      "Story is readable but simple; early explanation of the project/task repeats in places.",
+      "No hand edit or Script approval."
+    ]
+  },
+  "story_semantic_version": "semantic-v31-causal-decision-ownership"
+}

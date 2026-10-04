@@ -51,6 +51,8 @@ class AutoRevisionManager:
             repaired_script = apply_targeted_repairs(script, story_bible, qc_report,
                 allow_prose_templates=script.generation_source != 'REAL_AI')
             repaired_report = self.qc_engine.run_qc(repaired_script, story_bible, model=model)
+            from apps.script_factory.semantic_review import retain_unresolved_findings
+            repaired_report = retain_unresolved_findings(script, qc_report, repaired_script, repaired_report, story_bible)
             if repaired_report.status == "PASS":
                 repaired_script.status = ApprovalStatus.QC_PASS
             else:
@@ -71,15 +73,40 @@ class AutoRevisionManager:
         )
 
         t0 = time.time()
-        from apps.script_factory.semantic_review import script_content_hash
+        from apps.script_factory.semantic_review import script_content_hash, retain_unresolved_findings
+        import copy
+        previous_script = copy.deepcopy(script)
         before_hash = script_content_hash(script)
         try:
-            revised_script, in_tokens, out_tokens = self.provider.revise_script(
-                script=script,
-                story_bible=story_bible,
-                qc_report=qc_report,
-                model=effective_req_model,
-            )
+            issues = [i for i in [*qc_report.evidence_issues, *qc_report.fact_conflicts] if isinstance(i, dict)]
+            duration_only = bool(story_bible.adaptation_context and issues
+                and all(i.get('rule') == 'SOURCE_DURATION_MISMATCH' for i in issues)
+                and (qc_report.semantic_review or {}).get('grounding_verified'))
+            if duration_only:
+                # A global word deficit cannot be fixed by expanding the hook
+                # named as the QC anchor. Rebalance the checked scene plan once,
+                # keeping canon/source/target; review the whole candidate again.
+                if 'duration_rebalance' in str(script.writer_strategy):
+                    raise ValueError('Đã phân bổ lại thời lượng một lần nhưng chưa đạt; cần xem lại cốt truyện/mục tiêu, không kéo dài bằng lặp.')
+                import copy
+                from apps.script_factory.adaptation import write_adapted_script
+                from apps.script_factory.scene_outline import outline_fulfills_contract
+                planned_bible = copy.deepcopy(story_bible)
+                if not planned_bible.scene_outline:
+                    planned_bible.scene_outline = script.scene_outline
+                if not outline_fulfills_contract(planned_bible, planned_bible.scene_outline or []):
+                    raise ValueError('Thiếu dàn cảnh hiện hành để phân bổ lại thời lượng; cần tạo lại kịch bản từ Cốt truyện.')
+                logger.info('[AutoRevision] Rebalance source duration across checked scenes once; do not pad the hook/closing.')
+                revised_script, in_tokens, out_tokens = write_adapted_script(self.provider, planned_bible, effective_req_model)
+                revised_script.revision_round = script.revision_round + 1
+                revised_script.writer_strategy += '_duration_rebalance'
+            else:
+                revised_script, in_tokens, out_tokens = self.provider.revise_script(
+                    script=script,
+                    story_bible=story_bible,
+                    qc_report=qc_report,
+                    model=effective_req_model,
+                )
             if script_content_hash(revised_script) != before_hash:
                 actual_m = (
                     getattr(self.provider, 'last_actual_model', None)
@@ -90,11 +117,14 @@ class AutoRevisionManager:
                 revised_script.generation_request_id = str(uuid.uuid4())
                 revised_script.model_name = actual_m
                 revised_script.provider_name = self.provider.provider_name
-                revised_script.prompt_version = 'script-v3.9-calendar-payoff-location-repair'
-                revised_script.writer_strategy = script.writer_strategy
+                revised_script.prompt_version = ('source-adaptation-v1-writer-v13-payoff-continuation-repair'
+                    if story_bible.adaptation_context else 'script-v4.0-scene-purpose-repair')
+                if not duration_only:
+                    revised_script.writer_strategy = script.writer_strategy
                 revised_script.requested_model = effective_req_model
                 revised_script.actual_model = actual_m
                 revised_script.total_words = sum(len(s.text.split()) for s in revised_script.segments)
+                revised_script.generated_at = time.time()
             lat = time.time() - t0
             self.cost_ctrl.record_operation(
                 operation="revise_script",
@@ -123,6 +153,7 @@ class AutoRevisionManager:
 
         # Re-run QC
         new_qc_report = self.qc_engine.run_qc(revised_script, story_bible, model=model)
+        new_qc_report = retain_unresolved_findings(previous_script, qc_report, revised_script, new_qc_report, story_bible)
 
         if new_qc_report.status == "PASS":
             revised_script.status = ApprovalStatus.QC_PASS

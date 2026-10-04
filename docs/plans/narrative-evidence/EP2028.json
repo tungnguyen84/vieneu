@@ -1,0 +1,505 @@
+{
+  "before_reload": {
+    "generation_request_id": "d2e2e350-9b14-4ef0-8540-8190f5dd83d4",
+    "script_content_hash": "941ff4a87fd0f84681f3d1a9e3178bcee332ba2fca94ee60f539875383dd8e7e",
+    "is_current": true,
+    "qc_status": "PASS",
+    "qc_gate_allowed": true,
+    "audio_gate_allowed": false,
+    "script_stage_status": "NEEDS_REVIEW",
+    "artifact_status": "CURRENT"
+  },
+  "project_id": "EP2028",
+  "story_title": "Bản thiết kế mang tên ai",
+  "story_generation_request_id": "06abbad7-527f-4970-8066-52dbdcc0d8a8",
+  "script_generation_request_id": "d2e2e350-9b14-4ef0-8540-8190f5dd83d4",
+  "parent_generation_request_id": "06abbad7-527f-4970-8066-52dbdcc0d8a8",
+  "provider": "openai_compatible",
+  "requested_model": "auto",
+  "actual_model": "proxy auto — chưa xác định",
+  "prompt_version": "source-adaptation-v1-writer-v10-scoped-task-and-close-repair",
+  "writer_strategy": "source_scene_batches",
+  "generated_at": 1791113522.7653103,
+  "words": 1594,
+  "segments": 30,
+  "leakage_count": 0,
+  "qc_status": "PASS",
+  "semantic": {
+    "review_version": "semantic-v31-causal-decision-ownership",
+    "status": "RUN",
+    "passes": 2,
+    "grounding_verified": true,
+    "pacing_checks": [
+      {
+        "category": "progression",
+        "verdict": "PASS",
+        "reason": "Các đoạn rà soát tài liệu và trao đổi không chỉ lặp lại cùng thông tin mà có thêm lựa chọn và thay đổi tình thế: Mai chuyển từ phát hiện vấn đề sang thương lượng cách sửa, sau đó nhóm thay đổi cách làm việc.",
+        "evidence": [
+          {
+            "segment_id": "005",
+            "quote": "Mai ghi lại các mốc thay đổi vào một tài liệu riêng"
+          },
+          {
+            "segment_id": "009",
+            "quote": "Lan không gọi Quân vào để chất vấn ngay"
+          }
+        ]
+      },
+      {
+        "category": "closing",
+        "verdict": "FAIL",
+        "last_new_event_segment_id": "028",
+        "reason": "Sự kiện mới cuối cùng là Quân thay đổi cách chuẩn bị tài liệu ở đoạn 028. Các đoạn sau chủ yếu tổng kết ý nghĩa và lặp lại thói quen đã thiết lập, nên phần kết bị kéo dài.",
+        "evidence": [
+          {
+            "segment_id": "028",
+            "quote": "anh thêm tên những người tham gia vào từng nội dung liên quan"
+          },
+          {
+            "segment_id": "030",
+            "quote": "Cô giữ thói quen lưu lại dấu vết của quá trình sáng tạo"
+          }
+        ],
+        "trailing_word_fraction": 0.06649937264742785
+      }
+    ],
+    "pacing_checks_second_pass": [
+      {
+        "category": "progression",
+        "verdict": "PASS",
+        "reason": "Các cảnh sau không chỉ lặp lại phát hiện ban đầu mà bổ sung lựa chọn, thay đổi tài liệu, phân vai, chuẩn bị trình bày và kết quả với khách hàng.",
+        "evidence": [
+          {
+            "segment_id": "006",
+            "quote": "Mai mang máy tính vào phòng làm việc của Lan"
+          },
+          {
+            "segment_id": "022",
+            "quote": "Lan mở tài liệu bàn giao ở phần phân công vai trò"
+          }
+        ]
+      },
+      {
+        "category": "closing",
+        "verdict": "PASS",
+        "last_new_event_segment_id": "028",
+        "reason": "Sự kiện mới cuối cùng là Quân thay đổi cách chuẩn bị tài liệu. Các đoạn sau chủ yếu tổng kết thói quen và ý nghĩa, không vượt quá phần chiêm nghiệm ngắn.",
+        "evidence": [
+          {
+            "segment_id": "028",
+            "quote": "Quân cũng thay đổi cách chuẩn bị tài liệu của mình"
+          },
+          {
+            "segment_id": "030",
+            "quote": "Mai tiếp tục làm việc với những hồ sơ mới"
+          }
+        ],
+        "trailing_word_fraction": 0.06649937264742785
+      }
+    ],
+    "payoff_checks": [
+      {
+        "id": "title_trigger",
+        "verdict": "PASS",
+        "answer": "Phần ý tưởng nền tảng của Mai bị trình bày khiến người khác có thể hiểu Quân là người xây dựng, và vấn đề được giải quyết bằng việc ghi rõ vai trò trong bàn giao.",
+        "setup": [
+          {
+            "segment_id": "001",
+            "quote": "cách trình bày khiến người xem có thể hiểu đây là ý tưởng do Quân xây dựng từ đầu"
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "022",
+            "quote": "Cô giới thiệu Mai là người xây dựng nền tảng thiết kế trải nghiệm"
+          }
+        ]
+      },
+      {
+        "id": "ending",
+        "verdict": "PASS",
+        "answer": "Buổi bàn giao ghi nhận rõ Mai xây dựng nền tảng thiết kế, Quân phụ trách triển khai; sau đó cách ghi nhận vai trò được duy trì trong tài liệu tiếp theo.",
+        "setup": [
+          {
+            "segment_id": "020",
+            "quote": "Lan xác nhận thứ tự trao đổi: Mai sẽ giải thích nền tảng thiết kế"
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "028",
+            "quote": "anh thêm tên những người tham gia vào từng nội dung liên quan"
+          }
+        ],
+        "event_checks": [
+          {
+            "required_action": "Trong buổi bàn giao cuối cùng",
+            "actual_action": "Buổi gặp khách hàng và bàn giao vai trò diễn ra với tài liệu đã cập nhật.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Script có cảnh bàn giao cuối cùng với khách hàng, đúng bối cảnh kết thúc.",
+            "evidence": [
+              {
+                "segment_id": "022",
+                "quote": "Trong phòng họp với khách hàng, Lan mở tài liệu"
+              }
+            ]
+          },
+          {
+            "required_action": "Lan mở tài liệu phân công và giới thiệu cụ thể: Mai là người xây dựng nền tảng thiết kế",
+            "actual_action": "Lan mở tài liệu bàn giao và giới thiệu vai trò của Mai.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Đúng chủ thể Lan, đúng đối tượng tài liệu phân công, đúng hành động giới thiệu.",
+            "evidence": [
+              {
+                "segment_id": "022",
+                "quote": "Lan mở tài liệu bàn giao ở phần phân công vai trò"
+              }
+            ]
+          },
+          {
+            "required_action": "Quân là người phát triển phần triển khai. Sau cuộc họp",
+            "actual_action": "Quân được giới thiệu phụ trách triển khai và sau đó thay đổi cách chuẩn bị tài liệu.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Vai trò triển khai của Quân được thể hiện trước khách hàng và có thay đổi sau cuộc họp.",
+            "evidence": [
+              {
+                "segment_id": "022",
+                "quote": "còn Quân phụ trách phát triển phần triển khai"
+              },
+              {
+                "segment_id": "028",
+                "quote": "Quân cũng thay đổi cách chuẩn bị tài liệu của mình"
+              }
+            ]
+          },
+          {
+            "required_action": "Mai tiếp tục cập nhật tài liệu dự án với mục ghi nhận người phụ trách từng phần",
+            "actual_action": "Mai cập nhật tài liệu và thêm mục người phụ trách ở từng phần thiết kế mới.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Script có hành động sau cuộc họp đúng chủ thể và nội dung.",
+            "evidence": [
+              {
+                "segment_id": "027",
+                "quote": "Cô thêm mục người phụ trách ở từng phần thiết kế mới"
+              }
+            ]
+          },
+          {
+            "required_action": "còn Quân chủ động thêm tên các thành viên vào những phần anh trình bày.",
+            "actual_action": "Quân thêm tên những người tham gia vào nội dung liên quan trong các phần trình bày tiếp theo.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Script thể hiện hành động chủ động của Quân sau cuộc gặp.",
+            "evidence": [
+              {
+                "segment_id": "028",
+                "quote": "anh thêm tên những người tham gia vào từng nội dung liên quan"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "payoff_checks_second_pass": [
+      {
+        "id": "title_trigger",
+        "verdict": "PASS",
+        "answer": "Mai phát hiện bản trình chiếu khiến Quân có vẻ là người xây dựng ý tưởng, trong khi lịch sử thiết kế cho thấy phần nền tảng do Mai phát triển.",
+        "setup": [
+          {
+            "segment_id": "001",
+            "quote": "mở bản trình chiếu chuẩn bị cho cuộc gặp khách hàng"
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "004",
+            "quote": "Phần nền tảng trải nghiệm do cô phát triển"
+          }
+        ]
+      },
+      {
+        "id": "ending",
+        "verdict": "PASS",
+        "answer": "Buổi bàn giao cuối cùng ghi rõ vai trò của Mai và Quân, sau đó tài liệu tiếp tục được cập nhật theo người phụ trách.",
+        "setup": [
+          {
+            "segment_id": "022",
+            "quote": "Lan mở tài liệu bàn giao ở phần phân công vai trò"
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "028",
+            "quote": "anh thêm tên những người tham gia vào từng nội dung"
+          }
+        ],
+        "event_checks": [
+          {
+            "required_action_id": "ENDING_ACTION_1",
+            "actual_action": "Buổi bàn giao với khách hàng được thực hiện khi Lan giới thiệu phân công vai trò.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Có cảnh buổi gặp khách hàng và giới thiệu vai trò trong tài liệu bàn giao.",
+            "evidence": [
+              {
+                "segment_id": "022",
+                "quote": "Trong phòng họp với khách hàng, Lan mở tài liệu"
+              }
+            ],
+            "required_action": "Trong buổi bàn giao cuối cùng"
+          },
+          {
+            "required_action_id": "ENDING_ACTION_2",
+            "actual_action": "Lan giới thiệu Mai là người xây dựng nền tảng thiết kế trải nghiệm.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Script nêu trực tiếp vai trò của Mai trước khách hàng.",
+            "evidence": [
+              {
+                "segment_id": "022",
+                "quote": "Cô giới thiệu Mai là người xây dựng nền tảng thiết kế trải nghiệm"
+              }
+            ],
+            "required_action": "Lan mở tài liệu phân công và giới thiệu cụ thể: Mai là người xây dựng nền tảng thiết kế"
+          },
+          {
+            "required_action_id": "ENDING_ACTION_3",
+            "actual_action": "Quân được xác định phụ trách phần triển khai và chuẩn bị phần trình bày kỹ thuật sau cuộc họp bàn giao.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Vai trò của Quân được giới thiệu rõ trong cùng cảnh bàn giao.",
+            "evidence": [
+              {
+                "segment_id": "022",
+                "quote": "Quân phụ trách phát triển phần triển khai và chuẩn bị phần trình bày kỹ thuật"
+              }
+            ],
+            "required_action": "Quân là người phát triển phần triển khai. Sau cuộc họp"
+          },
+          {
+            "required_action_id": "ENDING_ACTION_4",
+            "actual_action": "Mai cập nhật tài liệu tiếp theo với mục người phụ trách ở từng phần thiết kế mới.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Hành động cập nhật sau cuộc gặp được kể cụ thể.",
+            "evidence": [
+              {
+                "segment_id": "027",
+                "quote": "Cô thêm mục người phụ trách ở từng phần thiết kế mới"
+              }
+            ],
+            "required_action": "Mai tiếp tục cập nhật tài liệu dự án với mục ghi nhận người phụ trách từng phần"
+          },
+          {
+            "required_action_id": "ENDING_ACTION_5",
+            "actual_action": "Quân thêm tên những người tham gia vào từng nội dung liên quan khi tạo phần trình bày tiếp theo.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Script có cảnh thay đổi cách chuẩn bị tài liệu của Quân.",
+            "evidence": [
+              {
+                "segment_id": "028",
+                "quote": "anh thêm tên những người tham gia vào từng nội dung liên quan"
+              }
+            ],
+            "required_action": "còn Quân chủ động thêm tên các thành viên vào những phần anh trình bày."
+          }
+        ]
+      }
+    ]
+  },
+  "source_review": {
+    "version": "source-review-v2-theme-and-distinctive-events",
+    "status": "RUN",
+    "passes": 2,
+    "issues": []
+  },
+  "remaining_issues": [],
+  "advisory_issues": [
+    {
+      "segment_id": "029",
+      "related_segment_ids": [
+        "029"
+      ],
+      "excerpt": "Việc ghi nhận rõ đóng góp giúp tập thể duy trì sự minh bạch và phối hợp hiệu quả hơn. Khi vai trò được thể hiện đúng, mỗi người có thể tập trung vào phần việc c",
+      "rule": "REDUNDANT_CLOSING",
+      "severity": "WARNING",
+      "blocking": false,
+      "source": "SEMANTIC_REVIEW",
+      "message": "Gợi ý biên tập phần kết (106/1594 từ, trong giới hạn 10%): Sự kiện mới cuối cùng là Quân thay đổi cách chuẩn bị tài liệu ở đoạn 028. Các đoạn sau chủ yếu tổng kết ý nghĩa và lặp lại thói quen đã thiết lập, nên phần kết bị kéo dài.",
+      "recommended_action": "Đọc/rút chiêm nghiệm nếu cần; không bỏ cảnh thực hiện kết quả."
+    }
+  ],
+  "trial_jobs": [
+    {
+      "job_id": "12d69f3a3a544fcf8d828ac25e50c6cb",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791133754.146225,
+      "completed_at": 1791133848.031376,
+      "error_message": null
+    },
+    {
+      "job_id": "28c1a0f34dd7419eb44e1db8909233d8",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791133369.4791713,
+      "completed_at": 1791133437.8136933,
+      "error_message": null
+    },
+    {
+      "job_id": "193365b025f841b7be9ff23403dfe624",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791131121.772079,
+      "completed_at": 1791131200.9493885,
+      "error_message": null
+    },
+    {
+      "job_id": "c3e5bcec2d8c41d08888e8ca1736bf72",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791130698.5386043,
+      "completed_at": 1791130791.0736332,
+      "error_message": null
+    },
+    {
+      "job_id": "a411a72ab8e84dc1ad44ffa8f1b8d35a",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791129989.090048,
+      "completed_at": 1791130058.9727945,
+      "error_message": null
+    },
+    {
+      "job_id": "49061b541f3e481282967715e0ca2b82",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791129123.185181,
+      "completed_at": 1791129220.1781077,
+      "error_message": null
+    },
+    {
+      "job_id": "41eeacc168ac487789c30a2fae973913",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791113378.286681,
+      "completed_at": 1791113612.417766,
+      "error_message": null
+    },
+    {
+      "job_id": "ac96ffea487742dd8008fb6b0649c0e8",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791112819.3586402,
+      "completed_at": 1791112948.280232,
+      "error_message": null
+    },
+    {
+      "job_id": "ed2d04c32a9f453b92ce3976f376450f",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "FAILED",
+      "started_at": 1791112397.4334137,
+      "completed_at": 1791112450.312054,
+      "error_message": "AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Bản trả về có 1333 từ/28 đoạn; cần 1377–1863 từ cho phạm vi lượt này. BỔ SUNG 287 từ bằng diễn biến/chi tiết được phép, không lặp ý. Trả khoảng 32 đoạn, tổng 1620 từ; không cộng thêm hook/ending ngoài ngân sách."
+    },
+    {
+      "job_id": "1bd4b34607554ae996c4d13f89ed781d",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "FAILED",
+      "started_at": 1791112037.2263582,
+      "completed_at": 1791112114.4839709,
+      "error_message": "AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Mỗi đoạn cần scene_no thuộc đúng cảnh được giao [1, 2, 3, 4, 5, 6, 7, 8, 9]; không viết cảnh trước/sau."
+    },
+    {
+      "job_id": "4e9a850dd0c94588b7c4250f16e4a65a",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791111530.2225416,
+      "completed_at": 1791111817.1682367,
+      "error_message": null
+    },
+    {
+      "job_id": "cccdb1a78ed64dc8babc517775df3139",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791110784.0074415,
+      "completed_at": 1791111110.2147512,
+      "error_message": null
+    },
+    {
+      "job_id": "d9864f8d27184b59ab7b992bde9fec74",
+      "job_type": "SOURCE_Kiểm tra / sửa cốt truyện",
+      "status": "COMPLETED",
+      "started_at": 1791110683.9491904,
+      "completed_at": 1791110724.4666407,
+      "error_message": null
+    },
+    {
+      "job_id": "20de18e48430443f9f8b4d91890e6afd",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "FAILED",
+      "started_at": 1791110054.9888625,
+      "completed_at": 1791110089.0798283,
+      "error_message": "QC cốt truyện từ nguồn chưa đạt hoặc chưa hiện hành. Mở Cốt truyện để kiểm tra/sửa và duyệt lại; không tự thay cốt truyện đã duyệt trong lúc viết kịch bản."
+    },
+    {
+      "job_id": "e3264fb88cc44305b4ac1e6c8c4c907c",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "FAILED",
+      "started_at": 1791109754.0737226,
+      "completed_at": 1791109874.07775,
+      "error_message": "AI chưa lập được dàn cảnh trả lời đủ manh mối và hệ quả. Giữ nguyên cốt truyện, không ghi đè kịch bản hiện tại."
+    },
+    {
+      "job_id": "9ee5ef3561234961b4fbb5a63ab24f7d",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791085660.5599031,
+      "completed_at": 1791085906.3586006,
+      "error_message": null
+    },
+    {
+      "job_id": "af690e714d41416aa086d40d2ecdc5b2",
+      "job_type": "SOURCE_Tạo cốt truyện",
+      "status": "COMPLETED",
+      "started_at": 1791085461.549915,
+      "completed_at": 1791085517.5981476,
+      "error_message": null
+    },
+    {
+      "job_id": "8120884e91da49418583693375b66ce2",
+      "job_type": "SOURCE_Phân tích và đề xuất ba hướng",
+      "status": "COMPLETED",
+      "started_at": 1791085221.8733523,
+      "completed_at": 1791085249.9773302,
+      "error_message": null
+    }
+  ],
+  "after_reload": {
+    "generation_request_id": "d2e2e350-9b14-4ef0-8540-8190f5dd83d4",
+    "script_content_hash": "941ff4a87fd0f84681f3d1a9e3178bcee332ba2fca94ee60f539875383dd8e7e",
+    "is_current": true,
+    "qc_status": "PASS",
+    "qc_gate_allowed": true,
+    "audio_gate_allowed": false,
+    "script_stage_status": "NEEDS_REVIEW",
+    "artifact_status": "CURRENT"
+  },
+  "reload_preserved_request_and_hash": true,
+  "manual_assessment": {
+    "result": "OBJECTIVE_QC_PASS_WITH_EDITORIAL_LIMITS",
+    "full_prose_read": true,
+    "observations": [
+      "Version history -> team discussion -> corrected ownership -> actual customer presentation gives a complete causal chain.",
+      "Procedural tone and limited stakes remain; closing advisory is 106/1594 words, below the 10% hard limit.",
+      "No manual prose edit or additional approval was performed."
+    ]
+  },
+  "story_semantic_version": "semantic-v31-causal-decision-ownership"
+}

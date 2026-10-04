@@ -16,6 +16,7 @@ import re
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from apps.script_factory.models import StoryBible
+from apps.script_factory.narrative_design import DESIGN_INSTRUCTION, outline_design_errors
 
 logger = logging.getLogger("VieNeu.SceneOutline")
 
@@ -32,20 +33,30 @@ def _prompt(bible: StoryBible) -> str:
     if bible.adaptation_context:
         from apps.script_factory.adaptation import writer_context
         target = bible.adaptation_context['brief']['target_duration_sec']
+        scene_target = max(8, min(18, round(target * 2.7 / 300)))
         return (f'Lập dàn cảnh cho {target} giây, khoảng {round(target*2.7)} từ; không ép 80 đoạn hoặc hai reveals. '
             'Mỗi cảnh có action, new_information, consequence; ghi payoff_ids và payoff_action trả lời hợp đồng. '
             'Factual: cảnh là đơn vị trình bày thông tin có nguồn, không bịa hành động/thoại. '
             'Hư cấu/own: gọi tên công việc, vật hoặc thao tác thực tế trong cảnh; không chỉ ghi "cải thiện quy trình", "hiểu nhu cầu", "giải quyết vấn đề". '
             'Nếu fiction Bible chỉ mô tả khái quát, cụ thể hóa trong phạm vi hướng đã chọn bằng một nghiệp vụ quan sát được; không đổi các facts đã khóa. '
             'Own chỉ thêm chi tiết trong phần được thay, giữ nguyên nguyên nhân/kết thúc/locks. '
-            'Writer viết toàn tập trong một lượt; xếp tối thiểu 8 cảnh liên tục, không cần chia part 1/2. '
-            'JSON {scenes:[{no,part,title,action,new_information,consequence,payoff_ids:[],payoff_action,segments}]}.\n'
+            'Writer triển khai các cụm cảnh liên tiếp, giữ ngữ cảnh toàn tập; xếp tối thiểu 8 cảnh, không cần chia part 1/2. '
+            f'Mục tiêu khoảng {scene_target} cảnh có diễn biến thực, tùy số sự kiện được phép trong Bible. '
+            'Không chia một lần xem giấy/sửa đồ thành nhiều cảnh cùng kết luận để đủ thời lượng. '
+            'Ở fiction, nếu canon chỉ ghi "thay linh kiện", action cần chọn một bộ phận cụ thể phù hợp sự cố '
+            'và ghi rõ lần thử sai khác lần sửa đúng ở điểm nào; giữ tên bộ phận và nơi sửa ở các cảnh sau. '
+            'Không thêm chẩn đoán/thao tác ngoài nguồn ở factual hoặc ngoài allowed_changes ở own. '
+            'Ở fiction, triển khai các lần thử, trở ngại và lựa chọn cụ thể trong phạm vi canon; '
+            'ở factual/own không bịa sự kiện để đạt số cảnh. Vật được giao cho ai/ở đâu phải liên tục qua các cảnh, có hành động nhận lại trước khi mang đi. '
+            + DESIGN_INSTRUCTION +
+            'JSON {scenes:[{no,part,title,role,state_before,state_after,listener_question,action,new_information,consequence,payoff_ids:[],payoff_action,segments}]}.\n'
             + writer_context(bible.adaptation_context) + contract_block(bible)
             + '\nStory: ' + json.dumps({k:v for k,v in bible.to_dict().items() if k != 'adaptation_context'},ensure_ascii=False))
     data = {k: v for k, v in bible.to_dict().items() if k not in {"story_qc_report", "status", "approved_at", "approved_by"}}
     return (
         f"STORY BIBLE:\n{json.dumps(data, ensure_ascii=False)}\n\n"
         + contract_block(bible) +
+        DESIGN_INSTRUCTION +
         "Lập 14-18 cảnh theo thứ tự thời gian. Yêu cầu:\n"
         "- Mỗi cảnh: một hành động/địa điểm/cuộc trò chuyện cụ thể và đúng MỘT thông tin mới người nghe chưa biết.\n"
         "- KHÔNG có hai cảnh cùng một việc (hai lần đến cùng một nơi hỏi cùng một người, hai lần tra cùng một manh mối).\n"
@@ -61,7 +72,7 @@ def _prompt(bible: StoryBible) -> str:
         "Cảnh 14-15: Cú lật chính (sự thật cốt lõi). Cảnh 15-16: Đối chất/thú nhận bằng lời thoại trực tiếp. Cảnh 17-18: Giải quyết bằng hành động dứt khoát và chiêm nghiệm.\n"
         "- Đánh dấu 'part': 1 cho khoảng 45% cảnh đầu (kết thúc ở cuối một cảnh trọn vẹn), 2 cho phần còn lại.\n"
         'Trả về JSON: {"scenes": [{"no": 1, "part": 1, "title": "<tên cảnh ngắn>", '
-        '"action": "<hành động cụ thể>", "new_information": "<thông tin mới duy nhất>", "consequence": "<thay đổi tình thế/quyết định>", "payoff_ids": ["<id hợp đồng được trả lời>"], "payoff_action": "<đáp án và nguồn>", "segments": <3-8>}]}'
+        '"role": "<vai trò cảnh>", "state_before": "<tình thế trước>", "state_after": "<tình thế sau>", "listener_question": "<câu hỏi muốn biết tiếp>", "action": "<hành động cụ thể>", "new_information": "<thông tin mới duy nhất>", "consequence": "<thay đổi tình thế/quyết định>", "payoff_ids": ["<id hợp đồng được trả lời>"], "payoff_action": "<đáp án và nguồn>", "segments": <3-8>}]}'
     )
 
 
@@ -87,6 +98,7 @@ def _normalize(scenes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "payoff_ids": scene.get("payoff_ids", []) if isinstance(scene.get("payoff_ids", []), list) else [],
             "payoff_action": str(scene.get("payoff_action", "")).strip(),
             "segments": segments,
+            **{key: str(scene.get(key, '')).strip() for key in ('role', 'state_before', 'state_after', 'listener_question')},
         })
     # Parts must be contiguous: everything before the first Part-2 scene is Part 1.
     first_two = next((i for i, s in enumerate(clean) if s["part"] == 2), None)
@@ -99,6 +111,8 @@ def _normalize(scenes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 def outline_fulfills_contract(bible: StoryBible, scenes) -> bool:
     from apps.script_factory.story_contract import payoff_obligations
     if not scenes or any(not s.get('new_information') or not s.get('consequence') for s in scenes):
+        return False
+    if outline_design_errors(scenes):
         return False
     mapped = {key for s in scenes if s.get('payoff_action') for key in s.get('payoff_ids', [])}
     return {o['id'] for o in payoff_obligations(bible)} <= mapped
@@ -119,14 +133,25 @@ def build_scene_outline(bible: StoryBible, call_llm: LLMCall, require_contract: 
         return None
     scenes = _normalize(parse_json_items(raw, "scenes"))
     if require_contract and not outline_fulfills_contract(bible, scenes):
-        logger.warning('[SceneOutline] Missing scene consequences/payoffs; retrying outline once before writing')
+        from apps.script_factory.story_contract import payoff_obligations
+        def failure_details():
+            mapped = {key for s in scenes if s.get('payoff_action') for key in s.get('payoff_ids', [])}
+            missing = sorted({o['id'] for o in payoff_obligations(bible)} - mapped)
+            errors = outline_design_errors(scenes)
+            if not scenes or any(not s.get('new_information') or not s.get('consequence') for s in scenes):
+                errors.append('Thiếu new_information/consequence trong dàn cảnh.')
+            if missing:
+                errors.append('Chưa có payoff_action cho các ID: ' + ', '.join(missing))
+            return '; '.join(errors)
+        logger.warning('[SceneOutline] Outline rejected: %s; retrying once before writing', failure_details())
         try:
-            raw, _, _ = call_llm(system, _prompt(bible) + '\nDàn cảnh trước thiếu hệ quả hoặc đáp án. Kiểm tra đủ TỪNG payoff id, ghi cảnh trả lời và đáp án rõ nguồn. Mỗi cảnh phải có new_information và consequence. Trả lại toàn bộ dàn cảnh JSON.')
+            raw, _, _ = call_llm(system, _prompt(bible) + '\nDàn cảnh trước chưa hợp lệ: ' + failure_details() + '\nKiểm tra đủ TỪNG payoff id, ghi cảnh trả lời và đáp án rõ nguồn. Mỗi cảnh phải có new_information và consequence. Trả lại toàn bộ dàn cảnh JSON.')
             scenes = _normalize(parse_json_items(raw, 'scenes'))
         except Exception as exc:
             logger.warning('[SceneOutline] Contract retry failed: %s', exc)
             return None
         if not outline_fulfills_contract(bible, scenes):
+            logger.warning('[SceneOutline] Outline still rejected after bounded retry: %s', failure_details())
             return None
     parts = {s["part"] for s in scenes}
     if len(scenes) < 8 or (not bible.adaptation_context and parts != {1, 2}):
@@ -165,7 +190,7 @@ def single_pass_outline_block(scenes: Optional[List[Dict[str, Any]]]) -> str:
     lines = ["", "DÀN CẢNH BẮT BUỘC CỦA CẢ TẬP (viết đúng thứ tự thời gian, mỗi cảnh xảy ra đúng MỘT lần):"]
     for s in scenes:
         lines.append(
-            f"Cảnh {s['no']}: {s['title']} — Hành động: {s['action']} | Thông tin mới: {s['new_information']} | Hệ quả: {s.get('consequence', '')} | Trả lời {s.get('payoff_ids', [])}: {s.get('payoff_action', '')} | ~{s['segments']} phân đoạn"
+            f"Cảnh {s['no']} [{s.get('role', '')}]: {s['title']} — Hành động: {s['action']} | Thông tin mới: {s['new_information']} | Hệ quả: {s.get('consequence', '')} | Trạng thái {s.get('state_before', '')} → {s.get('state_after', '')} | Câu hỏi: {s.get('listener_question', '')} | Trả lời {s.get('payoff_ids', [])}: {s.get('payoff_action', '')} | ~{s['segments']} phân đoạn"
         )
     lines.append("Triển khai tuần tự theo từng cảnh trên; không nhảy cóc và không kể lại cảnh đã qua.\n")
     return "\n".join(lines)

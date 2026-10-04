@@ -117,7 +117,8 @@ def test_real_payoffs_are_retained_for_both_independent_reviews():
 
 def test_outline_cannot_silently_discard_clue_obligations():
     b = payoff_bible()
-    scenes = [{'title': f'Cảnh {i}', 'action': 'Lan hỏi chuyện', 'new_information': 'Một lời khai mới',
+    scenes = [{'title': f'Cảnh {i}', 'action': f'Lan hỏi chuyện về chi tiết {i}', 'new_information': 'Một lời khai mới',
+        'role':'HOOK' if i==1 else 'DEVELOPMENT', 'state_before':f'Chưa biết chi tiết {i}', 'state_after':f'Đã biết chi tiết {i}', 'listener_question':'Mùi hương từ đâu?',
         'consequence': 'Lan quyết định gặp Mai', 'part': 1 if i < 5 else 2, 'payoff_ids': [], 'payoff_action': ''}
         for i in range(1, 9)]
     calls = []

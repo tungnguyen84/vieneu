@@ -1,0 +1,371 @@
+{
+  "upstream_regeneration_probe": {
+    "is_current": false,
+    "stale_reasons": [
+      "Full Script không thuộc generation lineage của Story Bible hiện tại",
+      "Nội dung Story Bible đã thay đổi sau khi Full Script được tạo",
+      "Cốt truyện từ nguồn đã tạo lại."
+    ],
+    "qc_gate_allowed": false,
+    "audio_gate_allowed": false,
+    "generation_request_id": "d3579059-d551-48e5-a648-150120a33470",
+    "source_story_generation_request_id": "a4eb2b45-abe7-4ada-8cfb-14df77824965",
+    "story_generation_request_id": "d1fe6f7a-b881-45d4-b899-cd2444017168"
+  },
+  "before_reload": {
+    "generation_request_id": "70dcf8a1-0b93-4441-9948-ca5e29cecdcb",
+    "script_content_hash": "e02f553dc45bce691d98b633028c3176dadb44b9082827e74587722bcd317849",
+    "is_current": true,
+    "qc_status": "PASS",
+    "qc_gate_allowed": true,
+    "audio_gate_allowed": false,
+    "script_stage_status": "NEEDS_REVIEW",
+    "artifact_status": "CURRENT"
+  },
+  "project_id": "EP2030",
+  "story_title": "Mẻ bánh đầu tay",
+  "story_generation_request_id": "d1fe6f7a-b881-45d4-b899-cd2444017168",
+  "script_generation_request_id": "70dcf8a1-0b93-4441-9948-ca5e29cecdcb",
+  "parent_generation_request_id": "d1fe6f7a-b881-45d4-b899-cd2444017168",
+  "provider": "openai_compatible",
+  "requested_model": "auto",
+  "actual_model": "proxy auto — chưa xác định",
+  "prompt_version": "source-adaptation-v1-writer-v14-causal-decisions",
+  "writer_strategy": "source_scene_batches",
+  "generated_at": 1791134283.4077034,
+  "words": 3894,
+  "segments": 81,
+  "leakage_count": 0,
+  "qc_status": "PASS",
+  "semantic": {
+    "review_version": "semantic-v31-causal-decision-ownership",
+    "status": "RUN",
+    "passes": 2,
+    "grounding_verified": true,
+    "pacing_checks": [
+      {
+        "category": "progression",
+        "verdict": "PASS",
+        "reason": "Các đoạn xử lý hậu quả và thay đổi cách làm có nhiều bước mới: kiểm kê, trao đổi với Khải, gặp Linh, lập bảng và thực hiện đơn mới. Không có chuỗi lặp lại cùng một sự kiện mà không thay đổi tình thế.",
+        "evidence": [
+          {
+            "segment_id": "031",
+            "quote": "An đặt những hộp bánh còn lại lên bàn rồi lấy cuốn sổ ghi đơn hàng ra."
+          },
+          {
+            "segment_id": "045",
+            "quote": "An đến quầy cà phê của Linh vào lúc quầy vừa chuẩn bị mở cửa."
+          }
+        ]
+      },
+      {
+        "category": "closing",
+        "verdict": "PASS",
+        "last_new_event_segment_id": "079",
+        "reason": "Sự kiện mới cuối cùng là An hoàn tất việc đưa chiếc máy vào sử dụng. Các đoạn sau chỉ nhìn lại bài học và lời kết, chiếm phần nhỏ so với toàn tập.",
+        "evidence": [
+          {
+            "segment_id": "079",
+            "quote": "An cắm điện thử chiếc máy, nghe tiếng động cơ hoạt động"
+          },
+          {
+            "segment_id": "081",
+            "quote": "An trở lại xưởng bánh với cuốn sổ trên tay"
+          }
+        ],
+        "trailing_word_fraction": 0.030303030303030304
+      }
+    ],
+    "pacing_checks_second_pass": [
+      {
+        "category": "progression",
+        "verdict": "PASS",
+        "reason": "Các đoạn kiểm kê, trao đổi với Khải và Linh tuy cùng xoay quanh hậu quả bánh dư nhưng mỗi lần có thêm hành động mới: xác định trách nhiệm, chuẩn bị dữ liệu, xin thử lại và thay đổi quy trình. Không có hai cảnh cùng một sự kiện được kể lại như mới xảy ra.",
+        "evidence": [
+          {
+            "segment_id": "031",
+            "quote": "bắt đầu đếm lại từng chiếc bánh, ghi rõ số đã giao"
+          },
+          {
+            "segment_id": "045",
+            "quote": "An đến quầy cà phê của Linh vào lúc quầy vừa chuẩn bị mở cửa."
+          }
+        ]
+      },
+      {
+        "category": "closing",
+        "verdict": "PASS",
+        "last_new_event_segment_id": "079",
+        "reason": "Sự kiện mới cuối cùng là An kiểm tra chiếc máy hoạt động. Sau đó chỉ còn nhìn lại hành trình và lời chào, không vượt quá phần chiêm nghiệm ngắn.",
+        "evidence": [
+          {
+            "segment_id": "079",
+            "quote": "An cắm điện thử chiếc máy, nghe tiếng động cơ hoạt động"
+          },
+          {
+            "segment_id": "081",
+            "quote": "Hành trình của cậu vẫn còn dài, nhưng cậu đã biết tự chịu trách nhiệm"
+          }
+        ],
+        "trailing_word_fraction": 0.030303030303030304
+      }
+    ],
+    "payoff_checks": [
+      {
+        "id": "title_trigger",
+        "verdict": "PASS",
+        "answer": "Mẻ bánh dư xuất phát từ việc An tự làm thêm ngoài số lượng Linh xác nhận; chi tiết này buộc An chịu trách nhiệm và thay đổi cách làm.",
+        "setup": [
+          {
+            "segment_id": "001",
+            "quote": "An mở từng thùng bánh mì ngọt thủ công sau khi đã giao phần bánh theo thỏa thuận."
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "040",
+            "quote": "Phần này do em tự làm thêm. Em nghĩ sẽ bán được"
+          }
+        ]
+      },
+      {
+        "id": "ending",
+        "verdict": "PASS",
+        "answer": "An hoàn thành đơn nhỏ với số lượng kiểm soát từ ghi chép và dùng tiền kiếm được từ nghề bánh để mua lại máy làm bánh cũ cho mẹ.",
+        "setup": [
+          {
+            "segment_id": "050",
+            "quote": "An đặt cuốn sổ cạnh bàn làm việc thay vì chỉ bắt đầu trộn bột theo cảm tính."
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "073",
+            "quote": "An mang một chiếc máy làm bánh cũ về căn bếp gia đình."
+          },
+          {
+            "segment_id": "074",
+            "quote": "Con mua lại bằng tiền từ những đơn bánh con làm được."
+          }
+        ],
+        "event_checks": [
+          {
+            "required_action_id": "ENDING_ACTION_1",
+            "actual_action": "An chuẩn bị và giao đơn bánh mới với số lượng được xác định từ bảng ghi chép thực tế.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Script thể hiện rõ An không làm dư, kiểm tra số lượng và giao đúng kế hoạch.",
+            "evidence": [
+              {
+                "segment_id": "059",
+                "quote": "Trước mặt cậu là bảng ghi chép đã có số lượng cụ thể từ Linh."
+              },
+              {
+                "segment_id": "062",
+                "quote": "Không có phần nào nằm ngoài danh sách đã trao đổi."
+              }
+            ],
+            "required_action": "An tự hoàn thành đơn hàng nhỏ tiếp theo với số lượng được tính toán từ ghi chép thực tế"
+          },
+          {
+            "required_action_id": "ENDING_ACTION_2",
+            "actual_action": "An dùng khoản tiền từ các đơn bánh để mua lại chiếc máy làm bánh cũ cho mẹ.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Cảnh mua máy và đối thoại với mẹ xác nhận nguồn tiền là thu nhập từ công việc làm bánh.",
+            "evidence": [
+              {
+                "segment_id": "073",
+                "quote": "An mang một chiếc máy làm bánh cũ về căn bếp gia đình."
+              },
+              {
+                "segment_id": "074",
+                "quote": "Con mua lại bằng tiền từ những đơn bánh con làm được."
+              }
+            ],
+            "required_action": "sau đó dùng khoản tiền kiếm được từ công việc làm bánh để mua lại chiếc máy làm bánh cũ cho mẹ."
+          }
+        ]
+      }
+    ],
+    "payoff_checks_second_pass": [
+      {
+        "id": "title_trigger",
+        "verdict": "PASS",
+        "answer": "Dấu hiệu mở đầu là phần bánh dư sau giao hàng; nó cho thấy hậu quả từ việc An tự làm thêm không theo thỏa thuận và là nguyên nhân buộc An học cách chịu trách nhiệm.",
+        "setup": [
+          {
+            "segment_id": "001",
+            "quote": "An mở từng thùng bánh mì ngọt thủ công sau khi đã giao phần bánh theo thỏa thuận."
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "002",
+            "quote": "phần dư là số bánh cậu tự làm thêm trước ngày mang đến quầy."
+          }
+        ]
+      },
+      {
+        "id": "ending",
+        "verdict": "PASS",
+        "answer": "An hoàn thành cam kết mua máy làm bánh cũ cho mẹ bằng khoản tiền tích lũy từ các đơn bánh tự kiếm được, với cảnh mua và trao lại cho mẹ.",
+        "setup": [
+          {
+            "segment_id": "069",
+            "quote": "Khoản tiền An nhận được từ những đơn bánh hoàn thành dần được cậu tách riêng khỏi chi phí nguyên liệu."
+          }
+        ],
+        "resolution": [
+          {
+            "segment_id": "073",
+            "quote": "An mang một chiếc máy làm bánh cũ về căn bếp gia đình."
+          }
+        ],
+        "event_checks": [
+          {
+            "required_action_id": "ENDING_ACTION_1",
+            "actual_action": "An hoàn thành các đơn nhỏ với số lượng được tính toán từ ghi chép thực tế.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Script có cảnh An chuẩn bị và giao đơn mới theo số lượng đã xác nhận, dựa trên bảng ghi chép.",
+            "evidence": [
+              {
+                "segment_id": "055",
+                "quote": "Một đơn mới được hoàn thành trong xưởng. An xếp bánh theo danh sách đã ghi"
+              },
+              {
+                "segment_id": "062",
+                "quote": "Không có phần nào nằm ngoài danh sách đã trao đổi."
+              }
+            ],
+            "required_action": "An tự hoàn thành đơn hàng nhỏ tiếp theo với số lượng được tính toán từ ghi chép thực tế"
+          },
+          {
+            "required_action_id": "ENDING_ACTION_2",
+            "actual_action": "An dùng thu nhập từ các đơn bánh để mua chiếc máy làm bánh cũ cho mẹ.",
+            "state": "COMPLETED",
+            "matches_required_event": true,
+            "reason": "Cảnh mua máy và lời xác nhận nguồn tiền đều xuất hiện trong phần kết.",
+            "evidence": [
+              {
+                "segment_id": "073",
+                "quote": "An mang một chiếc máy làm bánh cũ về căn bếp gia đình."
+              },
+              {
+                "segment_id": "074",
+                "quote": "Con mua lại bằng tiền từ những đơn bánh con làm được."
+              }
+            ],
+            "required_action": "sau đó dùng khoản tiền kiếm được từ công việc làm bánh để mua lại chiếc máy làm bánh cũ cho mẹ."
+          }
+        ]
+      }
+    ]
+  },
+  "source_review": {
+    "version": "source-review-v2-theme-and-distinctive-events",
+    "status": "RUN",
+    "passes": 2,
+    "issues": []
+  },
+  "remaining_issues": [],
+  "advisory_issues": [],
+  "trial_jobs": [
+    {
+      "job_id": "bdfcb14ee4064ea98664a0e9f4afde18",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791134180.081323,
+      "completed_at": 1791134345.6505723,
+      "error_message": null
+    },
+    {
+      "job_id": "1ec66641d4d04b00910e00b01d1354ba",
+      "job_type": "SOURCE_Kiểm tra / sửa cốt truyện",
+      "status": "COMPLETED",
+      "started_at": 1791133976.5100665,
+      "completed_at": 1791133998.6710713,
+      "error_message": null
+    },
+    {
+      "job_id": "846ce1a7cbb74a3fa58ea493f390af35",
+      "job_type": "SOURCE_Tạo cốt truyện",
+      "status": "COMPLETED",
+      "started_at": 1791133612.8695846,
+      "completed_at": 1791133699.8420947,
+      "error_message": null
+    },
+    {
+      "job_id": "423346f1cffd45ce9353e46b444865c2",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791133362.1873467,
+      "completed_at": 1791133426.7147825,
+      "error_message": null
+    },
+    {
+      "job_id": "afdce495a1a24803a0fa31e047fa4927",
+      "job_type": "SOURCE_Kiểm tra / sửa kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791132932.0542724,
+      "completed_at": 1791133066.6232803,
+      "error_message": null
+    },
+    {
+      "job_id": "40c5f3fb813e420a86583ce7e6f4dd25",
+      "job_type": "SOURCE_Viết kịch bản",
+      "status": "COMPLETED",
+      "started_at": 1791131987.2784092,
+      "completed_at": 1791132404.6756604,
+      "error_message": null
+    },
+    {
+      "job_id": "b93ebf2458d34ecd94aca212dd1cffb8",
+      "job_type": "SOURCE_Tạo cốt truyện",
+      "status": "COMPLETED",
+      "started_at": 1791131625.381807,
+      "completed_at": 1791131852.5673196,
+      "error_message": null
+    },
+    {
+      "job_id": "ecb94c6154e24b9a879016598e7edcc7",
+      "job_type": "SOURCE_Tạo cốt truyện",
+      "status": "FAILED",
+      "started_at": 1791131378.4699645,
+      "completed_at": 1791131425.6054907,
+      "error_message": "AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: structured_clues cần clue,what_it_proves,what_it_does_NOT_prove,next_question. Nếu không có điều tra/manh mối thì để [] thay vì tạo item giả."
+    },
+    {
+      "job_id": "9fbac8c2adb4406695cdec5d007f9a9f",
+      "job_type": "SOURCE_Phân tích và đề xuất ba hướng",
+      "status": "COMPLETED",
+      "started_at": 1791131291.8741987,
+      "completed_at": 1791131334.7063947,
+      "error_message": null
+    }
+  ],
+  "after_reload": {
+    "generation_request_id": "70dcf8a1-0b93-4441-9948-ca5e29cecdcb",
+    "script_content_hash": "e02f553dc45bce691d98b633028c3176dadb44b9082827e74587722bcd317849",
+    "is_current": true,
+    "qc_status": "PASS",
+    "qc_gate_allowed": true,
+    "audio_gate_allowed": false,
+    "script_stage_status": "NEEDS_REVIEW",
+    "artifact_status": "CURRENT"
+  },
+  "reload_preserved_request_and_hash": true,
+  "manual_assessment": {
+    "result": "OBJECTIVE_QC_PASS_WITH_EDITORIAL_LIMITS",
+    "full_prose_read": true,
+    "observations": [
+      "All 81 paragraphs of the new v14 script read. Confirmed customer quantity is explicitly separated from producer-made surplus.",
+      "New cooperation agreement follows the surplus/loss; the prior duplicated agreement is not presented twice as a new acceptance.",
+      "Accumulated income -> physical machine purchase/delivery -> machine test completes the canonical ending.",
+      "Long middle remains slow with repeated inventory/notebook descriptions. It is not certified as a retention-optimized YouTube script.",
+      "First v14 whole-episode content QC passed, revision_round=0; scoped writing used seven real provider calls."
+    ]
+  },
+  "story_semantic_version": "semantic-v31-causal-decision-ownership"
+}
