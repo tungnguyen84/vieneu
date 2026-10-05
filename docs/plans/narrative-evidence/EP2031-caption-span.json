@@ -1,0 +1,72 @@
+{
+  "baseline_commit": "e8c676dbaf48511ba9c4041003da0dcb965df19f",
+  "ui_url": "http://127.0.0.1:8772/",
+  "project": "EP2031",
+  "source_id": "b7575a6dec164fc28d212896c6b68005",
+  "source_hash": "c8b49e6f0ed6990475c8168b67e1dd32f03f7acf7eab0d93a374938eaf1c2fa2",
+  "source_revision": 1,
+  "source_words": 5136,
+  "source_units": 301,
+  "source_unchanged": true,
+  "config": {
+    "adaptation_mode": "FACTUAL_RETELLING",
+    "topic": "Góc khuất nghề sale bất động sản",
+    "narrative_style": "Đời sống",
+    "target_duration_sec": 1500,
+    "locked_elements": [],
+    "allowed_changes": "Cải thiện hook, cách kể, nhịp và cảnh; giữ canon và các phần khóa.",
+    "owned_script_confirmed": false
+  },
+  "real_ai_analysis": {
+    "generation_request_id": "321a2132-6b1c-471d-ac03-39f80816b217",
+    "generation_source": "REAL_AI",
+    "provider_name": "openai_compatible",
+    "requested_model": "auto",
+    "actual_model": "proxy auto — chưa xác định",
+    "prompt_version": "source-adaptation-v1",
+    "generated_at": 1791167315.8901942
+  },
+  "analysis_claims": 14,
+  "analysis_refs": 28,
+  "all_saved_refs_valid": true,
+  "directions_request_id": "ede882ef-dd61-467c-9697-6c758e0e7834",
+  "directions_titles": [
+    "Hành trình thăng tiến và cái giá của hình ảnh thành công",
+    "Từ căn phòng trọ đến căn hộ cao cấp: câu chuyện về giấc mơ đổi đời",
+    "Góc nhìn nghề sale bất động sản qua câu chuyện của một người trong cuộc"
+  ],
+  "reload_preserved": true,
+  "final_code_reproduces_and_resolves_all_three_observed_refs": true,
+  "final_live_blocker": "Proxy HTTP 502 with upstream /backend-anon/conversation HTTP 403, before source validation",
+  "jobs": [
+    {
+      "job_id": "b56865c5d9e4406495a2c4f79a7c4881",
+      "status": "COMPLETED",
+      "started_at": 1791167294.8649757,
+      "completed_at": 1791167333.7632775,
+      "error": null
+    },
+    {
+      "job_id": "f60f968ab5734fa18580adfecabea257",
+      "status": "FAILED",
+      "started_at": 1791167488.7464306,
+      "completed_at": 1791167531.3061485,
+      "error": "AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Claim C003: evidence_refs không khớp. Copy nguyên văn ít nhất 4 từ, giữ dấu câu; nếu câu bị chia giữa phụ đề, dùng refs riêng từng unit. Ref sai: {\"unit_id\": \"U0017\", \"quote\": \"Nội, ngành marketing.\"}. Các đoạn gốc để sửa: [{\"unit_id\": \"U0016\", \"text\": \"bước ngoặt đã đến, năm 18 tuổi, bạn đỗ vào một trường bại học tầm trung ở Hà\", \"start_sec\": 82.72, \"end_sec\": 87.119}, {\"unit_id\": \"U0017\", \"text\": \"Nội, ngành marketing. Bạn chọn ngành này không phải vì đam mê, bạn chọn vì nghe\", \"start_sec\": 87.119, \"end_sec\": 92.64}, {\"unit_id\": \"U0018\", \"text\": \"nói ngành này ra trường dễ có việc và cũng kiếm ăn phếp. Với một đứa từng ám\", \"start_sec\": 92.64, \"end_sec\": 98.2}]"
+    },
+    {
+      "job_id": "b397cc07e6784ff4a2651e85ef06cdc2",
+      "status": "FAILED",
+      "started_at": 1791167669.4542632,
+      "completed_at": 1791167673.2965286,
+      "error": "OpenAI-Compatible (auto) HTTP 502: {\"error\":{\"message\":\"/backend-anon/conversation failed: status=403, body=\",\"type\":\"server_error\",\"param\":null,\"code\":\"upstream_error\"}}"
+    },
+    {
+      "job_id": "f0ecb840c40e4746a0548c2663d25c2b",
+      "status": "FAILED",
+      "started_at": 1791167745.3380535,
+      "completed_at": 1791167749.2265422,
+      "error": "OpenAI-Compatible (auto) HTTP 502: {\"error\":{\"message\":\"/backend-anon/conversation failed: status=403, body=\",\"type\":\"server_error\",\"param\":null,\"code\":\"upstream_error\"}}"
+    }
+  ],
+  "scope": "Source analysis/directions only; no Story/FullScript/Audio acceptance in this run."
+}

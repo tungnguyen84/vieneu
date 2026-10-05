@@ -384,3 +384,9 @@ Audit đầu vào: EP2026 đạt QC nhưng kết lặp, lời hứa “đóng h�
 Báo cáo chi tiết: [NARRATIVE_DESIGN_ACCEPTANCE.md](NARRATIVE_DESIGN_ACCEPTANCE.md). Bản kiểm thử hiện tại dùng 8772, giữ app chính 8765. Các tập thử đều là hư cấu từ brief tự viết; không dùng chúng để chứng nhận mọi nguồn báo/YouTube hoặc mọi chế độ. Đọc tập dài phát hiện lỗi dù QC ban đầu PASS; chỉ tick nghiệm thu sẵn sàng xuất bản sau khi cả lỗi khách quan và nhịp kể đã được kiểm tra lại.
 
 Kết quả P6 cuối (05/10/2026): 384 focused + 6 subtests passed; full 818 passed, 15 failed, 10 errors, 5 skipped, 6 subtests, cùng đúng 25 lỗi baseline và không lỗi mới. EP2028/2029/2030 qua QC hiện hành và reload giữ request/hash; EP2027 vẫn chưa đạt, lần cuối bị giới hạn ngân sách có sẵn. EP2030 dùng writer v14 tạo 3.894 từ/81 đoạn mới, không sửa tay. Đọc toàn văn vẫn thấy nhịp giữa tập dài chậm; chưa chứng nhận tự động mọi tập đủ cuốn hút để đăng. Cổng 8772 dùng code mới, app chính 8765 giữ nguyên phiên đang chạy. Chi tiết và bằng chứng nằm trong báo cáo P6.
+
+### Sửa analysis phụ đề EP2031 — 05/10/2026
+
+- [EP2031_SOURCE_ANALYSIS_FIX.md](EP2031_SOURCE_ANALYSIS_FIX.md): nguồn YouTube 5.136 từ đã đọc được; câu trích chạy qua các cue khiến gate một-unit từ chối. Code tìm span nguyên văn duy nhất và xuất refs riêng từng cue, giữ dấu vết quote/ID gốc; không lưu quote ghép vào một ID hoặc nới gate cho lời bịa.
+- Lần đầu sửa qua UI tạo được 14 claims/28 refs và ba hướng; reload giữ lineage/hash. Bổ sung xử lý fragment ba từ sau lần thử tiếp theo. Bản cuối tái hiện được cả ba refs lỗi trên nguồn thật, nhưng generation trực tiếp hiện bị proxy 5000 trả 502/upstream 403. **Chưa tick nghiệm thu live bản cuối hoặc Story/Script của EP2031.**
+- Source tests 88 passed; focused 125 + 6 subtests; full cô lập 824 passed và đúng 25 failures/errors baseline, không regression mới. Giữ phiên chính 8765; cổng 8772 chạy code cuối. Không sửa tay transcript/Script, không thay Audio/Flow/assembler hoặc provider.

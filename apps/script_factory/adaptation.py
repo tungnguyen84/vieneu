@@ -12,6 +12,7 @@ from apps.script_factory.models import FullScript, StoryBible, ScriptSegment
 from apps.script_factory.source_intake import text_hash
 
 VERSION = 'source-adaptation-v1'
+SOURCE_ANALYSIS_VERSION = 'source-analysis-v2-caption-spans'
 SOURCE_REVIEW_VERSION = 'source-review-v2-theme-and-distinctive-events'
 logger = logging.getLogger('VieNeu.SourceWriter')
 _SOURCE_SIGNOFF_RE = re.compile(
@@ -148,12 +149,12 @@ def completion(provider, prompt, validate, model=None):
     raise ValueError('AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: ' + error)
 
 
-def _quote(quote, text):
+def _quote(quote, text, minimum_words=4):
     def normalized(value):
         return unicodedata.normalize('NFC', ' '.join(str(value).split())).casefold()
     # Capitalizing a quotation at sentence start is harmless. Still require a
     # contiguous verbatim substring; do not strip punctuation or match paraphrases.
-    return isinstance(quote, str) and bool(text) and len(quote.split()) >= min(4, len(str(text).split())) and normalized(quote) in normalized(text)
+    return isinstance(quote, str) and bool(text) and len(quote.split()) >= min(minimum_words, len(str(text).split())) and normalized(quote) in normalized(text)
 
 
 def validate_refs(refs, units):
@@ -163,19 +164,58 @@ def validate_refs(refs, units):
 
 
 def canonicalize_source_refs(refs, units):
-    """Repair only a wrong ID for a verbatim quote with one unambiguous location.
+    """Locate verbatim evidence, including sentences split by subtitle cues.
 
-    Never alter the quotation/verdict or accept text absent from the source.
-    Preserve the model's original ID so this mechanical correction is auditable.
+    A cross-cue quotation must occur exactly once across at most three adjacent
+    units. Expand it into literal unit references, retaining the submitted quote
+    and span IDs for audit. Never infer missing words or accept paraphrases.
     """
+    if not isinstance(refs, list):
+        return
     by_id = {u['unit_id']:u['text'] for u in units}
-    for ref in refs if isinstance(refs,list) else []:
+    resolved = []
+    for ref in refs:
+        resolved.append(ref)
         if not isinstance(ref,dict) or _quote(ref.get('quote'),by_id.get(ref.get('unit_id'),'')):
             continue
+        quote = ref.get('quote')
+        if isinstance(quote, str) and len(quote.split()) == 3 and len(quote.strip()) >= 12:
+            # A model sometimes splits a valid citation into a tiny cue fragment.
+            # Keep the strict four-word gate: copy the entire actual cue only
+            # when this three-word anchor is unique and its submitted ID is right.
+            short_matches = [uid for uid, text in by_id.items() if _quote(quote, text, minimum_words=3)]
+            if short_matches == [ref.get('unit_id')]:
+                ref['original_quote'] = quote
+                ref['quote'] = by_id[ref['unit_id']]
+                continue
         matches = [uid for uid,text in by_id.items() if _quote(ref.get('quote'),text)]
         if len(matches)==1:
             ref['reported_unit_id'] = ref.get('unit_id')
             ref['unit_id'] = matches[0]
+        elif not matches:
+            # Minimal spans only: a larger window containing a matching smaller
+            # window is not a second location. Repeated actual locations remain
+            # ambiguous and must be corrected by the provider.
+            spans = []
+            for start in range(len(units)):
+                for size in (2, 3):
+                    window = units[start:start + size]
+                    if len(window) != size:
+                        continue
+                    if (_quote(ref.get('quote'), ' '.join(u['text'] for u in window))
+                            and not any(_quote(ref.get('quote'), ' '.join(u['text'] for u in part))
+                                        for part in (window[:-1], window[1:]))):
+                        spans.append(window)
+            if len(spans) == 1:
+                span = spans[0]
+                resolved.pop()
+                # Full cue text avoids making a one-word fragment into evidence.
+                # Every expanded ref still passes the original strict validator.
+                resolved.extend({**ref, 'reported_unit_id': ref.get('unit_id'),
+                    'original_quote': ref.get('quote'),
+                    'source_span_unit_ids': [u['unit_id'] for u in span],
+                    'unit_id': u['unit_id'], 'quote': u['text']} for u in span)
+    refs[:] = resolved
 
 
 def analyze_source(provider, source):
@@ -188,20 +228,27 @@ def analyze_source(provider, source):
                 raise ValueError('Claim cần statement và claim_id duy nhất.')
             if claim.get('support_status') not in ('SUPPORTED', 'ATTRIBUTED_CLAIM', 'UNKNOWN', 'CONTRADICTED'):
                 raise ValueError(f"Claim {claim['claim_id']}: support_status phải là SUPPORTED/ATTRIBUTED_CLAIM/UNKNOWN/CONTRADICTED.")
+            canonicalize_source_refs(claim.get('evidence_refs'), source['units'])
             if not validate_refs(claim.get('evidence_refs'), source['units']):
-                raise ValueError(f"Claim {claim['claim_id']}: evidence_refs không khớp. Copy chuỗi nguyên văn liên tục từ ĐÚNG unit_id Uxxxx, ít nhất 4 từ; không đổi dấu câu/nháy hoặc dùng dấu ...: {json.dumps(claim.get('evidence_refs'), ensure_ascii=False)}")
+                refs = claim.get('evidence_refs')
+                bad = next((r for r in refs if not validate_refs([r], source['units'])), {}) if isinstance(refs, list) else {}
+                index = next((i for i, u in enumerate(source['units']) if isinstance(bad, dict) and u['unit_id'] == bad.get('unit_id')), None)
+                nearby = source['units'][max(0, index - 1):index + 2] if index is not None else []
+                raise ValueError(f"Claim {claim['claim_id']}: evidence_refs không khớp. Copy nguyên văn ít nhất 4 từ, giữ dấu câu; nếu câu bị chia giữa phụ đề, dùng refs riêng từng unit. Ref sai: {json.dumps(bad, ensure_ascii=False)}. Các đoạn gốc để sửa: {json.dumps(nearby, ensure_ascii=False)}")
             ids.add(claim['claim_id'])
     prompt = ('Phân tích dữ liệu nguồn dưới đây, không viết kịch bản. Tách điều nguồn nói với điều đã xác minh. '
               'Bài báo kể lời một người/talkshow thì dùng ATTRIBUTED_CLAIM, không tự xác minh. '
               'support_status CHỈ nhận SUPPORTED / ATTRIBUTED_CLAIM / UNKNOWN / CONTRADICTED; không tạo nhãn SOURCE_REPORTED. '
-              'Đưa 5–20 claims quan trọng; quote COPY nguyên văn ít nhất 4 từ từ đúng unit. '
+              'Đưa 5–20 claims quan trọng; quote COPY nguyên văn 4–12 từ từ đúng unit. '
+              'Câu có thể bị chia giữa các phụ đề: dùng evidence_refs riêng cho từng unit, không gắn câu ghép vào một unit. '
               'Giữ mốc, tên, quan hệ, dấu hiệu, sự kiện, ending và phần chưa biết. '
               'JSON: {theme:<chủ đề>, conflict:<xung đột>, source_structure:[<các diễn biến theo nguồn>], '
               'distinctive_elements:[<đạo cụ/cú lật/thoại đặc trưng>], limitations:[...], '
               'claims:[{claim_id,statement,claim_type,support_status,evidence_refs:[{unit_id,quote}]}]}.\n'
               + json.dumps({'source_metadata': {k: source.get(k) for k in ('title','source_type','caption_kind')}, 'units': source['units']}, ensure_ascii=False))
     data, _ = completion(provider, prompt, validate)
-    return {**data, **metadata(provider), 'source_hash': source['content_hash'], 'source_revision': source['revision']}
+    return {**data, **metadata(provider), 'prompt_version': SOURCE_ANALYSIS_VERSION,
+            'source_hash': source['content_hash'], 'source_revision': source['revision']}
 
 
 def generate_directions(provider, source, analysis, config):

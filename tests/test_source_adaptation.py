@@ -353,6 +353,85 @@ def test_analysis_rejects_misquoted_source_then_retries(service):
     assert result['source_hash']==source['content_hash'];assert len(provider.prompts)==2
 
 
+def test_analysis_locates_exact_cross_caption_quotes_without_retry():
+    # The production failure: complete sentences span U0007/U0008 and U0010/U0011.
+    units = [
+        {'unit_id':'U0007','text':'Level 1 sinh viên market đỉ. Bạn sinh ra ở một'},
+        {'unit_id':'U0008','text':'tỉnh nhỏ miền Bắc, nhà thì nghèo mà có đến tận sáu cái miệng trầu trực ăn.'},
+        {'unit_id':'U0010','text':'Bố mẹ làm ruộng và vất vả. Bạn'},
+        {'unit_id':'U0011','text':'là con gái cả trong nhà, nhìn bố mẹ vất vả và ba đứa em sơ xác.'}]
+    refs = [{'unit_id':'U0008','quote':'Bạn sinh ra ở một tỉnh nhỏ miền Bắc, nhà thì nghèo'},
+            {'unit_id':'U0011','quote':'Bạn là con gái cả trong nhà'}]
+    payload = {'theme':'Góc khuất nghề nghiệp','claims':[{'claim_id':'C001',
+        'statement':'Nguồn kể hoàn cảnh gia đình.', 'support_status':'ATTRIBUTED_CLAIM',
+        'evidence_refs':refs}]}
+    source = {'units':units, 'content_hash':'current-hash', 'revision':1}
+    provider = Provider([payload])
+    result = analyze_source(provider, source)
+    actual = result['claims'][0]['evidence_refs']
+    from apps.script_factory.adaptation import validate_refs
+    assert validate_refs(actual, units)
+    assert [r['unit_id'] for r in actual] == ['U0007','U0008','U0010','U0011']
+    assert actual[0]['original_quote'] == refs[0]['quote']
+    assert actual[2]['original_quote'] == refs[1]['quote']
+    assert actual[0]['source_span_unit_ids'] == ['U0007','U0008']
+    assert len(provider.prompts) == 1
+    assert result['source_hash'] == 'current-hash'
+
+
+@pytest.mark.parametrize('quote,units', [
+    ('Bạn sinh ra ở một tỉnh nhỏ miền Nam', [
+        {'unit_id':'U1','text':'Bạn sinh ra ở một'}, {'unit_id':'U2','text':'tỉnh nhỏ miền Bắc.'}]),
+    ('Bạn sinh ra ở một tỉnh nhỏ miền Bắc', [
+        {'unit_id':'U1','text':'Bạn sinh ra ở một'}, {'unit_id':'U2','text':'Ngày khác đã tới.'},
+        {'unit_id':'U3','text':'tỉnh nhỏ miền Bắc.'}]),
+    ('Bạn sinh ra ở một tỉnh nhỏ miền Bắc', [
+        {'unit_id':'U1','text':'Bạn sinh ra ở một'}, {'unit_id':'U2','text':'tỉnh nhỏ miền Bắc.'},
+        {'unit_id':'U3','text':'Bạn sinh ra ở một'}, {'unit_id':'U4','text':'tỉnh nhỏ miền Bắc.'}]),
+])
+def test_analysis_still_rejects_invented_noncontiguous_or_ambiguous_caption_evidence(quote, units):
+    payload = {'theme':'Nghề nghiệp','claims':[{'claim_id':'C1','statement':'Lời kể',
+        'support_status':'ATTRIBUTED_CLAIM','evidence_refs':[{'unit_id':'U2','quote':quote}]}]}
+    provider = Provider([payload, payload])
+    with pytest.raises(ValueError, match='evidence_refs không khớp'):
+        analyze_source(provider, {'units':units, 'content_hash':'hash', 'revision':1})
+    assert len(provider.prompts) == 2
+    assert 'Các đoạn gốc để sửa' in provider.prompts[1]
+
+
+def test_analysis_corrects_unique_wrong_unit_id():
+    units = [{'unit_id':'U1','text':'Lan kiểm tra lại sổ thu chi.'},
+             {'unit_id':'U2','text':'Hạnh mang hàng tới cửa hàng.'}]
+    provider = Provider([{'theme':'Cửa hàng','claims':[{'claim_id':'C1',
+        'statement':'Lan kiểm tra sổ.', 'support_status':'ATTRIBUTED_CLAIM',
+        'evidence_refs':[{'unit_id':'U2','quote':units[0]['text']}]}]}])
+    result = analyze_source(provider, {'units':units, 'content_hash':'hash', 'revision':1})
+    assert result['claims'][0]['evidence_refs'][0]['unit_id'] == 'U1'
+    assert result['claims'][0]['evidence_refs'][0]['reported_unit_id'] == 'U2'
+    assert len(provider.prompts) == 1
+
+
+def test_analysis_expands_unique_short_cue_fragment_but_keeps_strict_quote_gate():
+    from apps.script_factory.adaptation import canonicalize_source_refs, validate_refs
+    units = [{'unit_id':'U0016','text':'Bạn đỗ vào một trường ở Hà'},
+             {'unit_id':'U0017','text':'Nội, ngành marketing. Bạn chọn ngành này không phải vì đam mê.'}]
+    refs = [{'unit_id':'U0017','quote':'Nội, ngành marketing.'}]
+    assert not validate_refs(refs, units)
+    canonicalize_source_refs(refs, units)
+    assert validate_refs(refs, units)
+    assert refs[0]['original_quote'] == 'Nội, ngành marketing.'
+    assert refs[0]['quote'] == units[1]['text']
+    for ref, source_units in [
+        ({'unit_id':'U0016','quote':'Nội, ngành marketing.'}, units),
+        ({'unit_id':'U0017','quote':'Nội, ngành kỹ thuật.'}, units),
+        ({'unit_id':'U0017','quote':'Nội, ngành marketing.'}, units + [dict(units[1],unit_id='U0018')]),
+        ({'unit_id':'U0017','quote':'ngành marketing.'}, units),
+    ]:
+        bad = [ref]
+        canonicalize_source_refs(bad, source_units)
+        assert not validate_refs(bad, source_units)
+
+
 def test_fiction_writer_does_not_receive_original_transcript(service):
     source,context=selected(service)
     prompt=writer_context(context)
