@@ -41,6 +41,7 @@ class StoryBibleQCReport:
     logic_issues: List[str] = field(default_factory=list)
     rule_codes: List[str] = field(default_factory=list)
     semantic_review: Optional[Dict[str, Any]] = None
+    bible_hash: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -105,6 +106,7 @@ class StoryQCEngine:
         self.plausibility_engine = PlausibilityEngine()
         self.provider = provider
         self._bible_review_cache: Dict[str, Dict[str, Any]] = {}
+        self._bible_source_review_cache: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
 
     def _semantic_bible_review(self, bible: StoryBible) -> Optional[Dict[str, Any]]:
         """LLM plot-logic review, cached per Story Bible content (audits repeat often)."""
@@ -924,13 +926,23 @@ class StoryQCEngine:
         source_qc = None
         if bible.adaptation_context and self.provider:
             from apps.script_factory.adaptation import source_review, valid_source_review
+            from apps.script_factory.semantic_review import story_bible_content_hash
+            source_key = (getattr(self.provider, 'provider_name', type(self.provider).__name__),
+                          getattr(self.provider, 'default_model', ''), story_bible_content_hash(bible))
             stored_source = ((bible.story_qc_report or {}).get('semantic_review') or {}).get('source_review')
-            if (valid_source_review(bible, stored_source) and all(
+            if source_key in self._bible_source_review_cache:
+                source_qc = copy.deepcopy(self._bible_source_review_cache[source_key])
+                logger.info('Dùng lại kiểm tra nguồn của đúng cốt truyện chưa thay đổi trong lần chạy này.')
+            elif (valid_source_review(bible, stored_source) and all(
                     r.get('provider_name') == self.provider.provider_name
                     and r.get('requested_model') == self.provider.default_model for r in stored_source['reviews'])):
                 source_qc = stored_source
             else:
                 source_qc = source_review(self.provider, bible)
+            if source_qc.get('status') == 'RUN' and source_qc.get('passes') == 2:
+                # Reuse completed negative reviews too: identical content cannot
+                # improve by polling the reviewer again. Errors are not cached.
+                self._bible_source_review_cache[source_key] = copy.deepcopy(source_qc)
             if source_qc['status'] != 'RUN':
                 _add_issue('SEMANTIC_REVIEW_FAILED', source_qc.get('error', 'Source review chưa đủ'), target='story_bible')
             for issue in source_qc.get('issues', []):
@@ -957,6 +969,7 @@ class StoryQCEngine:
         if status == "FAIL":
             bible.status = ApprovalStatus.NEEDS_LOGIC_REWRITE.value
 
+        from apps.script_factory.semantic_review import story_bible_content_hash
         report = StoryBibleQCReport(
             episode_id=bible.episode_id,
             status=status,
@@ -964,6 +977,7 @@ class StoryQCEngine:
             logic_issues=logic_issues,
             rule_codes=rule_codes,
             semantic_review=semantic,
+            bible_hash=story_bible_content_hash(bible),
         )
         bible.story_qc_report = report.to_dict()
         return report
@@ -990,7 +1004,8 @@ class StoryQCEngine:
 
         # Transport/decoder failures say nothing about the plot. Do not rewrite
         # a draft merely because its reviewer was unavailable.
-        if report.issues and all(issue.get('rule') == 'SEMANTIC_REVIEW_FAILED' for issue in report.issues):
+        if report.issues and (all(issue.get('rule') == 'SEMANTIC_REVIEW_FAILED' for issue in report.issues)
+                or bible.adaptation_context and any(issue.get('rule') == 'SEMANTIC_REVIEW_FAILED' for issue in report.issues)):
             bible.story_qc_report = report.to_dict()
             return bible
 
@@ -1054,7 +1069,8 @@ class StoryQCEngine:
                     repaired.story_qc_report = recheck.to_dict()
                     for issue in recheck.issues:
                         logger.info('[StoryQC %s] %s', issue.get('rule'), issue.get('message'))
-                    if recheck.issues and all(issue.get('rule') == 'SEMANTIC_REVIEW_FAILED' for issue in recheck.issues):
+                    if recheck.issues and (all(issue.get('rule') == 'SEMANTIC_REVIEW_FAILED' for issue in recheck.issues)
+                            or bible.adaptation_context and any(issue.get('rule') == 'SEMANTIC_REVIEW_FAILED' for issue in recheck.issues)):
                         repaired.story_qc_report = recheck.to_dict()
                         return repaired
                     if recheck.status == 'PASS':
@@ -1063,16 +1079,16 @@ class StoryQCEngine:
                     repeated = fingerprint in seen
                     changed_problems = problem_keys(recheck) != problem_keys(cur_report)
                     if not repeated and (severity(recheck) < severity(best_report) or (
-                        severity(recheck) == severity(best_report) and changed_problems
+                        not bible.adaptation_context and severity(recheck) == severity(best_report) and changed_problems
                     )):
                         best_bible, best_report = copy.deepcopy(repaired), recheck
                     if not repeated and (severity(recheck) < severity(cur_report) or (
-                        severity(recheck) == severity(cur_report) and changed_problems
+                        not bible.adaptation_context and severity(recheck) == severity(cur_report) and changed_problems
                     )):
                         stalled = 0
                     else:
                         stalled += 1
-                    if repeated or stalled >= 2:
+                    if repeated or stalled >= (1 if bible.adaptation_context else 2):
                         logger.warning('[StoryQCEngine] Repair stopped: repeated content or no QC improvement; retaining best draft.')
                         return best_bible
                     seen.add(fingerprint)

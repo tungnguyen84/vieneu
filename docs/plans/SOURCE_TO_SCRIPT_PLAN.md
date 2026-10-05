@@ -390,3 +390,9 @@ Kết quả P6 cuối (05/10/2026): 384 focused + 6 subtests passed; full 818 pa
 - [EP2031_SOURCE_ANALYSIS_FIX.md](EP2031_SOURCE_ANALYSIS_FIX.md): nguồn YouTube 5.136 từ đã đọc được; câu trích chạy qua các cue khiến gate một-unit từ chối. Code tìm span nguyên văn duy nhất và xuất refs riêng từng cue, giữ dấu vết quote/ID gốc; không lưu quote ghép vào một ID hoặc nới gate cho lời bịa.
 - Lần đầu sửa qua UI tạo được 14 claims/28 refs và ba hướng; reload giữ lineage/hash. Bổ sung xử lý fragment ba từ sau lần thử tiếp theo. Bản cuối tái hiện được cả ba refs lỗi trên nguồn thật, nhưng generation trực tiếp hiện bị proxy 5000 trả 502/upstream 403. **Chưa tick nghiệm thu live bản cuối hoặc Story/Script của EP2031.**
 - Source tests 88 passed; focused 125 + 6 subtests; full cô lập 824 passed và đúng 25 failures/errors baseline, không regression mới. Giữ phiên chính 8765; cổng 8772 chạy code cuối. Không sửa tay transcript/Script, không thay Audio/Flow/assembler hoặc provider.
+
+### Sửa QC và thời gian tạo cốt truyện EP2031 — 05/10/2026
+
+- [EP2031_STORY_QC_PERFORMANCE_FIX.md](EP2031_STORY_QC_PERFORMANCE_FIX.md): tái hiện lần cũ khoảng 17 phút/64 lượt AI với QC FAIL. Sửa bắt nhầm “hình ảnh” và lời nhắc viết tiếp; gom các trường Bible ngắn thành batch có giới hạn, tái sử dụng QC gắn đúng hash, dừng sửa không cải thiện hoặc reviewer lỗi. Hai lượt nguồn và hai lượt logic vẫn giữ, không chuyển lỗi thật thành PASS.
+- Nghiệm thu cùng nguồn/hướng EP2031 qua Studio UI và OpenAI-compatible thật: **163,09 giây / 11 lượt / QC PASS**, 48 trường được kiểm tra đủ trong mỗi lượt nguồn, không phải sửa tự động. Reload giữ request/hash. Story vẫn **NEEDS_REVIEW**, Script/Audio **STALE**; chưa nghiệm thu Full Script hay TTS của EP2031.
+- 102 source tests; 188 focused + 6 subtests; full cô lập 838 passed và đúng 25 lỗi baseline, không lỗi mới. Chỉ sửa Python/test/docs, không cần rebuild dist; cổng 8772 dùng code mới và giữ app 8765 đang mở.

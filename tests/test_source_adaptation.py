@@ -1147,3 +1147,158 @@ def test_factual_story_prompt_and_prop_gate_use_source_profile(service):
         assert repaired.to_dict()[key]==before[key]
     bible.adaptation_context=None
     assert 'CAUSAL_GAP' in StoryQCEngine().audit_story_bible(bible).rule_codes
+
+
+@pytest.mark.parametrize('trigger,blocked', [
+    ('Câu chuyện mở đầu bằng hình ảnh một nữ sale đang thành công nghề nghiệp.', False),
+    ('Lan nhìn thấy hình ảnh chụp chiếc áo trên điện thoại.', True),
+    ('Lan tìm được một bức ảnh trên bàn.', True),
+])
+def test_source_story_persona_image_is_not_photographic_evidence(service, trigger, blocked):
+    from apps.script_factory.story_qc import StoryQCEngine
+    _, context = selected(service)
+    bible = StoryBible(episode_id='EPNEW', title='Hành trình nghề nghiệp', protagonist={'name':'Lan'},
+        narrative_skeleton={'trigger':trigger}, ending='Nguồn chưa cho biết kết quả lâu dài.', adaptation_context=context)
+    assert ('UNRESOLVED_CORE_PROP' in StoryQCEngine().audit_story_bible(bible).rule_codes) == blocked
+
+
+def test_bible_source_batches_cover_every_leaf_twice_without_dropping_bad_quotes(service):
+    from apps.script_factory.adaptation import source_artifact, source_fact_batches, source_review_keys, valid_source_review
+    _, context = selected(service)
+    context['brief']['adaptation_mode'] = 'FACTUAL_RETELLING'
+    bible = StoryBible(episode_id='EPNEW', title='Công việc của Lan', protagonist={'name':'Lan'},
+        timeline=[TEXT] * 45, ending='Nguồn chưa cho biết kết quả lâu dài.', adaptation_context=context)
+    artifact = source_artifact(bible)
+    batches = list(source_fact_batches(artifact))
+    assert [k for batch in batches for k in batch] == list(artifact)
+    assert max(map(len, batches)) == 20
+    assert all(sum(len(artifact[k]) for k in batch) <= 6000 for batch in batches)
+    checks = {k:{'item_id':k, 'artifact_quote':v, 'classification':'COMMENTARY', 'verdict':'PASS',
+                  'reason':'Đã đối chiếu toàn bộ mục với nguồn trong kiểm thử.', 'evidence_refs':[]} for k,v in artifact.items()}
+    modes = [{'key':k,'verdict':'PASS','reason':'Đã đối chiếu thông tin và giới hạn với nội dung nguồn.',
+        'source_evidence':[{'unit_id':'U0001','quote':'Lan làm việc ở một cửa hàng nhỏ.'}],
+        'artifact_evidence':[{'item_id':'timeline.0','quote':'Lan làm việc ở một cửa hàng nhỏ.'}]} for k in source_review_keys(context)]
+    responses = ([{'checks':[checks[k] for k in batch]} for batch in batches] + [{'mode_checks':modes}]) * 2
+    provider = Provider(responses)
+    result = source_review(provider, bible)
+    assert valid_source_review(bible, result)
+    assert len(provider.prompts) == 2 * (len(batches)+1)
+    assert all({c['item_id'] for c in r['checks']} == set(artifact) for r in result['reviews'])
+    damaged = [dict(checks[k]) for k in batches[0]]
+    damaged[0]['artifact_quote'] = 'Một câu hoàn toàn không có trong cốt truyện.'
+    failed = source_review(Provider([{'checks':damaged}]*2), bible)
+    assert failed['status'] == 'ERROR' and failed['passes'] == 0
+    long = {'a':'a'*4000, 'b':'b'*4000, 'c':'c'*7000, 'd':'d'}
+    assert list(source_fact_batches(long)) == [['a'],['b'],['c'],['d']]
+
+
+@pytest.mark.parametrize('review_status', ['RUN','ERROR'])
+def test_source_qc_cache_reuses_completed_failure_only_for_identical_inputs(service, review_status):
+    from apps.script_factory.story_qc import StoryQCEngine
+    from apps.script_factory.semantic_review import story_bible_content_hash
+    _, context = selected(service)
+    bible = StoryBible(episode_id='EPNEW', title='Công việc', protagonist={'name':'Lan'}, adaptation_context=context)
+    provider = Provider([])
+    engine = StoryQCEngine(provider=provider)
+    source_result = {'status':review_status, 'passes':2 if review_status=='RUN' else 0,
+        'issues':[{'rule':'SOURCE_FACT_DRIFT','message':'Sự kiện không có nguồn.', 'target':'ending'}]}
+    with patch('apps.script_factory.adaptation.source_review', return_value=source_result) as review, \
+            patch.object(engine, '_semantic_bible_review', return_value={'status':'RUN','issues':[]}):
+        first = engine.audit_story_bible(bible)
+        second = engine.audit_story_bible(bible)
+        assert first.status == second.status == 'FAIL'
+        assert second.bible_hash == story_bible_content_hash(bible)
+        assert review.call_count == (1 if review_status=='RUN' else 2)
+        previous = review.call_count
+        bible.ending = 'Nguồn chưa cung cấp kết quả lâu dài.'
+        engine.audit_story_bible(bible)
+        provider.default_model = 'another-requested-model'
+        engine.audit_story_bible(bible)
+        bible.adaptation_context['brief']['topic'] = 'Chủ đề đã thay đổi'
+        engine.audit_story_bible(bible)
+        assert review.call_count == previous + 3
+
+
+@pytest.mark.parametrize('initial_error,repair_error', [(False,False),(True,False),(False,True)])
+def test_source_repair_stops_when_no_improvement_or_reviewer_error(service, initial_error, repair_error):
+    import copy
+    from apps.script_factory.story_qc import StoryQCEngine, StoryBibleQCReport
+    from apps.script_factory.semantic_review import story_bible_content_hash
+    _, context = selected(service)
+    bible = StoryBible(episode_id='EPNEW', title='Công việc', protagonist={'name':'Lan'},
+        ending='Nguồn chưa cho biết kết quả.', adaptation_context=context)
+    def report(b, rule, error=False):
+        issues = [{'rule':rule,'target':'ending','severity':'CRITICAL','message':'Có lỗi nội dung.'}]
+        if error: issues += [{'rule':'SEMANTIC_REVIEW_FAILED','target':'story_bible','severity':'CRITICAL','message':'Reviewer unavailable.'}]
+        result = StoryBibleQCReport('EPNEW','FAIL',issues=issues,rule_codes=[i['rule'] for i in issues],bible_hash=story_bible_content_hash(b))
+        b.story_qc_report = result.to_dict()
+        return result
+    initial = report(bible, 'UNRESOLVED_SETUP', initial_error)
+    def repair(b, issues):
+        b.ending += ' Chưa có thêm dữ kiện.'
+        return b, 1, 1
+    provider = SimpleNamespace(repair_story_bible=__import__('unittest.mock',fromlist=['Mock']).Mock(side_effect=repair))
+    engine = StoryQCEngine(provider=provider)
+    with patch.object(engine, 'audit_story_bible', side_effect=lambda b: report(b,'UNFOUNDED_EVIDENCE_LEAP',repair_error)) as audit:
+        result = engine.repair_story_bible(copy.deepcopy(bible), initial)
+    assert provider.repair_story_bible.call_count == audit.call_count == (0 if initial_error else 1)
+    assert result.story_qc_report['status'] == 'FAIL'
+    assert result.story_qc_report['bible_hash'] == story_bible_content_hash(result)
+    if not repair_error:
+        assert result.ending == bible.ending  # equal severity is not an improvement
+
+
+@pytest.mark.parametrize('finding_type,problem,expected', [
+    ('GUIDANCE','Nếu kịch bản thêm thành công mới thì sẽ vượt quá phạm vi nguồn.', 'advisory'),
+    ('DEFECT','Kết thúc tuyên bố thành công mới nhưng không có sự kiện chứng minh.', 'blocking'),
+    ('DEFECT','Không lỗi nội dung. Nếu viết thêm thành công thì sẽ vượt nguồn.', 'error'),
+])
+def test_source_semantic_distinguishes_future_guidance_from_current_defect(service,finding_type,problem,expected):
+    from apps.script_factory.semantic_review import review_story_bible_logic
+    _, context = selected(service)
+    context['brief']['adaptation_mode'] = 'FACTUAL_RETELLING'
+    bible = StoryBible(episode_id='EPNEW',title='Công việc',protagonist={'name':'Lan'},
+        ending='Nguồn chưa cho biết kết quả lâu dài.',adaptation_context=context)
+    payload = {'issues':[{'rule':'UNRESOLVED_SETUP','field':'ending','quote':bible.ending,
+        'problem':problem,'fix':'Giữ đúng giới hạn thông tin nguồn.', 'confidence':'high','finding_type':finding_type}],
+        'audit_checks':[{'category':c,'verdict':'PASS','reason':'Đã đọc tình huống và giới hạn thông tin của cốt truyện.',
+            'evidence':[{'field':'ending','quote':bible.ending}]} for c in ('timeline','setup_payoff','evidence_scope','knowledge_source','vietnamese')]}
+    calls=[]
+    def complete(system,prompt):
+        calls.append(prompt)
+        return json.dumps(payload,ensure_ascii=False),1,1
+    result=review_story_bible_logic(bible,complete,_require_grounding=True)
+    if expected=='advisory':
+        assert result['status']=='RUN' and result['passes']==2 and not result['issues'] and result['advisories']
+        assert result['grounding_verified']
+    elif expected=='blocking':
+        assert result['status']=='RUN' and result['issues'] and not result['advisories']
+    else:
+        assert result['status']=='ERROR' and len(calls)==2 and not result['grounding_verified']
+
+
+@pytest.mark.parametrize('bound_report', [True, False])
+def test_source_generation_reuses_only_report_bound_to_repaired_content(service,monkeypatch,bound_report):
+    from apps.script_factory.story_qc import StoryBibleQCReport
+    from apps.script_factory.semantic_review import story_bible_content_hash
+    from studio.backend.services.generation_service import GenerationService
+    _, context = selected(service)
+    bible = StoryBible(episode_id='EPNEW',title='Công việc',protagonist={'name':'Lan'},adaptation_context=context)
+    initial = StoryBibleQCReport('EPNEW','FAIL',issues=[{'rule':'UNRESOLVED_SETUP'}])
+    def repair(b, report):
+        b.ending='Nguồn chưa cung cấp kết quả lâu dài.'
+        stored=StoryBibleQCReport('EPNEW','FAIL',issues=[{'rule':'UNRESOLVED_SETUP'}],
+            bible_hash=story_bible_content_hash(b) if bound_report else 'wrong-content-hash')
+        b.story_qc_report=stored.to_dict()
+        return b
+    monkeypatch.setattr('studio.backend.services.generation_service.PROJECTS_DIR',service.root)
+    generation=object.__new__(GenerationService)
+    with patch.object(generation,'get_provider',return_value=Provider([])), \
+            patch('apps.script_factory.adaptation.create_bible',return_value=bible), \
+            patch('apps.script_factory.story_qc.StoryQCEngine') as engine:
+        engine.return_value.audit_story_bible.return_value=initial
+        engine.return_value.repair_story_bible.side_effect=repair
+        result=generation.generate_source_story('EPNEW')
+        assert engine.return_value.audit_story_bible.call_count==(1 if bound_report else 2)
+        assert result['story_qc_report']['status']=='FAIL'
+        assert read_json(service.project('EPNEW')/'story'/'story_bible.json')['story_qc_report']['status']=='FAIL'

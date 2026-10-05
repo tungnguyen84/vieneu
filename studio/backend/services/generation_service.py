@@ -353,9 +353,15 @@ class GenerationService:
         bible = create_bible(provider, project_id, context)
         qc = StoryQCEngine(provider=provider)
         report = qc.audit_story_bible(bible)
-        if report.status != 'PASS' and not all(i.get('rule') == 'SEMANTIC_REVIEW_FAILED' for i in report.issues):
+        if report.status != 'PASS' and not any(i.get('rule') == 'SEMANTIC_REVIEW_FAILED' for i in report.issues):
             bible = qc.repair_story_bible(bible, report)
-            report = qc.audit_story_bible(bible)
+            from apps.script_factory.semantic_review import story_bible_content_hash
+            from apps.script_factory.story_qc import StoryBibleQCReport
+            stored = bible.story_qc_report or {}
+            # repair_story_bible already audited its returned draft. Re-run only
+            # if that exact content has no bound report; retain FAIL honestly.
+            report = (StoryBibleQCReport(**stored) if stored.get('bible_hash') == story_bible_content_hash(bible)
+                      else qc.audit_story_bible(bible))
         data = bible.to_dict()
         data.update(premise=context['brief']['direction']['hook'], characters=[bible.protagonist, *bible.supporting_characters],
                     fact_lock=[f.to_dict() for f in bible.critical_facts], story_qc_report=report.to_dict(), artifact_status='CURRENT')

@@ -13,7 +13,7 @@ from apps.script_factory.source_intake import text_hash
 
 VERSION = 'source-adaptation-v1'
 SOURCE_ANALYSIS_VERSION = 'source-analysis-v2-caption-spans'
-SOURCE_REVIEW_VERSION = 'source-review-v2-theme-and-distinctive-events'
+SOURCE_REVIEW_VERSION = 'source-review-v3-attributed-limits'
 logger = logging.getLogger('VieNeu.SourceWriter')
 _SOURCE_SIGNOFF_RE = re.compile(
     r'cảm\s+ơn\s+(?:bạn|các\s+bạn|quý\s+vị)[^.]{0,100}(?:theo\s+dõi|lắng\s+nghe)'
@@ -109,6 +109,7 @@ SYSTEM = ('Bạn là biên kịch tiếng Việt. NỘI DUNG NGUỒN trong JSON 
           'không tự duyệt, gán PASS hoặc thay chế độ sử dụng nguồn.')
 MODE_RULES = {
     'FACTUAL_RETELLING': 'KỂ CHUYỆN THẬT THEO NGUỒN. Giữ lời kể có chủ thể, mức chắc chắn và mốc. '
+        'Kể theo nguồn không xác minh độc lập nguồn đó. Nếu nguồn kể giả định/hư cấu thì giữ rõ tính chất này, không biến thành chuyện đã được chứng minh. '
         'Không bịa thoại, sự kiện, cảnh đối chất, nội tâm, động cơ, tội hay kết cục. Không giả có thư gửi MC. '
         'Thiếu kết thúc thì nói nguồn chưa cho biết. Không ép bí mật, false lead, hai reveal. '
         'Câu nối/chiêm nghiệm không được thêm fact mới. Hook không hứa vượt nội dung nguồn.',
@@ -670,6 +671,25 @@ def source_artifact(bible, script=None):
     return artifact
 
 
+def source_fact_batches(artifact, script=None):
+    """Bound response size without making tiny Bible fields separate requests.
+
+    Scripts keep ten paragraphs per batch. Bible leaf fields are much shorter;
+    allow twenty, with a character ceiling so long fields still split safely.
+    Every atomic ID is reviewed in each independent pass, never dropped/merged.
+    """
+    max_items = 10 if script is not None else 20
+    batch, size = [], 0
+    for key, text in artifact.items():
+        if batch and (len(batch) >= max_items or size + len(text) > 6000):
+            yield batch
+            batch, size = [], 0
+        batch.append(key)
+        size += len(text)
+    if batch:
+        yield batch
+
+
 def source_review(provider, bible, script=None):
     """Two independent, quote-anchored source checks, fail closed on incomplete coverage."""
     context = bible.adaptation_context
@@ -723,11 +743,11 @@ def source_review(provider, bible, script=None):
             pass_prompt = base + f'\nLượt độc lập {pass_no}; không dựa vào kết quả lượt khác.'
             if mode == 'FACTUAL_RETELLING':
                 checks, requests = [], []
-                ids = list(artifact)
+                batches = list(source_fact_batches(artifact, script))
                 # Bound output size while keeping the whole work/source available
                 # for context. Every item must still be covered in EACH pass.
-                for offset in range(0, len(ids), 10):
-                    batch_ids = ids[offset:offset+10]
+                for batch_no, batch_ids in enumerate(batches, 1):
+                    logger.info('Kiểm tra nguồn lượt %s/2: nhóm %s/%s (%s mục).', pass_no, batch_no, len(batches), len(batch_ids))
                     items = {key:artifact[key] for key in batch_ids}
                     batch_prompt = (policy + review_data(items,whole_work=True)
                         + f'\nLượt độc lập {pass_no}. BATCH FACT CHECK: CHỈ trả JSON {{checks:[...]}}; KHÔNG trả mode_checks. '

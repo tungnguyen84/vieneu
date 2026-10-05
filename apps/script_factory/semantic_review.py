@@ -24,7 +24,7 @@ logger = logging.getLogger("VieNeu.SemanticReview")
 # call_llm(system_instruction, prompt) -> (raw_text, input_tokens, output_tokens)
 LLMCall = Callable[[str, str], Tuple[str, int, int]]
 SEMANTIC_REVIEW_VERSION = "semantic-v22-closing-block-repair"
-SOURCE_SEMANTIC_REVIEW_VERSION = "semantic-v31-causal-decision-ownership"
+SOURCE_SEMANTIC_REVIEW_VERSION = "semantic-v32-observed-source-defects"
 
 
 def semantic_review_version(bible=None):
@@ -958,6 +958,10 @@ def build_story_bible_prompt(bible: StoryBible) -> str:
         return ('Kiểm định Story Bible theo mode và góc nhìn đã chọn; không mặc định người gửi thư hoặc hai cú lật. '
                 'Đọc toàn bộ cốt truyện, kiểm tra lịch, nhân vật, sự kiện, năng lực nguồn kiến thức, lời hứa/hồi đáp và tiếng Việt. '
                 'Chuyện thật: MC kể theo bài báo; protagonist có thể là tổ chức/sự kiện, không phải người có nội tâm. '
+                'FACTUAL_RETELLING là kể trung thực nguồn, không khẳng định nguồn đã được xác minh độc lập. '
+                'Nguồn có thể kể một tình huống giả định/hư cấu; giữ chủ thể nguồn và mức chắc chắn đó là đúng, không phải TOPIC_TRUTH_DRIFT. '
+                'Ending nói nguồn chưa cung cấp diễn biến tiếp theo là giới hạn thông tin hợp lệ; chỉ báo lỗi khi Bible đã hứa đáp án đó hoặc tự bịa diễn biến ngoài nguồn. '
+                'Phân biệt DEFECT đang tồn tại với GUIDANCE cho lúc viết sau: câu "nếu kịch bản thêm..." hoặc "phải giữ giới hạn nguồn" là lời nhắc, không phải lỗi hiện tại. '
                 'Không bắt nhân vật gửi thư/thú nhận để bổ sung dữ kiện nguồn chưa có. Hư cấu/nâng cấp: lựa chọn và hệ quả phải hợp lý. '
                 'Hư cấu/nâng cấp: concrete_task và key_scenes cần vấn đề/đối tượng/thao tác cụ thể, lựa chọn có cái giá và kết quả quan sát được. '
                 'Nếu chỉ có các câu chung chung như hiểu nhu cầu, cải thiện quy trình, tìm lại ý nghĩa mà không có việc làm rõ vấn đề/thay đổi cụ thể thì báo UNRESOLVED_SETUP tại trigger/timeline/ending chưa được trả lời. '
@@ -969,7 +973,8 @@ def build_story_bible_prompt(bible: StoryBible) -> str:
                   'không hợp thức hóa lỗi bằng cách tự tưởng tượng một thỏa thuận ký gửi không có trong Bible. '
                 + reviewer_checklist(STORY_BIBLE_RULES) + contract_block(bible) + data['adaptation_policy']
                 + '\nStory Bible (trích nguyên văn đúng field dưới đây):\n' + json.dumps(source_plot, ensure_ascii=False, indent=1)
-                + '\nJSON {issues:[{rule,field,quote:<COPY 5–30 từ nguyên văn field>,problem,fix,confidence:high|medium}]}.')
+                + '\nJSON {issues:[{rule,field,quote:<COPY 5–30 từ nguyên văn field>,finding_type:DEFECT|GUIDANCE,problem,fix,confidence:high|medium}]}. '
+                  'Chỉ DEFECT có lỗi quan sát được trong Bible hiện tại mới chặn; không có lỗi thì issues=[].')
     return (
         f"Nhân vật gửi thư (góc nhìn duy nhất): {protagonist.get('name') or bible.protagonist}\n\n"
         f"Tiêu đề Story Bible: {bible.title}\n"
@@ -1114,6 +1119,15 @@ def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass:
             dropped += 1
             invalid_evidence.append({'field': field_name, 'invalid_quote': quote, 'actual_field_text': source})
             continue
+        finding_type = str(item.get('finding_type', 'DEFECT')).upper()
+        if bible.adaptation_context and (finding_type not in ('DEFECT', 'GUIDANCE')
+                or finding_type == 'DEFECT' and re.match(r'^không (?:có )?lỗi(?: nội dung)?[.!;]', str(item.get('problem', '')).strip(), re.IGNORECASE)):
+            # Contradictory reviewer output is retried, never silently erased
+            # into a clean PASS. An explicit future-writing advisory is separate.
+            dropped += 1
+            invalid_evidence.append({'field':field_name, 'finding_error':'DEFECT phải nêu lỗi đang tồn tại; lời nhắc không có lỗi dùng GUIDANCE hoặc issues=[].',
+                                     'problem':item.get('problem'), 'actual_field_text':source})
+            continue
         issue = {
             "rule": rule,
             "target": field_name,
@@ -1122,7 +1136,8 @@ def review_story_bible_logic(bible: StoryBible, call_llm: LLMCall, _second_pass:
             "source": "SEMANTIC_REVIEW",
         }
         confident = str(item.get("confidence", "")).lower() == "high"
-        (blocking if confident and rule in STORY_BIBLE_BLOCKING_RULES else advisories).append(issue)
+        (blocking if confident and rule in STORY_BIBLE_BLOCKING_RULES and
+         (not bible.adaptation_context or finding_type != 'GUIDANCE') else advisories).append(issue)
     result = {
         "status": "ERROR" if dropped and not (blocking or advisories) else "RUN",
         "review_version": semantic_review_version(bible),

@@ -15,6 +15,12 @@ def physical_prop_mention(prop, text, start, end):
     before, after = text[:start].casefold(), text[end:].casefold()
     if prop.casefold() == 'khăn' and re.search(r'\bkhó\s+$',before):
         return False
+    if prop.casefold() == 'ảnh' and re.search(r'\bhình\s+$', before):
+        # "Hình ảnh thành công" / "hình ảnh một người" describe a persona or
+        # opening scene, not a photograph promising an investigative answer.
+        # A concrete photograph/screen/camera mention remains a physical prop.
+        nearby = before[-45:] + prop + after[:65]
+        return bool(re.search(r'\b(chụp|camera|điện thoại|máy tính|tấm|bức|in ra)\b', nearby))
     suffixes = {'ảnh':r'^\s+hưởng\b', 'thư':r'^\s+(?:viện|ký|mục|giãn)\b',
                 'ví':r'^\s+dụ\b', 'hộp':r'^\s+thoại\b'}
     return not re.search(suffixes.get(prop.casefold(),r'(?!)'),after)
