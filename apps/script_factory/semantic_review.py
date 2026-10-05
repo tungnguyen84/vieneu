@@ -117,6 +117,7 @@ def build_prompt(script: FullScript, story_bible: StoryBible) -> str:
     from apps.script_factory.story_contract import contract_block
     if story_bible.adaptation_context:
         from apps.script_factory.adaptation import writer_context
+        from apps.script_factory.prompt_context import story_prompt_data
         return ("Kiểm tra toàn văn kịch bản theo góc nhìn/cách kể trong brief, không ép lá thư, điều tra hoặc hai reveal. "
             "Kiểm tra timeline, tuổi/năm, địa điểm, trạng thái đạo cụ/kiến thức, lặp cảnh, hook/payoff, nhịp kể và tiếng Việt. "
             "Theo dõi địa điểm hiện tại của người/vật xuyên suốt cả tập và các ranh giới cụm viết. "
@@ -133,7 +134,7 @@ def build_prompt(script: FullScript, story_bible: StoryBible) -> str:
             "Đối chiếu task_design: người nghe phải biết việc/đối tượng tên gì, thao tác nào bị vướng, lựa chọn mất gì, cuối cùng thao tác thay đổi thế nào và người đó làm được việc gì. "
             "Chỉ tóm tắt rằng nhân vật nhận ra vấn đề, quyết định thay đổi, hiểu bài học mà không cho thấy việc cụ thể được xử lý là thiếu payoff; báo UNRESOLVED_SETUP với quote thật ở lời hứa và cảnh kết. "
             + writer_context(story_bible.adaptation_context) + contract_block(story_bible)
-            + "\nStory Bible: " + json.dumps({k:v for k,v in story_bible.to_dict().items() if k != 'adaptation_context'}, ensure_ascii=False)
+            + "\nStory Bible: " + json.dumps(story_prompt_data(story_bible), ensure_ascii=False)
             + "\nKịch bản: " + '\n'.join(f'[{x.id}] {x.text}' for x in script.segments)
             + "\nLuật: " + reviewer_checklist(LOGIC_RULE_CODES)
             + '\nJSON {"issues":[{"rule":"mã luật","segment_id":"id thật","quote":"trích nguyên văn","problem":"vấn đề","fix":"cách sửa","confidence":"high"}]}.')

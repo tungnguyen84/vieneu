@@ -1,0 +1,136 @@
+{
+  "story_request_id": "f80729b2-41f8-43e6-a60c-ab5f3e337682",
+  "title": "Từ hình ảnh thành công đến lựa chọn sống bình thường hơn: hành trình của một nữ sale bất động sản trong lời kể nguồn",
+  "source_hash": "c8b49e6f0ed6990475c8168b67e1dd32f03f7acf7eab0d93a374938eaf1c2fa2",
+  "prompt_before_bytes": 171776,
+  "prompt_after_bytes": 82100,
+  "qc_diagnostic_bytes": 89571,
+  "baseline_error": "[SceneOutline] Outline call failed, writing without outline: OpenAI-Compatible (auto) HTTP 502: {\"error\":{\"message\":\"/backend-api/conversation failed: status=413, body=\",\"type\":\"server_error\",\"param\":null,\"code\":\"upstream_error\"}}",
+  "after": {
+    "ui": "http://127.0.0.1:8772/",
+    "elapsed_sec": 926.945,
+    "ai_calls": 64,
+    "upstream_413_count": 0,
+    "successful_repair_batches": [
+      "[SegmentRewriter] EP2031: rewrote 9/9 flagged segments",
+      "[SegmentRewriter] EP2031: rewrote 7/7 flagged segments",
+      "[SegmentRewriter] EP2031: rewrote 7/7 flagged segments"
+    ],
+    "script_request_id": "1ed3f3cc-d833-4705-a59a-7a1751bb3d67",
+    "parent_script_request_id": "e406d823-0b15-4aa9-a9c1-c468561fdc84",
+    "story_request_id": "f80729b2-41f8-43e6-a60c-ab5f3e337682",
+    "script_content_hash": "ce1b376828df43af23a75943e79500cd8b42a985ef6d720e77d22bf109cee3c1",
+    "revision_round": 3,
+    "segments": 81,
+    "words": 4167,
+    "requested_model": "auto",
+    "actual_model": "proxy auto — chưa xác định",
+    "prompt_version": "source-adaptation-v1-writer-v13-payoff-continuation-repair",
+    "qc_status": "NEEDS_REVISION",
+    "remaining_rules": [
+      "GARBLED_VIETNAMESE",
+      "REPEATED_DISCOVERY",
+      "REPEATED_EVENT_NO_CHANGE",
+      "SEMANTIC_REVIEW_FAILED"
+    ],
+    "source_review_status": "ERROR",
+    "source_review_error": "AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Quote artifact không khớp item_id=049, quote='Công việc không chỉ còn là gọi điện hay giới thiệu dự án. Theo lời kể nguồn, nhân vật học cách ghi nhớ thông tin của khách.'. COPY chuỗi con liên tục 4+ từ trong NỘI DUNG THẬT: Công việc không chỉ còn là gọi điện hay giới thiệu dự án. Theo lời kể nguồn, nhân vật học cách ghi nhớ thông tin của khách, từ sở thích, nhu cầu cho đến những điều khiến họ cảm thấy được quan tâm trong quá trình tư vấn.",
+    "lineage": {
+      "project_id": "EP2031",
+      "artifact_status": "NEEDS_REVISION",
+      "status_label": "QC CHƯA ĐẠT — CẦN SỬA KỊCH BẢN",
+      "is_current": false,
+      "stale_reasons": [
+        "Full Script chưa vượt qua QC và cần được tạo hoặc sửa lại"
+      ],
+      "audio_gate_allowed": false,
+      "audio_gate_reason": "Kịch bản chưa đạt chuẩn QC (trạng thái: NEEDS_REVISION) | QC nguồn chưa chạy đủ hai lượt hợp lệ hoặc có lỗi chưa sửa. | QC chưa xác thực đủ chứng cứ timeline, setup/payoff, bằng chứng, nguồn nhận thức và tiếng Việt | QC logic còn lỗi khách quan cần sửa (bằng chứng, pháp lý, chính tả...) | Kịch bản có lỗi khách quan chưa sửa: REPEATED_DISCOVERY | Kịch bản có lỗi khách quan chưa sửa: REPEATED_EVENT_NO_CHANGE | Kịch bản có lỗi khách quan chưa sửa: GARBLED_VIETNAMESE | Kịch bản có lỗi khách quan chưa sửa: REPEATED_EVENT_NO_CHANGE | Kịch bản có lỗi QC mức CRITICAL chưa được giải quyết ([SEMANTIC_REVIEW_FAILED] AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Quote artifact không khớp item_id=049, quote='Công việc không chỉ còn là gọi điện hay giới thiệu dự án. Theo lời kể nguồn, nhân vật học cách ghi nhớ thông tin của khách.'. COPY chuỗi con liên tục 4+ từ trong NỘI DUNG THẬT: Công việc không chỉ còn là gọi điện hay giới thiệu dự án. Theo lời kể nguồn, nhân vật học cách ghi nhớ thông tin của khách, từ sở thích, nhu cầu cho đến những điều khiến họ cảm thấy được quan tâm trong quá trình tư vấn.; [REPEATED_DISCOVERY] Phân đoạn [020] vi phạm REPEATED_DISCOVERY: Đoạn này và các đoạn 021-024 lặp lại cùng thông tin về xây dựng hình ảnh cá nhân, bán hàng qua mạng xã hội, tăng thu nhập mà không thêm lựa chọn, sự kiện hoặc hệ quả mới trước khi sang bất động sản.) | Kịch bản không hợp lệ hoặc lỗi thời (Full Script chưa vượt qua QC và cần được tạo hoặc sửa lại) | Kịch bản chưa được phê duyệt ở bước Script (trạng thái: NEEDS_REVIEW)",
+      "critical_qc_count": 5,
+      "critical_qc_issues": [
+        "[SEMANTIC_REVIEW_FAILED] AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Quote artifact không khớp item_id=049, quote='Công việc không chỉ còn là gọi điện hay giới thiệu dự án. Theo lời kể nguồn, nhân vật học cách ghi nhớ thông tin của khách.'. COPY chuỗi con liên tục 4+ từ trong NỘI DUNG THẬT: Công việc không chỉ còn là gọi điện hay giới thiệu dự án. Theo lời kể nguồn, nhân vật học cách ghi nhớ thông tin của khách, từ sở thích, nhu cầu cho đến những điều khiến họ cảm thấy được quan tâm trong quá trình tư vấn.",
+        "[REPEATED_DISCOVERY] Phân đoạn [020] vi phạm REPEATED_DISCOVERY: Đoạn này và các đoạn 021-024 lặp lại cùng thông tin về xây dựng hình ảnh cá nhân, bán hàng qua mạng xã hội, tăng thu nhập mà không thêm lựa chọn, sự kiện hoặc hệ quả mới trước khi sang bất động sản.",
+        "[REPEATED_EVENT_NO_CHANGE] Phân đoạn [075] vi phạm REPEATED_EVENT_NO_CHANGE: Các đoạn 072-079 kể lại nhiều lần cùng sự kiện nhân vật chuyển sang marketing nội thất và công việc mới. Các đoạn sau chủ yếu nhắc lại lựa chọn đã biết thay vì bổ sung biến cố hoặc kết quả mới.",
+        "[GARBLED_VIETNAMESE] Phân đoạn [076] vi phạm GARBLED_VIETNAMESE: Câu nhìn chung rõ nghĩa nhưng toàn kịch bản còn nhiều lỗi âm thanh/chính tả làm giảm tự nhiên khi đọc TTS, ví dụ các từ sai như \"bại học\", \"phếp\", \"ngội\", \"trững lại\".",
+        "[REPEATED_EVENT_NO_CHANGE] Phân đoạn [023] vi phạm REPEATED_EVENT_NO_CHANGE: Một chuỗi đoạn giữa 013-024 lặp lại cùng thay đổi nhận thức về hình ảnh cá nhân, giao tiếp và bán hàng mà chưa tạo thêm quyết định, trở ngại hoặc kết quả mới trước khi chuyển sang bất động sản."
+      ],
+      "qc_status": "NEEDS_REVISION",
+      "qc_gate_reasons": [
+        "Kịch bản chưa đạt chuẩn QC (trạng thái: NEEDS_REVISION)",
+        "QC nguồn chưa chạy đủ hai lượt hợp lệ hoặc có lỗi chưa sửa.",
+        "QC chưa xác thực đủ chứng cứ timeline, setup/payoff, bằng chứng, nguồn nhận thức và tiếng Việt",
+        "QC logic còn lỗi khách quan cần sửa (bằng chứng, pháp lý, chính tả...)",
+        "Kịch bản có lỗi khách quan chưa sửa: REPEATED_DISCOVERY",
+        "Kịch bản có lỗi khách quan chưa sửa: REPEATED_EVENT_NO_CHANGE",
+        "Kịch bản có lỗi khách quan chưa sửa: GARBLED_VIETNAMESE",
+        "Kịch bản có lỗi khách quan chưa sửa: REPEATED_EVENT_NO_CHANGE",
+        "Kịch bản có lỗi QC mức CRITICAL chưa được giải quyết ([SEMANTIC_REVIEW_FAILED] AI không trả dữ liệu có chứng cứ hợp lệ sau một lần thử lại: Quote artifact không khớp item_id=049, quote='Công việc không chỉ còn là gọi điện hay giới thiệu dự án. Theo lời kể nguồn, nhân vật học cách ghi nhớ thông tin của khách.'. COPY chuỗi con liên tục 4+ từ trong NỘI DUNG THẬT: Công việc không chỉ còn là gọi điện hay giới thiệu dự án. Theo lời kể nguồn, nhân vật học cách ghi nhớ thông tin của khách, từ sở thích, nhu cầu cho đến những điều khiến họ cảm thấy được quan tâm trong quá trình tư vấn.; [REPEATED_DISCOVERY] Phân đoạn [020] vi phạm REPEATED_DISCOVERY: Đoạn này và các đoạn 021-024 lặp lại cùng thông tin về xây dựng hình ảnh cá nhân, bán hàng qua mạng xã hội, tăng thu nhập mà không thêm lựa chọn, sự kiện hoặc hệ quả mới trước khi sang bất động sản.)"
+      ],
+      "qc_gate_allowed": false,
+      "script_content_hash": "ce1b376828df43af23a75943e79500cd8b42a985ef6d720e77d22bf109cee3c1",
+      "script_stage_status": "NEEDS_REVIEW",
+      "generation_source": "REAL_AI",
+      "generated_by": "openai_compatible",
+      "provider_name": "openai_compatible",
+      "model_name": "proxy auto — chưa xác định",
+      "requested_model": "auto",
+      "actual_model": "proxy auto — chưa xác định",
+      "writer_strategy": "source_scene_batches",
+      "generation_request_id": "1ed3f3cc-d833-4705-a59a-7a1751bb3d67",
+      "prompt_version": "source-adaptation-v1-writer-v13-payoff-continuation-repair",
+      "generated_at": 1791174033.1509676,
+      "story_generation_request_id": "f80729b2-41f8-43e6-a60c-ab5f3e337682",
+      "selected_idea_id": "DIRECTION_2",
+      "story_source_idea_id": "DIRECTION_2",
+      "source_story_generation_request_id": "f80729b2-41f8-43e6-a60c-ab5f3e337682",
+      "story_content_hash": "076c27f544ccd468b6d714315a53f91dd2fca3e0c745294e2798294a5418bcb1",
+      "source_story_content_hash": "076c27f544ccd468b6d714315a53f91dd2fca3e0c745294e2798294a5418bcb1",
+      "segment_count": 81,
+      "leakage_count": 0,
+      "leakage_matches": [],
+      "script_path": "projects\\EP2031\\script\\full_script.json",
+      "story_path": "projects\\EP2031\\story\\story_bible.json"
+    },
+    "accepted": false,
+    "manual_review": "Read all 81 paragraphs. Still repetitive in 013–024, 025–036 and 072–081; overuses attribution. Text exists and persists, but not accepted as natural/publishable.",
+    "reload_verified": true,
+    "screenshot": "EP2031-outline-payload-ui.png",
+    "reviewer_limitation": "The GARBLED_VIETNAMESE finding names errors present in source captions rather than literal script 076; its classification remains unverified, not accepted as an observed script typo. Actual prose repetition is independently observable."
+  },
+  "byte_counts_basis": "UTF-8 content of the exact baseline/current outline prompt; authentication headers excluded.",
+  "script_review_prompt_bytes": {
+    "before": 199006,
+    "after": 120208
+  },
+  "repair_prompt_bytes": {
+    "before": 186519,
+    "after": 120282,
+    "flagged_ids": [
+      "020",
+      "012",
+      "013",
+      "075",
+      "072",
+      "073",
+      "081",
+      "021"
+    ]
+  },
+  "initial_live_attempt": {
+    "ui": "http://127.0.0.1:8772/",
+    "story_request_id": "f80729b2-41f8-43e6-a60c-ab5f3e337682",
+    "script_request_id": "e406d823-0b15-4aa9-a9c1-c468561fdc84",
+    "source_unchanged": true,
+    "segments": 81,
+    "words": 4164,
+    "outline_scenes": 14,
+    "elapsed_sec": 585,
+    "qc_status": "NEEDS_REVISION",
+    "source_review": "ERROR: nonliteral artifact quote for item 076 after one corrective retry",
+    "semantic_findings": [
+      "REPEATED_EVENT_NO_CHANGE",
+      "GARBLED_VIETNAMESE (reviewer described repetition)"
+    ],
+    "auto_repair_error": "HTTP 502 wrapping upstream 413; retained draft",
+    "accepted": false
+  }
+}

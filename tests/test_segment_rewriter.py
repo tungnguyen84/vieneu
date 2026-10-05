@@ -31,6 +31,25 @@ def _report():
     )
 
 
+def test_source_repair_prompt_keeps_canon_and_prose_without_duplicate_source_or_qc():
+    from apps.script_factory.segment_rewriter import build_prompt
+    source = 'SOURCE_LITERAL_SENTINEL với các sự kiện phải được giữ nguyên.'
+    context = {'brief': {'adaptation_mode': 'FACTUAL_RETELLING'},
+               'analysis': {}, 'brief_hash': 'brief-test',
+               'units': [{'unit_id': 'U0001', 'text': source}]}
+    bible = StoryBible('EP_RW', 'CANON_TITLE', {}, ending='CANON_ENDING',
+                       adaptation_context=context)
+    script = _script()
+    base = build_prompt(script, bible, {'002': ['Sửa sự lặp ý']})
+    bible.story_qc_report = {'diagnostics': 'LARGE_QC_DIAGNOSTIC' * 10000}
+    prompt = build_prompt(script, bible, {'002': ['Sửa sự lặp ý']})
+    assert prompt == base
+    assert prompt.count('SOURCE_LITERAL_SENTINEL') == 1
+    assert 'CANON_TITLE' in prompt and 'CANON_ENDING' in prompt
+    assert all(s.text in prompt for s in script.segments)
+    assert 'Sửa sự lặp ý' in prompt
+
+
 def test_source_payoff_repair_can_complete_both_actors_in_next_paragraph():
     script=FullScript('NEW','Bữa cơm',{},adaptation_context={'brief':{'adaptation_mode':'FICTION_FROM_THEME'},'brief_hash':'test','analysis':{}},
         segments=[ScriptSegment('001',text='Hai cha con ngồi xuống bàn ăn với chiếc hộp cơm đã sửa.'),

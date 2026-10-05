@@ -723,6 +723,10 @@ class GenerationService:
                     if story_bible.scene_outline:
                         logger.info(f"Đã lập kế hoạch {len(story_bible.scene_outline)} cảnh cho kịch bản.")
             except Exception as e:
+                if require_contract:
+                    # A provider/transport error is not a rejected story
+                    # contract. Surface its exact cause and preserve artifacts.
+                    raise RuntimeError(f'Không tạo được kịch bản ở bước lập dàn cảnh: {e}') from e
                 logger.warning(f"Could not pre-build scene outline for Story Bible: {e}")
         if require_contract and not outline_fulfills_contract(story_bible, getattr(story_bible, 'scene_outline', None)):
             raise ValueError('AI chưa lập được dàn cảnh trả lời đủ manh mối và hệ quả. Giữ nguyên cốt truyện, không ghi đè kịch bản hiện tại.')

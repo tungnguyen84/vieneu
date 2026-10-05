@@ -1122,10 +1122,13 @@ def test_source_repair_providers_pass_actual_issues(service,provider_class):
     cls=OpenAICompatibleProvider if provider_class=='openai' else GeminiScriptAIProvider
     provider=object.__new__(cls)
     bible=StoryBible(episode_id='EPNEW',title='Tập',protagonist={'name':'Lan'},adaptation_context=context)
+    bible.story_qc_report={'diagnostics':'DO_NOT_SEND_REVIEW_LOG'*10000}
     issues=[{'rule':'UNRESOLVED_SETUP','message':'Chi tiết chưa được giải thích.'}]
     with patch('apps.script_factory.adaptation.create_bible',return_value=bible) as create:
         result,_,_=provider.repair_story_bible(bible,issues)
     assert result is bible and create.call_args.args[3]['issues']==issues
+    payload=create.call_args.args[3]['current_story']
+    assert payload['title']==bible.title and 'story_qc_report' not in payload and 'adaptation_context' not in payload
 
 
 def test_factual_story_prompt_and_prop_gate_use_source_profile(service):
@@ -1302,3 +1305,77 @@ def test_source_generation_reuses_only_report_bound_to_repaired_content(service,
         assert engine.return_value.audit_story_bible.call_count==(1 if bound_report else 2)
         assert result['story_qc_report']['status']=='FAIL'
         assert read_json(service.project('EPNEW')/'story'/'story_bible.json')['story_qc_report']['status']=='FAIL'
+
+
+@pytest.mark.parametrize('mode', ['FACTUAL_RETELLING','FICTION_FROM_THEME','IMPROVE_OWN_SCRIPT'])
+def test_source_outline_excludes_review_diagnostics_but_keeps_canon_source_and_locks(service,mode):
+    from apps.script_factory.scene_outline import _prompt
+    from apps.script_factory.models import LockedFact
+    _, context = selected(service)
+    context['brief']['adaptation_mode'] = mode
+    context['brief']['locked_elements'] = ['LOCKED_PERSON_AND_ENDING']
+    bible=StoryBible(episode_id='EPNEW',title='CANON_TITLE',protagonist={'name':'CANON_PERSON'},
+        timeline=['CANON_ACTION xảy ra trong cửa hàng.'],ending='CANON_ENDING giữ nguyên kết quả.',
+        critical_facts=[LockedFact(fact_id='FACT_TEST',field='place',value='CANON_LOCK',description='Nơi đã khóa.')],
+        adaptation_context=context)
+    before=bible.to_dict()
+    small=_prompt(bible)
+    bible.story_qc_report={'status':'PASS','diagnostics':'DO_NOT_SEND_REVIEW_LOG '*10000}
+    bible.scene_outline=[{'action':'DO_NOT_SEND_OLD_OUTLINE'}]
+    large=_prompt(bible)
+    assert small==large and 'DO_NOT_SEND' not in large
+    payload=json.loads(large.split('\nStory: ',1)[1])
+    assert 'story_qc_report' not in payload and 'scene_outline' not in payload
+    assert all(word in large for word in ('CANON_TITLE','CANON_PERSON','CANON_ACTION','CANON_ENDING','CANON_LOCK','LOCKED_PERSON_AND_ENDING'))
+    if mode!='FICTION_FROM_THEME':
+        assert all(unit['text'] in large for unit in context['units'])
+    assert bible.timeline==before['timeline'] and bible.adaptation_context==context
+
+
+def test_script_generation_surfaces_outline_provider_error_without_touching_artifacts(service,monkeypatch):
+    from apps.script_factory.story_qc import StoryBibleQCReport
+    from studio.backend.services.generation_service import GenerationService
+    from studio.backend.services.source_service import write_json
+    _, context = selected(service)
+    bible=StoryBible(episode_id='EPNEW',title='Công việc',protagonist={'name':'Lan'},adaptation_context=context)
+    project=service.project('EPNEW')
+    data=read_json(project/'project.json');data['stage_statuses']={'02_story':'APPROVED'};write_json(project/'project.json',data)
+    write_json(project/'story'/'story_bible.json',bible.to_dict())
+    write_json(project/'script'/'full_script.json',{'segments':[{'id':'001','text':'Kịch bản đã lưu không được xóa.'}]})
+    before={p:p.read_bytes() for p in (project/'project.json',project/'story'/'story_bible.json',project/'script'/'full_script.json')}
+    provider=Provider([])
+    error='OpenAI-Compatible (auto) HTTP 502: upstream status=413'
+    provider.complete_json=lambda *a,**kw: (_ for _ in ()).throw(RuntimeError(error))
+    monkeypatch.setattr('studio.backend.services.generation_service.PROJECTS_DIR',service.root)
+    generation=object.__new__(GenerationService)
+    with patch.object(generation,'get_provider',return_value=provider), \
+            patch('apps.script_factory.story_qc.StoryQCEngine') as qc, \
+            patch('studio.backend.services.generation_service.ScriptWriter') as writer:
+        qc.return_value.audit_story_bible.return_value=StoryBibleQCReport('EPNEW','PASS')
+        with pytest.raises(RuntimeError,match='HTTP 502: upstream status=413') as raised:
+            generation.generate_full_script('EPNEW')
+        assert 'chưa lập được dàn cảnh trả lời' not in str(raised.value)
+        writer.assert_not_called()
+    # A fresh preflight audit may update its report, but canon, approval and
+    # the saved script must not be overwritten on an outline transport error.
+    assert (project/'script'/'full_script.json').read_bytes()==before[project/'script'/'full_script.json']
+    assert (project/'project.json').read_bytes()==before[project/'project.json']
+    after=read_json(project/'story'/'story_bible.json')
+    original=json.loads(before[project/'story'/'story_bible.json'])
+    for key in ('title','protagonist','timeline','ending','adaptation_context','generation_request_id'):
+        assert after[key]==original[key]
+
+
+def test_source_script_reviewer_receives_complete_prose_and_canon_without_qc_diagnostics(service):
+    from apps.script_factory.semantic_review import build_prompt
+    _,context=selected(service);context['brief']['adaptation_mode']='FACTUAL_RETELLING'
+    bible=StoryBible(episode_id='EPNEW',title='CANON_TITLE',protagonist={'name':'CANON_PERSON'},
+        timeline=['CANON_ACTION xảy ra tại cửa hàng.'],ending='CANON_ENDING vẫn giữ đúng kết quả.',
+        scene_outline=[{'action':'PLANNED_ACTION','no':1}],adaptation_context=context)
+    script=FullScript('EPNEW','Tập',{},segments=[ScriptSegment(id='001',text=TEXT),ScriptSegment(id='002',text='COMPLETE_FINAL_SEGMENT')])
+    before=build_prompt(script,bible)
+    bible.story_qc_report={'diagnostics':'DO_NOT_SEND_REVIEW_LOG '*10000}
+    after=build_prompt(script,bible)
+    assert before==after and 'DO_NOT_SEND_REVIEW_LOG' not in after
+    assert all(word in after for word in ('CANON_TITLE','CANON_PERSON','CANON_ACTION','CANON_ENDING','PLANNED_ACTION',TEXT,'COMPLETE_FINAL_SEGMENT'))
+    assert all(unit['text'] in after for unit in context['units'])

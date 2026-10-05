@@ -32,6 +32,7 @@ def _prompt(bible: StoryBible) -> str:
     from apps.script_factory.story_contract import contract_block
     if bible.adaptation_context:
         from apps.script_factory.adaptation import writer_context
+        from apps.script_factory.prompt_context import story_prompt_data
         target = bible.adaptation_context['brief']['target_duration_sec']
         scene_target = max(8, min(18, round(target * 2.7 / 300)))
         return (f'Lập dàn cảnh cho {target} giây, khoảng {round(target*2.7)} từ; không ép 80 đoạn hoặc hai reveals. '
@@ -51,7 +52,10 @@ def _prompt(bible: StoryBible) -> str:
             + DESIGN_INSTRUCTION +
             'JSON {scenes:[{no,part,title,role,state_before,state_after,listener_question,action,new_information,consequence,payoff_ids:[],payoff_action,segments}]}.\n'
             + writer_context(bible.adaptation_context) + contract_block(bible)
-            + '\nStory: ' + json.dumps({k:v for k,v in bible.to_dict().items() if k != 'adaptation_context'},ensure_ascii=False))
+            # QC reports contain all reviewer responses, quotes and request
+            # records. They are diagnostics, not story canon, and can dwarf
+            # the actual source and trigger the proxy's request-size limit.
+            + '\nStory: ' + json.dumps(story_prompt_data(bible, include_outline=False),ensure_ascii=False))
     data = {k: v for k, v in bible.to_dict().items() if k not in {"story_qc_report", "status", "approved_at", "approved_by"}}
     return (
         f"STORY BIBLE:\n{json.dumps(data, ensure_ascii=False)}\n\n"
@@ -124,11 +128,14 @@ def build_scene_outline(bible: StoryBible, call_llm: LLMCall, require_contract: 
     system = SYSTEM_INSTRUCTION
     if bible.adaptation_context:
         from apps.script_factory.adaptation import SYSTEM
-        system = SYSTEM + ' Lập dàn cảnh theo thời lượng và mode trong brief; mỗi cảnh có thông tin mới, không ép 80 phân đoạn.'
+        system = SYSTEM + ' Lập dàn cảnh VĂN BẢN theo thời lượng và mode trong brief; mỗi cảnh có thông tin mới, không ép 80 phân đoạn. Chỉ trả JSON văn bản, không tạo ảnh/video hay gọi công cụ.'
 
     try:
         raw, _, _ = call_llm(system, _prompt(bible))
     except Exception as exc:
+        if require_contract:
+            logger.warning('[SceneOutline] Required outline provider call failed: %s', exc)
+            raise RuntimeError(f'Dịch vụ AI lỗi khi lập dàn cảnh: {exc}') from exc
         logger.warning(f"[SceneOutline] Outline call failed, writing without outline: {exc}")
         return None
     scenes = _normalize(parse_json_items(raw, "scenes"))
@@ -149,7 +156,7 @@ def build_scene_outline(bible: StoryBible, call_llm: LLMCall, require_contract: 
             scenes = _normalize(parse_json_items(raw, 'scenes'))
         except Exception as exc:
             logger.warning('[SceneOutline] Contract retry failed: %s', exc)
-            return None
+            raise RuntimeError(f'Dịch vụ AI lỗi khi sửa dàn cảnh: {exc}') from exc
         if not outline_fulfills_contract(bible, scenes):
             logger.warning('[SceneOutline] Outline still rejected after bounded retry: %s', failure_details())
             return None

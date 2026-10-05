@@ -129,6 +129,9 @@ def _story_context(story_bible: StoryBible) -> Dict[str, Any]:
     # Repairs need the same canonical plot as the writer. Truncating clues to
     # four or omitting the timeline/ending makes a later evidence channel look
     # optional, so a rewrite reintroduces exactly the inconsistency QC flagged.
+    if story_bible.adaptation_context:
+        from apps.script_factory.prompt_context import story_prompt_data
+        return story_prompt_data(story_bible)
     return {k: v for k, v in story_bible.to_dict().items()
             if k not in {'story_qc_report', 'status', 'approved_at', 'approved_by'}}
 

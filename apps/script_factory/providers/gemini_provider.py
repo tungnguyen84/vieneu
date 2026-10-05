@@ -996,8 +996,9 @@ Yêu cầu cấu trúc JSON trả về (chính xác định dạng sau):
     ) -> Tuple[StoryBible, int, int]:
         if story_bible.adaptation_context:
             from apps.script_factory.adaptation import create_bible
+            from apps.script_factory.prompt_context import story_prompt_data
             repaired = create_bible(self, story_bible.episode_id, story_bible.adaptation_context,
-                                    {'issues': issues, 'current_story': {k:v for k,v in story_bible.to_dict().items() if k != 'adaptation_context'}}, model=model)
+                                    {'issues': issues, 'current_story': story_prompt_data(story_bible)}, model=model)
             return repaired, 0, 0
         """
         Asks Gemini to repair Story Bible QC issues (causal gaps, knowledge contradictions, clue jumps)

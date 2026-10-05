@@ -1,4 +1,5 @@
 import json
+import pytest
 
 from apps.script_factory.models import ScriptSegment, StoryBible
 from apps.script_factory.scene_outline import build_scene_outline, outline_block, repeated_dialogue_pairs
@@ -29,6 +30,32 @@ def test_unusable_outline_falls_back_to_none():
     def boom(system, prompt):
         raise RuntimeError("quota")
     assert build_scene_outline(_bible(), boom) is None
+
+
+@pytest.mark.parametrize('require_contract',[False,True])
+def test_provider_error_is_preserved_when_outline_is_required(require_contract):
+    calls=[]
+    def boom(system,prompt):
+        calls.append(prompt)
+        raise RuntimeError('HTTP 502: upstream status=413')
+    if require_contract:
+        with pytest.raises(RuntimeError,match='HTTP 502: upstream status=413'):
+            build_scene_outline(_bible(),boom,require_contract=True)
+    else:
+        assert build_scene_outline(_bible(),boom) is None
+    assert len(calls)==1  # do not retry a transport failure as a plot defect
+
+
+def test_outline_contract_retry_preserves_provider_error():
+    calls=[]
+    def complete(system,prompt):
+        calls.append(prompt)
+        if len(calls)==1:
+            return '{"scenes":[]}',1,1
+        raise RuntimeError('HTTP 401: authentication failed')
+    with pytest.raises(RuntimeError,match='HTTP 401: authentication failed'):
+        build_scene_outline(_bible(),complete,require_contract=True)
+    assert len(calls)==2
 
 
 def test_repeated_dialogue_detects_retold_scene_only():
