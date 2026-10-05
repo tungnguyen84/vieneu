@@ -10,8 +10,43 @@ import {
   AlertTriangle,
   Loader2,
   Sparkles,
+  Palette,
+  RefreshCw,
 } from 'lucide-react';
 import { SceneItem } from '../types';
+
+interface VisualStyleInfo {
+  id: string;
+  name: string;
+  badge: string;
+  description: string;
+  is_photoreal: boolean;
+  is_default?: boolean;
+}
+
+const DEFAULT_STYLES: VisualStyleInfo[] = [
+  {
+    id: 'cinematic_documentary',
+    name: 'Phim tài liệu điện ảnh',
+    badge: 'Ảnh chụp chân thực',
+    description: 'Phong cách nhiếp ảnh tài liệu 35mm thực tế, hạt phim tự nhiên, bối cảnh đời thực.',
+    is_photoreal: true,
+  },
+  {
+    id: 'manhua_viet',
+    name: 'Manhua Đô Thị Việt',
+    badge: 'Bán thực - Tông trầm',
+    description: 'Nét vẽ manhua/donghua bán thực, tỷ lệ người lớn, bối cảnh đô thị Việt, không chữ Hán, không ảnh người thật.',
+    is_photoreal: false,
+  },
+  {
+    id: '2d_am_viet',
+    name: 'Tranh 2D Trầm Ấm Việt',
+    badge: 'Minh họa điện ảnh',
+    description: 'Phong cách minh họa 2D bán thực, chất liệu tranh vẽ texture, ánh sáng ấm sâu lắng, không chữ Hán.',
+    is_photoreal: false,
+  },
+];
 
 interface Props {
   projectId: string;
@@ -32,6 +67,41 @@ export const VisualPlanView: React.FC<Props> = ({
   const [generating, setGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Visual Styles state
+  const [availableStyles, setAvailableStyles] = useState<VisualStyleInfo[]>(DEFAULT_STYLES);
+  const [currentStyle, setCurrentStyle] = useState<string>('cinematic_documentary');
+  const [planStyle, setPlanStyle] = useState<string | null>(null);
+  const [isPlanStale, setIsPlanStale] = useState<boolean>(false);
+  const [updatingStyle, setUpdatingStyle] = useState<boolean>(false);
+
+  const loadStyles = async () => {
+    try {
+      const res = await fetch('/api/visual/styles');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setAvailableStyles(data);
+        }
+      }
+    } catch {
+      // keep DEFAULT_STYLES
+    }
+  };
+
+  const loadStyleStatus = async () => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/visual/style`);
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentStyle(data.visual_style || 'cinematic_documentary');
+        setPlanStyle(data.plan_visual_style || null);
+        setIsPlanStale(Boolean(data.is_stale));
+      }
+    } catch {
+      // fallback
+    }
+  };
+
   const loadScenes = async () => {
     setLoading(true);
     try {
@@ -49,8 +119,31 @@ export const VisualPlanView: React.FC<Props> = ({
 
   useEffect(() => {
     setErrorMessage('');
+    loadStyles();
+    loadStyleStatus();
     loadScenes();
   }, [projectId]);
+
+  const handleStyleChange = async (newStyle: string) => {
+    setCurrentStyle(newStyle);
+    setUpdatingStyle(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/visual/style`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visual_style: newStyle }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIsPlanStale(Boolean(data.plan_is_stale));
+        setPlanStyle(data.plan_visual_style || null);
+      }
+    } catch (error: any) {
+      console.error('Lỗi khi đổi style:', error);
+    } finally {
+      setUpdatingStyle(false);
+    }
+  };
 
   const generatePlan = async () => {
     setGenerating(true);
@@ -59,6 +152,7 @@ export const VisualPlanView: React.FC<Props> = ({
       const response = await fetch(`/api/projects/${projectId}/visual/generate`, { method: 'POST' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Không tạo được Visual Plan');
+      await loadStyleStatus();
       await loadScenes();
     } catch (error: any) {
       setErrorMessage(error.message || 'Không tạo được Visual Plan');
@@ -72,34 +166,71 @@ export const VisualPlanView: React.FC<Props> = ({
   ).length;
   const imageScenesCount = scenes.length - videoScenesCount;
 
+  const currentStyleInfo = availableStyles.find((s) => s.id === currentStyle) || availableStyles[0];
+  const planStyleInfo = availableStyles.find((s) => s.id === planStyle);
+
   return (
     <div className="h-full flex flex-col select-none">
       {/* Top Header */}
-      <div className="h-12 border-b border-[#28354D] bg-[#111827] px-4 flex items-center justify-between">
-        <div className="flex items-center space-x-6 text-xs">
+      <div className="h-13 border-b border-[#28354D] bg-[#111827] px-4 flex items-center justify-between gap-3">
+        <div className="flex items-center space-x-4 text-xs">
           <div className="flex items-center space-x-2">
             <Clapperboard size={16} className="text-[#3B82F6]" />
             <span className="font-bold text-[#F8FAFC]">Visual Storyboard (V1.0a)</span>
           </div>
 
-          <div className="flex items-center space-x-3 text-[#94A3B8]">
-            <span>
-              Tổng số:{' '}
-              <strong className="text-[#F8FAFC]">{scenes.length} Scenes</strong>
-            </span>
-            <span>•</span>
-            <span className="text-[#06B6D4]">
-              {imageScenesCount} Ảnh tĩnh
-            </span>
-            <span>•</span>
-            <span className="text-[#8B5CF6]">
-              {videoScenesCount} Video Omni
-            </span>
-          </div>
+          {scenes.length > 0 && (
+            <div className="hidden lg:flex items-center space-x-3 text-[#94A3B8]">
+              <span>
+                Tổng số: <strong className="text-[#F8FAFC]">{scenes.length} Scenes</strong>
+              </span>
+              <span>•</span>
+              <span className="text-[#06B6D4]">{imageScenesCount} Ảnh</span>
+              <span>•</span>
+              <span className="text-[#8B5CF6]">{videoScenesCount} Video</span>
+            </div>
+          )}
         </div>
 
-        {/* View Switcher & Action */}
+        {/* Style Selector + Action Buttons */}
         <div className="flex items-center space-x-2">
+          {/* Visual Style Selector */}
+          <div className="flex items-center space-x-1.5 bg-[#161F36] px-2.5 py-1 rounded border border-[#28354D] text-xs">
+            <Palette size={13} className="text-[#F59E0B]" />
+            <span className="text-[#94A3B8] hidden sm:inline">Style:</span>
+            <select
+              value={currentStyle}
+              onChange={(e) => handleStyleChange(e.target.value)}
+              disabled={updatingStyle || generating}
+              className="bg-transparent text-[#F8FAFC] font-medium text-xs focus:outline-none cursor-pointer"
+              title="Chọn phong cách hình ảnh cho tập này"
+            >
+              {availableStyles.map((st) => (
+                <option key={st.id} value={st.id} className="bg-[#111827] text-white">
+                  {st.name} ({st.badge})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Regenerate Button if plan exists */}
+          {scenes.length > 0 && (
+            <button
+              onClick={generatePlan}
+              disabled={generating}
+              className={`flex items-center space-x-1 text-xs font-semibold px-2.5 py-1.5 rounded transition-colors cursor-pointer border ${
+                isPlanStale
+                  ? 'bg-[#F59E0B] hover:bg-[#D97706] text-black border-[#F59E0B]'
+                  : 'bg-[#161F36] hover:bg-[#28354D] text-[#CBD5E1] border-[#28354D]'
+              }`}
+              title={isPlanStale ? 'Style đã đổi! Nhấn để tạo lại Visual Plan' : 'Tạo lại Visual Plan'}
+            >
+              {generating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+              <span className="hidden sm:inline">{generating ? 'Đang tạo lại...' : 'Tạo lại Plan'}</span>
+            </button>
+          )}
+
+          {/* View Switcher */}
           <div className="flex bg-[#161F36] p-0.5 rounded border border-[#28354D]">
             <button
               onClick={() => setViewMode('grid')}
@@ -131,10 +262,32 @@ export const VisualPlanView: React.FC<Props> = ({
             className="flex items-center space-x-1.5 bg-[#10B981] hover:bg-[#059669] disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded shadow cursor-pointer transition-colors"
           >
             <CheckCircle2 size={13} />
-            <span>Duyệt Visual Plan</span>
+            <span>Duyệt Plan</span>
           </button>
         </div>
       </div>
+
+      {/* Staleness Warning Banner */}
+      {scenes.length > 0 && isPlanStale && (
+        <div className="bg-[#B45309]/20 border-b border-[#F59E0B]/40 px-4 py-2 flex items-center justify-between text-xs text-[#FDE68A]">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle size={15} className="text-[#F59E0B] shrink-0" />
+            <span>
+              Visual Plan hiện tại được tạo bằng style cũ{' '}
+              <strong className="text-white">[{planStyleInfo?.name || planStyle}]</strong>.
+              Bạn đã chọn style mới <strong className="text-white">[{currentStyleInfo.name}]</strong>.
+            </span>
+          </div>
+          <button
+            onClick={generatePlan}
+            disabled={generating}
+            className="flex items-center space-x-1 bg-[#F59E0B] hover:bg-[#D97706] text-black font-semibold px-2.5 py-1 rounded text-xs transition-colors shrink-0"
+          >
+            {generating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            <span>Cập nhật Storyboard ngay</span>
+          </button>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-4">
@@ -147,11 +300,56 @@ export const VisualPlanView: React.FC<Props> = ({
             <AlertTriangle size={28} className="mx-auto text-[#F59E0B]" />
             <div>
               <h3 className="text-sm font-semibold text-[#F8FAFC]">Tập này chưa có Visual Plan</h3>
-              <p className="text-xs text-[#94A3B8] mt-2">Studio sẽ căn thời lượng cảnh theo Audio Master và tạo prompt từ đúng kịch bản, nhân vật, bối cảnh của tập hiện tại.</p>
+              <p className="text-xs text-[#94A3B8] mt-2">
+                Studio sẽ căn thời lượng cảnh theo Audio Master và tạo prompt chuẩn cho hình ảnh & video.
+              </p>
             </div>
+
+            {/* Style Picker in Empty State */}
+            <div className="bg-[#161F36] p-4 rounded-lg border border-[#28354D] text-left space-y-2">
+              <label className="text-xs font-semibold text-[#CBD5E1] flex items-center gap-1.5">
+                <Palette size={13} className="text-[#F59E0B]" />
+                Chọn phong cách hình ảnh:
+              </label>
+              <div className="grid grid-cols-1 gap-2">
+                {availableStyles.map((st) => (
+                  <label
+                    key={st.id}
+                    onClick={() => handleStyleChange(st.id)}
+                    className={`flex items-start gap-2.5 p-2 rounded border cursor-pointer transition-all ${
+                      currentStyle === st.id
+                        ? 'bg-[#1E293B] border-[#3B82F6]'
+                        : 'bg-[#0B0F17]/60 border-[#28354D] hover:border-[#3B82F6]/50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="empty_visual_style"
+                      value={st.id}
+                      checked={currentStyle === st.id}
+                      onChange={() => handleStyleChange(st.id)}
+                      className="mt-0.5 accent-[#3B82F6]"
+                    />
+                    <div className="text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-white">{st.name}</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#3B82F6]/20 text-[#60A5FA]">
+                          {st.badge}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#94A3B8] mt-0.5">{st.description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             {errorMessage && <p className="text-xs text-[#FCA5A5]">{errorMessage}</p>}
-            <button onClick={generatePlan} disabled={generating}
-              className="mx-auto flex items-center gap-2 bg-[#2563EB] disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded">
+            <button
+              onClick={generatePlan}
+              disabled={generating}
+              className="mx-auto flex items-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white text-xs font-semibold px-5 py-2.5 rounded shadow cursor-pointer transition-colors"
+            >
               {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
               <span>{generating ? 'Đang tạo Visual Plan...' : 'Tạo Visual Plan từ Audio & Kịch bản'}</span>
             </button>

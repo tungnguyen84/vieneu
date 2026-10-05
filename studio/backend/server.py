@@ -54,6 +54,7 @@ from studio.backend.services.artifact_lineage import (
 )
 from studio.backend.services.timeline_service import TimelineService
 from studio.backend.services.visual_service import VisualService
+from studio.backend.services.visual_styles import get_available_styles
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DIST_DIR = BASE_DIR / "studio-ui" / "dist"
@@ -719,6 +720,25 @@ def clone_audio_voice(
 
 
 # ---------------- VISUAL PLAN ENDPOINTS ----------------
+@app.get("/api/visual/styles")
+def get_visual_styles():
+    return get_available_styles()
+
+
+class SetVisualStyleRequest(BaseModel):
+    visual_style: str
+
+
+@app.get("/api/projects/{project_id}/visual/style")
+def get_project_visual_style(project_id: str):
+    return visual_srv.get_visual_status(project_id)
+
+
+@app.post("/api/projects/{project_id}/visual/style")
+def set_project_visual_style(project_id: str, req: SetVisualStyleRequest):
+    return visual_srv.set_project_visual_style(project_id, req.visual_style)
+
+
 @app.get("/api/projects/{project_id}/visual/scenes", response_model=List[SceneItem])
 def get_scenes(project_id: str):
     return visual_srv.get_scenes(project_id)

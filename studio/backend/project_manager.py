@@ -213,6 +213,7 @@ class ProjectManager:
 
             topic_val = None
             sel_idea_val = None
+            visual_style_val = "cinematic_documentary"
             p_json_file = PROJECTS_DIR / project_id / "project.json"
             if p_json_file.exists():
                 try:
@@ -220,6 +221,7 @@ class ProjectManager:
                         p_data = json.load(f)
                         topic_val = p_data.get("topic") or p_data.get("premise")
                         sel_idea_val = p_data.get("selected_idea")
+                        visual_style_val = p_data.get("visual_style") or "cinematic_documentary"
                 except Exception:
                     pass
 
@@ -239,6 +241,7 @@ class ProjectManager:
                 is_archived=bool(r["is_archived"]),
                 topic=topic_val,
                 selected_idea=sel_idea_val,
+                visual_style=visual_style_val,
             )
 
     def rename_project(self, project_id: str, title: str) -> ProjectMetadata:

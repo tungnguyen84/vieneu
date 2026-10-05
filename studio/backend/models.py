@@ -63,6 +63,7 @@ class ProjectMetadata(BaseModel):
     is_archived: bool = False
     topic: Optional[str] = None
     selected_idea: Optional[Dict[str, Any]] = None
+    visual_style: Optional[str] = "cinematic_documentary"
 
 
 class ScriptSegment(BaseModel):

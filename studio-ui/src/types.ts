@@ -45,6 +45,7 @@ export interface ProjectMetadata {
   is_archived: boolean;
   topic?: string;
   selected_idea?: any;
+  visual_style?: string;
 }
 
 export interface ScriptSegment {

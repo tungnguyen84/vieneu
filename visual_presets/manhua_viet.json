@@ -1,0 +1,51 @@
+{
+  "id": "manhua_viet",
+  "name": "Manhua Đô Thị Việt (Bán thực, tông trầm, không chữ Hán)",
+  "aspect_ratio": "IMAGE_ASPECT_RATIO_LANDSCAPE",
+  "video_aspect_ratio": "VIDEO_ASPECT_RATIO_LANDSCAPE",
+  "wire_aspect_image": 3,
+  "wire_aspect_video": 2,
+  "target_scenes_min": 30,
+  "target_scenes_max": 55,
+  "target_veo_min": 12,
+  "target_veo_max": 25,
+  "style_prompt": "Vietnamese modern urban manhua donghua illustration, semi-realistic graphic novel art style, mature adult proportions, authentic Vietnamese characters and urban atmosphere, hand-drawn fine line art with subtle digital painting, cinematic chiaroscuro lighting, deep muted moody color palette, warm amber indoor lights and cool twilight blues, serious psychological suspense drama tone, no Chinese characters or signage, authentic Vietnamese storefront signs or clean background, not photorealistic people, not cute cartoon, not childish anime",
+  "negative_prompt": "photorealistic real human photo, western faces, Chinese characters, Hanzi, Kanji, Chinese signage, cute anime, chibi, childish cartoon, 3D CGI plastic render, exaggerated manga expressions, bright cheerful saturated colors, fantasy armor, historical costume, watermark, logo, text overlay, subtitle, captions",
+  "video_rules": "subtle restrained animation, comic panel breathing motion, slow cinematic pan, atmospheric dust particles, natural hair and clothing drift, no exaggerated action, no 3D distortion",
+  "resolution": "1920x1080",
+  "fps": 30,
+  "image_model": "NANO_BANANA_PRO",
+  "video_model": "omni_flash",
+  "video_duration_default": 8,
+  "video_duration_allowed": [
+    4,
+    6,
+    8,
+    10
+  ],
+  "series_visual_style": {
+    "genre": "Vietnamese modern urban mystery manhua drama",
+    "look": [
+      "semi-realistic manhua donghua art style",
+      "mature adult Vietnamese characters",
+      "fine clean line art with textured digital shading",
+      "cinematic moody lighting with dramatic shadows",
+      "deep muted color palette (amber, deep teal, desaturated earth tones)",
+      "authentic modern Vietnamese urban setting (apartments, offices, cafes)",
+      "restrained mature facial expressions with psychological depth",
+      "not real human photo"
+    ],
+    "avoid": [
+      "real human photograph",
+      "Chinese characters or signs",
+      "childish anime or chibi",
+      "plastic 3D render",
+      "oversaturated colors",
+      "fantasy elements",
+      "watermark",
+      "text",
+      "subtitles"
+    ],
+    "aspect_ratio": "16:9"
+  }
+}

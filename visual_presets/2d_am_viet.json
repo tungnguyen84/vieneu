@@ -1,0 +1,50 @@
+{
+  "id": "2d_am_viet",
+  "name": "Tranh 2D Trầm Ấm Việt (Minh họa điện ảnh sâu lắng)",
+  "aspect_ratio": "IMAGE_ASPECT_RATIO_LANDSCAPE",
+  "video_aspect_ratio": "VIDEO_ASPECT_RATIO_LANDSCAPE",
+  "wire_aspect_image": 3,
+  "wire_aspect_video": 2,
+  "target_scenes_min": 30,
+  "target_scenes_max": 55,
+  "target_veo_min": 12,
+  "target_veo_max": 25,
+  "style_prompt": "Contemporary Vietnamese 2D cinematic digital illustration, painterly textured art style, mature adult proportions, authentic Vietnamese features and domestic environment, warm intimate lighting with subtle chiaroscuro, nostalgic muted earth tones, soft brushstrokes with sharp focal details, emotional mystery drama atmosphere, realistic human proportions, Vietnamese cultural ambiance, no Chinese text, no photorealistic human photo, no childish cartoon",
+  "negative_prompt": "photorealistic real human photo, western faces, Chinese characters, Hanzi, Chinese signage, childish cartoon, chibi, plastic 3D render, oversaturated neon, exaggerated caricature, watermark, logo, text, captions, subtitles",
+  "video_rules": "gentle slow motion illustration drift, subtle parallax depth, soft ambient light flicker, restrained character breathing, no fast jarring cuts",
+  "resolution": "1920x1080",
+  "fps": 30,
+  "image_model": "NANO_BANANA_PRO",
+  "video_model": "omni_flash",
+  "video_duration_default": 8,
+  "video_duration_allowed": [
+    4,
+    6,
+    8,
+    10
+  ],
+  "series_visual_style": {
+    "genre": "Vietnamese 2D cinematic emotional mystery drama",
+    "look": [
+      "semi-realistic 2D digital illustration",
+      "painterly textured brushwork with sharp focal points",
+      "mature Vietnamese facial structure and realistic adult build",
+      "warm nostalgic cinematic lighting",
+      "muted earth tones and subdued palette",
+      "authentic Vietnamese domestic and corporate environments",
+      "subtle restrained emotional expressions",
+      "not real human photo"
+    ],
+    "avoid": [
+      "photorealistic human face",
+      "Chinese characters or signs",
+      "cute chibi anime",
+      "glossy 3D render",
+      "vivid neon colors",
+      "watermark",
+      "text",
+      "subtitles"
+    ],
+    "aspect_ratio": "16:9"
+  }
+}

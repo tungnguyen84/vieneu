@@ -15,6 +15,15 @@ from studio.backend.models import (
 )
 from apps.visual_engine.character_continuity_resolver import CharacterContinuityResolver
 from studio.backend.services.artifact_files import file_sha256
+from studio.backend.services.visual_styles import (
+    DEFAULT_VISUAL_STYLE,
+    compose_character_reference_prompt,
+    compose_default_location_reference_prompt,
+    compose_location_reference_prompt,
+    compose_scene_image_prompt,
+    compose_scene_video_prompt,
+    normalize_visual_style,
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 VISUAL_DIR = BASE_DIR / "production_pilot_03_visual_v1_0a"
@@ -63,53 +72,22 @@ def _normalize_gender(char_dict: Dict[str, Any], all_chars: Optional[List[Dict[s
     return None
 
 
-def _clean_character_reference_prompt(name: str, age: Optional[int], gender: Optional[str], role: str, description: str) -> str:
+def _clean_character_reference_prompt(
+    name: str,
+    age: Optional[int],
+    gender: Optional[str],
+    role: str,
+    description: str,
+    visual_style: str = DEFAULT_VISUAL_STYLE,
+) -> str:
     """Builds a clean visual identity reference prompt without narrative spoilers."""
-    spoiler_patterns = [
-        r"người tình[^.,;]*",
-        r"ngoại tình[^.,;]*",
-        r"phản bội[^.,;]*",
-        r"theo dõi[^.,;]*",
-        r"quan hệ ngoài luồng[^.,;]*",
-        r"hôn nhân tẻ nhạt[^.,;]*",
-        r"thao túng[^.,;]*",
-        r"ích kỷ[^.,;]*",
-        r"thủ đoạn[^.,;]*",
-        r"trả thù[^.,;]*",
-        r"hậu quả[^.,;]*",
-        r"bị bắt quả tang[^.,;]*",
-        r"bị lộ tẩy[^.,;]*",
-        r"lừa dối[^.,;]*",
-        r"tội lỗi[^.,;]*",
-        r"ảo tưởng[^.,;]*",
-        r"ảo mộng[^.,;]*",
-        r"đối mặt sự thật[^.,;]*",
-        r"níu giữ gia đình[^.,;]*",
-        r"con cái bị tổn thương[^.,;]*",
-        r"lợi dụng sự cả tin[^.,;]*",
-        r"hy vọng có thể làm lại[^.,;]*",
-        r"hứa hẹn[^.,;]*",
-        r"giải quyết nội bộ[^.,;]*",
-        r"không muốn đối mặt với sự thật[^.,;]*",
-    ]
-    clean_desc = description
-    for pat in spoiler_patterns:
-        clean_desc = re.sub(pat, "", clean_desc, flags=re.IGNORECASE)
-    clean_desc = re.sub(r"\s+", " ", clean_desc).strip(" .,;")
-
-    gender_tag = "woman" if gender == "FEMALE" else "man" if gender == "MALE" else "person"
-    age_tag = f"{age}-year-old " if age else ""
-
-    identity_summary = (
-        f"Realistic Vietnamese {gender_tag}, {age_tag}with authentic Vietnamese facial features, "
-        "natural skin texture, composed neutral expression, neat contemporary hairstyle."
-    )
-    wardrobe = "Wearing contemporary tasteful Vietnamese smart-casual attire appropriate for daily life."
-
-    return (
-        f"Cinematic identity reference portrait of Vietnamese character {name}. "
-        f"{identity_summary} {wardrobe} "
-        "Waist-up framing, neutral soft studio background, natural lighting, sharp focus, 16:9, no text, no watermark."
+    return compose_character_reference_prompt(
+        name=name,
+        age=age,
+        gender=gender,
+        role=role,
+        description=description,
+        visual_style=visual_style,
     )
 
 
@@ -270,26 +248,18 @@ def _compose_scene_image_prompt(
     visible_characters: List[str],
     location_name: str,
     dominant_profile: str,
-    characters_map: Dict[str, Dict[str, Any]]
+    characters_map: Dict[str, Dict[str, Any]],
+    visual_style: str = DEFAULT_VISUAL_STYLE,
 ) -> str:
-    """Creates a specific cinematic visual moment for the keyframe rather than dumping raw narration."""
-    clean_loc = re.sub(r"\(.*?\)", "", location_name).strip()
-    identities = []
-    for cid in visible_characters:
-        char = characters_map.get(cid, {})
-        gender = char.get("gender")
-        noun = "woman" if gender == "FEMALE" else "man" if gender == "MALE" else "person"
-        identities.append(f"{char.get('name') or cid}, Vietnamese {noun}; preserve this character reference")
-    sentences = re.split(r"(?<=[.!?])\s+", combined_text.strip())
-    action_words = ("bước", "mở", "nhìn", "cầm", "đọc", "ngồi", "đứng", "rời", "đặt", "khóc", "gặp")
-    moment = next((line for line in sentences if any(word in line.lower() for word in action_words)),
-                  "A restrained quiet moment; show only the listed characters in the established setting.")
-    return (
-        f"Vietnamese cinematic documentary realism, 35mm photography, natural film grain. Setting: {clean_loc}. "
-        f"Visible cast ONLY: {'; '.join(identities) or 'no identifiable character'}. "
-        f"Depict this concrete moment from the source scene: {moment[:450]}. "
-        "Do not invent a spouse, visitor, age, gender, object or event absent from the source. "
-        "Preserve reference identities and wardrobe; balanced 16:9 composition, no captions, no watermark."
+    """Creates a specific visual moment for the keyframe adhering to the chosen visual style."""
+    return compose_scene_image_prompt(
+        scene_idx=scene_idx,
+        combined_text=combined_text,
+        visible_characters=visible_characters,
+        location_name=location_name,
+        dominant_profile=dominant_profile,
+        characters_map=characters_map,
+        visual_style=visual_style,
     )
 
 
@@ -298,16 +268,18 @@ def _compose_scene_video_prompt(
     combined_text: str,
     visible_characters: List[str],
     location_name: str,
-    dominant_profile: str
+    dominant_profile: str,
+    visual_style: str = DEFAULT_VISUAL_STYLE,
 ) -> Dict[str, str]:
     """Generates a scene-specific dynamic video prompt adhering strictly to Start/Action/Camera/End."""
-    clean_loc = re.sub(r"\(.*?\)", "", location_name).strip()
-    start = f"Preserve the exact approved keyframe, character references and setting {clean_loc}. Visible cast: {', '.join(visible_characters)}."
-    action = f"Animate only the action already depicted in the keyframe from this source scene: {combined_text[:450]}. Do not add characters or a new event."
-    camera = "Slow restrained documentary camera movement, stable facial identity, no sudden cuts."
-    end = "End on the same established scene with natural motion settling; no text overlays or audible dialogue."
-    return {"start": start, "action": action, "camera": camera, "end": end,
-            "full_prompt": f"START: {start} ACTION: {action} CAMERA: {camera} END: {end}"}
+    return compose_scene_video_prompt(
+        scene_idx=scene_idx,
+        combined_text=combined_text,
+        visible_characters=visible_characters,
+        location_name=location_name,
+        dominant_profile=dominant_profile,
+        visual_style=visual_style,
+    )
 
 
 class VisualService:
@@ -385,6 +357,8 @@ class VisualService:
                 raw_characters = story["characters"]
 
         characters = []
+        visual_style = normalize_visual_style(project_meta.get("visual_style"))
+
         for index, char in enumerate(raw_characters):
             name = str(char.get("name") or f"Nhân vật {index + 1}")
             char_id = str(char.get("char_id") or char.get("character_id") or self._slug(name, "CHAR"))
@@ -392,7 +366,7 @@ class VisualService:
             age = char.get("age")
             gender = _normalize_gender(char, raw_characters)
             role = str(char.get("role") or "")
-            ref_prompt = _clean_character_reference_prompt(name, age, gender, role, description)
+            ref_prompt = _clean_character_reference_prompt(name, age, gender, role, description, visual_style=visual_style)
             characters.append({
                 "character_id": char_id,
                 "name": name,
@@ -409,6 +383,7 @@ class VisualService:
                 "wardrobe_baseline": "Contemporary Vietnamese clothing appropriate to the story",
                 "wardrobe_variants": {},
                 "reference_prompt": ref_prompt,
+                "visual_style": visual_style,
             })
 
         # 2. Locations Grounding
@@ -430,7 +405,8 @@ class VisualService:
                 "type": "INTERIOR",
                 "architecture": description,
                 "story_function": description,
-                "reference_prompt": f"Cinematic Vietnamese location reference: {clean_name}. Natural light, realistic documentary style, 16:9, no text, no watermark.",
+                "reference_prompt": compose_location_reference_prompt(clean_name, visual_style=visual_style),
+                "visual_style": visual_style,
             })
         if not locations:
             locations.append({
@@ -440,7 +416,8 @@ class VisualService:
                 "type": "INTERIOR",
                 "architecture": "Contemporary Vietnamese family home",
                 "story_function": "Primary story setting",
-                "reference_prompt": "Contemporary Vietnamese family home, cinematic documentary realism, natural light, 16:9, no text, no watermark.",
+                "reference_prompt": compose_default_location_reference_prompt(visual_style=visual_style),
+                "visual_style": visual_style,
             })
 
         loc_engine = LocationContinuityEngine(locations)
@@ -504,7 +481,8 @@ class VisualService:
                 visible_characters=visible,
                 location_name=assigned_loc["name"],
                 dominant_profile=dominant_profile,
-                characters_map=characters_map
+                characters_map=characters_map,
+                visual_style=visual_style,
             )
             video_prompt = None
             if is_video:
@@ -513,7 +491,8 @@ class VisualService:
                     combined_text=combined,
                     visible_characters=visible,
                     location_name=assigned_loc["name"],
-                    dominant_profile=dominant_profile
+                    dominant_profile=dominant_profile,
+                    visual_style=visual_style,
                 )
                 video_prompt = video_prompt_obj["full_prompt"]
 
@@ -547,12 +526,15 @@ class VisualService:
             text = " ".join(str(item[2].get("text") or "") for item in group)
             loc = loc_engine.loc_by_id.get(scene["location_id"]) or locations[0]
             profile = str(group[0][2].get("delivery_profile") or "NORMAL").upper()
-            scene["image_prompt"] = _compose_scene_image_prompt(scene["order"] - 1, text,
-                scene["visible_characters"], loc["name"], profile, characters_map)
+            scene["image_prompt"] = _compose_scene_image_prompt(
+                scene["order"] - 1, text, scene["visible_characters"],
+                loc["name"], profile, characters_map, visual_style=visual_style
+            )
             if scene["video_prompt"]:
-                scene["video_prompt"] = _compose_scene_video_prompt(scene["order"] - 1, text,
-                    scene["visible_characters"], loc["name"], profile)["full_prompt"]
-
+                scene["video_prompt"] = _compose_scene_video_prompt(
+                    scene["order"] - 1, text, scene["visible_characters"],
+                    loc["name"], profile, visual_style=visual_style
+                )["full_prompt"]
 
         target_dir = VISUAL_DIR / project_id
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -562,12 +544,13 @@ class VisualService:
             "source_story_content_hash": audio_binding["story_content_hash"],
             "episode_id": project_id,
             "title": project_meta.get("title") or script_data.get("title") or project_id,
+            "visual_style": visual_style,
             "audio_duration_sec": round(audio_duration, 3),
             "scenes": plan_scenes,
         }
         (target_dir / "visual_plan.json").write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
         (target_dir / "character_bible.json").write_text(
-            json.dumps({"identity_families": [], "characters": characters}, ensure_ascii=False, indent=2), encoding="utf-8"
+            json.dumps({"visual_style": visual_style, "identity_families": [], "characters": characters}, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         (target_dir / "location_bible.json").write_text(json.dumps(locations, ensure_ascii=False, indent=2), encoding="utf-8")
         (target_dir / "prop_bible.json").write_text("[]", encoding="utf-8")
@@ -576,6 +559,87 @@ class VisualService:
             "project_id": project_id, "scenes": len(plan_scenes),
             "images": scene_count - len(video_indexes), "videos": len(video_indexes),
             "audio_duration_sec": round(audio_duration, 3),
+            "visual_style": visual_style,
+        }
+
+    def get_project_visual_style(self, project_id: str) -> str:
+        """Retrieves currently configured visual style for the project."""
+        p_json = PROJECTS_DIR / project_id / "project.json"
+        if p_json.exists():
+            try:
+                data = json.loads(p_json.read_text(encoding="utf-8"))
+                return normalize_visual_style(data.get("visual_style"))
+            except Exception:
+                pass
+        return DEFAULT_VISUAL_STYLE
+
+    def set_project_visual_style(self, project_id: str, style_id: str) -> Dict[str, Any]:
+        """Sets project visual style, persists to project.json, and assesses visual plan staleness."""
+        clean_style = normalize_visual_style(style_id)
+        project_dir = PROJECTS_DIR / project_id
+        project_dir.mkdir(parents=True, exist_ok=True)
+        p_json = project_dir / "project.json"
+
+        p_data = {}
+        if p_json.exists():
+            try:
+                p_data = json.loads(p_json.read_text(encoding="utf-8"))
+            except Exception:
+                p_data = {}
+        p_data["visual_style"] = clean_style
+        p_json.write_text(json.dumps(p_data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        # Check existing visual plan staleness
+        plan_path = VISUAL_DIR / project_id / "visual_plan.json"
+        is_stale = False
+        plan_style = None
+        if plan_path.exists():
+            try:
+                plan_data = json.loads(plan_path.read_text(encoding="utf-8"))
+                plan_style = normalize_visual_style(plan_data.get("visual_style"))
+                is_stale = (plan_style != clean_style)
+            except Exception:
+                is_stale = True
+
+        return {
+            "project_id": project_id,
+            "visual_style": clean_style,
+            "plan_visual_style": plan_style,
+            "plan_is_stale": is_stale,
+        }
+
+    def get_visual_status(self, project_id: str) -> Dict[str, Any]:
+        """Returns visual plan status including style and staleness."""
+        current_style = self.get_project_visual_style(project_id)
+        plan_path = VISUAL_DIR / project_id / "visual_plan.json"
+        has_plan = plan_path.exists()
+        plan_style = None
+        is_stale = False
+        scene_count = 0
+        image_count = 0
+        video_count = 0
+
+        if has_plan:
+            try:
+                plan_data = json.loads(plan_path.read_text(encoding="utf-8"))
+                plan_style = normalize_visual_style(plan_data.get("visual_style"))
+                is_stale = (plan_style != current_style)
+                scenes = plan_data.get("scenes", [])
+                scene_count = len(scenes)
+                video_count = sum(1 for s in scenes if s.get("visual_mode") == "VIDEO_RECOMMENDED")
+                image_count = scene_count - video_count
+            except Exception:
+                is_stale = True
+
+        return {
+            "project_id": project_id,
+            "has_plan": has_plan,
+            "visual_style": current_style,
+            "plan_visual_style": plan_style,
+            "is_stale": is_stale,
+            "scenes": scene_count,
+            "images": image_count,
+            "videos": video_count,
         }
 
     def get_scenes(self, project_id: str) -> List[SceneItem]:

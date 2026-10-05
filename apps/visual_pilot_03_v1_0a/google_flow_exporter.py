@@ -95,6 +95,7 @@ def build_episode_export(ep_id: str) -> Dict[str, Any]:
     # 1. Load Visual Plan
     with open(ep_dir / "visual_plan.json", "r", encoding="utf-8") as f:
         vplan = json.load(f)
+    visual_style = vplan.get("visual_style") or "cinematic_documentary"
 
     # 2. Load Character Bible & Identity Families
     with open(ep_dir / "character_bible.json", "r", encoding="utf-8") as f:
@@ -229,6 +230,19 @@ def build_episode_export(ep_id: str) -> Dict[str, Any]:
                     "no people, no hands, no text, no watermark."
                 )
 
+            if ref_prompt and visual_style == "manhua_viet":
+                ref_prompt = ref_prompt.replace("35mm photography", "semi-realistic manhua illustration style, no Chinese characters")
+                ref_prompt = ref_prompt.replace("35mm macro lens", "macro view, semi-realistic manhua art style, no Chinese characters")
+                ref_prompt = ref_prompt.replace("Studio product documentary photograph", "Semi-realistic manhua prop illustration")
+                ref_prompt = ref_prompt.replace("Product documentary photograph", "Semi-realistic manhua prop illustration")
+                ref_prompt = ref_prompt.replace("documentary snapshot", "manhua style illustration snapshot")
+            elif ref_prompt and visual_style == "2d_am_viet":
+                ref_prompt = ref_prompt.replace("35mm photography", "2D digital illustration style, no Chinese characters")
+                ref_prompt = ref_prompt.replace("35mm macro lens", "macro view, 2D textured digital art, no Chinese characters")
+                ref_prompt = ref_prompt.replace("Studio product documentary photograph", "2D digital illustration prop study")
+                ref_prompt = ref_prompt.replace("Product documentary photograph", "2D digital illustration prop study")
+                ref_prompt = ref_prompt.replace("documentary snapshot", "2D digital illustration snapshot")
+
         prop_obj = {
             "prop_id": pid,
             "name": p["name"],
@@ -339,11 +353,15 @@ def build_episode_export(ep_id: str) -> Dict[str, Any]:
         char_resolver = CharacterContinuityResolver(characters)
         scenes = char_resolver.resolve_scenes(scenes)
 
+    export_gen_settings = dict(GENERATION_SETTINGS)
+    export_gen_settings["visual_style"] = visual_style
+
     return {
         "episode_id": ep_id,
         "title": vplan["title"],
+        "visual_style": visual_style,
         "audio_duration": vplan["audio_duration_sec"],
-        "generation_settings": GENERATION_SETTINGS,
+        "generation_settings": export_gen_settings,
         "identity_families": identity_families,
         "characters": characters,
         "props": props,
